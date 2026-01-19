@@ -23,7 +23,7 @@ const LAST_PROCESSED_KEY = 'moodling_life_context_last_processed';
  */
 export interface LifeTopic {
   name: string;
-  category: 'person' | 'activity' | 'place' | 'event' | 'health' | 'work' | 'relationship' | 'pet' | 'financial' | 'education' | 'profession' | 'identity';
+  category: 'person' | 'activity' | 'place' | 'event' | 'health' | 'work' | 'relationship' | 'pet' | 'financial' | 'education' | 'profession' | 'identity' | 'coping' | 'temporal';
   firstMentioned: string; // ISO date
   lastMentioned: string; // ISO date
   mentionCount: number;
@@ -42,11 +42,55 @@ export interface LifeMilestone {
 }
 
 /**
+ * Extracted entity with structured data
+ */
+export interface ExtractedEntity {
+  type: 'person' | 'age' | 'location' | 'medication' | 'duration' | 'sobriety';
+  value: string;
+  detail?: string; // e.g., dosage for medication, role for person
+  firstMentioned: string;
+  lastMentioned: string;
+  mentionCount: number;
+}
+
+/**
+ * Coping pattern tracking
+ */
+export interface CopingPattern {
+  mechanism: string;
+  type: 'healthy' | 'unhealthy';
+  frequency: number;
+  lastMentioned: string;
+}
+
+/**
+ * Temporal pattern (recurring emotional states)
+ */
+export interface TemporalPattern {
+  trigger: string; // e.g., "Sunday evenings", "holidays", "winter"
+  response: string; // e.g., "anxiety", "sadness"
+  frequency: number;
+}
+
+/**
+ * Severity tracking for distress levels over time
+ */
+export interface SeveritySnapshot {
+  date: string;
+  level: 'crisis' | 'high' | 'moderate' | 'low' | 'positive';
+  indicators: string[];
+}
+
+/**
  * Complete life context for a user
  */
 export interface LifeContext {
   topics: LifeTopic[];
   milestones: LifeMilestone[];
+  entities: ExtractedEntity[];
+  copingPatterns: CopingPattern[];
+  temporalPatterns: TemporalPattern[];
+  recentSeverity: SeveritySnapshot[];
   journeyStartDate: string; // When they started journaling
   totalEntriesProcessed: number;
   lastUpdated: string;
@@ -132,6 +176,110 @@ const EXTRACTION_PATTERNS = {
     /\b(coming out|came out|transition|transitioning|LGBTQ)/gi,
     /\b(?:i have|diagnosed with)\s+(ADHD|autism|ASD|dyslexia)/gi,
     /\b(neurodivergent|on the spectrum|autistic)/gi,
+  ],
+  // Coping mechanisms
+  coping: [
+    // Healthy coping
+    /\b(therapy|journaling|meditation|exercise|yoga|breathing exercises|grounding|mindfulness)/gi,
+    /\b(?:talking to|reaching out|asking for help|support system|support group)/gi,
+    /\b(self-care|taking care of myself|boundaries|saying no|mental health day)/gi,
+    /\b(healthy habits|routine|sleep schedule|rest|break|time off)/gi,
+    // Unhealthy coping
+    /\b(avoiding|numbing|escaping|isolating|withdrawing)/gi,
+    /\b(doom scrolling|doomscrolling|binge|bingeing|retail therapy)/gi,
+    /\b(stress eating|overeating|not eating|not sleeping)/gi,
+    /\b(drinking more|smoking more|using more|bottling up)/gi,
+  ],
+  // Temporal patterns
+  temporal: [
+    /\b(Sunday scaries|Monday blues|midweek slump)/gi,
+    /\b(every morning|every night|every day|every week|every month)/gi,
+    /\b(this time of year|seasonal|around this time)/gi,
+    /\b(anniversary|birthday|holiday|Christmas|Thanksgiving|New Year)/gi,
+    /\b(?:for|been)\s+(\d+)\s+(days?|weeks?|months?|years?)/gi,
+    /\b(?:since)\s+(January|February|March|April|May|June|July|August|September|October|November|December|\d{4})/gi,
+  ],
+};
+
+/**
+ * Entity extraction patterns for structured data
+ */
+const ENTITY_PATTERNS = {
+  // Named person: "my therapist Dr. Chen", "my partner Sarah"
+  namedPerson: /\b(?:my\s+)?(mom|dad|partner|husband|wife|brother|sister|friend|boss|therapist|doctor|girlfriend|boyfriend)\s+([A-Z][a-z]+)/gi,
+
+  // Age mentions: "I'm 34", "turned 30"
+  age: /\b(?:i'm|i am|turned|turning)\s+(\d{1,2})\b/gi,
+
+  // Duration: "for 3 years", "been 6 months"
+  duration: /\b(?:for|been)\s+(\d+)\s+(days?|weeks?|months?|years?)/gi,
+
+  // Date mentions: "since March 2023", "back in 2019"
+  dateMention: /\b(?:since|in|around|back in|last)\s+(January|February|March|April|May|June|July|August|September|October|November|December|\d{4}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/gi,
+
+  // Medication with dosage: "50mg of Lexapro", "100mg Zoloft"
+  medicationDosage: /\b(\d+)\s*(?:mg|milligrams?)\s+(?:of\s+)?([A-Za-z]+)/gi,
+
+  // Location: "live in Austin", "moved to Seattle"
+  location: /\b(?:live in|moved to|from|living in|relocated to)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:,\s*[A-Z]{2})?)/gi,
+
+  // Sobriety/recovery duration: "6 months sober", "2 years clean"
+  sobrietyDuration: /\b(\d+)\s+(days?|weeks?|months?|years?)\s+(sober|clean|in recovery)/gi,
+
+  // Relationship duration: "married for 5 years", "together for 2 years"
+  relationshipDuration: /\b(?:married|together|dating)\s+(?:for\s+)?(\d+)\s+(days?|weeks?|months?|years?)/gi,
+};
+
+/**
+ * Severity markers for distress level detection
+ */
+const SEVERITY_MARKERS = {
+  crisis: [
+    'crisis', 'emergency', 'can\'t cope', 'falling apart', 'rock bottom',
+    'suicidal', 'want to die', 'don\'t want to be here', 'end my life',
+    'self-harm', 'hurting myself', 'cutting', 'need help now',
+    'unbearable', 'can\'t take it', 'breaking point',
+  ],
+  high: [
+    'desperate', 'hopeless', 'helpless', 'paralyzed', 'shutting down',
+    'dissociating', 'numb', 'completely overwhelmed', 'at my limit',
+    'don\'t know what to do', 'falling apart', 'breakdown',
+  ],
+  moderate: [
+    'struggling', 'overwhelmed', 'stressed', 'anxious', 'worried',
+    'frustrated', 'upset', 'sad', 'down', 'low', 'scared', 'afraid',
+    'exhausted', 'drained', 'burnt out', 'stuck', 'lost', 'confused',
+  ],
+  low: [
+    'bit stressed', 'little worried', 'somewhat', 'kind of', 'a bit',
+    'manageable', 'okay', 'fine', 'alright', 'getting by', 'managing',
+    'could be worse', 'hanging in there',
+  ],
+  positive: [
+    'happy', 'excited', 'proud', 'grateful', 'hopeful', 'optimistic',
+    'relieved', 'peaceful', 'calm', 'content', 'joyful', 'amazing',
+    'better', 'improving', 'progress', 'breakthrough', 'confident',
+    'strong', 'capable', 'resilient', 'loved', 'supported',
+  ],
+};
+
+/**
+ * Healthy vs unhealthy coping categorization
+ */
+const COPING_CATEGORIES = {
+  healthy: [
+    'therapy', 'journaling', 'meditation', 'exercise', 'yoga', 'walking',
+    'breathing exercises', 'grounding', 'mindfulness', 'self-care',
+    'talking to', 'reaching out', 'asking for help', 'support system',
+    'boundaries', 'saying no', 'rest', 'break', 'time off', 'routine',
+    'healthy habits', 'sleep schedule',
+  ],
+  unhealthy: [
+    'avoiding', 'numbing', 'escaping', 'isolating', 'withdrawing',
+    'doom scrolling', 'doomscrolling', 'binge', 'bingeing', 'retail therapy',
+    'stress eating', 'overeating', 'not eating', 'not sleeping',
+    'drinking more', 'smoking more', 'using more', 'bottling up',
+    'lashing out', 'snapping', 'compulsive', 'obsessing',
   ],
 };
 
@@ -276,6 +424,188 @@ function determineSentiment(mood: string): LifeTopic['sentiment'] {
 }
 
 /**
+ * Detect severity level from entry text
+ */
+function detectSeverity(text: string): SeveritySnapshot['level'] | null {
+  const lower = text.toLowerCase();
+
+  // Check in order of severity (most severe first)
+  for (const marker of SEVERITY_MARKERS.crisis) {
+    if (lower.includes(marker)) return 'crisis';
+  }
+  for (const marker of SEVERITY_MARKERS.high) {
+    if (lower.includes(marker)) return 'high';
+  }
+  for (const marker of SEVERITY_MARKERS.positive) {
+    if (lower.includes(marker)) return 'positive';
+  }
+  for (const marker of SEVERITY_MARKERS.moderate) {
+    if (lower.includes(marker)) return 'moderate';
+  }
+  for (const marker of SEVERITY_MARKERS.low) {
+    if (lower.includes(marker)) return 'low';
+  }
+
+  return null;
+}
+
+/**
+ * Extract coping mechanisms from entry text
+ */
+function extractCopingMechanisms(text: string): Array<{ mechanism: string; type: 'healthy' | 'unhealthy' }> {
+  const lower = text.toLowerCase();
+  const found: Array<{ mechanism: string; type: 'healthy' | 'unhealthy' }> = [];
+
+  for (const mechanism of COPING_CATEGORIES.healthy) {
+    if (lower.includes(mechanism)) {
+      found.push({ mechanism, type: 'healthy' });
+    }
+  }
+  for (const mechanism of COPING_CATEGORIES.unhealthy) {
+    if (lower.includes(mechanism)) {
+      found.push({ mechanism, type: 'unhealthy' });
+    }
+  }
+
+  return found;
+}
+
+/**
+ * Extract named entities from entry text
+ */
+function extractEntities(text: string, entryDate: string): ExtractedEntity[] {
+  const entities: ExtractedEntity[] = [];
+
+  // Extract named people: "my therapist Dr. Chen"
+  let match;
+  const personRegex = new RegExp(ENTITY_PATTERNS.namedPerson.source, 'gi');
+  while ((match = personRegex.exec(text)) !== null) {
+    if (match[2]) {
+      entities.push({
+        type: 'person',
+        value: match[2],
+        detail: match[1], // role (therapist, partner, etc.)
+        firstMentioned: entryDate,
+        lastMentioned: entryDate,
+        mentionCount: 1,
+      });
+    }
+  }
+
+  // Extract age
+  const ageRegex = new RegExp(ENTITY_PATTERNS.age.source, 'gi');
+  while ((match = ageRegex.exec(text)) !== null) {
+    if (match[1]) {
+      entities.push({
+        type: 'age',
+        value: match[1],
+        firstMentioned: entryDate,
+        lastMentioned: entryDate,
+        mentionCount: 1,
+      });
+    }
+  }
+
+  // Extract locations
+  const locationRegex = new RegExp(ENTITY_PATTERNS.location.source, 'gi');
+  while ((match = locationRegex.exec(text)) !== null) {
+    if (match[1]) {
+      entities.push({
+        type: 'location',
+        value: match[1],
+        firstMentioned: entryDate,
+        lastMentioned: entryDate,
+        mentionCount: 1,
+      });
+    }
+  }
+
+  // Extract medication with dosage
+  const medRegex = new RegExp(ENTITY_PATTERNS.medicationDosage.source, 'gi');
+  while ((match = medRegex.exec(text)) !== null) {
+    if (match[1] && match[2]) {
+      entities.push({
+        type: 'medication',
+        value: match[2],
+        detail: `${match[1]}mg`,
+        firstMentioned: entryDate,
+        lastMentioned: entryDate,
+        mentionCount: 1,
+      });
+    }
+  }
+
+  // Extract sobriety duration
+  const sobrietyRegex = new RegExp(ENTITY_PATTERNS.sobrietyDuration.source, 'gi');
+  while ((match = sobrietyRegex.exec(text)) !== null) {
+    if (match[1] && match[2]) {
+      entities.push({
+        type: 'sobriety',
+        value: `${match[1]} ${match[2]} ${match[3] || 'sober'}`,
+        firstMentioned: entryDate,
+        lastMentioned: entryDate,
+        mentionCount: 1,
+      });
+    }
+  }
+
+  return entities;
+}
+
+/**
+ * Update context with extracted entities
+ */
+function updateEntities(context: LifeContext, newEntities: ExtractedEntity[]): void {
+  for (const newEntity of newEntities) {
+    const existing = context.entities.find(
+      e => e.type === newEntity.type && e.value.toLowerCase() === newEntity.value.toLowerCase()
+    );
+    if (existing) {
+      existing.lastMentioned = newEntity.lastMentioned;
+      existing.mentionCount++;
+      if (newEntity.detail) existing.detail = newEntity.detail;
+    } else {
+      context.entities.push(newEntity);
+    }
+  }
+}
+
+/**
+ * Update coping patterns in context
+ */
+function updateCopingPatterns(context: LifeContext, mechanisms: Array<{ mechanism: string; type: 'healthy' | 'unhealthy' }>, entryDate: string): void {
+  for (const { mechanism, type } of mechanisms) {
+    const existing = context.copingPatterns.find(c => c.mechanism === mechanism);
+    if (existing) {
+      existing.frequency++;
+      existing.lastMentioned = entryDate;
+    } else {
+      context.copingPatterns.push({
+        mechanism,
+        type,
+        frequency: 1,
+        lastMentioned: entryDate,
+      });
+    }
+  }
+}
+
+/**
+ * Update severity tracking
+ */
+function updateSeverity(context: LifeContext, level: SeveritySnapshot['level'], entryDate: string, indicators: string[]): void {
+  // Keep last 10 severity snapshots
+  context.recentSeverity.push({
+    date: entryDate,
+    level,
+    indicators: indicators.slice(0, 3),
+  });
+  if (context.recentSeverity.length > 10) {
+    context.recentSeverity = context.recentSeverity.slice(-10);
+  }
+}
+
+/**
  * Load existing life context from storage
  */
 export async function getLifeContext(): Promise<LifeContext | null> {
@@ -368,6 +698,21 @@ function processEntry(entry: JournalEntry, context: LifeContext): void {
     }
   }
 
+  // Extract and update entities (names, ages, locations, medications)
+  const entities = extractEntities(entry.text, entryDate);
+  updateEntities(context, entities);
+
+  // Extract and update coping patterns
+  const copingMechanisms = extractCopingMechanisms(entry.text);
+  updateCopingPatterns(context, copingMechanisms, entryDate);
+
+  // Detect and track severity
+  const severity = detectSeverity(entry.text);
+  if (severity) {
+    const indicators = entry.text.slice(0, 100).split(/[.!?]/)[0];
+    updateSeverity(context, severity, entryDate, [indicators]);
+  }
+
   context.totalEntriesProcessed++;
 }
 
@@ -386,6 +731,10 @@ export async function buildLifeContext(): Promise<LifeContext> {
   let context: LifeContext = {
     topics: [],
     milestones: [],
+    entities: [],
+    copingPatterns: [],
+    temporalPatterns: [],
+    recentSeverity: [],
     journeyStartDate: sortedEntries[0]?.createdAt || new Date().toISOString(),
     totalEntriesProcessed: 0,
     lastUpdated: new Date().toISOString(),
@@ -521,6 +870,71 @@ export function formatLifeContextForPrompt(context: LifeContext): string {
         (new Date(t.lastMentioned).getTime() - new Date(t.firstMentioned).getTime()) / (1000 * 60 * 60 * 24 * 30)
       );
       parts.push(`  • ${t.name}: ${spanMonths} months, ${t.mentionCount} mentions (${t.sentiment})`);
+    }
+  }
+
+  // Named entities (specific people, locations, medications)
+  if (context.entities && context.entities.length > 0) {
+    const namedPeople = context.entities.filter(e => e.type === 'person' && e.detail).slice(0, 3);
+    if (namedPeople.length > 0) {
+      const peopleStr = namedPeople.map(p => `${p.value} (${p.detail})`).join(', ');
+      parts.push(`Named people: ${peopleStr}`);
+    }
+
+    const location = context.entities.find(e => e.type === 'location');
+    if (location) {
+      parts.push(`Location: ${location.value}`);
+    }
+
+    const age = context.entities.find(e => e.type === 'age');
+    if (age) {
+      parts.push(`Age: ${age.value}`);
+    }
+
+    const medications = context.entities.filter(e => e.type === 'medication').slice(0, 3);
+    if (medications.length > 0) {
+      const medStr = medications.map(m => m.detail ? `${m.value} (${m.detail})` : m.value).join(', ');
+      parts.push(`Medications: ${medStr}`);
+    }
+
+    const sobriety = context.entities.find(e => e.type === 'sobriety');
+    if (sobriety) {
+      parts.push(`Recovery: ${sobriety.value}`);
+    }
+  }
+
+  // Coping patterns
+  if (context.copingPatterns && context.copingPatterns.length > 0) {
+    const healthyCoping = context.copingPatterns.filter(c => c.type === 'healthy').slice(0, 3);
+    const unhealthyCoping = context.copingPatterns.filter(c => c.type === 'unhealthy').slice(0, 3);
+
+    if (healthyCoping.length > 0) {
+      const healthyStr = healthyCoping.map(c => c.mechanism).join(', ');
+      parts.push(`Healthy coping: ${healthyStr}`);
+    }
+    if (unhealthyCoping.length > 0) {
+      const unhealthyStr = unhealthyCoping.map(c => c.mechanism).join(', ');
+      parts.push(`Coping challenges: ${unhealthyStr}`);
+    }
+  }
+
+  // Recent severity/emotional trend
+  if (context.recentSeverity && context.recentSeverity.length > 0) {
+    const recent = context.recentSeverity.slice(-3);
+    const levels = recent.map(s => s.level);
+
+    // Summarize trend
+    const hasCrisis = levels.includes('crisis');
+    const hasHigh = levels.includes('high');
+    const hasPositive = levels.includes('positive');
+
+    if (hasCrisis || hasHigh) {
+      parts.push(`Recent emotional state: Struggling (${hasCrisis ? 'crisis moments' : 'high distress'})`);
+    } else if (hasPositive) {
+      parts.push(`Recent emotional state: Doing well (positive entries recently)`);
+    } else {
+      const avgLevel = levels[levels.length - 1] || 'moderate';
+      parts.push(`Recent emotional state: ${avgLevel}`);
     }
   }
 

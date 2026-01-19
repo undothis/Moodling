@@ -525,6 +525,89 @@ const SIGNIFICANT_KEYWORDS = [
   'stay-at-home', 'SAHM', 'SAHD', 'caregiver', 'nanny', 'au pair',
   'freelance', 'self-employed', 'gig economy', 'Uber', 'Lyft', 'DoorDash',
   'remote work', 'work from home', 'hybrid', 'office job',
+
+  // ============================================
+  // TEMPORAL PATTERNS - RECURRING
+  // ============================================
+  'every time', 'always', 'never', 'usually', 'typically',
+  'every day', 'daily', 'weekly', 'monthly', 'yearly',
+  'every morning', 'every night', 'weekends', 'weekdays',
+  'around this time', 'this time of year', 'seasonal',
+  'Sunday scaries', 'Monday blues', 'midweek slump',
+  'end of month', 'end of year', 'back to school',
+  'new year', 'fresh start', 'new chapter',
+
+  // ============================================
+  // TEMPORAL PATTERNS - SPECIFIC TIMES
+  // ============================================
+  'anniversary', 'birthday', 'holiday', 'Christmas', 'Thanksgiving',
+  'New Year', 'Valentine\'s', 'Mother\'s Day', 'Father\'s Day',
+  'summer', 'winter', 'spring', 'fall', 'autumn',
+  'morning', 'afternoon', 'evening', 'night', 'midnight',
+  'since', 'for years', 'for months', 'lately', 'recently',
+
+  // ============================================
+  // COPING - HEALTHY
+  // ============================================
+  'coping', 'self-care', 'taking care of myself',
+  'therapy', 'journaling', 'meditation', 'exercise', 'workout',
+  'talking to', 'support system', 'boundaries', 'saying no',
+  'rest', 'break', 'time off', 'vacation', 'mental health day',
+  'breathing exercises', 'grounding', 'mindfulness',
+  'reaching out', 'asking for help', 'support group',
+  'healthy habits', 'routine', 'sleep schedule',
+
+  // ============================================
+  // COPING - UNHEALTHY
+  // ============================================
+  'avoiding', 'numbing', 'escaping', 'isolating', 'withdrawing',
+  'binge', 'bingeing', 'retail therapy', 'doom scrolling', 'doomscrolling',
+  'not sleeping', 'not eating', 'overeating', 'stress eating',
+  'drinking more', 'smoking more', 'using more',
+  'bottling up', 'pushing down', 'ignoring', 'pretending',
+  'lashing out', 'snapping', 'taking it out on',
+  'can\'t stop', 'compulsive', 'obsessing',
+
+  // ============================================
+  // SEVERITY - HIGH DISTRESS
+  // ============================================
+  'crisis', 'emergency', 'can\'t cope', 'falling apart',
+  'rock bottom', 'worst', 'desperate', 'hopeless', 'helpless',
+  'unbearable', 'can\'t take it', 'breaking point', 'at my limit',
+  'need help now', 'don\'t know what to do', 'completely overwhelmed',
+  'paralyzed', 'shutting down', 'dissociating', 'numb',
+  'suicidal', 'want to die', 'don\'t want to be here',
+  'self-harm', 'hurting myself', 'cutting',
+
+  // ============================================
+  // SEVERITY - MODERATE DISTRESS
+  // ============================================
+  'struggling', 'hard time', 'difficult', 'challenging',
+  'overwhelmed', 'stressed', 'anxious', 'worried', 'concerned',
+  'frustrated', 'upset', 'bothered', 'irritated', 'annoyed',
+  'sad', 'down', 'low', 'blue', 'melancholy',
+  'scared', 'afraid', 'nervous', 'uneasy', 'on edge',
+  'exhausted', 'drained', 'burnt out', 'running on empty',
+  'stuck', 'lost', 'confused', 'uncertain',
+
+  // ============================================
+  // SEVERITY - LOW DISTRESS / MANAGING
+  // ============================================
+  'bit stressed', 'little worried', 'somewhat anxious',
+  'kind of', 'a bit', 'slightly', 'minor', 'manageable',
+  'okay', 'fine', 'alright', 'so-so', 'meh',
+  'not bad', 'getting by', 'managing', 'surviving',
+  'could be worse', 'hanging in there', 'taking it day by day',
+
+  // ============================================
+  // SEVERITY - POSITIVE
+  // ============================================
+  'happy', 'excited', 'proud', 'grateful', 'thankful',
+  'hopeful', 'optimistic', 'relieved', 'peaceful', 'calm',
+  'content', 'joyful', 'thrilled', 'amazing', 'wonderful',
+  'better', 'improving', 'progress', 'breakthrough',
+  'confident', 'strong', 'capable', 'resilient',
+  'loved', 'supported', 'connected', 'understood',
 ];
 
 /**
