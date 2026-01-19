@@ -15,7 +15,7 @@ import { Colors } from '@/constants/Colors';
 import { JournalEntry } from '@/types/JournalEntry';
 import { getEntryById, deleteEntry } from '@/services/journalStorage';
 import {
-  generateSimpleReflection,
+  generateStyledReflection,
   shouldSuggestSupport,
   getSupportSuggestion,
 } from '@/services/reflectionService';
@@ -56,10 +56,10 @@ export default function EntryDetailScreen() {
       const found = await getEntryById(id);
       setEntry(found);
 
-      // Generate compassionate reflection (Unit 15)
+      // Generate compassionate reflection (Unit 15, Unit 16: tone-aware)
       if (found?.sentiment?.mood) {
         const mood = found.sentiment.mood as MoodCategory;
-        setReflection(generateSimpleReflection(mood));
+        setReflection(await generateStyledReflection(mood));
 
         // Check if we should gently suggest support
         if (shouldSuggestSupport(mood)) {

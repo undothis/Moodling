@@ -23,7 +23,7 @@ import {
   getAffirmationMessage,
   AntiDependencyMessage,
 } from '@/services/usageTrackingService';
-import { generateSimpleReflection } from '@/services/reflectionService';
+import { generateStyledReflection } from '@/services/reflectionService';
 import { MoodCategory } from '@/services/sentimentAnalysis';
 
 /**
@@ -138,8 +138,8 @@ export default function JournalScreen() {
       setEntryText('');
       setJustSaved(true);
 
-      // Generate compassionate reflection (Unit 15)
-      const reflection = generateSimpleReflection(sentimentResult.mood as MoodCategory);
+      // Generate compassionate reflection (Unit 15, Unit 16: tone-aware)
+      const reflection = await generateStyledReflection(sentimentResult.mood as MoodCategory);
       setSavedReflection(reflection);
 
       // Occasionally show affirmation after saving (Unit 13)

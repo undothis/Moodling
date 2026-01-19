@@ -12,6 +12,7 @@
  */
 
 import { MoodCategory } from './sentimentAnalysis';
+import { ToneStyle, getTonePreferences } from './tonePreferencesService';
 
 export interface Reflection {
   opening: string;      // Acknowledges the entry
@@ -145,6 +146,157 @@ const UNIVERSAL_AFFIRMATIONS = [
 ];
 
 /**
+ * Tone-specific templates (Unit 16)
+ * These are combined with mood to create personalized reflections
+ */
+type MoodGroup = 'positive' | 'neutral' | 'negative';
+
+function getMoodGroup(mood: MoodCategory): MoodGroup {
+  if (['very_positive', 'positive', 'slightly_positive'].includes(mood)) return 'positive';
+  if (['neutral'].includes(mood)) return 'neutral';
+  return 'negative';
+}
+
+const STYLED_TEMPLATES: Record<ToneStyle, Record<MoodGroup, string[]>> = {
+  balanced: {
+    positive: [
+      "It sounds like a good moment. You know what brings you joy.",
+      "There's warmth here. Trust what you're feeling.",
+      "You're noticing the good. That's awareness in action.",
+    ],
+    neutral: [
+      "You're here, noticing. That's the practice.",
+      "Checking in is its own kind of care.",
+      "Sometimes things just are. That's okay.",
+    ],
+    negative: [
+      "Things are hard. Be gentle with yourself.",
+      "You're going through something. That's real.",
+      "This feeling is valid, and it won't last forever.",
+    ],
+  },
+  spiritual: {
+    positive: [
+      "This moment of joy is exactly where you need to be.",
+      "Notice this lightness without grasping at it.",
+      "Presence with good feelings deepens them.",
+    ],
+    neutral: [
+      "In this moment, you are enough.",
+      "Simply being aware is a form of meditation.",
+      "You are exactly where you need to be right now.",
+    ],
+    negative: [
+      "This too shall pass. You are more than this moment.",
+      "Even in difficulty, your awareness is a gift.",
+      "The observer in you remains steady, even now.",
+    ],
+  },
+  direct: {
+    positive: [
+      "Good. Note what's working.",
+      "Something clicked. Remember what it is.",
+      "Positive mood. What contributed to it?",
+    ],
+    neutral: [
+      "You checked in. That's the whole point.",
+      "Nothing dramatic happening. That's fine.",
+      "Baseline day. Good data.",
+    ],
+    negative: [
+      "Rough patch. What's one thing you can control?",
+      "Hard day. You've survived these before.",
+      "This sucks. And you're still showing up.",
+    ],
+  },
+  scientific: {
+    positive: [
+      "Positive emotions broaden attention and build psychological resources.",
+      "Noting what works helps your brain learn to find it again.",
+      "Savoring positive experiences strengthens neural pathways for wellbeing.",
+    ],
+    neutral: [
+      "Emotional neutrality often indicates good regulation.",
+      "Baseline moods are valuable data points.",
+      "Tracking even 'nothing special' days improves self-awareness.",
+    ],
+    negative: [
+      "Negative emotions signal unmet needs—useful information.",
+      "Naming emotions reduces amygdala activation.",
+      "This state is temporary; neuroplasticity means change is always possible.",
+    ],
+  },
+  cbt: {
+    positive: [
+      "What thought or action contributed to this good feeling?",
+      "Notice the link between what you did and how you feel.",
+      "Positive feelings often follow helpful thoughts or behaviors.",
+    ],
+    neutral: [
+      "What were you thinking when you wrote this?",
+      "Thoughts, feelings, and situations connect. What's the pattern?",
+      "Awareness of your mental state is the first step.",
+    ],
+    negative: [
+      "What thought is behind this feeling?",
+      "Is there another way to look at this situation?",
+      "What would you tell a friend feeling this way?",
+    ],
+  },
+  somatic: {
+    positive: [
+      "Where do you feel this good feeling in your body?",
+      "Notice any warmth, lightness, or openness.",
+      "Let your body remember this sensation.",
+    ],
+    neutral: [
+      "Take a breath. Notice how your body feels right now.",
+      "Where is your body holding or releasing?",
+      "Your body has information. What is it saying?",
+    ],
+    negative: [
+      "Where do you feel this in your body?",
+      "What does your body need right now?",
+      "Notice without trying to change anything.",
+    ],
+  },
+  compassionate: {
+    positive: [
+      "You deserve this moment of happiness.",
+      "It's wonderful that you're noticing the good.",
+      "May you hold this feeling gently.",
+    ],
+    neutral: [
+      "You're doing exactly enough right now.",
+      "There's no wrong way to feel. You're okay.",
+      "Thank you for taking this moment for yourself.",
+    ],
+    negative: [
+      "You're doing your best, and that's enough.",
+      "It makes so much sense that you feel this way.",
+      "You are worthy of gentleness right now.",
+    ],
+  },
+  motivational: {
+    positive: [
+      "You're building momentum. Keep going.",
+      "This positive energy is yours to use.",
+      "You created this feeling. Remember that.",
+    ],
+    neutral: [
+      "Every check-in is a small win.",
+      "Consistency beats intensity. You showed up.",
+      "Progress isn't always visible. Trust the process.",
+    ],
+    negative: [
+      "You've handled hard things before. You'll handle this.",
+      "What's one small step you can take right now?",
+      "This challenge is building strength you'll use later.",
+    ],
+  },
+};
+
+/**
  * Get a random item from an array
  */
 function randomChoice<T>(arr: T[]): T {
@@ -168,7 +320,7 @@ export function generateReflection(
 }
 
 /**
- * Generate a simple one-line reflection
+ * Generate a simple one-line reflection (legacy, no style awareness)
  * For when a shorter response is needed
  */
 export function generateSimpleReflection(mood: MoodCategory): string {
@@ -212,6 +364,58 @@ export function generateSimpleReflection(mood: MoodCategory): string {
   };
 
   return randomChoice(templates[mood]);
+}
+
+/**
+ * Generate a styled reflection based on mood and user preferences (Unit 16)
+ * Uses the user's selected tone styles to personalize the response
+ */
+export async function generateStyledReflection(mood: MoodCategory): Promise<string> {
+  const preferences = await getTonePreferences();
+  const styles = preferences.selectedStyles;
+  const moodGroup = getMoodGroup(mood);
+
+  // Collect all applicable templates
+  const allTemplates: string[] = [];
+
+  for (const style of styles) {
+    const templates = STYLED_TEMPLATES[style]?.[moodGroup];
+    if (templates) {
+      allTemplates.push(...templates);
+    }
+  }
+
+  // Fallback to balanced if nothing found
+  if (allTemplates.length === 0) {
+    allTemplates.push(...STYLED_TEMPLATES.balanced[moodGroup]);
+  }
+
+  return randomChoice(allTemplates);
+}
+
+/**
+ * Synchronous styled reflection with provided styles
+ * Use when you already have the styles loaded
+ */
+export function generateStyledReflectionSync(mood: MoodCategory, styles: ToneStyle[]): string {
+  const moodGroup = getMoodGroup(mood);
+
+  // Collect all applicable templates
+  const allTemplates: string[] = [];
+
+  for (const style of styles) {
+    const templates = STYLED_TEMPLATES[style]?.[moodGroup];
+    if (templates) {
+      allTemplates.push(...templates);
+    }
+  }
+
+  // Fallback to balanced if nothing found
+  if (allTemplates.length === 0) {
+    allTemplates.push(...STYLED_TEMPLATES.balanced[moodGroup]);
+  }
+
+  return randomChoice(allTemplates);
 }
 
 /**
