@@ -1,5 +1,50 @@
 // memory-extraction-patterns.ts
 // Comprehensive keyword detection for personal context extraction
+//
+// ============================================
+// IMPLEMENTATION STATUS
+// ============================================
+//
+// IMPLEMENTED IN CODE (lifeContextService.ts & userContextService.ts):
+// ✅ Identity - core (partial: coming out, transition)
+// ✅ Relationships - romantic people & events
+// ✅ Family - immediate & extended
+// ✅ Friendships - people & dynamics
+// ✅ Pets - types & events
+// ✅ Mental Health - providers, conditions (mood, anxiety, trauma)
+// ✅ Medications - general, antidepressants
+// ✅ Addiction & Recovery - substances, general recovery
+// ✅ Trauma & Abuse - types (basic)
+// ✅ Work & Career - general, positive, negative, events
+// ✅ Education - general, events
+// ✅ Finances - general, positive, negative
+// ✅ Housing - events (moved, new house)
+// ✅ Physical Health - general, events
+// ✅ Death & Grief - events, process
+// ✅ Milestones - positive, relationship, family, career
+// ✅ Spirituality - basic (church, temple, meditation, faith, baptism)
+// ✅ Legal - general, family
+//
+// NOT YET IMPLEMENTED:
+// ⬜ Identity - gender/sexuality (detailed), neurodivergence (detailed)
+// ⬜ Family - in-laws, blended, dynamics
+// ⬜ Mental Health - therapy types, symptoms (detailed)
+// ⬜ Medications - specific drug names
+// ⬜ Self-harm & Suicide keywords (needs careful handling)
+// ⬜ Addiction - behavioral
+// ⬜ Sleep patterns
+// ⬜ Exercise & Fitness (detailed)
+// ⬜ Diet & Eating
+// ⬜ Travel (detailed)
+// ⬜ Hobbies (detailed categories)
+// ⬜ Communication preferences
+// ⬜ Temporal patterns
+// ⬜ Coping & Self-care
+// ⬜ Severity markers
+// ⬜ Entity extraction patterns
+// ⬜ Compression templates
+//
+// ============================================
 
 export const MEMORY_EXTRACTION_PATTERNS = {
   
