@@ -12,7 +12,6 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from './journalStorage';
-import { getActivePatterns, CorrelationResult } from './correlationEngine';
 import { getTonePreferences, ToneStyle } from './tonePreferencesService';
 import { MoodCategory } from './sentimentAnalysis';
 import { JournalEntry } from '@/types/JournalEntry';
@@ -192,38 +191,14 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 }
 
 /**
- * Extract triggers and helpers from patterns
- */
-function extractPatternsInsights(patterns: CorrelationResult[]): {
-  triggers: string[];
-  helpers: string[];
-} {
-  const triggers: string[] = [];
-  const helpers: string[] = [];
-
-  for (const pattern of patterns) {
-    if (pattern.correlation < -0.2 && pattern.strength !== 'weak') {
-      // Negative correlation = trigger
-      triggers.push(pattern.factor);
-    } else if (pattern.correlation > 0.2 && pattern.strength !== 'weak') {
-      // Positive correlation = helper
-      helpers.push(pattern.factor);
-    }
-  }
-
-  return { triggers, helpers };
-}
-
-/**
  * Build comprehensive user context
  */
 export async function buildUserContext(): Promise<UserContext> {
   // Get all data sources
-  const [prefs, tonePrefs, entries, patterns] = await Promise.all([
+  const [prefs, tonePrefs, entries] = await Promise.all([
     getUserPreferences(),
     getTonePreferences(),
     getAllEntries(),
-    getActivePatterns(),
   ]);
 
   // Recent entries (last 7 days)
@@ -234,8 +209,9 @@ export async function buildUserContext(): Promise<UserContext> {
   // Analyze mood trend
   const { trend, description, avgScore } = analyzeMoodTrend(recentEntries);
 
-  // Extract patterns
-  const { triggers, helpers } = extractPatternsInsights(patterns);
+  // Patterns - will be populated as user tracks more data
+  const triggers: string[] = [];
+  const helpers: string[] = [];
 
   // Extract theme
   const recentTheme = extractRecentTheme(entries);
