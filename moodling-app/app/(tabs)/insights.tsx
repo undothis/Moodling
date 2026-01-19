@@ -21,6 +21,12 @@ import {
   saveFactors,
   getRecentSummaries,
 } from '@/services/patternService';
+import {
+  generateCorrelationObservations,
+  getConfidenceLabel,
+  getConfidenceColor,
+  PatternObservation,
+} from '@/services/correlationService';
 
 /**
  * Insights Tab - Pattern Visualization
@@ -32,7 +38,7 @@ import {
  *
  * Unit 10: Pattern data model + Quick Log
  * Unit 11: Pattern visualization (mood chart, factor bars, observations)
- * Unit 12 will add: Correlation engine
+ * Unit 12: Correlation engine with statistical analysis
  */
 export default function InsightsScreen() {
   const colorScheme = useColorScheme();
@@ -94,7 +100,13 @@ export default function InsightsScreen() {
   };
 
   // Generate pattern observations based on data
-  const observations = generateObservations(recentDays);
+  const simpleObservations = generateObservations(recentDays);
+
+  // Generate correlation-based observations (more sophisticated)
+  const correlationObservations = generateCorrelationObservations(recentDays);
+
+  // Use correlation observations if available, otherwise fall back to simple
+  const observations = correlationObservations.length > 0 ? correlationObservations : simpleObservations;
 
   return (
     <ScrollView
@@ -197,16 +209,41 @@ export default function InsightsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             What We Notice
           </Text>
-          {observations.map((obs, index) => (
-            <View key={index} style={styles.observationItem}>
-              <Text style={styles.observationEmoji}>{obs.emoji}</Text>
-              <Text style={[styles.observationText, { color: colors.textSecondary }]}>
-                {obs.text}
-              </Text>
-            </View>
-          ))}
+          {observations.map((obs, index) => {
+            // Check if this is a correlation observation (has confidence)
+            const isCorrelation = 'confidence' in obs;
+            const confidence = isCorrelation ? (obs as PatternObservation).confidence : null;
+
+            return (
+              <View key={obs.id || index} style={styles.observationItem}>
+                <Text style={styles.observationEmoji}>{obs.emoji}</Text>
+                <View style={styles.observationContent}>
+                  <Text style={[styles.observationText, { color: colors.textSecondary }]}>
+                    {obs.text}
+                  </Text>
+                  {confidence && (
+                    <View
+                      style={[
+                        styles.confidenceBadge,
+                        { backgroundColor: getConfidenceColor(confidence) + '20' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.confidenceText,
+                          { color: getConfidenceColor(confidence) },
+                        ]}
+                      >
+                        {getConfidenceLabel(confidence)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
+          })}
           <Text style={[styles.observationDisclaimer, { color: colors.textMuted }]}>
-            This is just a pattern — you know yourself best.
+            Correlation ≠ causation — you know yourself best.
           </Text>
         </View>
       )}
@@ -323,6 +360,7 @@ function getSleepBarHeight(hours: number): number {
 
 // Helper: Generate pattern observations
 interface Observation {
+  id?: string;
   emoji: string;
   text: string;
 }
@@ -521,10 +559,23 @@ const styles = StyleSheet.create({
   observationEmoji: {
     fontSize: 20,
   },
-  observationText: {
+  observationContent: {
     flex: 1,
+  },
+  observationText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  confidenceBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  confidenceText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   observationDisclaimer: {
     fontSize: 12,
