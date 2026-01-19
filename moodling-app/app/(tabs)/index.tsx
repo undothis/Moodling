@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,8 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
+import { saveEntry, getAllEntries } from '@/services/journalStorage';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -21,15 +24,9 @@ import { Colors } from '@/constants/Colors';
  * - Compassionate, grounded interface
  *
  * Unit 1: Text editor, save button, timestamp, character count
- * Unit 2 will add: Persistent storage (data survives restart)
+ * Unit 2: Persistent storage (data survives restart)
  * Unit 3 will add: Entry history list
  */
-
-interface JournalEntry {
-  id: string;
-  text: string;
-  timestamp: Date;
-}
 
 export default function JournalScreen() {
   const colorScheme = useColorScheme();
@@ -38,33 +35,64 @@ export default function JournalScreen() {
   // Entry text state
   const [entryText, setEntryText] = useState('');
 
-  // Last saved entry (in-memory only for now - Unit 2 adds persistence)
-  const [savedEntry, setSavedEntry] = useState<JournalEntry | null>(null);
+  // Saved entries from storage
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Saving state
+  const [isSaving, setIsSaving] = useState(false);
 
   // Track if we just saved (for feedback)
   const [justSaved, setJustSaved] = useState(false);
 
   const characterCount = entryText.length;
-  const canSave = entryText.trim().length > 0;
+  const canSave = entryText.trim().length > 0 && !isSaving;
 
-  const handleSave = () => {
+  // Load entries on mount
+  useEffect(() => {
+    loadEntries();
+  }, []);
+
+  const loadEntries = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const stored = await getAllEntries();
+      setEntries(stored);
+    } catch (error) {
+      console.error('Failed to load entries:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleSave = async () => {
     if (!canSave) return;
 
-    const newEntry: JournalEntry = {
-      id: Date.now().toString(),
-      text: entryText.trim(),
-      timestamp: new Date(),
-    };
+    try {
+      setIsSaving(true);
 
-    setSavedEntry(newEntry);
-    setEntryText('');
-    setJustSaved(true);
+      const newEntry = createJournalEntry(entryText);
+      await saveEntry(newEntry);
 
-    // Clear "just saved" feedback after 3 seconds
-    setTimeout(() => setJustSaved(false), 3000);
+      // Update local state
+      setEntries((prev) => [newEntry, ...prev]);
+      setEntryText('');
+      setJustSaved(true);
+
+      // Clear "just saved" feedback after 3 seconds
+      setTimeout(() => setJustSaved(false), 3000);
+    } catch (error) {
+      console.error('Failed to save entry:', error);
+      // Could show error toast here
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -74,7 +102,8 @@ export default function JournalScreen() {
     });
   };
 
-  const currentTime = formatTimestamp(new Date());
+  const currentTime = formatTimestamp(new Date().toISOString());
+  const latestEntry = entries[0];
 
   return (
     <KeyboardAvoidingView
@@ -106,6 +135,7 @@ export default function JournalScreen() {
             value={entryText}
             onChangeText={setEntryText}
             textAlignVertical="top"
+            editable={!isSaving}
           />
         </View>
 
@@ -132,14 +162,18 @@ export default function JournalScreen() {
           disabled={!canSave}
           activeOpacity={0.8}
         >
-          <Text
-            style={[
-              styles.saveButtonText,
-              { color: canSave ? '#FFFFFF' : colors.textMuted },
-            ]}
-          >
-            Save Entry
-          </Text>
+          {isSaving ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text
+              style={[
+                styles.saveButtonText,
+                { color: canSave ? '#FFFFFF' : colors.textMuted },
+              ]}
+            >
+              Save Entry
+            </Text>
+          )}
         </TouchableOpacity>
 
         {/* Just saved feedback */}
@@ -149,8 +183,18 @@ export default function JournalScreen() {
           </Text>
         )}
 
-        {/* Saved Entry Preview */}
-        {savedEntry && (
+        {/* Loading indicator */}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator color={colors.textMuted} />
+            <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+              Loading your entries...
+            </Text>
+          </View>
+        )}
+
+        {/* Latest Entry Preview */}
+        {!isLoading && latestEntry && (
           <View style={styles.savedEntrySection}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
               Your last entry
@@ -160,14 +204,25 @@ export default function JournalScreen() {
                 style={[styles.savedEntryText, { color: colors.text }]}
                 numberOfLines={4}
               >
-                {savedEntry.text}
+                {latestEntry.text}
               </Text>
               <Text style={[styles.savedEntryTime, { color: colors.textMuted }]}>
-                {formatTimestamp(savedEntry.timestamp)}
+                {formatTimestamp(latestEntry.createdAt)}
               </Text>
             </View>
-            <Text style={[styles.persistenceNote, { color: colors.textMuted }]}>
-              Note: Entry is in memory only. Unit 2 adds persistence.
+            {entries.length > 1 && (
+              <Text style={[styles.entryCount, { color: colors.textMuted }]}>
+                + {entries.length - 1} more {entries.length - 1 === 1 ? 'entry' : 'entries'}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && entries.length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyStateText, { color: colors.textMuted }]}>
+              Your journal entries will appear here
             </Text>
           </View>
         )}
@@ -227,6 +282,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
   },
   saveButtonText: {
     fontSize: 16,
@@ -237,6 +294,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 14,
   },
   savedEntrySection: {
     marginTop: 32,
@@ -258,11 +323,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 12,
   },
-  persistenceNote: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    marginTop: 8,
+  entryCount: {
+    fontSize: 13,
+    marginTop: 12,
     textAlign: 'center',
+  },
+  emptyState: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 15,
   },
   footer: {
     paddingVertical: 24,
