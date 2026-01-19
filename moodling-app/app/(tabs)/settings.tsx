@@ -23,6 +23,14 @@ import {
   checkAdaptiveReminder,
   AdaptiveSuggestion,
 } from '@/services/notificationService';
+import {
+  getTonePreferences,
+  toggleToneStyle,
+  ToneStyle,
+  TonePreferences,
+  TONE_OPTIONS,
+  getStyleExamples,
+} from '@/services/tonePreferencesService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -50,6 +58,10 @@ export default function SettingsScreen() {
   // Adaptive reminder state (Unit 14)
   const [adaptiveSuggestion, setAdaptiveSuggestion] = useState<AdaptiveSuggestion | null>(null);
 
+  // Tone preferences state (Unit 16)
+  const [tonePreferences, setTonePreferences] = useState<TonePreferences>({ selectedStyles: ['balanced'] });
+  const [showToneOptions, setShowToneOptions] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -70,6 +82,10 @@ export default function SettingsScreen() {
           setAdaptiveSuggestion(suggestion);
         }
       }
+
+      // Load tone preferences (Unit 16)
+      const tonePrefs = await getTonePreferences();
+      setTonePreferences(tonePrefs);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -147,6 +163,21 @@ export default function SettingsScreen() {
     if (Platform.OS === 'web') {
       // Web notification sent
     }
+  };
+
+  // Handle tone style toggle (Unit 16)
+  const handleToneToggle = async (style: ToneStyle) => {
+    const newPrefs = await toggleToneStyle(style);
+    setTonePreferences(newPrefs);
+  };
+
+  // Get selected style labels for display
+  const getSelectedStylesLabel = () => {
+    if (tonePreferences.selectedStyles.length === 0) return 'Balanced';
+    if (tonePreferences.selectedStyles.length === 1) {
+      return TONE_OPTIONS.find(o => o.id === tonePreferences.selectedStyles[0])?.label ?? 'Balanced';
+    }
+    return `${tonePreferences.selectedStyles.length} styles`;
   };
 
   // Generate time options including "soon" times for testing
@@ -394,6 +425,93 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Response Style Section (Unit 16) */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Response Style
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.timeButton, { backgroundColor: colors.background }]}
+          onPress={() => setShowToneOptions(!showToneOptions)}
+        >
+          <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+            Your preferred tone
+          </Text>
+          <Text style={[styles.timeValue, { color: colors.text }]}>
+            {getSelectedStylesLabel()}
+          </Text>
+        </TouchableOpacity>
+
+        {showToneOptions && (
+          <View style={styles.toneOptionsContainer}>
+            <Text style={[styles.toneHint, { color: colors.textMuted }]}>
+              Select one or more styles to customize how Moodling responds to you:
+            </Text>
+            {TONE_OPTIONS.map((option) => {
+              const isSelected = tonePreferences.selectedStyles.includes(option.id);
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.toneOption,
+                    {
+                      backgroundColor: isSelected ? colors.tint : colors.background,
+                      borderColor: isSelected ? colors.tint : colors.border,
+                    },
+                  ]}
+                  onPress={() => handleToneToggle(option.id)}
+                >
+                  <View style={styles.toneOptionHeader}>
+                    <View style={styles.toneCheckbox}>
+                      {isSelected && <Text style={styles.toneCheckmark}>✓</Text>}
+                    </View>
+                    <View style={styles.toneOptionText}>
+                      <Text
+                        style={[
+                          styles.toneLabel,
+                          { color: isSelected ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.toneDescription,
+                          { color: isSelected ? 'rgba(255,255,255,0.8)' : colors.textMuted },
+                        ]}
+                      >
+                        {option.description}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Preview examples */}
+            {tonePreferences.selectedStyles.length > 0 && (
+              <View style={[styles.tonePreview, { backgroundColor: colors.background }]}>
+                <Text style={[styles.tonePreviewTitle, { color: colors.textSecondary }]}>
+                  Example responses:
+                </Text>
+                {getStyleExamples(tonePreferences.selectedStyles).slice(0, 3).map((example, i) => (
+                  <Text key={i} style={[styles.tonePreviewText, { color: colors.textMuted }]}>
+                    "{example}"
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        <Text style={[styles.toneNote, { color: colors.textMuted }]}>
+          These preferences shape how reflections and coaching feel. Mix and match to find your fit.
+        </Text>
+      </View>
+
       {/* Privacy Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -428,7 +546,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.textMuted }]}>
-        Version 1.0.0 (Unit 14)
+        Version 1.0.0 (Unit 16)
       </Text>
     </ScrollView>
   );
@@ -607,5 +725,72 @@ const styles = StyleSheet.create({
   frequencyDesc: {
     fontSize: 12,
     marginTop: 2,
+  },
+  // Unit 16: Tone preferences styles
+  toneOptionsContainer: {
+    marginTop: 12,
+  },
+  toneHint: {
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  toneOption: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  toneOptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toneCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toneCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  toneOptionText: {
+    flex: 1,
+  },
+  toneLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  toneDescription: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  tonePreview: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  tonePreviewTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  tonePreviewText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  toneNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    marginTop: 12,
   },
 });
