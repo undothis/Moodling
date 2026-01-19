@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,7 @@ import { Colors } from '@/constants/Colors';
 import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
 import { saveEntry, getAllEntries } from '@/services/journalStorage';
 import { analyzeSentiment } from '@/services/sentimentAnalysis';
+import { voiceRecording, isVoiceRecordingSupported, VoiceRecordingState } from '@/services/voiceRecording';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -29,6 +30,7 @@ import { analyzeSentiment } from '@/services/sentimentAnalysis';
  * Unit 2: Persistent storage (data survives restart)
  * Unit 3: Entry history list, detail view, delete
  * Unit 4: Sentiment analysis with mood emoji
+ * Unit 5: Voice journaling with speech-to-text
  */
 
 export default function JournalScreen() {
@@ -50,6 +52,17 @@ export default function JournalScreen() {
 
   // Track if we just saved (for feedback)
   const [justSaved, setJustSaved] = useState(false);
+
+  // Voice recording state (Unit 5)
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  // Check voice support on mount
+  useEffect(() => {
+    setVoiceSupported(isVoiceRecordingSupported());
+  }, []);
 
   const characterCount = entryText.length;
   const canSave = entryText.trim().length > 0 && !isSaving;
@@ -105,6 +118,38 @@ export default function JournalScreen() {
     }
   };
 
+  // Voice recording handlers (Unit 5)
+  const handleVoiceToggle = () => {
+    if (isRecording) {
+      // Stop recording
+      voiceRecording.stop();
+      setIsRecording(false);
+      setInterimTranscript('');
+    } else {
+      // Start recording
+      setVoiceError(null);
+      voiceRecording.start((state: Partial<VoiceRecordingState>) => {
+        if (state.isRecording !== undefined) {
+          setIsRecording(state.isRecording);
+        }
+        if (state.transcript !== undefined) {
+          // Append transcribed text to entry
+          setEntryText((prev) => {
+            const separator = prev.trim() ? ' ' : '';
+            return prev.trim() + separator + state.transcript;
+          });
+        }
+        if (state.interimTranscript !== undefined) {
+          setInterimTranscript(state.interimTranscript);
+        }
+        if (state.error) {
+          setVoiceError(state.error);
+          setIsRecording(false);
+        }
+      });
+    }
+  };
+
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -146,12 +191,54 @@ export default function JournalScreen() {
             placeholder="Write whatever comes to mind..."
             placeholderTextColor={colors.textMuted}
             multiline
-            value={entryText}
-            onChangeText={setEntryText}
+            value={entryText + (interimTranscript ? ` ${interimTranscript}` : '')}
+            onChangeText={(text) => {
+              // Only update if not showing interim transcript
+              if (!interimTranscript) {
+                setEntryText(text);
+              }
+            }}
             textAlignVertical="top"
-            editable={!isSaving}
+            editable={!isSaving && !isRecording}
           />
         </View>
+
+        {/* Voice Recording Button (Unit 5) */}
+        {voiceSupported && (
+          <View style={styles.voiceContainer}>
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                {
+                  backgroundColor: isRecording ? '#FF3B30' : colors.card,
+                  borderColor: isRecording ? '#FF3B30' : colors.border,
+                },
+              ]}
+              onPress={handleVoiceToggle}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.voiceIcon}>{isRecording ? '🔴' : '🎤'}</Text>
+              <Text
+                style={[
+                  styles.voiceButtonText,
+                  { color: isRecording ? '#FFFFFF' : colors.text },
+                ]}
+              >
+                {isRecording ? 'Recording...' : 'Tap to speak'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.voicePrivacy, { color: colors.textMuted }]}>
+              🔒 Voice processed on your device
+            </Text>
+          </View>
+        )}
+
+        {/* Voice Error */}
+        {voiceError && (
+          <Text style={[styles.voiceError, { color: '#FF3B30' }]}>
+            {voiceError}
+          </Text>
+        )}
 
         {/* Character count and timestamp */}
         <View style={styles.metaRow}>
@@ -392,5 +479,36 @@ const styles = StyleSheet.create({
   },
   privacyNote: {
     fontSize: 12,
+  },
+  // Voice recording styles (Unit 5)
+  voiceContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  voiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: 8,
+  },
+  voiceIcon: {
+    fontSize: 20,
+  },
+  voiceButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  voicePrivacy: {
+    marginTop: 8,
+    fontSize: 12,
+  },
+  voiceError: {
+    textAlign: 'center',
+    marginTop: 8,
+    fontSize: 13,
   },
 });
