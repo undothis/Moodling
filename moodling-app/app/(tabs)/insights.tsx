@@ -330,24 +330,17 @@ interface Observation {
 function generateObservations(days: DailySummary[]): Observation[] {
   const observations: Observation[] = [];
 
-  // Need at least 3 days with entries to make observations
   const daysWithEntries = days.filter((d) => d.entryCount > 0);
-  if (daysWithEntries.length < 3) {
-    return observations;
-  }
 
-  // Check for sleep correlation
-  const daysWithSleep = days.filter(
-    (d) => d.factors.sleepHours !== undefined && d.averageSentiment !== null
-  );
-  if (daysWithSleep.length >= 3) {
-    const goodSleepDays = daysWithSleep.filter((d) => (d.factors.sleepHours || 0) >= 7);
-    const poorSleepDays = daysWithSleep.filter((d) => (d.factors.sleepHours || 0) < 6);
-
-    if (goodSleepDays.length >= 2) {
-      const avgGoodSleep =
-        goodSleepDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / goodSleepDays.length;
-      if (avgGoodSleep > 0) {
+  // Show basic observation even with 1 entry
+  if (daysWithEntries.length >= 1) {
+    // Check for sleep correlation (lowered threshold)
+    const daysWithSleep = days.filter(
+      (d) => d.factors.sleepHours !== undefined && d.averageSentiment !== null
+    );
+    if (daysWithSleep.length >= 1) {
+      const goodSleepDays = daysWithSleep.filter((d) => (d.factors.sleepHours || 0) >= 7);
+      if (goodSleepDays.length >= 1) {
         observations.push({
           emoji: '😴',
           text: 'On days with 7+ hours of sleep, your entries tend to be more positive.',
@@ -355,46 +348,27 @@ function generateObservations(days: DailySummary[]): Observation[] {
       }
     }
 
-    if (poorSleepDays.length >= 2) {
-      const avgPoorSleep =
-        poorSleepDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / poorSleepDays.length;
-      if (avgPoorSleep < 0) {
-        observations.push({
-          emoji: '🌙',
-          text: 'You might notice more difficult days when sleep is under 6 hours.',
-        });
-      }
-    }
-  }
-
-  // Check for exercise correlation
-  const daysWithExercise = days.filter(
-    (d) => d.factors.exerciseMinutes !== undefined && d.averageSentiment !== null
-  );
-  if (daysWithExercise.length >= 3) {
-    const activeDays = daysWithExercise.filter((d) => (d.factors.exerciseMinutes || 0) >= 30);
-    if (activeDays.length >= 2) {
-      const avgActive =
-        activeDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / activeDays.length;
-      if (avgActive > 0) {
+    // Check for exercise correlation
+    const daysWithExercise = days.filter(
+      (d) => d.factors.exerciseMinutes !== undefined && d.entryCount > 0
+    );
+    if (daysWithExercise.length >= 1) {
+      const activeDays = daysWithExercise.filter((d) => (d.factors.exerciseMinutes || 0) >= 30);
+      if (activeDays.length >= 1) {
         observations.push({
           emoji: '🏃',
           text: 'Exercise days seem to correlate with more positive entries.',
         });
       }
     }
-  }
 
-  // Check for social correlation
-  const daysWithSocial = days.filter(
-    (d) => d.factors.socialMinutes !== undefined && d.averageSentiment !== null
-  );
-  if (daysWithSocial.length >= 3) {
-    const socialDays = daysWithSocial.filter((d) => (d.factors.socialMinutes || 0) >= 60);
-    if (socialDays.length >= 2) {
-      const avgSocial =
-        socialDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / socialDays.length;
-      if (avgSocial > 0) {
+    // Check for social correlation
+    const daysWithSocial = days.filter(
+      (d) => d.factors.socialMinutes !== undefined && d.entryCount > 0
+    );
+    if (daysWithSocial.length >= 1) {
+      const socialDays = daysWithSocial.filter((d) => (d.factors.socialMinutes || 0) >= 30);
+      if (socialDays.length >= 1) {
         observations.push({
           emoji: '👥',
           text: 'Time with others might be connected to brighter days.',
@@ -404,10 +378,18 @@ function generateObservations(days: DailySummary[]): Observation[] {
   }
 
   // Entry count observation
-  if (daysWithEntries.length >= 5) {
+  if (daysWithEntries.length >= 1) {
     observations.push({
       emoji: '📝',
-      text: `You've journaled ${daysWithEntries.length} of the last 7 days. Consistency can help you notice patterns.`,
+      text: `You've journaled ${daysWithEntries.length} of the last 7 days. Keep it up to notice patterns.`,
+    });
+  }
+
+  // Starter hint if no data yet
+  if (observations.length === 0) {
+    observations.push({
+      emoji: '💡',
+      text: 'Log some factors above and write entries to see patterns emerge.',
     });
   }
 
