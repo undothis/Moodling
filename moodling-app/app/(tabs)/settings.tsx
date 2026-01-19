@@ -18,6 +18,10 @@ import {
   showTestNotification,
   formatTime,
   ReminderSettings,
+  ReminderFrequency,
+  FREQUENCY_OPTIONS,
+  checkAdaptiveReminder,
+  AdaptiveSuggestion,
 } from '@/services/notificationService';
 
 /**
@@ -38,8 +42,13 @@ export default function SettingsScreen() {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderHour, setReminderHour] = useState(20);
   const [reminderMinute, setReminderMinute] = useState(0);
+  const [reminderFrequency, setReminderFrequency] = useState<ReminderFrequency>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showFrequencyPicker, setShowFrequencyPicker] = useState(false);
+
+  // Adaptive reminder state (Unit 14)
+  const [adaptiveSuggestion, setAdaptiveSuggestion] = useState<AdaptiveSuggestion | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -52,6 +61,15 @@ export default function SettingsScreen() {
       setReminderEnabled(settings.enabled);
       setReminderHour(settings.hour);
       setReminderMinute(settings.minute);
+      setReminderFrequency(settings.frequency);
+
+      // Check for adaptive reminder suggestion (Unit 14)
+      if (settings.enabled) {
+        const suggestion = await checkAdaptiveReminder();
+        if (suggestion.shouldSuggest) {
+          setAdaptiveSuggestion(suggestion);
+        }
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -66,6 +84,7 @@ export default function SettingsScreen() {
       enabled: value,
       hour: reminderHour,
       minute: reminderMinute,
+      frequency: reminderFrequency,
     };
 
     await saveReminderSettings(settings);
@@ -81,12 +100,46 @@ export default function SettingsScreen() {
       enabled: reminderEnabled,
       hour,
       minute,
+      frequency: reminderFrequency,
     };
 
     await saveReminderSettings(settings);
     if (reminderEnabled) {
       await scheduleDailyReminder(settings);
     }
+  };
+
+  // Handle frequency change (Unit 14)
+  const handleFrequencyChange = async (frequency: ReminderFrequency) => {
+    setReminderFrequency(frequency);
+    setShowFrequencyPicker(false);
+
+    const settings: ReminderSettings = {
+      enabled: reminderEnabled,
+      hour: reminderHour,
+      minute: reminderMinute,
+      frequency,
+    };
+
+    await saveReminderSettings(settings);
+    if (reminderEnabled) {
+      await scheduleDailyReminder(settings);
+    }
+
+    // Dismiss adaptive suggestion if user changed frequency
+    setAdaptiveSuggestion(null);
+  };
+
+  // Accept adaptive suggestion (Unit 14)
+  const handleAcceptAdaptive = async () => {
+    if (!adaptiveSuggestion) return;
+    await handleFrequencyChange(adaptiveSuggestion.suggestedFrequency);
+  };
+
+  // Get label for current frequency
+  const getCurrentFrequencyLabel = () => {
+    const option = FREQUENCY_OPTIONS.find(o => o.value === reminderFrequency);
+    return option?.label ?? 'Daily';
   };
 
   const handleTestNotification = async () => {
@@ -184,6 +237,33 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Adaptive Suggestion (Unit 14) */}
+        {adaptiveSuggestion && adaptiveSuggestion.shouldSuggest && (
+          <View style={[styles.adaptiveCard, { backgroundColor: colors.background }]}>
+            <Text style={[styles.adaptiveText, { color: colors.textSecondary }]}>
+              {adaptiveSuggestion.message}
+            </Text>
+            <View style={styles.adaptiveButtons}>
+              <TouchableOpacity
+                style={[styles.adaptiveAccept, { backgroundColor: colors.tint }]}
+                onPress={handleAcceptAdaptive}
+              >
+                <Text style={styles.adaptiveAcceptText}>
+                  Try {FREQUENCY_OPTIONS.find(o => o.value === adaptiveSuggestion.suggestedFrequency)?.label.toLowerCase()}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.adaptiveDismiss}
+                onPress={() => setAdaptiveSuggestion(null)}
+              >
+                <Text style={[styles.adaptiveDismissText, { color: colors.textMuted }]}>
+                  Keep current
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Time Selector */}
         {reminderEnabled && (
           <View style={styles.timeSection}>
@@ -228,6 +308,67 @@ export default function SettingsScreen() {
                       ]}
                     >
                       {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Frequency Selector (Unit 14) */}
+        {reminderEnabled && (
+          <View style={styles.timeSection}>
+            <TouchableOpacity
+              style={[styles.timeButton, { backgroundColor: colors.background }]}
+              onPress={() => setShowFrequencyPicker(!showFrequencyPicker)}
+            >
+              <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+                Frequency
+              </Text>
+              <Text style={[styles.timeValue, { color: colors.text }]}>
+                {getCurrentFrequencyLabel()}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Frequency Options */}
+            {showFrequencyPicker && (
+              <View style={styles.frequencyOptions}>
+                {FREQUENCY_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.frequencyOption,
+                      {
+                        backgroundColor:
+                          option.value === reminderFrequency
+                            ? colors.tint
+                            : colors.background,
+                      },
+                    ]}
+                    onPress={() => handleFrequencyChange(option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.frequencyLabel,
+                        {
+                          color:
+                            option.value === reminderFrequency ? '#FFFFFF' : colors.text,
+                        },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.frequencyDesc,
+                        {
+                          color:
+                            option.value === reminderFrequency ? '#FFFFFF' : colors.textMuted,
+                        },
+                      ]}
+                    >
+                      {option.description}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -287,7 +428,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.textMuted }]}>
-        Version 1.0.0 (Unit 6)
+        Version 1.0.0 (Unit 14)
       </Text>
     </ScrollView>
   );
@@ -416,5 +557,55 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     marginTop: 20,
+  },
+  // Unit 14: Adaptive reminder styles
+  adaptiveCard: {
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  adaptiveText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  adaptiveButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  adaptiveAccept: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  adaptiveAcceptText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  adaptiveDismiss: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  adaptiveDismissText: {
+    fontSize: 14,
+  },
+  frequencyOptions: {
+    marginTop: 12,
+    gap: 8,
+  },
+  frequencyOption: {
+    padding: 12,
+    borderRadius: 10,
+  },
+  frequencyLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  frequencyDesc: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });
