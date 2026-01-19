@@ -14,6 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { JournalEntry } from '@/types/JournalEntry';
 import { getEntryById, deleteEntry } from '@/services/journalStorage';
+import {
+  generateSimpleReflection,
+  shouldSuggestSupport,
+  getSupportSuggestion,
+} from '@/services/reflectionService';
+import { MoodCategory } from '@/services/sentimentAnalysis';
 
 /**
  * Entry Detail Screen - View Single Journal Entry
@@ -36,6 +42,10 @@ export default function EntryDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Compassionate reflection (Unit 15)
+  const [reflection, setReflection] = useState<string>('');
+  const [supportSuggestion, setSupportSuggestion] = useState<string | null>(null);
+
   useEffect(() => {
     loadEntry();
   }, [id]);
@@ -45,6 +55,17 @@ export default function EntryDetailScreen() {
     try {
       const found = await getEntryById(id);
       setEntry(found);
+
+      // Generate compassionate reflection (Unit 15)
+      if (found?.sentiment?.mood) {
+        const mood = found.sentiment.mood as MoodCategory;
+        setReflection(generateSimpleReflection(mood));
+
+        // Check if we should gently suggest support
+        if (shouldSuggestSupport(mood)) {
+          setSupportSuggestion(getSupportSuggestion());
+        }
+      }
     } catch (error) {
       console.error('Failed to load entry:', error);
     } finally {
@@ -187,6 +208,20 @@ export default function EntryDetailScreen() {
           </Text>
         </View>
 
+        {/* Compassionate Reflection (Unit 15) */}
+        {reflection && (
+          <View style={[styles.reflectionCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.reflectionText, { color: colors.textSecondary }]}>
+              {reflection}
+            </Text>
+            {supportSuggestion && (
+              <Text style={[styles.supportText, { color: colors.textMuted }]}>
+                {supportSuggestion}
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Meta info */}
         <View style={styles.metaContainer}>
           <Text style={[styles.metaText, { color: colors.textMuted }]}>
@@ -300,5 +335,23 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
+  },
+  // Unit 15: Compassionate reflection styles
+  reflectionCard: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#9E9E9E',
+  },
+  reflectionText: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  supportText: {
+    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

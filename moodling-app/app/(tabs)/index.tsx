@@ -23,6 +23,8 @@ import {
   getAffirmationMessage,
   AntiDependencyMessage,
 } from '@/services/usageTrackingService';
+import { generateSimpleReflection } from '@/services/reflectionService';
+import { MoodCategory } from '@/services/sentimentAnalysis';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -69,6 +71,9 @@ export default function JournalScreen() {
   const [antiDepMessage, setAntiDepMessage] = useState<AntiDependencyMessage | null>(null);
   const [showAffirmation, setShowAffirmation] = useState(false);
   const [affirmationText, setAffirmationText] = useState('');
+
+  // Compassionate reflection state (Unit 15)
+  const [savedReflection, setSavedReflection] = useState<string>('');
 
   // Check voice support on mount
   useEffect(() => {
@@ -133,6 +138,10 @@ export default function JournalScreen() {
       setEntryText('');
       setJustSaved(true);
 
+      // Generate compassionate reflection (Unit 15)
+      const reflection = generateSimpleReflection(sentimentResult.mood as MoodCategory);
+      setSavedReflection(reflection);
+
       // Occasionally show affirmation after saving (Unit 13)
       // Check updated anti-dependency status
       const updatedMessage = await getAntiDependencyMessage();
@@ -142,8 +151,11 @@ export default function JournalScreen() {
         setTimeout(() => setShowAffirmation(false), 5000);
       }
 
-      // Clear "just saved" feedback after 3 seconds
-      setTimeout(() => setJustSaved(false), 3000);
+      // Clear "just saved" feedback after 5 seconds (longer to read reflection)
+      setTimeout(() => {
+        setJustSaved(false);
+        setSavedReflection('');
+      }, 5000);
     } catch (error) {
       console.error('Failed to save entry:', error);
       // Could show error toast here
@@ -331,11 +343,18 @@ export default function JournalScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Just saved feedback */}
+        {/* Just saved feedback with reflection (Unit 15) */}
         {justSaved && (
-          <Text style={[styles.savedFeedback, { color: colors.success }]}>
-            Entry saved
-          </Text>
+          <View style={styles.savedFeedbackContainer}>
+            <Text style={[styles.savedFeedback, { color: colors.success }]}>
+              Entry saved
+            </Text>
+            {savedReflection && (
+              <Text style={[styles.savedReflection, { color: colors.textSecondary }]}>
+                {savedReflection}
+              </Text>
+            )}
+          </View>
         )}
 
         {/* Affirmation message after saving (Unit 13) */}
@@ -473,11 +492,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  savedFeedbackContainer: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
   savedFeedback: {
     textAlign: 'center',
-    marginTop: 12,
     fontSize: 14,
     fontWeight: '500',
+  },
+  savedReflection: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   loadingContainer: {
     marginTop: 32,
