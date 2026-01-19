@@ -40,6 +40,9 @@ const DEFAULT_SETTINGS: ReminderSettings = {
   minute: 0,
 };
 
+// Track scheduled timer for web
+let scheduledTimer: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Get a random compassionate notification message
  */
@@ -123,11 +126,50 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 /**
+ * Calculate milliseconds until the next occurrence of the specified time
+ */
+function getMillisecondsUntil(hour: number, minute: number): number {
+  const now = new Date();
+  const target = new Date();
+  target.setHours(hour, minute, 0, 0);
+
+  // If the time has already passed today, schedule for tomorrow
+  if (target <= now) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  return target.getTime() - now.getTime();
+}
+
+/**
+ * Show a notification with a random compassionate message
+ */
+function showScheduledNotification(): void {
+  const message = getRandomMessage();
+
+  if (Platform.OS === 'web' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification(message.title, {
+      body: message.body,
+      icon: '/favicon.ico',
+      tag: 'moodling-reminder',
+    });
+  }
+}
+
+/**
  * Schedule a daily notification
+ * On web: Uses setTimeout (works while browser is open)
+ * On native: Would use expo-notifications for background delivery
  */
 export async function scheduleDailyReminder(settings: ReminderSettings): Promise<void> {
+  // Clear any existing timer
+  if (scheduledTimer) {
+    clearTimeout(scheduledTimer);
+    scheduledTimer = null;
+  }
+
   if (!settings.enabled) {
-    await cancelAllReminders();
+    console.log('Reminders disabled');
     return;
   }
 
@@ -137,12 +179,23 @@ export async function scheduleDailyReminder(settings: ReminderSettings): Promise
     return;
   }
 
-  // For web, we'll use a simpler approach
-  // Native apps would use expo-notifications here
   if (Platform.OS === 'web') {
-    // Store the scheduled time - actual notification handled by service worker
-    // For demo purposes, we'll just save the settings
-    console.log(`Reminder scheduled for ${settings.hour}:${settings.minute.toString().padStart(2, '0')}`);
+    const msUntilReminder = getMillisecondsUntil(settings.hour, settings.minute);
+    const minutesUntil = Math.round(msUntilReminder / 60000);
+
+    console.log(`Reminder scheduled for ${formatTime(settings.hour, settings.minute)} (in ${minutesUntil} minutes)`);
+
+    // Schedule the notification
+    scheduledTimer = setTimeout(() => {
+      showScheduledNotification();
+
+      // Reschedule for tomorrow (if still enabled)
+      getReminderSettings().then((currentSettings) => {
+        if (currentSettings.enabled) {
+          scheduleDailyReminder(currentSettings);
+        }
+      });
+    }, msUntilReminder);
   }
 }
 
@@ -150,9 +203,11 @@ export async function scheduleDailyReminder(settings: ReminderSettings): Promise
  * Cancel all scheduled reminders
  */
 export async function cancelAllReminders(): Promise<void> {
-  if (Platform.OS === 'web') {
-    console.log('Reminders cancelled');
+  if (scheduledTimer) {
+    clearTimeout(scheduledTimer);
+    scheduledTimer = null;
   }
+  console.log('Reminders cancelled');
   // Native: would call Notifications.cancelAllScheduledNotificationsAsync()
 }
 
