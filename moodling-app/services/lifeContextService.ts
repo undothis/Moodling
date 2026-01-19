@@ -23,7 +23,7 @@ const LAST_PROCESSED_KEY = 'moodling_life_context_last_processed';
  */
 export interface LifeTopic {
   name: string;
-  category: 'person' | 'activity' | 'place' | 'event' | 'health' | 'work' | 'relationship' | 'pet' | 'financial' | 'education';
+  category: 'person' | 'activity' | 'place' | 'event' | 'health' | 'work' | 'relationship' | 'pet' | 'financial' | 'education' | 'profession' | 'identity';
   firstMentioned: string; // ISO date
   lastMentioned: string; // ISO date
   mentionCount: number;
@@ -112,6 +112,26 @@ const EXTRACTION_PATTERNS = {
   education: [
     /\b(college|university|school|degree|thesis|dissertation|graduation|scholarship)/gi,
     /\b(?:studying|majoring in|enrolled in)\s+([\w\s]+)/gi,
+  ],
+  // Professions
+  profession: [
+    /\b(?:i'm a|i am a|work as a|working as a|my job as a)\s+([\w\s]+(?:nurse|doctor|teacher|engineer|developer|manager|therapist|lawyer|accountant|designer|analyst|consultant|writer|artist))/gi,
+    /\b(nurse|nursing|RN|LPN|doctor|physician|surgeon|resident|paramedic|EMT|pharmacist|dentist)/gi,
+    /\b(software engineer|developer|programmer|web developer|data scientist|product manager|UX designer)/gi,
+    /\b(teacher|professor|educator|instructor|tutor|principal)/gi,
+    /\b(server|bartender|barista|retail|customer service|cashier|sales)/gi,
+    /\b(construction|carpenter|electrician|plumber|mechanic|HVAC|welder|truck driver)/gi,
+    /\b(accountant|CPA|financial advisor|banker|consultant|analyst|marketing|HR|recruiter)/gi,
+    /\b(artist|graphic designer|photographer|videographer|writer|journalist|musician|actor)/gi,
+    /\b(lawyer|attorney|paralegal|police officer|firefighter|military|veteran)/gi,
+    /\b(flight attendant|pilot|chef|cook|stay-at-home|SAHM|SAHD|caregiver|nanny|freelance)/gi,
+  ],
+  // Identity
+  identity: [
+    /\b(?:i'm|i am)\s+(gay|lesbian|bisexual|pansexual|asexual|queer|non-binary|transgender|trans)/gi,
+    /\b(coming out|came out|transition|transitioning|LGBTQ)/gi,
+    /\b(?:i have|diagnosed with)\s+(ADHD|autism|ASD|dyslexia)/gi,
+    /\b(neurodivergent|on the spectrum|autistic)/gi,
   ],
 };
 
@@ -411,6 +431,19 @@ export function formatLifeContextForPrompt(context: LifeContext): string {
       ? `${Math.floor(monthsJournaling / 12)} year${Math.floor(monthsJournaling / 12) > 1 ? 's' : ''}`
       : `${monthsJournaling} month${monthsJournaling > 1 ? 's' : ''}`;
     parts.push(`Journaling journey: ${yearsMonths} (${context.totalEntriesProcessed} entries)`);
+  }
+
+  // Profession (if detected)
+  const profession = context.topics.filter(t => t.category === 'profession').slice(0, 1);
+  if (profession.length > 0) {
+    parts.push(`Profession: ${profession[0].name}`);
+  }
+
+  // Identity (neurodivergence, LGBTQ+)
+  const identity = context.topics.filter(t => t.category === 'identity').slice(0, 3);
+  if (identity.length > 0) {
+    const identityStr = identity.map(i => i.name).join(', ');
+    parts.push(`Identity: ${identityStr}`);
   }
 
   // Key people in their life

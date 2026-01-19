@@ -6,43 +6,39 @@
 // ============================================
 //
 // IMPLEMENTED IN CODE (lifeContextService.ts & userContextService.ts):
-// ✅ Identity - core (partial: coming out, transition)
-// ✅ Relationships - romantic people & events
-// ✅ Family - immediate & extended
-// ✅ Friendships - people & dynamics
-// ✅ Pets - types & events
-// ✅ Mental Health - providers, conditions (mood, anxiety, trauma)
-// ✅ Medications - general, antidepressants
-// ✅ Addiction & Recovery - substances, general recovery
-// ✅ Trauma & Abuse - types (basic)
-// ✅ Work & Career - general, positive, negative, events
-// ✅ Education - general, events
-// ✅ Finances - general, positive, negative
-// ✅ Housing - events (moved, new house)
-// ✅ Physical Health - general, events
-// ✅ Death & Grief - events, process
-// ✅ Milestones - positive, relationship, family, career
-// ✅ Spirituality - basic (church, temple, meditation, faith, baptism)
-// ✅ Legal - general, family
+// ✅ Identity - core, gender/sexuality, neurodivergence (ADHD, autism, etc.)
+// ✅ Relationships - romantic people, events, dynamics
+// ✅ Family - immediate, extended, in-laws, blended, dynamics
+// ✅ Friendships - people, dynamics, loneliness
+// ✅ Pets - types, events, loss
+// ✅ Mental Health - providers, therapy types, conditions, symptoms
+// ✅ Medications - general, antidepressants, anxiety meds, mood stabilizers, ADHD meds
+// ✅ Addiction & Recovery - substances, behavioral, recovery programs
+// ✅ Trauma & Abuse - all types, dynamics, recovery
+// ✅ Self-harm & Crisis - keywords with care, hotline references
+// ✅ Work & Career - general, positive, negative, events, burnout
+// ✅ Education - general, levels, events
+// ✅ Finances - general, positive, negative, events
+// ✅ Housing - general, living situations, events
+// ✅ Physical Health - general, chronic, serious, reproductive, events, disability
+// ✅ Sleep - problems, patterns
+// ✅ Exercise & Fitness - general, types, events
+// ✅ Diet & Body Image - general, types, issues
+// ✅ Death & Grief - events, causes, process, stages
+// ✅ Milestones - positive, age, relationship, family, home, career
+// ✅ Spirituality & Religion - general, practices, traditions, events
+// ✅ Legal - general, civil, criminal, family, immigration
+// ✅ Travel - general, types, events
+// ✅ Hobbies - creative, entertainment, outdoor, collecting, learning
+// ✅ Communication Preferences - validation, solutions, style
+// ✅ Professions - healthcare, tech, education, service, trades, business, creative, legal, government
 //
-// NOT YET IMPLEMENTED:
-// ⬜ Identity - gender/sexuality (detailed), neurodivergence (detailed)
-// ⬜ Family - in-laws, blended, dynamics
-// ⬜ Mental Health - therapy types, symptoms (detailed)
-// ⬜ Medications - specific drug names
-// ⬜ Self-harm & Suicide keywords (needs careful handling)
-// ⬜ Addiction - behavioral
-// ⬜ Sleep patterns
-// ⬜ Exercise & Fitness (detailed)
-// ⬜ Diet & Eating
-// ⬜ Travel (detailed)
-// ⬜ Hobbies (detailed categories)
-// ⬜ Communication preferences
-// ⬜ Temporal patterns
-// ⬜ Coping & Self-care
-// ⬜ Severity markers
-// ⬜ Entity extraction patterns
-// ⬜ Compression templates
+// NOT YET IMPLEMENTED (lower priority):
+// ⬜ Temporal patterns (Sunday scaries, seasonal, etc.)
+// ⬜ Coping mechanisms (healthy vs unhealthy)
+// ⬜ Severity markers (high/moderate/low distress)
+// ⬜ Entity extraction patterns (named_person, date_mention, duration, etc.)
+// ⬜ Compression templates (relationship, condition, event, pattern, preference, goal)
 //
 // ============================================
 

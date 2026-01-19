@@ -198,49 +198,333 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 
 /**
  * Keywords that suggest significant life events
+ * Comprehensive list for detecting important journal content
  */
 const SIGNIFICANT_KEYWORDS = [
-  // Relationships
-  'girlfriend', 'boyfriend', 'partner', 'wife', 'husband', 'married', 'engaged', 'breakup', 'divorce',
-  'dating', 'relationship', 'proposal', 'love',
-  // Family
-  'mom', 'dad', 'mother', 'father', 'brother', 'sister', 'grandma', 'grandpa', 'family',
-  'son', 'daughter', 'kids', 'children', 'parents', 'aunt', 'uncle', 'cousin',
-  // Life events - loss/grief
-  'died', 'death', 'funeral', 'passed away', 'lost', 'grief', 'grieving', 'mourning', 'goodbye',
-  // Health/Medical
-  'cancer', 'hospital', 'accident', 'surgery', 'doctor', 'diagnosed', 'sick', 'illness',
-  'pregnant', 'baby', 'born', 'miscarriage', 'emergency', 'ER', 'ambulance', 'chronic',
-  // Work/School/Career
-  'fired', 'quit', 'job', 'promotion', 'interview', 'graduated', 'college', 'school',
-  'degree', 'thesis', 'exam', 'finals', 'scholarship', 'raise', 'salary', 'unemployed', 'hired',
-  // Major events
-  'moved', 'moving', 'new house', 'apartment', 'car accident', 'wedding', 'birthday', 'anniversary',
-  // Mental health journey
-  'therapy', 'therapist', 'counselor', 'psychiatrist', 'medication', 'antidepressant',
-  'anxiety', 'depression', 'panic attack', 'breakdown', 'mental health',
-  // Pets
-  'dog', 'cat', 'pet', 'puppy', 'kitten', 'adopted', 'rescue', 'vet',
-  // Finances
-  'debt', 'loan', 'mortgage', 'bankruptcy', 'savings', 'investment',
-  // Friendships
-  'best friend', 'friendship', 'falling out', 'reconnected', 'betrayed', 'ghosted',
-  // Personal growth/Achievements
-  'accomplished', 'achieved', 'milestone', 'first time', 'personal best', 'goal', 'finally',
-  // Spiritual/Religious
-  'church', 'temple', 'meditation', 'spiritual', 'faith', 'prayer', 'baptism',
-  // Legal
-  'lawyer', 'court', 'custody', 'lawsuit', 'arrested',
-  // Addiction/Recovery
-  'sober', 'sobriety', 'relapse', 'clean', 'addiction', 'AA', 'rehab', 'recovery',
-  // Identity
-  'coming out', 'transition', 'identity',
-  // Trauma (handle sensitively)
-  'assault', 'abuse', 'trauma',
-  // Travel/Living
-  'vacation', 'trip', 'travel', 'new city', 'hometown',
-  // Celebrations
-  'celebration', 'reunion', 'party', 'holiday',
+  // ============================================
+  // RELATIONSHIPS - ROMANTIC
+  // ============================================
+  'girlfriend', 'boyfriend', 'partner', 'wife', 'husband', 'spouse', 'fiancé', 'fiancée',
+  'married', 'engaged', 'breakup', 'broke up', 'divorce', 'separated', 'dating', 'single',
+  'relationship', 'proposal', 'love', 'anniversary', 'honeymoon', 'first date',
+  'ex', 'ex-husband', 'ex-wife', 'ex-boyfriend', 'ex-girlfriend',
+  'couples therapy', 'marriage counseling', 'cheating', 'infidelity', 'affair',
+  'long distance', 'moved in together', 'living together',
+
+  // ============================================
+  // FAMILY - IMMEDIATE
+  // ============================================
+  'mom', 'dad', 'mother', 'father', 'parent', 'parents',
+  'brother', 'sister', 'sibling', 'son', 'daughter', 'child', 'children', 'kids',
+  'baby', 'toddler', 'teenager', 'teen',
+
+  // ============================================
+  // FAMILY - EXTENDED
+  // ============================================
+  'grandmother', 'grandfather', 'grandma', 'grandpa', 'nana', 'papa',
+  'grandparent', 'grandchild', 'aunt', 'uncle', 'cousin', 'niece', 'nephew',
+
+  // ============================================
+  // FAMILY - IN-LAWS & BLENDED
+  // ============================================
+  'mother-in-law', 'father-in-law', 'in-laws', 'MIL', 'FIL',
+  'sister-in-law', 'brother-in-law', 'stepmother', 'stepfather', 'stepmom', 'stepdad',
+  'stepbrother', 'stepsister', 'half-brother', 'half-sister',
+  'adopted', 'adoption', 'foster', 'birth parent',
+
+  // ============================================
+  // FAMILY - DYNAMICS
+  // ============================================
+  'estranged', 'no contact', 'toxic family', 'family drama', 'dysfunctional',
+  'boundaries', 'golden child', 'scapegoat', 'narcissistic parent', 'codependent',
+  'family therapy', 'family reunion',
+
+  // ============================================
+  // FRIENDSHIPS
+  // ============================================
+  'best friend', 'BFF', 'close friend', 'friend group', 'childhood friend', 'old friend',
+  'friendship', 'falling out', 'reconnected', 'drifted apart', 'betrayed', 'ghosted',
+  'toxic friendship', 'friend breakup', 'stopped talking',
+  'lonely', 'loneliness', 'isolated', 'no friends', 'social anxiety',
+
+  // ============================================
+  // PETS
+  // ============================================
+  'dog', 'cat', 'pet', 'puppy', 'kitten', 'fur baby',
+  'bird', 'fish', 'hamster', 'guinea pig', 'rabbit', 'bunny', 'reptile', 'horse',
+  'adopted', 'rescue', 'shelter', 'vet', 'veterinarian',
+  'put down', 'euthanized', 'rainbow bridge', 'pet loss',
+
+  // ============================================
+  // MENTAL HEALTH - PROVIDERS
+  // ============================================
+  'therapy', 'therapist', 'counselor', 'counseling', 'psychologist',
+  'psychiatrist', 'mental health', 'social worker', 'life coach',
+  'support group', 'group therapy',
+
+  // ============================================
+  // MENTAL HEALTH - THERAPY TYPES
+  // ============================================
+  'CBT', 'cognitive behavioral', 'DBT', 'dialectical', 'EMDR', 'trauma therapy',
+  'talk therapy', 'exposure therapy',
+
+  // ============================================
+  // MENTAL HEALTH - CONDITIONS
+  // ============================================
+  'depression', 'depressed', 'bipolar', 'manic', 'mania',
+  'anxiety', 'anxious', 'panic attack', 'panic disorder', 'agoraphobia', 'social anxiety',
+  'PTSD', 'trauma', 'traumatic', 'C-PTSD', 'flashback', 'triggered',
+  'OCD', 'obsessive compulsive', 'intrusive thoughts',
+  'eating disorder', 'anorexia', 'bulimia', 'binge eating',
+  'BPD', 'borderline',
+
+  // ============================================
+  // MENTAL HEALTH - SYMPTOMS
+  // ============================================
+  'can\'t get out of bed', 'no motivation', 'no energy', 'insomnia', 'can\'t sleep',
+  'worthless', 'hopeless', 'helpless', 'numb', 'empty',
+  'racing thoughts', 'overthinking', 'catastrophizing',
+  'breakdown', 'mental breakdown', 'crisis', 'spiraling', 'rock bottom',
+  'hospitalized', 'inpatient', 'outpatient',
+
+  // ============================================
+  // NEURODIVERGENCE
+  // ============================================
+  'ADHD', 'autism', 'autistic', 'ASD', 'on the spectrum', 'neurodivergent',
+  'dyslexia', 'dyslexic', 'sensory processing', 'executive function',
+  'hyperfocus', 'stimming', 'masking', 'burnout', 'meltdown', 'shutdown',
+
+  // ============================================
+  // IDENTITY - GENDER & SEXUALITY
+  // ============================================
+  'coming out', 'came out', 'transition', 'transitioning', 'transitioned',
+  'gender identity', 'non-binary', 'transgender', 'LGBTQ',
+  'gay', 'lesbian', 'bisexual', 'pansexual', 'asexual', 'queer',
+  'closeted', 'pronouns',
+
+  // ============================================
+  // MEDICATIONS
+  // ============================================
+  'medication', 'meds', 'prescribed', 'prescription', 'dosage',
+  'side effects', 'started taking', 'stopped taking', 'tapering',
+  'antidepressant', 'SSRI', 'SNRI', 'Lexapro', 'Zoloft', 'Prozac', 'Wellbutrin',
+  'Xanax', 'Klonopin', 'Ativan', 'benzodiazepine',
+  'mood stabilizer', 'Lithium', 'Lamictal',
+  'Adderall', 'Vyvanse', 'Ritalin', 'Concerta',
+
+  // ============================================
+  // ADDICTION & RECOVERY
+  // ============================================
+  'addiction', 'addicted', 'substance abuse', 'alcoholic', 'alcoholism',
+  'drinking', 'drunk', 'drug', 'drugs', 'using', 'high',
+  'sober', 'sobriety', 'clean', 'recovery', 'recovering',
+  'relapse', 'relapsed', 'slip', 'detox', 'withdrawal', 'rehab', 'treatment',
+  'AA', 'Alcoholics Anonymous', 'NA', 'Narcotics Anonymous', '12 step', 'sponsor',
+
+  // ============================================
+  // TRAUMA & ABUSE
+  // ============================================
+  'trauma', 'traumatic', 'traumatized', 'abuse', 'abused', 'abusive',
+  'domestic violence', 'physical abuse', 'emotional abuse', 'verbal abuse', 'sexual abuse',
+  'neglect', 'neglected', 'abandonment', 'gaslighting', 'manipulation',
+  'survivor', 'escaped', 'restraining order', 'safe now', 'healing',
+  'assault', 'sexual assault', 'harassment',
+
+  // ============================================
+  // SELF-HARM & CRISIS (handle with care)
+  // ============================================
+  'self-harm', 'self harm', 'cutting', 'hurting myself',
+  'suicidal', 'don\'t want to be here', 'want to die',
+  'crisis', 'hotline', '988', 'safety plan',
+
+  // ============================================
+  // WORK & CAREER
+  // ============================================
+  'job', 'work', 'career', 'employer', 'workplace', 'remote', 'work from home',
+  'boss', 'manager', 'coworker', 'colleague',
+  'promotion', 'promoted', 'raise', 'bonus', 'recognition', 'dream job', 'new job',
+  'fired', 'terminated', 'laid off', 'quit', 'resigned', 'unemployed', 'job hunting',
+  'burnout', 'burnt out', 'overworked', 'toxic workplace', 'toxic boss',
+  'interview', 'performance review', 'PIP',
+
+  // ============================================
+  // EDUCATION
+  // ============================================
+  'school', 'college', 'university', 'grad school', 'degree', 'major',
+  'student', 'studying', 'homework', 'class', 'professor', 'teacher',
+  'graduating', 'graduation', 'graduated', 'diploma', 'dropped out',
+  'scholarship', 'financial aid', 'student loans',
+  'exam', 'test', 'finals', 'midterms', 'thesis', 'dissertation',
+
+  // ============================================
+  // FINANCES
+  // ============================================
+  'money', 'financial', 'budget', 'income', 'bills',
+  'savings', 'emergency fund', 'investment', 'retirement', '401k',
+  'debt', 'credit card debt', 'student loans', 'loan', 'mortgage',
+  'bankruptcy', 'foreclosure', 'eviction', 'broke', 'struggling financially',
+  'paid off', 'debt free', 'raise', 'bonus',
+
+  // ============================================
+  // HOUSING
+  // ============================================
+  'home', 'house', 'apartment', 'condo', 'rent', 'renting', 'landlord',
+  'roommate', 'living alone', 'living with', 'moved in with',
+  'moving', 'moved', 'relocating', 'buying a house', 'first home',
+
+  // ============================================
+  // PHYSICAL HEALTH
+  // ============================================
+  'health', 'sick', 'illness', 'condition', 'diagnosis', 'diagnosed', 'symptoms',
+  'chronic', 'flare', 'remission', 'doctor', 'physician', 'specialist', 'surgeon',
+  'diabetes', 'hypertension', 'heart disease', 'asthma', 'arthritis',
+  'fibromyalgia', 'chronic fatigue', 'autoimmune', 'chronic pain', 'migraine',
+  'cancer', 'tumor', 'chemotherapy', 'radiation', 'terminal',
+  'surgery', 'operation', 'hospital', 'hospitalized', 'ER', 'emergency room',
+  'pregnant', 'pregnancy', 'expecting', 'miscarriage', 'stillbirth', 'fertility', 'IVF',
+  'disability', 'disabled', 'wheelchair', 'chronic illness',
+
+  // ============================================
+  // SLEEP
+  // ============================================
+  'insomnia', 'can\'t sleep', 'trouble sleeping', 'nightmares', 'night terrors',
+  'sleep apnea', 'oversleeping', 'exhausted', 'tired', 'fatigue',
+
+  // ============================================
+  // EXERCISE & FITNESS
+  // ============================================
+  'exercise', 'workout', 'gym', 'fitness', 'running', 'jogging', 'hiking',
+  'yoga', 'weightlifting', 'CrossFit', 'marathon', 'personal best',
+
+  // ============================================
+  // DIET & BODY IMAGE
+  // ============================================
+  'diet', 'dieting', 'weight loss', 'weight gain', 'body image',
+  'overeating', 'emotional eating', 'food relationship',
+
+  // ============================================
+  // DEATH & GRIEF
+  // ============================================
+  'died', 'death', 'passed away', 'passing', 'lost', 'gone',
+  'funeral', 'memorial', 'burial', 'cremation', 'cemetery',
+  'grief', 'grieving', 'mourning', 'bereavement', 'loss',
+  'anniversary of death', 'first without',
+
+  // ============================================
+  // SPIRITUALITY & RELIGION
+  // ============================================
+  'religious', 'religion', 'faith', 'spiritual', 'spirituality', 'god', 'God',
+  'pray', 'prayer', 'worship', 'church', 'temple', 'mosque', 'synagogue',
+  'meditation', 'meditate', 'mindfulness',
+  'baptism', 'baptized', 'confirmation', 'converted', 'leaving the church',
+  'faith crisis', 'lost my faith', 'found faith',
+
+  // ============================================
+  // LEGAL
+  // ============================================
+  'lawyer', 'attorney', 'legal', 'court', 'judge', 'trial',
+  'lawsuit', 'sued', 'settlement', 'arrested', 'charged', 'charges',
+  'felony', 'misdemeanor', 'probation', 'jail', 'prison',
+  'divorce', 'custody', 'child custody', 'child support', 'alimony',
+  'restraining order', 'protective order',
+  'immigration', 'visa', 'green card', 'citizenship', 'deportation',
+
+  // ============================================
+  // MILESTONES & ACHIEVEMENTS
+  // ============================================
+  'accomplished', 'achieved', 'milestone', 'first time', 'personal best',
+  'goal', 'finally', 'breakthrough', 'success', 'dream come true',
+  'birthday', 'turning', 'years old',
+  'engaged', 'wedding', 'honeymoon', 'anniversary',
+  'new baby', 'birth', 'born', 'new parent',
+  'bought a house', 'first home', 'moved out',
+
+  // ============================================
+  // TRAVEL
+  // ============================================
+  'travel', 'traveling', 'trip', 'vacation', 'holiday', 'getaway',
+  'road trip', 'flight', 'cruise', 'backpacking', 'solo travel',
+
+  // ============================================
+  // HOBBIES
+  // ============================================
+  'art', 'painting', 'drawing', 'photography', 'writing', 'poetry',
+  'music', 'guitar', 'piano', 'singing', 'instrument',
+  'crafts', 'knitting', 'sewing', 'woodworking',
+  'reading', 'book club', 'gaming', 'video games',
+  'hiking', 'camping', 'gardening', 'fishing',
+
+  // ============================================
+  // COMMUNICATION PREFERENCES
+  // ============================================
+  'just need to vent', 'need to get this off my chest', 'not looking for advice',
+  'need support', 'need advice', 'help me figure out',
+
+  // ============================================
+  // PROFESSIONS - HEALTHCARE
+  // ============================================
+  'nurse', 'nursing', 'RN', 'LPN', 'doctor', 'physician', 'surgeon', 'resident',
+  'medical student', 'med school', 'paramedic', 'EMT', 'pharmacist', 'dentist',
+  'physical therapist', 'occupational therapist', 'psychologist', 'psychiatrist',
+  'social worker', 'healthcare worker', 'hospital', 'clinic',
+
+  // ============================================
+  // PROFESSIONS - TECH
+  // ============================================
+  'software engineer', 'developer', 'programmer', 'coder', 'software developer',
+  'web developer', 'frontend', 'backend', 'full stack', 'DevOps', 'SRE',
+  'data scientist', 'data analyst', 'machine learning', 'AI', 'product manager',
+  'UX designer', 'UI designer', 'tech', 'startup', 'Silicon Valley',
+
+  // ============================================
+  // PROFESSIONS - EDUCATION
+  // ============================================
+  'teacher', 'professor', 'educator', 'teaching', 'instructor',
+  'elementary school', 'middle school', 'high school', 'college professor',
+  'tutor', 'principal', 'administrator', 'school counselor',
+
+  // ============================================
+  // PROFESSIONS - SERVICE & RETAIL
+  // ============================================
+  'server', 'waiter', 'waitress', 'bartender', 'barista', 'retail',
+  'customer service', 'cashier', 'sales', 'salesperson', 'real estate agent',
+  'hairstylist', 'barber', 'nail tech', 'esthetician',
+
+  // ============================================
+  // PROFESSIONS - TRADES & LABOR
+  // ============================================
+  'construction', 'carpenter', 'electrician', 'plumber', 'mechanic',
+  'HVAC', 'welder', 'factory', 'warehouse', 'truck driver', 'CDL',
+  'landscaping', 'cleaning', 'janitor', 'maintenance',
+
+  // ============================================
+  // PROFESSIONS - BUSINESS & FINANCE
+  // ============================================
+  'accountant', 'CPA', 'financial advisor', 'banker', 'investment',
+  'consultant', 'analyst', 'marketing', 'HR', 'human resources',
+  'recruiter', 'executive', 'CEO', 'manager', 'entrepreneur', 'business owner',
+
+  // ============================================
+  // PROFESSIONS - CREATIVE
+  // ============================================
+  'artist', 'graphic designer', 'photographer', 'videographer', 'filmmaker',
+  'writer', 'author', 'journalist', 'editor', 'content creator', 'influencer',
+  'musician', 'actor', 'actress', 'dancer', 'choreographer',
+
+  // ============================================
+  // PROFESSIONS - LEGAL & GOVERNMENT
+  // ============================================
+  'lawyer', 'attorney', 'paralegal', 'judge', 'law student', 'law school',
+  'police officer', 'cop', 'firefighter', 'military', 'army', 'navy', 'marines',
+  'air force', 'veteran', 'government', 'civil servant',
+
+  // ============================================
+  // PROFESSIONS - OTHER
+  // ============================================
+  'flight attendant', 'pilot', 'chef', 'cook', 'baker',
+  'stay-at-home', 'SAHM', 'SAHD', 'caregiver', 'nanny', 'au pair',
+  'freelance', 'self-employed', 'gig economy', 'Uber', 'Lyft', 'DoorDash',
+  'remote work', 'work from home', 'hybrid', 'office job',
 ];
 
 /**
