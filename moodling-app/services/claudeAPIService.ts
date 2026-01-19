@@ -13,6 +13,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToneInstruction, getTonePreferences, ToneStyle } from './tonePreferencesService';
+import { getContextForClaude } from './userContextService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -163,9 +164,10 @@ Focus on the user's immediate experience.`;
 }
 
 /**
- * Build user context string from ConversationContext
+ * Build conversation context string from ConversationContext
+ * This captures immediate conversation state (mood, events)
  */
-function buildUserContext(context: ConversationContext): string {
+function buildConversationContext(context: ConversationContext): string {
   const parts: string[] = [];
 
   if (context.recentMood) {
@@ -387,8 +389,11 @@ export async function sendMessage(
   const toneInstruction = getToneInstruction(tonePrefs);
 
   // Build context and prompt
-  const userContext = buildUserContext(context);
-  const systemPrompt = buildSystemPrompt(userContext, toneInstruction);
+  // Combine conversation context with rich user context (Unit 18B)
+  const conversationContext = buildConversationContext(context);
+  const richContext = await getContextForClaude();
+  const fullContext = richContext + '\n\n' + conversationContext;
+  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction);
   const messages = buildMessages(message, context.recentMessages);
 
   const request: ClaudeRequest = {
