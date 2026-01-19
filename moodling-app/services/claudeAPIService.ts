@@ -1,0 +1,469 @@
+/**
+ * Claude API Service
+ *
+ * Handles therapeutic conversations via Claude API.
+ * Following Moodling Ethics:
+ * - Never diagnose, always descriptive
+ * - Tentative language
+ * - Encourage real-world connection
+ * - Crisis resources when needed
+ *
+ * Unit 18: Claude API Integration
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToneInstruction, getTonePreferences, ToneStyle } from './tonePreferencesService';
+import { getContextForClaude } from './userContextService';
+
+// Storage keys
+const API_KEY_STORAGE = 'moodling_claude_api_key';
+const COST_TOTAL_KEY = 'moodling_api_cost_total';
+const COST_MONTHLY_KEY = 'moodling_api_cost_monthly';
+const COST_RESET_DATE_KEY = 'moodling_api_cost_reset_date';
+
+/**
+ * Claude API Configuration
+ */
+export const CLAUDE_CONFIG = {
+  baseURL: 'https://api.anthropic.com/v1/messages',
+  // Use Haiku for development (cheapest, fast)
+  developmentModel: 'claude-3-haiku-20240307',
+  // Use Sonnet for production (higher quality)
+  productionModel: 'claude-sonnet-4-20250514',
+  // Default to Haiku
+  model: 'claude-3-haiku-20240307',
+  maxTokens: 300, // Keep responses concise
+  apiVersion: '2023-06-01',
+};
+
+/**
+ * Pricing per 1K tokens (as of 2024)
+ */
+const PRICING: Record<string, { input: number; output: number }> = {
+  'claude-3-haiku-20240307': { input: 0.00025, output: 0.00125 },
+  'claude-3-5-sonnet-20241022': { input: 0.003, output: 0.015 },
+  'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+};
+
+/**
+ * Chat message in conversation
+ */
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+/**
+ * Context for building personalized responses
+ */
+export interface ConversationContext {
+  recentMood?: { emoji: string; description: string };
+  upcomingEvent?: { title: string; time: Date };
+  relevantPatterns?: { shortDescription: string }[];
+  lastNightSleep?: number;
+  recentMessages: ChatMessage[];
+  toneStyles?: ToneStyle[];
+}
+
+/**
+ * AI Response from Claude or fallback
+ */
+export interface AIResponse {
+  text: string;
+  source: 'claudeAPI' | 'fallback' | 'crisis';
+  cost: number;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+/**
+ * Claude API Request format
+ */
+interface ClaudeRequest {
+  model: string;
+  max_tokens: number;
+  system: string;
+  messages: { role: string; content: string }[];
+}
+
+/**
+ * Claude API Response format
+ */
+interface ClaudeAPIResponse {
+  content: { type: string; text: string }[];
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+/**
+ * Crisis detection keywords
+ * If detected, skip Claude and provide crisis resources
+ */
+const CRISIS_KEYWORDS = [
+  'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
+  'hurt myself', 'self-harm', 'self harm', 'cutting myself',
+  'don\'t want to live', 'better off dead', 'no reason to live',
+];
+
+/**
+ * Crisis response - always provide resources
+ */
+const CRISIS_RESPONSE: AIResponse = {
+  text: `I hear that you're going through something really difficult. Your safety matters.
+
+If you're in crisis, please reach out:
+• **988 Suicide & Crisis Lifeline**: Call or text 988
+• **Crisis Text Line**: Text HOME to 741741
+• **International Association for Suicide Prevention**: https://www.iasp.info/resources/Crisis_Centres/
+
+You don't have to face this alone. A trained counselor can help right now.`,
+  source: 'crisis',
+  cost: 0,
+};
+
+/**
+ * Build the Moodling system prompt
+ */
+function buildSystemPrompt(userContext: string, toneInstruction: string): string {
+  return `You are Moodling, a warm and compassionate companion in a journaling app.
+
+YOUR ROLE:
+- Listen with empathy and without judgment
+- Help users process emotions and prepare for challenges
+- Encourage real-world connection and self-compassion
+- Support users in building skills and habits
+
+YOU NEVER:
+- Diagnose mental health conditions
+- Suggest medication changes
+- Claim to be a therapist or replacement for professional help
+- Use clinical labels like "you have anxiety disorder"
+- Encourage dependence on you
+
+YOUR TONE:
+- ${toneInstruction}
+- Tentative ("it seems", "you might notice", "I wonder if")
+- Grounded and honest
+- Encouraging of autonomy
+
+YOUR BOUNDARIES:
+- For crisis/self-harm: The app handles this - you won't see such messages
+- Remind users you're an AI companion, not a therapist
+- Encourage professional help for persistent struggles
+- Sometimes suggest closing the app and connecting with real people
+
+CONTEXT ABOUT THIS USER:
+${userContext}
+
+Keep responses concise (2-4 sentences usually).
+Ask one question at most.
+Focus on the user's immediate experience.`;
+}
+
+/**
+ * Build conversation context string from ConversationContext
+ * This captures immediate conversation state (mood, events)
+ */
+function buildConversationContext(context: ConversationContext): string {
+  const parts: string[] = [];
+
+  if (context.recentMood) {
+    parts.push(`Recent mood: ${context.recentMood.emoji} ${context.recentMood.description}`);
+  }
+  if (context.upcomingEvent) {
+    const timeStr = context.upcomingEvent.time.toLocaleString();
+    parts.push(`Upcoming event: ${context.upcomingEvent.title} at ${timeStr}`);
+  }
+  if (context.relevantPatterns && context.relevantPatterns.length > 0) {
+    const patternStr = context.relevantPatterns.map(p => p.shortDescription).join(', ');
+    parts.push(`Notable patterns: ${patternStr}`);
+  }
+  if (context.lastNightSleep !== undefined) {
+    parts.push(`Last night's sleep: ${context.lastNightSleep} hours`);
+  }
+
+  return parts.length === 0 ? 'No additional context available.' : parts.join('\n');
+}
+
+/**
+ * Build messages array for Claude API
+ */
+function buildMessages(
+  currentMessage: string,
+  history: ChatMessage[]
+): { role: string; content: string }[] {
+  const messages: { role: string; content: string }[] = [];
+
+  // Include last 6 messages for context (3 turns)
+  for (const msg of history.slice(-6)) {
+    messages.push({
+      role: msg.role,
+      content: msg.content,
+    });
+  }
+
+  // Add current message
+  messages.push({
+    role: 'user',
+    content: currentMessage,
+  });
+
+  return messages;
+}
+
+/**
+ * Check if message contains crisis keywords
+ */
+function detectCrisis(message: string): boolean {
+  const lower = message.toLowerCase();
+  return CRISIS_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+/**
+ * Calculate cost from token usage
+ */
+function calculateCost(
+  inputTokens: number,
+  outputTokens: number,
+  model: string
+): number {
+  const price = PRICING[model] ?? PRICING['claude-3-haiku-20240307'];
+  return (inputTokens / 1000) * price.input + (outputTokens / 1000) * price.output;
+}
+
+// ============ API Key Management ============
+
+/**
+ * Store API key securely
+ * Note: For production iOS, use Keychain. For web/dev, AsyncStorage with warning.
+ */
+export async function setAPIKey(key: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(API_KEY_STORAGE, key);
+  } catch (error) {
+    console.error('Failed to store API key:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get stored API key
+ */
+export async function getAPIKey(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Failed to get API key:', error);
+    return null;
+  }
+}
+
+/**
+ * Check if API key is configured
+ */
+export async function hasAPIKey(): Promise<boolean> {
+  const key = await getAPIKey();
+  return key !== null && key.length > 0;
+}
+
+/**
+ * Remove API key
+ */
+export async function removeAPIKey(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(API_KEY_STORAGE);
+  } catch (error) {
+    console.error('Failed to remove API key:', error);
+  }
+}
+
+// ============ Cost Tracking ============
+
+/**
+ * Record API usage cost
+ */
+async function recordUsage(
+  inputTokens: number,
+  outputTokens: number,
+  model: string
+): Promise<void> {
+  const cost = calculateCost(inputTokens, outputTokens, model);
+
+  try {
+    // Check monthly reset
+    const resetDateStr = await AsyncStorage.getItem(COST_RESET_DATE_KEY);
+    const now = new Date();
+    let shouldReset = false;
+
+    if (resetDateStr) {
+      const resetDate = new Date(resetDateStr);
+      // Reset if different month
+      if (resetDate.getMonth() !== now.getMonth() || resetDate.getFullYear() !== now.getFullYear()) {
+        shouldReset = true;
+      }
+    } else {
+      shouldReset = true;
+    }
+
+    if (shouldReset) {
+      await AsyncStorage.setItem(COST_MONTHLY_KEY, '0');
+      await AsyncStorage.setItem(COST_RESET_DATE_KEY, now.toISOString());
+    }
+
+    // Update totals
+    const totalStr = await AsyncStorage.getItem(COST_TOTAL_KEY);
+    const monthlyStr = await AsyncStorage.getItem(COST_MONTHLY_KEY);
+
+    const total = parseFloat(totalStr ?? '0') + cost;
+    const monthly = parseFloat(monthlyStr ?? '0') + cost;
+
+    await AsyncStorage.setItem(COST_TOTAL_KEY, total.toString());
+    await AsyncStorage.setItem(COST_MONTHLY_KEY, monthly.toString());
+  } catch (error) {
+    console.error('Failed to record usage:', error);
+  }
+}
+
+/**
+ * Get cost tracking data
+ */
+export async function getCostData(): Promise<{
+  totalCost: number;
+  monthlyCost: number;
+  formattedTotal: string;
+  formattedMonthly: string;
+}> {
+  try {
+    const totalStr = await AsyncStorage.getItem(COST_TOTAL_KEY);
+    const monthlyStr = await AsyncStorage.getItem(COST_MONTHLY_KEY);
+
+    const total = parseFloat(totalStr ?? '0');
+    const monthly = parseFloat(monthlyStr ?? '0');
+
+    return {
+      totalCost: total,
+      monthlyCost: monthly,
+      formattedTotal: `$${total.toFixed(4)}`,
+      formattedMonthly: `$${monthly.toFixed(4)}`,
+    };
+  } catch (error) {
+    console.error('Failed to get cost data:', error);
+    return {
+      totalCost: 0,
+      monthlyCost: 0,
+      formattedTotal: '$0.00',
+      formattedMonthly: '$0.00',
+    };
+  }
+}
+
+// ============ Main API Function ============
+
+/**
+ * Send message to Claude and get response
+ */
+export async function sendMessage(
+  message: string,
+  context: ConversationContext
+): Promise<AIResponse> {
+  // Check for crisis first
+  if (detectCrisis(message)) {
+    return CRISIS_RESPONSE;
+  }
+
+  // Get API key
+  const apiKey = await getAPIKey();
+  if (!apiKey) {
+    return {
+      text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
+      source: 'fallback',
+      cost: 0,
+    };
+  }
+
+  // Get tone preferences
+  const tonePrefs = context.toneStyles ?? (await getTonePreferences()).selectedStyles;
+  const toneInstruction = getToneInstruction(tonePrefs);
+
+  // Build context and prompt
+  // Combine conversation context with rich user context (Unit 18B)
+  const conversationContext = buildConversationContext(context);
+  const richContext = await getContextForClaude();
+  const fullContext = richContext + '\n\n' + conversationContext;
+  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction);
+  const messages = buildMessages(message, context.recentMessages);
+
+  const request: ClaudeRequest = {
+    model: CLAUDE_CONFIG.model,
+    max_tokens: CLAUDE_CONFIG.maxTokens,
+    system: systemPrompt,
+    messages,
+  };
+
+  try {
+    const response = await fetch(CLAUDE_CONFIG.baseURL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': CLAUDE_CONFIG.apiVersion,
+        'anthropic-dangerous-direct-browser-access': 'true', // For web testing
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API error:', response.status, errorText);
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data: ClaudeAPIResponse = await response.json();
+
+    // Track cost
+    await recordUsage(
+      data.usage.input_tokens,
+      data.usage.output_tokens,
+      CLAUDE_CONFIG.model
+    );
+
+    const cost = calculateCost(
+      data.usage.input_tokens,
+      data.usage.output_tokens,
+      CLAUDE_CONFIG.model
+    );
+
+    return {
+      text: data.content[0]?.text ?? '',
+      source: 'claudeAPI',
+      cost,
+      inputTokens: data.usage.input_tokens,
+      outputTokens: data.usage.output_tokens,
+    };
+  } catch (error) {
+    console.error('Claude API request failed:', error);
+
+    // Fallback response
+    return {
+      text: "I'm having trouble connecting right now. How about we try again in a moment?",
+      source: 'fallback',
+      cost: 0,
+    };
+  }
+}
+
+/**
+ * Get a simple fallback response (for when API is unavailable)
+ */
+export function getFallbackResponse(): string {
+  const responses = [
+    "I hear you. Take a moment and breathe.",
+    "Thank you for sharing. You're doing the work.",
+    "That sounds like a lot to hold. Be gentle with yourself.",
+    "You're here, and that matters.",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+}

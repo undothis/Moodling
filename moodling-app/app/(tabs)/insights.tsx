@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import {
   DailySummary,
@@ -43,6 +44,7 @@ import {
 export default function InsightsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const router = useRouter();
 
   const [factors, setFactors] = useState<LifestyleFactors>({});
   const [recentDays, setRecentDays] = useState<DailySummary[]>([]);
@@ -295,6 +297,24 @@ export default function InsightsScreen() {
           This helps Moodling notice patterns over time.
         </Text>
       </View>
+
+      {/* Social Exposure Ladder (Unit 21) */}
+      <TouchableOpacity
+        style={[styles.featureLink, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={() => router.push('/exposure')}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="people-outline" size={22} color={colors.tint} />
+        <View style={styles.featureLinkText}>
+          <Text style={[styles.featureLinkTitle, { color: colors.text }]}>
+            Social Exposure Ladder
+          </Text>
+          <Text style={[styles.featureLinkSubtitle, { color: colors.textMuted }]}>
+            Build social confidence step by step
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      </TouchableOpacity>
 
       <View style={styles.disclaimer}>
         <Text style={[styles.disclaimerText, { color: colors.textMuted }]}>
@@ -637,5 +657,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  // Feature link styles (Unit 21)
+  featureLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 12,
+  },
+  featureLinkText: {
+    flex: 1,
+  },
+  featureLinkTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  featureLinkSubtitle: {
+    fontSize: 13,
   },
 });

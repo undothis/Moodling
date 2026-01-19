@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
+  TextInput,
   Alert,
   Platform,
 } from 'react-native';
@@ -23,6 +24,21 @@ import {
   checkAdaptiveReminder,
   AdaptiveSuggestion,
 } from '@/services/notificationService';
+import {
+  getTonePreferences,
+  toggleToneStyle,
+  ToneStyle,
+  TonePreferences,
+  TONE_OPTIONS,
+  getStyleExamples,
+} from '@/services/tonePreferencesService';
+import {
+  hasAPIKey,
+  setAPIKey,
+  removeAPIKey,
+  getCostData,
+  CLAUDE_CONFIG,
+} from '@/services/claudeAPIService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -50,6 +66,17 @@ export default function SettingsScreen() {
   // Adaptive reminder state (Unit 14)
   const [adaptiveSuggestion, setAdaptiveSuggestion] = useState<AdaptiveSuggestion | null>(null);
 
+  // Tone preferences state (Unit 16)
+  const [tonePreferences, setTonePreferences] = useState<TonePreferences>({ selectedStyles: ['balanced'] });
+  const [showToneOptions, setShowToneOptions] = useState(false);
+
+  // Claude API state (Unit 18)
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [monthlyCost, setMonthlyCost] = useState('$0.00');
+  const [totalCost, setTotalCost] = useState('$0.00');
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -69,6 +96,19 @@ export default function SettingsScreen() {
         if (suggestion.shouldSuggest) {
           setAdaptiveSuggestion(suggestion);
         }
+      }
+
+      // Load tone preferences (Unit 16)
+      const tonePrefs = await getTonePreferences();
+      setTonePreferences(tonePrefs);
+
+      // Load Claude API status (Unit 18)
+      const hasKey = await hasAPIKey();
+      setApiKeyConfigured(hasKey);
+      if (hasKey) {
+        const costData = await getCostData();
+        setMonthlyCost(costData.formattedMonthly);
+        setTotalCost(costData.formattedTotal);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -147,6 +187,66 @@ export default function SettingsScreen() {
     if (Platform.OS === 'web') {
       // Web notification sent
     }
+  };
+
+  // Handle tone style toggle (Unit 16)
+  const handleToneToggle = async (style: ToneStyle) => {
+    const newPrefs = await toggleToneStyle(style);
+    setTonePreferences(newPrefs);
+  };
+
+  // Handle API key save (Unit 18)
+  const handleSaveApiKey = async () => {
+    if (!apiKeyInput.trim()) return;
+
+    try {
+      await setAPIKey(apiKeyInput.trim());
+      setApiKeyConfigured(true);
+      setShowApiKeyInput(false);
+      setApiKeyInput('');
+
+      // Reload cost data
+      const costData = await getCostData();
+      setMonthlyCost(costData.formattedMonthly);
+      setTotalCost(costData.formattedTotal);
+    } catch (error) {
+      console.error('Failed to save API key:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to save API key');
+      } else {
+        Alert.alert('Error', 'Failed to save API key');
+      }
+    }
+  };
+
+  // Handle API key removal (Unit 18)
+  const handleRemoveApiKey = async () => {
+    const confirm = Platform.OS === 'web'
+      ? window.confirm('Remove your Claude API key? You can add it again later.')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Remove API Key',
+            'Remove your Claude API key? You can add it again later.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (confirm) {
+      await removeAPIKey();
+      setApiKeyConfigured(false);
+    }
+  };
+
+  // Get selected style labels for display
+  const getSelectedStylesLabel = () => {
+    if (tonePreferences.selectedStyles.length === 0) return 'Balanced';
+    if (tonePreferences.selectedStyles.length === 1) {
+      return TONE_OPTIONS.find(o => o.id === tonePreferences.selectedStyles[0])?.label ?? 'Balanced';
+    }
+    return `${tonePreferences.selectedStyles.length} styles`;
   };
 
   // Generate time options including "soon" times for testing
@@ -394,6 +494,205 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Response Style Section (Unit 16) */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Response Style
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.timeButton, { backgroundColor: colors.background }]}
+          onPress={() => setShowToneOptions(!showToneOptions)}
+        >
+          <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+            Your preferred tone
+          </Text>
+          <Text style={[styles.timeValue, { color: colors.text }]}>
+            {getSelectedStylesLabel()}
+          </Text>
+        </TouchableOpacity>
+
+        {showToneOptions && (
+          <View style={styles.toneOptionsContainer}>
+            <Text style={[styles.toneHint, { color: colors.textMuted }]}>
+              Select one or more styles to customize how Moodling responds to you:
+            </Text>
+            {TONE_OPTIONS.map((option) => {
+              const isSelected = tonePreferences.selectedStyles.includes(option.id);
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.toneOption,
+                    {
+                      backgroundColor: isSelected ? colors.tint : colors.background,
+                      borderColor: isSelected ? colors.tint : colors.border,
+                    },
+                  ]}
+                  onPress={() => handleToneToggle(option.id)}
+                >
+                  <View style={styles.toneOptionHeader}>
+                    <View style={styles.toneCheckbox}>
+                      {isSelected && <Text style={styles.toneCheckmark}>✓</Text>}
+                    </View>
+                    <View style={styles.toneOptionText}>
+                      <Text
+                        style={[
+                          styles.toneLabel,
+                          { color: isSelected ? '#FFFFFF' : colors.text },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.toneDescription,
+                          { color: isSelected ? 'rgba(255,255,255,0.8)' : colors.textMuted },
+                        ]}
+                      >
+                        {option.description}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {/* Preview examples */}
+            {tonePreferences.selectedStyles.length > 0 && (
+              <View style={[styles.tonePreview, { backgroundColor: colors.background }]}>
+                <Text style={[styles.tonePreviewTitle, { color: colors.textSecondary }]}>
+                  Example responses:
+                </Text>
+                {getStyleExamples(tonePreferences.selectedStyles).slice(0, 3).map((example, i) => (
+                  <Text key={i} style={[styles.tonePreviewText, { color: colors.textMuted }]}>
+                    "{example}"
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        <Text style={[styles.toneNote, { color: colors.textMuted }]}>
+          These preferences shape how reflections and coaching feel. Mix and match to find your fit.
+        </Text>
+      </View>
+
+      {/* Claude AI Section (Unit 18) */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            AI Coaching
+          </Text>
+        </View>
+
+        <Text style={[styles.apiDescription, { color: colors.textSecondary }]}>
+          Enable AI-powered coaching conversations with Claude. Your data stays on-device; only
+          conversation messages are sent to Claude's API when you chat.
+        </Text>
+
+        {apiKeyConfigured ? (
+          <View style={styles.apiConfigured}>
+            <View style={styles.apiStatusRow}>
+              <Text style={[styles.apiStatusIcon]}>✓</Text>
+              <Text style={[styles.apiStatusText, { color: colors.text }]}>
+                API key configured
+              </Text>
+            </View>
+
+            {/* Cost tracking */}
+            <View style={[styles.costCard, { backgroundColor: colors.background }]}>
+              <View style={styles.costRow}>
+                <Text style={[styles.costLabel, { color: colors.textSecondary }]}>
+                  This month
+                </Text>
+                <Text style={[styles.costValue, { color: colors.text }]}>
+                  {monthlyCost}
+                </Text>
+              </View>
+              <View style={styles.costRow}>
+                <Text style={[styles.costLabel, { color: colors.textSecondary }]}>
+                  All time
+                </Text>
+                <Text style={[styles.costValue, { color: colors.text }]}>
+                  {totalCost}
+                </Text>
+              </View>
+              <Text style={[styles.costNote, { color: colors.textMuted }]}>
+                Using {CLAUDE_CONFIG.model.includes('haiku') ? 'Claude 3 Haiku' : 'Claude 3.5 Sonnet'} (~$0.001/conversation)
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.removeApiButton, { borderColor: colors.error }]}
+              onPress={handleRemoveApiKey}
+            >
+              <Text style={[styles.removeApiButtonText, { color: colors.error }]}>
+                Remove API key
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.apiNotConfigured}>
+            {!showApiKeyInput ? (
+              <TouchableOpacity
+                style={[styles.addApiButton, { backgroundColor: colors.tint }]}
+                onPress={() => setShowApiKeyInput(true)}
+              >
+                <Text style={styles.addApiButtonText}>
+                  Add Claude API Key
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.apiInputContainer}>
+                <TextInput
+                  style={[styles.apiInput, {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  }]}
+                  placeholder="sk-ant-api03-..."
+                  placeholderTextColor={colors.textMuted}
+                  value={apiKeyInput}
+                  onChangeText={setApiKeyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                />
+                <View style={styles.apiInputButtons}>
+                  <TouchableOpacity
+                    style={[styles.apiSaveButton, { backgroundColor: colors.tint }]}
+                    onPress={handleSaveApiKey}
+                    disabled={!apiKeyInput.trim()}
+                  >
+                    <Text style={styles.apiSaveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.apiCancelButton}
+                    onPress={() => {
+                      setShowApiKeyInput(false);
+                      setApiKeyInput('');
+                    }}
+                  >
+                    <Text style={[styles.apiCancelButtonText, { color: colors.textMuted }]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.apiHint, { color: colors.textMuted }]}>
+              Get your API key from{' '}
+              <Text style={{ color: colors.tint }}>console.anthropic.com</Text>
+            </Text>
+          </View>
+        )}
+      </View>
+
       {/* Privacy Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -408,7 +707,7 @@ export default function SettingsScreen() {
           </Text>
         </View>
         <Text style={[styles.privacyDetail, { color: colors.textMuted }]}>
-          Nothing is sent to any server unless you explicitly enable cloud features.
+          Journal entries and patterns stay on-device. Only coaching chat messages are sent to Claude's API (if enabled), and they are not stored by Anthropic.
         </Text>
       </View>
 
@@ -428,7 +727,7 @@ export default function SettingsScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.textMuted }]}>
-        Version 1.0.0 (Unit 14)
+        Version 1.0.0 (Unit 18)
       </Text>
     </ScrollView>
   );
@@ -607,5 +906,177 @@ const styles = StyleSheet.create({
   frequencyDesc: {
     fontSize: 12,
     marginTop: 2,
+  },
+  // Unit 16: Tone preferences styles
+  toneOptionsContainer: {
+    marginTop: 12,
+  },
+  toneHint: {
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  toneOption: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  toneOptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toneCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toneCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  toneOptionText: {
+    flex: 1,
+  },
+  toneLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  toneDescription: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  tonePreview: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  tonePreviewTitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  tonePreviewText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  toneNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    marginTop: 12,
+  },
+  // Unit 18: Claude API styles
+  apiDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  apiConfigured: {
+    marginTop: 8,
+  },
+  apiStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  apiStatusIcon: {
+    fontSize: 16,
+    color: '#4CAF50',
+    marginRight: 8,
+  },
+  apiStatusText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  costCard: {
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  costRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  costLabel: {
+    fontSize: 14,
+  },
+  costValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  costNote: {
+    fontSize: 12,
+    marginTop: 8,
+  },
+  removeApiButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+  },
+  removeApiButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  apiNotConfigured: {
+    marginTop: 8,
+  },
+  addApiButton: {
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addApiButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  apiInputContainer: {
+    marginBottom: 12,
+  },
+  apiInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  apiInputButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  apiSaveButton: {
+    flex: 1,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+  },
+  apiSaveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  apiCancelButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+  },
+  apiCancelButtonText: {
+    fontSize: 15,
+  },
+  apiHint: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

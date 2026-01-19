@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
 import { saveEntry, getAllEntries } from '@/services/journalStorage';
@@ -23,7 +24,7 @@ import {
   getAffirmationMessage,
   AntiDependencyMessage,
 } from '@/services/usageTrackingService';
-import { generateSimpleReflection } from '@/services/reflectionService';
+import { generateStyledReflection } from '@/services/reflectionService';
 import { MoodCategory } from '@/services/sentimentAnalysis';
 
 /**
@@ -138,8 +139,8 @@ export default function JournalScreen() {
       setEntryText('');
       setJustSaved(true);
 
-      // Generate compassionate reflection (Unit 15)
-      const reflection = generateSimpleReflection(sentimentResult.mood as MoodCategory);
+      // Generate compassionate reflection (Unit 15, Unit 16: tone-aware)
+      const reflection = await generateStyledReflection(sentimentResult.mood as MoodCategory);
       setSavedReflection(reflection);
 
       // Occasionally show affirmation after saving (Unit 13)
@@ -430,6 +431,24 @@ export default function JournalScreen() {
           </View>
         )}
 
+        {/* Talk to Moodling Button (Unit 19) */}
+        <TouchableOpacity
+          style={[styles.coachButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/coach')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.tint} />
+          <View style={styles.coachButtonText}>
+            <Text style={[styles.coachButtonTitle, { color: colors.text }]}>
+              Talk with Moodling
+            </Text>
+            <Text style={[styles.coachButtonSubtitle, { color: colors.textMuted }]}>
+              Get support preparing for challenges
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={[styles.privacyNote, { color: colors.textMuted }]}>
@@ -640,5 +659,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  // Unit 19: Coach button styles
+  coachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 12,
+  },
+  coachButtonText: {
+    flex: 1,
+  },
+  coachButtonTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  coachButtonSubtitle: {
+    fontSize: 13,
   },
 });
