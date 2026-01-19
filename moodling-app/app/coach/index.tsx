@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import {
@@ -82,14 +82,29 @@ export default function CoachScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
+  const { context: entryContext } = useLocalSearchParams<{ context?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const [messages, setMessages] = useState<DisplayMessage[]>([WELCOME_MESSAGE]);
+  // Custom welcome message if coming from an entry
+  const getWelcomeMessage = (): DisplayMessage => {
+    if (entryContext) {
+      return {
+        id: 'welcome',
+        text: "I see you wanted to talk about something you journaled. I'm here to listen — what's on your mind about it?",
+        source: 'fallback',
+        timestamp: new Date(),
+      };
+    }
+    return WELCOME_MESSAGE;
+  };
+
+  const [messages, setMessages] = useState<DisplayMessage[]>([getWelcomeMessage()]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [toneStyles, setToneStyles] = useState<ToneStyle[]>(['balanced']);
   const [turnCount, setTurnCount] = useState(0);
+  const [additionalContext, setAdditionalContext] = useState<string | undefined>(entryContext);
 
   // Check API key on mount
   useEffect(() => {
@@ -184,8 +199,15 @@ export default function CoachScreen() {
         toneStyles,
       };
 
+      // Include entry context in first message if available
+      let fullMessage = messageText;
+      if (additionalContext && turnCount === 0) {
+        fullMessage = `[Context: ${additionalContext}]\n\nUser says: ${messageText}`;
+        setAdditionalContext(undefined); // Clear after first use
+      }
+
       // Send to Claude API
-      const response = await sendMessage(messageText, context);
+      const response = await sendMessage(fullMessage, context);
 
       // Remove typing indicator and add response
       setMessages((prev) => {

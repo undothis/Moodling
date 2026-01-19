@@ -222,6 +222,29 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
+        {/* Talk about this entry button */}
+        <TouchableOpacity
+          style={[styles.talkButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => {
+            // Create a brief context summary (not raw text)
+            const moodDesc = entry.sentiment?.mood?.replace(/_/g, ' ') || 'reflective';
+            const preview = entry.text.slice(0, 50).trim() + (entry.text.length > 50 ? '...' : '');
+            router.push({
+              pathname: '/coach',
+              params: {
+                context: `User wants to talk about a journal entry. Mood: ${moodDesc}. They wrote about: "${preview}"`,
+              },
+            });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.tint} />
+          <Text style={[styles.talkButtonText, { color: colors.text }]}>
+            Talk about this
+          </Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+
         {/* Meta info */}
         <View style={styles.metaContainer}>
           <Text style={[styles.metaText, { color: colors.textMuted }]}>
@@ -353,5 +376,20 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 13,
     lineHeight: 18,
+  },
+  // Talk about this button
+  talkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+  },
+  talkButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
