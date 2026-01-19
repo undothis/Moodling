@@ -197,19 +197,100 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 }
 
 /**
- * Get brief summaries of recent journal entries (privacy-preserving)
- * Only includes first 40 chars + mood, no personal details
+ * Keywords that suggest significant life events
  */
-function getRecentEntrySummaries(entries: JournalEntry[], count: number = 3): string[] {
-  return entries.slice(0, count).map(entry => {
-    const preview = entry.text.slice(0, 40).trim();
-    const truncated = entry.text.length > 40 ? preview + '...' : preview;
+const SIGNIFICANT_KEYWORDS = [
+  // Relationships
+  'girlfriend', 'boyfriend', 'partner', 'wife', 'husband', 'married', 'engaged', 'breakup', 'divorce',
+  // Family
+  'mom', 'dad', 'mother', 'father', 'brother', 'sister', 'grandma', 'grandpa', 'family',
+  // Life events
+  'died', 'death', 'funeral', 'passed away', 'lost', 'cancer', 'hospital', 'accident', 'surgery',
+  'doctor', 'diagnosed', 'sick', 'illness', 'pregnant', 'baby', 'born',
+  // Work/School
+  'fired', 'quit', 'job', 'promotion', 'interview', 'graduated', 'college', 'school',
+  // Major events
+  'moved', 'moving', 'new house', 'apartment', 'car', 'wedding', 'birthday', 'anniversary',
+];
+
+/**
+ * Check if entry contains significant keywords
+ */
+function hasSignificantContent(text: string): boolean {
+  const lower = text.toLowerCase();
+  return SIGNIFICANT_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+/**
+ * Score entry significance (higher = more important)
+ */
+function scoreSignificance(entry: JournalEntry): number {
+  let score = 0;
+
+  // Longer entries are often more significant
+  if (entry.text.length > 200) score += 2;
+  if (entry.text.length > 500) score += 2;
+
+  // Strong emotions suggest importance
+  const mood = entry.sentiment?.mood || '';
+  if (mood.includes('very_')) score += 3;
+
+  // Contains significant keywords
+  if (hasSignificantContent(entry.text)) score += 5;
+
+  return score;
+}
+
+/**
+ * Get brief summaries of recent journal entries
+ * Includes both recent entries AND significant historical ones
+ */
+function getRecentEntrySummaries(entries: JournalEntry[], recentCount: number = 5): string[] {
+  const summaries: string[] = [];
+
+  // Get recent entries (last 5-7)
+  const recentEntries = entries.slice(0, recentCount);
+
+  // Find significant older entries (beyond the recent ones)
+  const olderEntries = entries.slice(recentCount);
+  const significantOlder = olderEntries
+    .map(entry => ({ entry, score: scoreSignificance(entry) }))
+    .filter(item => item.score >= 3)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(item => item.entry);
+
+  // Combine and format
+  const allEntries = [...recentEntries, ...significantOlder];
+
+  for (const entry of allEntries) {
+    const isSignificant = scoreSignificance(entry) >= 3;
+    // Longer preview for significant entries
+    const previewLength = isSignificant ? 100 : 60;
+    const preview = entry.text.slice(0, previewLength).trim();
+    const truncated = entry.text.length > previewLength ? preview + '...' : preview;
     const mood = entry.sentiment?.mood?.replace(/_/g, ' ') || 'reflective';
     const date = new Date(entry.createdAt);
     const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-    const timeDesc = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
-    return `${timeDesc} (${mood}): "${truncated}"`;
-  });
+
+    let timeDesc: string;
+    if (daysAgo === 0) {
+      timeDesc = 'today';
+    } else if (daysAgo === 1) {
+      timeDesc = 'yesterday';
+    } else if (daysAgo < 7) {
+      timeDesc = `${daysAgo} days ago`;
+    } else if (daysAgo < 30) {
+      timeDesc = `${Math.floor(daysAgo / 7)} weeks ago`;
+    } else {
+      timeDesc = `${Math.floor(daysAgo / 30)} months ago`;
+    }
+
+    const significantMarker = isSignificant && daysAgo > 7 ? ' [significant]' : '';
+    summaries.push(`${timeDesc} (${mood})${significantMarker}: "${truncated}"`);
+  }
+
+  return summaries;
 }
 
 /**
@@ -284,8 +365,8 @@ export async function buildUserContext(): Promise<UserContext> {
   // Analyze mood trend
   const { trend, description, avgScore } = analyzeMoodTrend(recentEntries);
 
-  // Get journal history insights
-  const recentEntrySummaries = getRecentEntrySummaries(entries, 3);
+  // Get journal history insights (5 recent + up to 3 significant older ones)
+  const recentEntrySummaries = getRecentEntrySummaries(entries, 5);
   const journalPatterns = analyzeJournalingPatterns(entries);
 
   // Patterns - will be populated as user tracks more data
