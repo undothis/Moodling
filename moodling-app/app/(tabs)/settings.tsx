@@ -96,19 +96,57 @@ export default function SettingsScreen() {
     }
   };
 
-  // Simple time picker options
-  const timeOptions = [
-    { hour: 7, minute: 0, label: '7:00 AM' },
-    { hour: 8, minute: 0, label: '8:00 AM' },
-    { hour: 9, minute: 0, label: '9:00 AM' },
-    { hour: 12, minute: 0, label: '12:00 PM' },
-    { hour: 17, minute: 0, label: '5:00 PM' },
-    { hour: 18, minute: 0, label: '6:00 PM' },
-    { hour: 19, minute: 0, label: '7:00 PM' },
-    { hour: 20, minute: 0, label: '8:00 PM' },
-    { hour: 21, minute: 0, label: '9:00 PM' },
-    { hour: 22, minute: 0, label: '10:00 PM' },
-  ];
+  // Generate time options including "soon" times for testing
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Build dynamic time options: next few minutes + standard times
+  const generateTimeOptions = () => {
+    const options = [];
+
+    // Add "in 1 minute" option for testing
+    let testMinute = (currentMinute + 1) % 60;
+    let testHour = currentHour + (currentMinute + 1 >= 60 ? 1 : 0);
+    if (testHour >= 24) testHour = 0;
+    options.push({
+      hour: testHour,
+      minute: testMinute,
+      label: `In 1 min (${formatTime(testHour, testMinute)})`,
+    });
+
+    // Add "in 5 minutes" option
+    testMinute = (currentMinute + 5) % 60;
+    testHour = currentHour + (currentMinute + 5 >= 60 ? 1 : 0);
+    if (testHour >= 24) testHour = 0;
+    options.push({
+      hour: testHour,
+      minute: testMinute,
+      label: `In 5 min (${formatTime(testHour, testMinute)})`,
+    });
+
+    // Add standard daily times
+    const standardTimes = [
+      { hour: 7, minute: 0 },
+      { hour: 9, minute: 0 },
+      { hour: 12, minute: 0 },
+      { hour: 18, minute: 0 },
+      { hour: 20, minute: 0 },
+      { hour: 21, minute: 0 },
+    ];
+
+    for (const time of standardTimes) {
+      options.push({
+        hour: time.hour,
+        minute: time.minute,
+        label: formatTime(time.hour, time.minute),
+      });
+    }
+
+    return options;
+  };
+
+  const timeOptions = generateTimeOptions();
 
   return (
     <ScrollView
