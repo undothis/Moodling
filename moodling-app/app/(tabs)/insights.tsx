@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -31,7 +31,7 @@ import {
  * - User knows themselves best
  *
  * Unit 10: Pattern data model + Quick Log
- * Unit 11 will add: Pattern visualization
+ * Unit 11: Pattern visualization (mood chart, factor bars, observations)
  * Unit 12 will add: Correlation engine
  */
 export default function InsightsScreen() {
@@ -93,6 +93,9 @@ export default function InsightsScreen() {
     daysWithEntries: recentDays.filter((d) => d.entryCount > 0).length,
   };
 
+  // Generate pattern observations based on data
+  const observations = generateObservations(recentDays);
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -104,6 +107,109 @@ export default function InsightsScreen() {
           Patterns you might notice
         </Text>
       </View>
+
+      {/* Your Week - Mood Chart */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          Your Week
+        </Text>
+
+        {isLoading ? (
+          <ActivityIndicator style={styles.loader} color={colors.tint} />
+        ) : (
+          <>
+            {/* Mood emoji row */}
+            <View style={styles.moodChart}>
+              {recentDays.map((day) => (
+                <View key={day.date} style={styles.chartDay}>
+                  <Text style={[styles.chartDayLabel, { color: colors.textMuted }]}>
+                    {getDayAbbr(day.date)}
+                  </Text>
+                  <Text style={styles.chartEmoji}>{getMoodEmoji(day)}</Text>
+                  {/* Mood bar */}
+                  <View style={[styles.moodBarContainer, { backgroundColor: colors.background }]}>
+                    <View
+                      style={[
+                        styles.moodBar,
+                        {
+                          height: getMoodBarHeight(day),
+                          backgroundColor: getMoodBarColor(day, colors),
+                        },
+                      ]}
+                    />
+                  </View>
+                  {/* Sleep bar (if tracked) */}
+                  {day.factors.sleepHours !== undefined && (
+                    <View style={[styles.sleepBarContainer, { backgroundColor: colors.background }]}>
+                      <View
+                        style={[
+                          styles.sleepBar,
+                          {
+                            height: getSleepBarHeight(day.factors.sleepHours),
+                            backgroundColor: colors.tint,
+                          },
+                        ]}
+                      />
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+
+            {/* Legend */}
+            <View style={styles.legend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+                <Text style={[styles.legendText, { color: colors.textMuted }]}>mood</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.tint }]} />
+                <Text style={[styles.legendText, { color: colors.textMuted }]}>sleep</Text>
+              </View>
+            </View>
+
+            {/* Week stats */}
+            <View style={styles.weekStats}>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colors.tint }]}>
+                  {weekStats.entries}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                  entries
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colors.tint }]}>
+                  {weekStats.daysWithEntries}
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                  days journaled
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+      </View>
+
+      {/* What We Notice - Pattern Observations */}
+      {observations.length > 0 && (
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            What We Notice
+          </Text>
+          {observations.map((obs, index) => (
+            <View key={index} style={styles.observationItem}>
+              <Text style={styles.observationEmoji}>{obs.emoji}</Text>
+              <Text style={[styles.observationText, { color: colors.textSecondary }]}>
+                {obs.text}
+              </Text>
+            </View>
+          ))}
+          <Text style={[styles.observationDisclaimer, { color: colors.textMuted }]}>
+            This is just a pattern — you know yourself best.
+          </Text>
+        </View>
+      )}
 
       {/* Quick Log Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -153,57 +259,6 @@ export default function InsightsScreen() {
         </Text>
       </View>
 
-      {/* Week at a Glance */}
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          This Week
-        </Text>
-
-        <View style={styles.weekStats}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.tint }]}>
-              {weekStats.entries}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-              entries
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.tint }]}>
-              {weekStats.daysWithEntries}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-              days journaled
-            </Text>
-          </View>
-        </View>
-
-        {/* Mini mood calendar */}
-        <View style={styles.moodCalendar}>
-          {recentDays.map((day) => {
-            const emoji = getMoodEmoji(day);
-            return (
-              <View key={day.date} style={styles.dayCell}>
-                <Text style={[styles.dayLabel, { color: colors.textMuted }]}>
-                  {getDayAbbr(day.date)}
-                </Text>
-                <Text style={styles.dayEmoji}>{emoji}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Placeholder for future visualization */}
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Patterns
-        </Text>
-        <Text style={[styles.placeholderText, { color: colors.textMuted }]}>
-          Charts and correlations coming in Unit 11-12
-        </Text>
-      </View>
-
       <View style={styles.disclaimer}>
         <Text style={[styles.disclaimerText, { color: colors.textMuted }]}>
           These are observations, not diagnoses.{'\n'}
@@ -243,6 +298,122 @@ function getDayAbbr(dateString: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2);
 }
 
+// Helper: Get mood bar height (0-40px based on sentiment)
+function getMoodBarHeight(day: DailySummary): number {
+  if (day.entryCount === 0 || day.averageSentiment === null) return 4;
+  // Convert -1 to 1 sentiment to 4 to 40 height
+  const normalized = (day.averageSentiment + 1) / 2; // 0 to 1
+  return Math.max(4, Math.round(normalized * 36) + 4);
+}
+
+// Helper: Get mood bar color
+function getMoodBarColor(day: DailySummary, colors: typeof Colors.light): string {
+  if (day.entryCount === 0) return colors.border;
+  if (day.averageSentiment === null) return colors.border;
+  if (day.averageSentiment >= 0.1) return colors.success || '#4CAF50';
+  if (day.averageSentiment >= -0.1) return colors.textMuted;
+  return '#FF9800';
+}
+
+// Helper: Get sleep bar height (0-40px based on hours)
+function getSleepBarHeight(hours: number): number {
+  // 8 hours = full bar (40px), scale accordingly
+  return Math.min(40, Math.max(4, Math.round((hours / 8) * 40)));
+}
+
+// Helper: Generate pattern observations
+interface Observation {
+  emoji: string;
+  text: string;
+}
+
+function generateObservations(days: DailySummary[]): Observation[] {
+  const observations: Observation[] = [];
+
+  // Need at least 3 days with entries to make observations
+  const daysWithEntries = days.filter((d) => d.entryCount > 0);
+  if (daysWithEntries.length < 3) {
+    return observations;
+  }
+
+  // Check for sleep correlation
+  const daysWithSleep = days.filter(
+    (d) => d.factors.sleepHours !== undefined && d.averageSentiment !== null
+  );
+  if (daysWithSleep.length >= 3) {
+    const goodSleepDays = daysWithSleep.filter((d) => (d.factors.sleepHours || 0) >= 7);
+    const poorSleepDays = daysWithSleep.filter((d) => (d.factors.sleepHours || 0) < 6);
+
+    if (goodSleepDays.length >= 2) {
+      const avgGoodSleep =
+        goodSleepDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / goodSleepDays.length;
+      if (avgGoodSleep > 0) {
+        observations.push({
+          emoji: '😴',
+          text: 'On days with 7+ hours of sleep, your entries tend to be more positive.',
+        });
+      }
+    }
+
+    if (poorSleepDays.length >= 2) {
+      const avgPoorSleep =
+        poorSleepDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / poorSleepDays.length;
+      if (avgPoorSleep < 0) {
+        observations.push({
+          emoji: '🌙',
+          text: 'You might notice more difficult days when sleep is under 6 hours.',
+        });
+      }
+    }
+  }
+
+  // Check for exercise correlation
+  const daysWithExercise = days.filter(
+    (d) => d.factors.exerciseMinutes !== undefined && d.averageSentiment !== null
+  );
+  if (daysWithExercise.length >= 3) {
+    const activeDays = daysWithExercise.filter((d) => (d.factors.exerciseMinutes || 0) >= 30);
+    if (activeDays.length >= 2) {
+      const avgActive =
+        activeDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / activeDays.length;
+      if (avgActive > 0) {
+        observations.push({
+          emoji: '🏃',
+          text: 'Exercise days seem to correlate with more positive entries.',
+        });
+      }
+    }
+  }
+
+  // Check for social correlation
+  const daysWithSocial = days.filter(
+    (d) => d.factors.socialMinutes !== undefined && d.averageSentiment !== null
+  );
+  if (daysWithSocial.length >= 3) {
+    const socialDays = daysWithSocial.filter((d) => (d.factors.socialMinutes || 0) >= 60);
+    if (socialDays.length >= 2) {
+      const avgSocial =
+        socialDays.reduce((sum, d) => sum + (d.averageSentiment || 0), 0) / socialDays.length;
+      if (avgSocial > 0) {
+        observations.push({
+          emoji: '👥',
+          text: 'Time with others might be connected to brighter days.',
+        });
+      }
+    }
+  }
+
+  // Entry count observation
+  if (daysWithEntries.length >= 5) {
+    observations.push({
+      emoji: '📝',
+      text: `You've journaled ${daysWithEntries.length} of the last 7 days. Consistency can help you notice patterns.`,
+    });
+  }
+
+  return observations.slice(0, 3); // Max 3 observations
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -271,7 +442,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 12,
   },
   sectionSubtitle: {
     fontSize: 13,
@@ -280,6 +451,105 @@ const styles = StyleSheet.create({
   loader: {
     marginVertical: 20,
   },
+  // Mood Chart styles
+  moodChart: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  chartDay: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  chartDayLabel: {
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  chartEmoji: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
+  moodBarContainer: {
+    width: 20,
+    height: 44,
+    borderRadius: 4,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  moodBar: {
+    width: '100%',
+    borderRadius: 4,
+  },
+  sleepBarContainer: {
+    width: 8,
+    height: 44,
+    borderRadius: 2,
+    marginTop: 4,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  sleepBar: {
+    width: '100%',
+    borderRadius: 2,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 12,
+  },
+  weekStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128,128,128,0.2)',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '600',
+  },
+  statLabel: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  // Observations styles
+  observationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 10,
+  },
+  observationEmoji: {
+    fontSize: 20,
+  },
+  observationText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  observationDisclaimer: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+  // Factor list styles
   factorList: {
     gap: 12,
   },
@@ -325,42 +595,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 13,
     fontStyle: 'italic',
-  },
-  weekStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '600',
-  },
-  statLabel: {
-    fontSize: 13,
-    marginTop: 4,
-  },
-  moodCalendar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  dayCell: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  dayLabel: {
-    fontSize: 11,
-    marginBottom: 4,
-  },
-  dayEmoji: {
-    fontSize: 20,
-  },
-  placeholderText: {
-    fontSize: 14,
-    marginTop: 8,
   },
   disclaimer: {
     paddingVertical: 20,
