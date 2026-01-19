@@ -15,6 +15,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
 import { saveEntry, getAllEntries } from '@/services/journalStorage';
+import { analyzeSentiment } from '@/services/sentimentAnalysis';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -27,6 +28,7 @@ import { saveEntry, getAllEntries } from '@/services/journalStorage';
  * Unit 1: Text editor, save button, timestamp, character count
  * Unit 2: Persistent storage (data survives restart)
  * Unit 3: Entry history list, detail view, delete
+ * Unit 4: Sentiment analysis with mood emoji
  */
 
 export default function JournalScreen() {
@@ -78,7 +80,14 @@ export default function JournalScreen() {
     try {
       setIsSaving(true);
 
-      const newEntry = createJournalEntry(entryText);
+      // Analyze sentiment (on-device, instant)
+      const sentimentResult = analyzeSentiment(entryText);
+
+      const newEntry = createJournalEntry(entryText, {
+        score: sentimentResult.normalizedScore,
+        mood: sentimentResult.mood,
+        emoji: sentimentResult.emoji,
+      });
       await saveEntry(newEntry);
 
       // Update local state
@@ -218,14 +227,19 @@ export default function JournalScreen() {
               onPress={() => router.push(`/entry/${latestEntry.id}`)}
               activeOpacity={0.7}
             >
+              <View style={styles.entryHeader}>
+                {latestEntry.sentiment && (
+                  <Text style={styles.moodEmoji}>{latestEntry.sentiment.emoji}</Text>
+                )}
+                <Text style={[styles.savedEntryTime, { color: colors.textMuted }]}>
+                  {formatTimestamp(latestEntry.createdAt)}
+                </Text>
+              </View>
               <Text
                 style={[styles.savedEntryText, { color: colors.text }]}
                 numberOfLines={4}
               >
                 {latestEntry.text}
-              </Text>
-              <Text style={[styles.savedEntryTime, { color: colors.textMuted }]}>
-                {formatTimestamp(latestEntry.createdAt)}
               </Text>
             </TouchableOpacity>
             {entries.length > 1 && (
@@ -344,13 +358,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  entryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  moodEmoji: {
+    fontSize: 20,
+  },
   savedEntryText: {
     fontSize: 15,
     lineHeight: 22,
   },
   savedEntryTime: {
     fontSize: 12,
-    marginTop: 12,
   },
   entryCount: {
     fontSize: 13,

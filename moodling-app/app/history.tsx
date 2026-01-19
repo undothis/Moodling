@@ -83,13 +83,18 @@ export default function HistoryScreen() {
       onPress={() => router.push(`/entry/${item.id}`)}
       activeOpacity={0.7}
     >
+      <View style={styles.entryHeader}>
+        {item.sentiment && (
+          <Text style={styles.moodEmoji}>{item.sentiment.emoji}</Text>
+        )}
+        <Text style={[styles.entryDate, { color: colors.textMuted }]}>
+          {formatDate(item.createdAt)} · {formatTime(item.createdAt)}
+        </Text>
+      </View>
       <Text style={[styles.entryText, { color: colors.text }]}>
         {truncateText(item.text)}
       </Text>
       <View style={styles.entryMeta}>
-        <Text style={[styles.entryDate, { color: colors.textMuted }]}>
-          {formatDate(item.createdAt)} · {formatTime(item.createdAt)}
-        </Text>
         <Text style={[styles.entryChars, { color: colors.textMuted }]}>
           {item.text.length} chars
         </Text>
@@ -188,6 +193,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+  },
+  entryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  moodEmoji: {
+    fontSize: 18,
   },
   entryText: {
     fontSize: 15,

@@ -165,12 +165,19 @@ export default function EntryDetailScreen() {
       >
         {/* Date and time */}
         <View style={styles.dateContainer}>
-          <Text style={[styles.date, { color: colors.textSecondary }]}>
-            {formatFullDate(entry.createdAt)}
-          </Text>
-          <Text style={[styles.time, { color: colors.textMuted }]}>
-            at {formatTime(entry.createdAt)}
-          </Text>
+          <View style={styles.dateRow}>
+            {entry.sentiment && (
+              <Text style={styles.moodEmoji}>{entry.sentiment.emoji}</Text>
+            )}
+            <View>
+              <Text style={[styles.date, { color: colors.textSecondary }]}>
+                {formatFullDate(entry.createdAt)}
+              </Text>
+              <Text style={[styles.time, { color: colors.textMuted }]}>
+                at {formatTime(entry.createdAt)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Entry text */}
@@ -237,6 +244,14 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     marginBottom: 20,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  moodEmoji: {
+    fontSize: 32,
+    marginRight: 12,
   },
   date: {
     fontSize: 18,
