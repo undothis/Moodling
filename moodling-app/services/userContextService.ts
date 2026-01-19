@@ -52,6 +52,13 @@ export interface UserContext {
   avgMoodScore?: number;
   entriesThisWeek?: number;
 
+  // Journal history
+  recentEntrySummaries: string[];
+  totalEntries: number;
+  avgEntriesPerWeek: number;
+  longestStreak: number;
+  commonMoods: string[];
+
   // Patterns discovered
   knownTriggers: string[];
   knownHelpers: string[];
@@ -168,7 +175,6 @@ function calculateVariance(scores: number[]): number {
 function extractRecentTheme(entries: JournalEntry[]): string | undefined {
   if (entries.length === 0) return undefined;
 
-  const recentEntry = entries[0];
   const moods = entries.slice(0, 3).map(e => e.sentiment?.mood).filter(Boolean) as MoodCategory[];
 
   // Simple theme based on mood
@@ -191,6 +197,186 @@ function extractRecentTheme(entries: JournalEntry[]): string | undefined {
 }
 
 /**
+ * Keywords that suggest significant life events
+ */
+const SIGNIFICANT_KEYWORDS = [
+  // Relationships
+  'girlfriend', 'boyfriend', 'partner', 'wife', 'husband', 'married', 'engaged', 'breakup', 'divorce',
+  'dating', 'relationship', 'proposal', 'love',
+  // Family
+  'mom', 'dad', 'mother', 'father', 'brother', 'sister', 'grandma', 'grandpa', 'family',
+  'son', 'daughter', 'kids', 'children', 'parents', 'aunt', 'uncle', 'cousin',
+  // Life events - loss/grief
+  'died', 'death', 'funeral', 'passed away', 'lost', 'grief', 'grieving', 'mourning', 'goodbye',
+  // Health/Medical
+  'cancer', 'hospital', 'accident', 'surgery', 'doctor', 'diagnosed', 'sick', 'illness',
+  'pregnant', 'baby', 'born', 'miscarriage', 'emergency', 'ER', 'ambulance', 'chronic',
+  // Work/School/Career
+  'fired', 'quit', 'job', 'promotion', 'interview', 'graduated', 'college', 'school',
+  'degree', 'thesis', 'exam', 'finals', 'scholarship', 'raise', 'salary', 'unemployed', 'hired',
+  // Major events
+  'moved', 'moving', 'new house', 'apartment', 'car accident', 'wedding', 'birthday', 'anniversary',
+  // Mental health journey
+  'therapy', 'therapist', 'counselor', 'psychiatrist', 'medication', 'antidepressant',
+  'anxiety', 'depression', 'panic attack', 'breakdown', 'mental health',
+  // Pets
+  'dog', 'cat', 'pet', 'puppy', 'kitten', 'adopted', 'rescue', 'vet',
+  // Finances
+  'debt', 'loan', 'mortgage', 'bankruptcy', 'savings', 'investment',
+  // Friendships
+  'best friend', 'friendship', 'falling out', 'reconnected', 'betrayed', 'ghosted',
+  // Personal growth/Achievements
+  'accomplished', 'achieved', 'milestone', 'first time', 'personal best', 'goal', 'finally',
+  // Spiritual/Religious
+  'church', 'temple', 'meditation', 'spiritual', 'faith', 'prayer', 'baptism',
+  // Legal
+  'lawyer', 'court', 'custody', 'lawsuit', 'arrested',
+  // Addiction/Recovery
+  'sober', 'sobriety', 'relapse', 'clean', 'addiction', 'AA', 'rehab', 'recovery',
+  // Identity
+  'coming out', 'transition', 'identity',
+  // Trauma (handle sensitively)
+  'assault', 'abuse', 'trauma',
+  // Travel/Living
+  'vacation', 'trip', 'travel', 'new city', 'hometown',
+  // Celebrations
+  'celebration', 'reunion', 'party', 'holiday',
+];
+
+/**
+ * Check if entry contains significant keywords
+ */
+function hasSignificantContent(text: string): boolean {
+  const lower = text.toLowerCase();
+  return SIGNIFICANT_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+/**
+ * Score entry significance (higher = more important)
+ */
+function scoreSignificance(entry: JournalEntry): number {
+  let score = 0;
+
+  // Longer entries are often more significant
+  if (entry.text.length > 200) score += 2;
+  if (entry.text.length > 500) score += 2;
+
+  // Strong emotions suggest importance
+  const mood = entry.sentiment?.mood || '';
+  if (mood.includes('very_')) score += 3;
+
+  // Contains significant keywords
+  if (hasSignificantContent(entry.text)) score += 5;
+
+  return score;
+}
+
+/**
+ * Get brief summaries of recent journal entries
+ * Includes both recent entries AND significant historical ones
+ */
+function getRecentEntrySummaries(entries: JournalEntry[], recentCount: number = 5): string[] {
+  const summaries: string[] = [];
+
+  // Get recent entries (last 5-7)
+  const recentEntries = entries.slice(0, recentCount);
+
+  // Find significant older entries (beyond the recent ones)
+  const olderEntries = entries.slice(recentCount);
+  const significantOlder = olderEntries
+    .map(entry => ({ entry, score: scoreSignificance(entry) }))
+    .filter(item => item.score >= 3)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(item => item.entry);
+
+  // Combine and format
+  const allEntries = [...recentEntries, ...significantOlder];
+
+  for (const entry of allEntries) {
+    const isSignificant = scoreSignificance(entry) >= 3;
+    // Longer preview for significant entries
+    const previewLength = isSignificant ? 100 : 60;
+    const preview = entry.text.slice(0, previewLength).trim();
+    const truncated = entry.text.length > previewLength ? preview + '...' : preview;
+    const mood = entry.sentiment?.mood?.replace(/_/g, ' ') || 'reflective';
+    const date = new Date(entry.createdAt);
+    const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+    let timeDesc: string;
+    if (daysAgo === 0) {
+      timeDesc = 'today';
+    } else if (daysAgo === 1) {
+      timeDesc = 'yesterday';
+    } else if (daysAgo < 7) {
+      timeDesc = `${daysAgo} days ago`;
+    } else if (daysAgo < 30) {
+      timeDesc = `${Math.floor(daysAgo / 7)} weeks ago`;
+    } else {
+      timeDesc = `${Math.floor(daysAgo / 30)} months ago`;
+    }
+
+    const significantMarker = isSignificant && daysAgo > 7 ? ' [significant]' : '';
+    summaries.push(`${timeDesc} (${mood})${significantMarker}: "${truncated}"`);
+  }
+
+  return summaries;
+}
+
+/**
+ * Analyze journaling patterns over time
+ */
+function analyzeJournalingPatterns(entries: JournalEntry[]): {
+  totalEntries: number;
+  avgEntriesPerWeek: number;
+  longestStreak: number;
+  commonMoods: string[];
+} {
+  const totalEntries = entries.length;
+
+  if (totalEntries === 0) {
+    return { totalEntries: 0, avgEntriesPerWeek: 0, longestStreak: 0, commonMoods: [] };
+  }
+
+  // Calculate average entries per week
+  const oldestEntry = new Date(entries[entries.length - 1].createdAt);
+  const newestEntry = new Date(entries[0].createdAt);
+  const weeksBetween = Math.max(1, (newestEntry.getTime() - oldestEntry.getTime()) / (1000 * 60 * 60 * 24 * 7));
+  const avgEntriesPerWeek = Math.round((totalEntries / weeksBetween) * 10) / 10;
+
+  // Calculate longest streak (consecutive days)
+  let longestStreak = 1;
+  let currentStreak = 1;
+  const dates = entries.map(e => new Date(e.createdAt).toDateString());
+  for (let i = 1; i < dates.length; i++) {
+    const prevDate = new Date(dates[i - 1]);
+    const currDate = new Date(dates[i]);
+    const dayDiff = (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24);
+    if (dayDiff <= 1.5) { // Account for same day or next day
+      currentStreak++;
+      longestStreak = Math.max(longestStreak, currentStreak);
+    } else {
+      currentStreak = 1;
+    }
+  }
+
+  // Find common moods
+  const moodCounts: Record<string, number> = {};
+  for (const entry of entries) {
+    if (entry.sentiment?.mood) {
+      const simplified = entry.sentiment.mood.replace('very_', '').replace('slightly_', '');
+      moodCounts[simplified] = (moodCounts[simplified] || 0) + 1;
+    }
+  }
+  const commonMoods = Object.entries(moodCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([mood]) => mood);
+
+  return { totalEntries, avgEntriesPerWeek, longestStreak, commonMoods };
+}
+
+/**
  * Build comprehensive user context
  */
 export async function buildUserContext(): Promise<UserContext> {
@@ -208,6 +394,10 @@ export async function buildUserContext(): Promise<UserContext> {
 
   // Analyze mood trend
   const { trend, description, avgScore } = analyzeMoodTrend(recentEntries);
+
+  // Get journal history insights (5 recent + up to 3 significant older ones)
+  const recentEntrySummaries = getRecentEntrySummaries(entries, 5);
+  const journalPatterns = analyzeJournalingPatterns(entries);
 
   // Patterns - will be populated as user tracks more data
   const triggers: string[] = [];
@@ -227,6 +417,13 @@ export async function buildUserContext(): Promise<UserContext> {
     recentMoodDescription: description,
     avgMoodScore: avgScore,
     entriesThisWeek: recentEntries.length,
+
+    // Journal history
+    recentEntrySummaries,
+    totalEntries: journalPatterns.totalEntries,
+    avgEntriesPerWeek: journalPatterns.avgEntriesPerWeek,
+    longestStreak: journalPatterns.longestStreak,
+    commonMoods: journalPatterns.commonMoods,
 
     // Patterns
     knownTriggers: triggers,
@@ -259,12 +456,38 @@ export function formatContextForPrompt(context: UserContext): string {
     parts.push(`Communication style: ${context.communicationStyle}`);
   }
 
+  // Journal history overview
+  if (context.totalEntries > 0) {
+    let historyDesc = `Journal history: ${context.totalEntries} total entries`;
+    if (context.avgEntriesPerWeek > 0) {
+      historyDesc += `, ~${context.avgEntriesPerWeek} per week`;
+    }
+    if (context.longestStreak > 1) {
+      historyDesc += `, longest streak: ${context.longestStreak} days`;
+    }
+    parts.push(historyDesc);
+  }
+
+  // Common moods
+  if (context.commonMoods.length > 0) {
+    parts.push(`Most common moods: ${context.commonMoods.join(', ')}`);
+  }
+
   // Current state
   if (context.recentMoodDescription) {
-    parts.push(`Recent mood: ${context.recentMoodDescription}`);
+    parts.push(`Recent mood trend: ${context.recentMoodDescription}`);
   }
-  if (context.entriesThisWeek !== undefined) {
-    parts.push(`Journaling frequency: ${context.entriesThisWeek} entries this week`);
+  if (context.entriesThisWeek !== undefined && context.entriesThisWeek > 0) {
+    parts.push(`This week: ${context.entriesThisWeek} entries`);
+  }
+
+  // Recent journal summaries (brief previews)
+  if (context.recentEntrySummaries.length > 0) {
+    parts.push('');
+    parts.push('Recent journal entries:');
+    for (const summary of context.recentEntrySummaries) {
+      parts.push(`  • ${summary}`);
+    }
   }
 
   // Patterns
@@ -281,14 +504,18 @@ export function formatContextForPrompt(context: UserContext): string {
   }
 
   // Preferences
+  const prefParts: string[] = [];
   if (context.prefersDirectness) {
-    parts.push('Prefers direct communication');
+    prefParts.push('direct communication');
   }
   if (context.dislikesPlatitudes) {
-    parts.push('Dislikes generic platitudes');
+    prefParts.push('dislikes platitudes');
   }
   if (context.respondsWellToHumor) {
-    parts.push('Responds well to light humor');
+    prefParts.push('responds to humor');
+  }
+  if (prefParts.length > 0) {
+    parts.push(`Communication preferences: ${prefParts.join(', ')}`);
   }
 
   // Social exposure
@@ -301,7 +528,7 @@ export function formatContextForPrompt(context: UserContext): string {
     parts.push(`Social comfort: ${levelDesc} (level ${level}/8)`);
   }
 
-  return parts.length === 0 ? 'No additional context available.' : parts.join('\n');
+  return parts.length === 0 ? 'New user - no history yet.' : parts.join('\n');
 }
 
 /**

@@ -39,6 +39,11 @@ import {
   getCostData,
   CLAUDE_CONFIG,
 } from '@/services/claudeAPIService';
+import {
+  getUserPreferences,
+  saveUserPreferences,
+  UserPreferences,
+} from '@/services/userContextService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -77,6 +82,10 @@ export default function SettingsScreen() {
   const [monthlyCost, setMonthlyCost] = useState('$0.00');
   const [totalCost, setTotalCost] = useState('$0.00');
 
+  // Personalization state
+  const [userPrefs, setUserPrefs] = useState<UserPreferences>({});
+  const [showPersonalization, setShowPersonalization] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -110,6 +119,10 @@ export default function SettingsScreen() {
         setMonthlyCost(costData.formattedMonthly);
         setTotalCost(costData.formattedTotal);
       }
+
+      // Load personalization preferences
+      const prefs = await getUserPreferences();
+      setUserPrefs(prefs);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -193,6 +206,16 @@ export default function SettingsScreen() {
   const handleToneToggle = async (style: ToneStyle) => {
     const newPrefs = await toggleToneStyle(style);
     setTonePreferences(newPrefs);
+  };
+
+  // Handle personalization updates
+  const updatePersonalization = async <K extends keyof UserPreferences>(
+    key: K,
+    value: UserPreferences[K]
+  ) => {
+    const newPrefs = { ...userPrefs, [key]: value };
+    setUserPrefs(newPrefs);
+    await saveUserPreferences(newPrefs);
   };
 
   // Handle API key save (Unit 18)
@@ -578,6 +601,154 @@ export default function SettingsScreen() {
 
         <Text style={[styles.toneNote, { color: colors.textMuted }]}>
           These preferences shape how reflections and coaching feel. Mix and match to find your fit.
+        </Text>
+      </View>
+
+      {/* Personalization Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Personalization
+          </Text>
+        </View>
+
+        <Text style={[styles.personalizationDesc, { color: colors.textSecondary }]}>
+          Help Moodling understand how you like to communicate. This shapes coaching conversations.
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.timeButton, { backgroundColor: colors.background }]}
+          onPress={() => setShowPersonalization(!showPersonalization)}
+        >
+          <Text style={[styles.timeLabel, { color: colors.textSecondary }]}>
+            Your preferences
+          </Text>
+          <Text style={[styles.timeValue, { color: colors.text }]}>
+            {userPrefs.temperament || userPrefs.communicationStyle ? 'Configured' : 'Not set'}
+          </Text>
+        </TouchableOpacity>
+
+        {showPersonalization && (
+          <View style={styles.personalizationOptions}>
+            {/* Temperament */}
+            <Text style={[styles.personalizationLabel, { color: colors.text }]}>
+              How would you describe yourself?
+            </Text>
+            <View style={styles.personalizationRow}>
+              {(['introvert', 'ambivert', 'extrovert'] as const).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.personalizationChip,
+                    {
+                      backgroundColor: userPrefs.temperament === type ? colors.tint : colors.background,
+                      borderColor: userPrefs.temperament === type ? colors.tint : colors.border,
+                    },
+                  ]}
+                  onPress={() => updatePersonalization('temperament', type)}
+                >
+                  <Text
+                    style={[
+                      styles.personalizationChipText,
+                      { color: userPrefs.temperament === type ? '#FFFFFF' : colors.text },
+                    ]}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Communication Style */}
+            <Text style={[styles.personalizationLabel, { color: colors.text, marginTop: 16 }]}>
+              How do you like to be talked to?
+            </Text>
+            <View style={styles.personalizationRow}>
+              {([
+                { value: 'direct', label: 'Direct' },
+                { value: 'gentle', label: 'Gentle' },
+                { value: 'detailed', label: 'Detailed' },
+              ] as const).map((style) => (
+                <TouchableOpacity
+                  key={style.value}
+                  style={[
+                    styles.personalizationChip,
+                    {
+                      backgroundColor: userPrefs.communicationStyle === style.value ? colors.tint : colors.background,
+                      borderColor: userPrefs.communicationStyle === style.value ? colors.tint : colors.border,
+                    },
+                  ]}
+                  onPress={() => updatePersonalization('communicationStyle', style.value)}
+                >
+                  <Text
+                    style={[
+                      styles.personalizationChipText,
+                      { color: userPrefs.communicationStyle === style.value ? '#FFFFFF' : colors.text },
+                    ]}
+                  >
+                    {style.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Preference toggles */}
+            <Text style={[styles.personalizationLabel, { color: colors.text, marginTop: 16 }]}>
+              Communication preferences
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.prefToggle,
+                {
+                  backgroundColor: userPrefs.prefersDirectness ? colors.tint : colors.background,
+                  borderColor: userPrefs.prefersDirectness ? colors.tint : colors.border,
+                },
+              ]}
+              onPress={() => updatePersonalization('prefersDirectness', !userPrefs.prefersDirectness)}
+            >
+              <Text style={[styles.prefToggleText, { color: userPrefs.prefersDirectness ? '#FFFFFF' : colors.text }]}>
+                I prefer direct feedback
+              </Text>
+              {userPrefs.prefersDirectness && <Text style={styles.prefToggleCheck}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.prefToggle,
+                {
+                  backgroundColor: userPrefs.dislikesPlatitudes ? colors.tint : colors.background,
+                  borderColor: userPrefs.dislikesPlatitudes ? colors.tint : colors.border,
+                },
+              ]}
+              onPress={() => updatePersonalization('dislikesPlatitudes', !userPrefs.dislikesPlatitudes)}
+            >
+              <Text style={[styles.prefToggleText, { color: userPrefs.dislikesPlatitudes ? '#FFFFFF' : colors.text }]}>
+                Skip generic phrases like "everything happens for a reason"
+              </Text>
+              {userPrefs.dislikesPlatitudes && <Text style={styles.prefToggleCheck}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.prefToggle,
+                {
+                  backgroundColor: userPrefs.respondsWellToHumor ? colors.tint : colors.background,
+                  borderColor: userPrefs.respondsWellToHumor ? colors.tint : colors.border,
+                },
+              ]}
+              onPress={() => updatePersonalization('respondsWellToHumor', !userPrefs.respondsWellToHumor)}
+            >
+              <Text style={[styles.prefToggleText, { color: userPrefs.respondsWellToHumor ? '#FFFFFF' : colors.text }]}>
+                Light humor is welcome
+              </Text>
+              {userPrefs.respondsWellToHumor && <Text style={styles.prefToggleCheck}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={[styles.personalizationNote, { color: colors.textMuted }]}>
+          These help Moodling adapt to your style. You can change them anytime.
         </Text>
       </View>
 
@@ -1078,5 +1249,59 @@ const styles = StyleSheet.create({
   apiHint: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  // Personalization styles
+  personalizationDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  personalizationOptions: {
+    marginTop: 12,
+  },
+  personalizationLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  personalizationRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  personalizationChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  personalizationChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  prefToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  prefToggleText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  prefToggleCheck: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  personalizationNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    marginTop: 12,
   },
 });
