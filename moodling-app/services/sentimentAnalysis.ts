@@ -134,8 +134,8 @@ function getMoodCategory(normalizedScore: number): MoodCategory {
   if (normalizedScore >= 0.2) return 'positive';
   if (normalizedScore >= 0.05) return 'slightly_positive';
   if (normalizedScore >= -0.05) return 'neutral';
-  if (normalizedScore >= -0.2) return 'slightly_negative';
-  if (normalizedScore >= -0.4) return 'negative';
+  if (normalizedScore >= -0.25) return 'slightly_negative';
+  if (normalizedScore >= -0.6) return 'negative';
   return 'very_negative';
 }
 
