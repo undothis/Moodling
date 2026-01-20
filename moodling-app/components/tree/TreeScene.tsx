@@ -193,10 +193,11 @@ export const TreeScene: React.FC<TreeSceneProps> = ({
   const leafCount = Math.max(1, Math.min(8, Math.round(growthState.leafDensity)));
 
   return (
-    <Animated.View style={[styles.container, backgroundStyle]}>
-      {/* Background touch area */}
-      <Pressable style={styles.backgroundTouch} onPress={handleBackgroundPress}>
-        {/* Environment indicators - subtle, fading text */}
+    <Animated.View style={[styles.container, backgroundStyle]} pointerEvents="box-none">
+      {/* Touch area wrapper - leaves bottom 150px free for floating buttons */}
+      <View style={styles.touchAreaWrapper} pointerEvents="box-none">
+        <Pressable style={styles.backgroundTouch} onPress={handleBackgroundPress}>
+          {/* Environment indicators - subtle, fading text */}
         <View style={styles.environmentHints}>
           <Text style={[styles.hintText, styles.hintFaded]}>
             {timeOfDay === 'morning' && '· morning ·'}
@@ -281,6 +282,7 @@ export const TreeScene: React.FC<TreeSceneProps> = ({
           </Pressable>
         </View>
       </Pressable>
+      </View>
     </Animated.View>
   );
 };
@@ -288,6 +290,10 @@ export const TreeScene: React.FC<TreeSceneProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  touchAreaWrapper: {
+    flex: 1,
+    marginBottom: 150, // Leave room for floating buttons
   },
   backgroundTouch: {
     flex: 1,
