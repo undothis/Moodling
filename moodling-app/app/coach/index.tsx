@@ -33,7 +33,7 @@ import {
 /**
  * Coaching Conversation Screen
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Transparent about AI source
  * - Anti-dependency nudges
  * - Never diagnostic

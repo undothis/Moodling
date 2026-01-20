@@ -2,7 +2,7 @@
  * Usage Tracking Service
  *
  * Tracks app usage patterns to support anti-dependency features.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Design toward app obsolescence
  * - Celebrate breaks, not streaks
  * - Encourage self-sufficiency

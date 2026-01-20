@@ -2,7 +2,7 @@
  * Compassionate Reflections Service
  *
  * Generates sentiment-aware, non-diagnostic reflections.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Descriptive, never diagnostic
  * - Tentative language ("might", "seems", "sounds like")
  * - Affirms user's self-knowledge
@@ -139,7 +139,7 @@ const CLOSINGS: Record<MoodCategory, string[]> = {
 
 // Additional affirmations for any sentiment
 const UNIVERSAL_AFFIRMATIONS = [
-  "Moodling is here when you need it, and not when you don't.",
+  "Mood Leaf is here when you need it, and not when you don't.",
   "The goal is to need this app less, not more.",
   "You're the expert on your own experience.",
   "This is your space. Use it however feels right.",

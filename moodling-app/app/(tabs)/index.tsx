@@ -35,7 +35,7 @@ import {
 /**
  * Journal Tab - Primary Entry Point
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - "How are you feeling right now?" (warm, present)
  * - No pressure, no streaks, no guilt
  * - Compassionate, grounded interface

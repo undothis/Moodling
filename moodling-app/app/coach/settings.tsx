@@ -2,7 +2,7 @@
  * Coach Personality Settings
  *
  * Extensive customization options for the AI coach experience.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User has full control
  * - Can go deep or keep it simple
  * - Respects privacy and boundaries

@@ -2,7 +2,7 @@
  * Sentiment Analysis Service
  *
  * Analyzes journal entry text to determine emotional tone.
- * All processing happens on-device (Moodling Ethics).
+ * All processing happens on-device (Mood Leaf Ethics).
  *
  * Uses AFINN-based sentiment analysis:
  * - Words are scored from -5 (very negative) to +5 (very positive)
@@ -69,7 +69,7 @@ const MOOD_EMOJIS: Record<MoodCategory, string> = {
 
 /**
  * Mood descriptions using tentative, non-diagnostic language
- * Following Moodling Ethics: "you might notice" not "you are"
+ * Following Mood Leaf Ethics: "you might notice" not "you are"
  */
 const MOOD_DESCRIPTIONS: Record<MoodCategory, string> = {
   very_positive: 'This entry seems to reflect a bright moment',

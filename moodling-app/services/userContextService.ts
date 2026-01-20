@@ -2,7 +2,7 @@
  * User Context Builder Service
  *
  * Aggregates user data to create personalized context for Claude.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Privacy-preserving (derived insights, not raw entries)
  * - User controls what's shared
  * - No diagnostic labels

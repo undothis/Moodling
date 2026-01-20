@@ -2,7 +2,7 @@
  * Claude API Service
  *
  * Handles therapeutic conversations via Claude API.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Never diagnose, always descriptive
  * - Tentative language
  * - Encourage real-world connection
@@ -137,17 +137,17 @@ You don't have to face this alone. A trained counselor can help right now.`,
 };
 
 /**
- * Build the Moodling system prompt
+ * Build the Mood Leaf system prompt
  */
 function buildSystemPrompt(
   userContext: string,
   toneInstruction: string,
   personalityPrompt?: string
 ): string {
-  // Use coach personality if available, otherwise default Moodling identity
+  // Use coach personality if available, otherwise default Mood Leaf identity
   const identity = personalityPrompt
     ? personalityPrompt
-    : 'You are Moodling, a warm and compassionate companion in a journaling app.';
+    : 'You are Mood Leaf, a warm and compassionate companion in a journaling app.';
 
   return `${identity}
 

@@ -57,7 +57,7 @@ import {
 /**
  * Settings Tab - Configuration & Privacy
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - All data stored on device (transparency)
  * - No hidden tracking
  * - User controls everything
@@ -694,7 +694,7 @@ export default function SettingsScreen() {
         )}
 
         <Text style={[styles.reminderNote, { color: colors.textMuted }]}>
-          Moodling will gently remind you to check in. You can always ignore it — no pressure, no streaks.
+          Mood Leaf will gently remind you to check in. You can always ignore it — no pressure, no streaks.
         </Text>
       </View>
 
@@ -721,7 +721,7 @@ export default function SettingsScreen() {
         {showToneOptions && (
           <View style={styles.toneOptionsContainer}>
             <Text style={[styles.toneHint, { color: colors.textMuted }]}>
-              Select one or more styles to customize how Moodling responds to you:
+              Select one or more styles to customize how Mood Leaf responds to you:
             </Text>
             {TONE_OPTIONS.map((option) => {
               const isSelected = tonePreferences.selectedStyles.includes(option.id);
@@ -825,7 +825,7 @@ export default function SettingsScreen() {
         </View>
 
         <Text style={[styles.personalizationDesc, { color: colors.textSecondary }]}>
-          Help Moodling understand how you like to communicate. This shapes coaching conversations.
+          Help Mood Leaf understand how you like to communicate. This shapes coaching conversations.
         </Text>
 
         <TouchableOpacity
@@ -960,7 +960,7 @@ export default function SettingsScreen() {
         )}
 
         <Text style={[styles.personalizationNote, { color: colors.textMuted }]}>
-          These help Moodling adapt to your style. You can change them anytime.
+          These help Mood Leaf adapt to your style. You can change them anytime.
         </Text>
       </View>
 
@@ -1098,11 +1098,11 @@ export default function SettingsScreen() {
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            About Moodling
+            About Mood Leaf
           </Text>
         </View>
         <Text style={[styles.aboutText, { color: colors.textSecondary }]}>
-          Moodling helps you notice patterns in how you feel without diagnosing or judging.
+          Mood Leaf helps you notice patterns in how you feel without diagnosing or judging.
         </Text>
         <Text style={[styles.aboutPhilosophy, { color: colors.textMuted }]}>
           Our highest success is when you need this app less, not more.

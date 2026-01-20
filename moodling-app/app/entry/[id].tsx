@@ -24,7 +24,7 @@ import { MoodCategory } from '@/services/sentimentAnalysis';
 /**
  * Entry Detail Screen - View Single Journal Entry
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User owns their data (can delete)
  * - No judgment, just reflection
  * - Respectful of their words

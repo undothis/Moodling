@@ -6,9 +6,9 @@ import { Colors } from '@/constants/Colors';
 import { isOnboardingComplete } from '@/services/coachPersonalityService';
 
 /**
- * Moodling Root Layout
+ * Mood Leaf Root Layout
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Warm, grounded, humble interface
  * - No engagement tricks or streak pressure
  * - Design toward the app's own obsolescence

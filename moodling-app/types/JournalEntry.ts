@@ -2,7 +2,7 @@
  * JournalEntry Type
  *
  * Core data model for journal entries.
- * All data stays on device (Moodling Ethics).
+ * All data stays on device (Mood Leaf Ethics).
  *
  * Unit 2: Basic entry with text and timestamp
  * Unit 4: Sentiment analysis (score, mood, emoji)

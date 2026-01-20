@@ -4,7 +4,7 @@
  * Aggregates journal entries and lifestyle factors to detect patterns.
  * All data stays on device.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Descriptive, not diagnostic
  * - User controls what they track
  * - Patterns are suggestions, not conclusions

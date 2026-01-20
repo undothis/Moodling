@@ -2,7 +2,7 @@
  * Social Exposure Ladder Service
  *
  * Graduated support for building social confidence.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Never pushes more than one level
  * - Celebrates attempts, not just success
  * - Normalizes anxiety

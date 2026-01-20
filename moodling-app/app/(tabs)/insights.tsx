@@ -32,7 +32,7 @@ import {
 /**
  * Insights Tab - Pattern Visualization
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Descriptive patterns, NOT diagnostic
  * - "You might notice..." language
  * - User knows themselves best
@@ -294,7 +294,7 @@ export default function InsightsScreen() {
         )}
 
         <Text style={[styles.factorHint, { color: colors.textMuted }]}>
-          This helps Moodling notice patterns over time.
+          This helps Mood Leaf notice patterns over time.
         </Text>
       </View>
 

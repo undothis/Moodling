@@ -2,7 +2,7 @@
  * Journal Storage Service
  *
  * Handles persistent storage of journal entries.
- * All data stays on device (Moodling Ethics).
+ * All data stays on device (Mood Leaf Ethics).
  *
  * Uses AsyncStorage for cross-platform compatibility:
  * - Works on iOS, Android, and Web
