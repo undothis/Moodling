@@ -17,7 +17,7 @@ import { getAllEntries } from '@/services/journalStorage';
 /**
  * History Screen - View All Journal Entries
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - No judgment, just a record
  * - User owns their data
  * - Easy to review past entries

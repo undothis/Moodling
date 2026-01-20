@@ -2,7 +2,7 @@
  * Notification Service
  *
  * Handles scheduling daily journal reminders.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Compassionate, not pushy
  * - No streaks, no guilt
  * - User controls everything

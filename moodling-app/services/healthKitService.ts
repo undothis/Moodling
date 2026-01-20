@@ -5,7 +5,7 @@
  * Provides: heart rate, sleep, steps, activity data.
  * Includes smart notifications when heart rate spikes.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Data stays on device
  * - User controls permissions
  * - Never diagnose from health data

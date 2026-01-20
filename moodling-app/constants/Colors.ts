@@ -1,7 +1,7 @@
 /**
- * Moodling Color Palette
+ * Mood Leaf Color Palette
  *
- * Warm, grounded, calming colors following Moodling's tone:
+ * Warm, grounded, calming colors following Mood Leaf's tone:
  * - Not clinical or sterile
  * - Not overly bright or stimulating
  * - Gentle, inviting, human

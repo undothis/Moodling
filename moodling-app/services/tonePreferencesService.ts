@@ -2,7 +2,7 @@
  * Tone Preferences Service
  *
  * Allows users to customize the communication style of responses.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User controls their experience
  * - Multiple styles can be combined
  * - No judgment about preferences

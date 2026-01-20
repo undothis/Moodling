@@ -4,7 +4,7 @@
  * Provides speech-to-text functionality for voice journaling.
  * Uses platform-native speech recognition (on-device where available).
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - All processing happens on-device when possible
  * - Clear privacy indicators shown to user
  * - User controls when recording happens

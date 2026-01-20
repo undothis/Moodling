@@ -1,4 +1,4 @@
-# Moodling Assets
+# Mood Leaf Assets
 
 Place the following images here:
 

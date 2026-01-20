@@ -31,7 +31,7 @@ import {
 /**
  * Social Exposure Ladder Screen
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User sets their own pace
  * - Celebrates attempts, not just success
  * - Never pushes too hard

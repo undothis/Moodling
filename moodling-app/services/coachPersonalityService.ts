@@ -5,7 +5,7 @@
  * Users can select from nature-themed personas, each with distinct
  * communication styles, or let the system adapt based on context.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User controls their experience
  * - Multiple dimensions can be customized
  * - Adaptive mode respects user context

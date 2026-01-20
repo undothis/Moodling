@@ -2,7 +2,7 @@
  * Coach Personality Onboarding
  *
  * A multi-step flow to help users customize their AI coach experience.
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User controls their experience
  * - No pressure, can skip
  * - Warm and inviting
