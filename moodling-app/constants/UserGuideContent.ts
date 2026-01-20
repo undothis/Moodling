@@ -84,7 +84,12 @@ export const FAQ_CONTENT: FAQItem[] = [
   {
     category: 'guide',
     question: 'What gets compressed and sent to AI?',
-    answer: 'Your chronotype, any rhythm transitions you\'re working on, and recent travel are compressed into a brief summary. This helps your guide understand your current state without sending raw data. Example: "Night owl transitioning to early bird, 12 days in, recently traveled east (6h shift, 5 days ago)."',
+    answer: 'Your chronotype, rhythm transitions, recent travel, and Twigs tracking are all compressed into brief summaries. Example: "Night owl transitioning to early bird, 12 days in. Meditation: 5 day streak. Morning meds: taken today." No raw journal text is sent.',
+  },
+  {
+    category: 'guide',
+    question: 'Does my guide know about my Twigs (tracking)?',
+    answer: 'Yes! Your guide sees your habit streaks, medication tracking, and symptom logs. It can reference your progress ("You\'ve meditated 5 days in a row!") and offer support around your actual habits and goals.',
   },
 
   // Privacy
