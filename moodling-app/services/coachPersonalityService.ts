@@ -508,6 +508,7 @@ export function generatePersonalityPrompt(settings: CoachSettings): string {
   parts.push(`Stay in character as ${displayName}. Do not mention being an AI assistant, Claude, or Anthropic.`);
   parts.push(`Your personality: ${persona.description}`);
   parts.push(`Core traits: ${persona.traits.join(', ')}.`);
+  parts.push(`Examples of how you speak: "${persona.samplePhrases.join('" | "')}"`);
 
   // Energy and tone
   if (detailed.energyLevel === 'calm') {
