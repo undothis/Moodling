@@ -19,6 +19,7 @@ import {
   PERSONAS,
   CoachPersona,
   CoachSettings,
+  resetOnboarding,
 } from '@/services/coachPersonalityService';
 import {
   getReminderSettings,
@@ -278,6 +279,27 @@ export default function SettingsScreen() {
     }
   };
 
+  // Handle redo onboarding
+  const handleRedoOnboarding = async () => {
+    const confirm = Platform.OS === 'web'
+      ? window.confirm('Start fresh with onboarding? Your journal entries will be kept.')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Redo Onboarding',
+            'Start fresh with onboarding? Your journal entries will be kept.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Start Fresh', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (confirm) {
+      await resetOnboarding();
+      router.replace('/onboarding');
+    }
+  };
+
   // Get selected style labels for display
   const getSelectedStylesLabel = () => {
     if (tonePreferences.selectedStyles.length === 0) return 'Balanced';
@@ -346,6 +368,100 @@ export default function SettingsScreen() {
     >
       <View style={styles.headerContainer}>
         <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+      </View>
+
+      {/* FAQ & Help Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Help & FAQ
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/guide')}
+        >
+          <Text style={styles.faqEmoji}>🌳</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              App Guide
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Learn how to use Mood Leaf
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={handleRedoOnboarding}
+        >
+          <Text style={styles.faqEmoji}>🔄</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Redo Onboarding
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Start fresh with a new setup
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <View style={styles.faqDivider} />
+
+        <Text style={[styles.faqSectionLabel, { color: colors.textSecondary }]}>
+          Common Questions
+        </Text>
+
+        <View style={styles.faqList}>
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What is the tree?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your tree is a visual representation of your emotional journey. Each journal entry becomes a leaf, and patterns form branches over time.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What are Fireflies?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Fireflies are gentle bits of wisdom that float around your tree. Tap them for personalized insights based on your journey.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What are Twigs?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Twigs are quick logs for when you don't have time for a full entry. Track mood, sleep, or energy with just a tap.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              How does my guide adapt?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your AI guide learns from your preferences and can adapt based on time of day, your mood, or what you're sharing. Customize this in Coach Settings.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              Is my data private?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Yes! All journal entries and patterns stay on your device. Only coaching messages are sent to Claude's API (if enabled), and they're not stored.
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Reminders Section */}
@@ -908,84 +1024,6 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
-      </View>
-
-      {/* FAQ & Help Section */}
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Help & FAQ
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.faqItem, { backgroundColor: colors.background }]}
-          onPress={() => router.push('/guide')}
-        >
-          <Text style={styles.faqEmoji}>🌳</Text>
-          <View style={styles.faqContent}>
-            <Text style={[styles.faqTitle, { color: colors.text }]}>
-              App Guide
-            </Text>
-            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
-              Learn how to use Mood Leaf
-            </Text>
-          </View>
-          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
-        </TouchableOpacity>
-
-        <View style={styles.faqDivider} />
-
-        <Text style={[styles.faqSectionLabel, { color: colors.textSecondary }]}>
-          Common Questions
-        </Text>
-
-        <View style={styles.faqList}>
-          <View style={styles.faqQuestion}>
-            <Text style={[styles.faqQ, { color: colors.text }]}>
-              What is the tree?
-            </Text>
-            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Your tree is a visual representation of your emotional journey. Each journal entry becomes a leaf, and patterns form branches over time.
-            </Text>
-          </View>
-
-          <View style={styles.faqQuestion}>
-            <Text style={[styles.faqQ, { color: colors.text }]}>
-              What are Fireflies?
-            </Text>
-            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Fireflies are gentle bits of wisdom that float around your tree. Tap them for personalized insights based on your journey.
-            </Text>
-          </View>
-
-          <View style={styles.faqQuestion}>
-            <Text style={[styles.faqQ, { color: colors.text }]}>
-              What are Twigs?
-            </Text>
-            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Twigs are quick logs for when you don't have time for a full entry. Track mood, sleep, or energy with just a tap.
-            </Text>
-          </View>
-
-          <View style={styles.faqQuestion}>
-            <Text style={[styles.faqQ, { color: colors.text }]}>
-              How does my guide adapt?
-            </Text>
-            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Your AI guide learns from your preferences and can adapt based on time of day, your mood, or what you're sharing. Customize this in Coach Settings.
-            </Text>
-          </View>
-
-          <View style={styles.faqQuestion}>
-            <Text style={[styles.faqQ, { color: colors.text }]}>
-              Is my data private?
-            </Text>
-            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Yes! All journal entries and patterns stay on your device. Only coaching messages are sent to Claude's API (if enabled), and they're not stored.
-            </Text>
-          </View>
-        </View>
       </View>
 
       {/* Privacy Section */}
