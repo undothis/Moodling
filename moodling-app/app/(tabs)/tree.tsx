@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { TreeScene } from '@/components/tree';
 import { QuickLogsOverlay } from '@/components/QuickLogsOverlay';
 import { WisdomOverlay } from '@/components/WisdomOverlay';
+import { SparkOverlay } from '@/components/SparkOverlay';
 import { Colors } from '@/constants/Colors';
 
 /**
@@ -31,6 +32,7 @@ export default function TreeScreen() {
   // Overlay states
   const [showQuickLogs, setShowQuickLogs] = useState(false);
   const [showWisdom, setShowWisdom] = useState(false);
+  const [showSpark, setShowSpark] = useState(false);
 
   // Navigation handlers - delayed response happens in TreeScene
   const handleLeafPress = useCallback(() => {
@@ -56,7 +58,7 @@ export default function TreeScreen() {
 
       {/* Floating action buttons - positioned above tree labels */}
       <View style={styles.floatingButtons} pointerEvents="box-none">
-        {/* Fireflies Button - Bottom Left */}
+        {/* Fireflies Button - Left */}
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowWisdom(true)}
@@ -66,7 +68,17 @@ export default function TreeScreen() {
           <Text style={[styles.fabLabel, { color: colors.text }]}>Fireflies</Text>
         </TouchableOpacity>
 
-        {/* Twigs Button - Bottom Right */}
+        {/* Spark Button - Center (creativity/play) */}
+        <TouchableOpacity
+          style={[styles.fabCenter, { backgroundColor: colors.tint }]}
+          onPress={() => setShowSpark(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.fabCenterEmoji}>💡</Text>
+          <Text style={styles.fabCenterLabel}>Spark</Text>
+        </TouchableOpacity>
+
+        {/* Twigs Button - Right */}
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowQuickLogs(true)}
@@ -88,6 +100,12 @@ export default function TreeScreen() {
         visible={showWisdom}
         onClose={() => setShowWisdom(false)}
       />
+
+      {/* Spark Overlay (creative prompts) */}
+      <SparkOverlay
+        visible={showSpark}
+        onClose={() => setShowSpark(false)}
+      />
     </View>
   );
 }
@@ -102,8 +120,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: 8,
     zIndex: 100,
   },
   fab: {
@@ -118,6 +137,28 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
     gap: 6,
+  },
+  fabCenter: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  fabCenterEmoji: {
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  fabCenterLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
   },
   fabEmoji: {
     fontSize: 18,

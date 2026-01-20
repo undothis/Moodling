@@ -1,53 +1,55 @@
 /**
- * Oblique Strategies Service
+ * Spark Service
  *
+ * Creative prompts and inspiration - the playful side of Mood Leaf.
  * Inspired by Brian Eno and Peter Schmidt's Oblique Strategies cards.
- * Adapted for mental health, creativity, and everyday life.
+ *
+ * Spark = Creativity & Play (vs Fireflies = Wisdom & Support)
  *
  * Categories:
- * - depression: Gentle nudges when everything feels heavy
- * - anxiety: Grounding prompts when your mind is racing
  * - walking: Contemplations for when you're in motion
  * - artists: Creative unblocking for visual creators
  * - musicians: Prompts for sonic exploration
  * - funny: Absurdist humor to break the spell
  * - strange: Weird perspectives to jar you loose
+ * - depression: Gentle nudges when everything feels heavy
+ * - anxiety: Grounding prompts when your mind is racing
  * - random: Pull from any category
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Storage keys
-const FAVORITES_KEY = 'moodling_strategy_favorites';
-const HISTORY_KEY = 'moodling_strategy_history';
+const FAVORITES_KEY = 'moodling_spark_favorites';
+const HISTORY_KEY = 'moodling_spark_history';
 
 /**
- * Strategy categories
+ * Spark categories
  */
-export type StrategyCategory =
-  | 'depression'
-  | 'anxiety'
+export type SparkCategory =
   | 'walking'
   | 'artists'
   | 'musicians'
   | 'funny'
   | 'strange'
+  | 'depression'
+  | 'anxiety'
   | 'random';
 
 /**
- * A single strategy card
+ * A single spark card
  */
-export interface Strategy {
+export interface Spark {
   id: string;
   text: string;
-  category: StrategyCategory;
+  category: SparkCategory;
   author?: string; // Optional attribution
 }
 
 /**
  * All strategies organized by category
  */
-const STRATEGIES: Record<Exclude<StrategyCategory, 'random'>, string[]> = {
+const SPARKS: Record<Exclude<SparkCategory, 'random'>, string[]> = {
   depression: [
     // Gentle nudges
     "What would you do if you felt 10% better? Do that thing anyway.",
@@ -290,17 +292,17 @@ const STRATEGIES: Record<Exclude<StrategyCategory, 'random'>, string[]> = {
 /**
  * Get a random strategy from a specific category
  */
-export function getRandomStrategy(category: StrategyCategory): Strategy {
-  let strategyCategory: Exclude<StrategyCategory, 'random'>;
+export function getRandomSpark(category: SparkCategory): Spark {
+  let strategyCategory: Exclude<SparkCategory, 'random'>;
 
   if (category === 'random') {
-    const categories = Object.keys(STRATEGIES) as Exclude<StrategyCategory, 'random'>[];
+    const categories = Object.keys(SPARKS) as Exclude<SparkCategory, 'random'>[];
     strategyCategory = categories[Math.floor(Math.random() * categories.length)];
   } else {
     strategyCategory = category;
   }
 
-  const strategies = STRATEGIES[strategyCategory];
+  const strategies = SPARKS[strategyCategory];
   const text = strategies[Math.floor(Math.random() * strategies.length)];
 
   return {
@@ -313,18 +315,18 @@ export function getRandomStrategy(category: StrategyCategory): Strategy {
 /**
  * Get multiple unique strategies from a category
  */
-export function getStrategies(category: StrategyCategory, count: number = 5): Strategy[] {
-  let sourceCategory: Exclude<StrategyCategory, 'random'>;
+export function getSparks(category: SparkCategory, count: number = 5): Spark[] {
+  let sourceCategory: Exclude<SparkCategory, 'random'>;
 
   if (category === 'random') {
     // For random, pull from all categories
-    const allStrategies: Strategy[] = [];
-    for (const [cat, texts] of Object.entries(STRATEGIES)) {
+    const allStrategies: Spark[] = [];
+    for (const [cat, texts] of Object.entries(SPARKS)) {
       for (const text of texts) {
         allStrategies.push({
           id: `${cat}_${Math.random().toString(36).substr(2, 9)}`,
           text,
-          category: cat as Exclude<StrategyCategory, 'random'>,
+          category: cat as Exclude<SparkCategory, 'random'>,
         });
       }
     }
@@ -334,7 +336,7 @@ export function getStrategies(category: StrategyCategory, count: number = 5): St
     return shuffled.slice(0, count);
   } else {
     sourceCategory = category;
-    const strategies = STRATEGIES[sourceCategory];
+    const strategies = SPARKS[sourceCategory];
     const shuffled = [...strategies].sort(() => Math.random() - 0.5);
 
     return shuffled.slice(0, Math.min(count, shuffled.length)).map((text, i) => ({
@@ -348,8 +350,8 @@ export function getStrategies(category: StrategyCategory, count: number = 5): St
 /**
  * Get all strategies for a category
  */
-export function getAllStrategiesForCategory(category: Exclude<StrategyCategory, 'random'>): Strategy[] {
-  return STRATEGIES[category].map((text, i) => ({
+export function getAllSparksForCategory(category: Exclude<SparkCategory, 'random'>): Spark[] {
+  return SPARKS[category].map((text, i) => ({
     id: `${category}_${i}`,
     text,
     category,
@@ -359,16 +361,16 @@ export function getAllStrategiesForCategory(category: Exclude<StrategyCategory, 
 /**
  * Get strategy count per category
  */
-export function getStrategyCounts(): Record<StrategyCategory, number> {
-  const counts: Record<StrategyCategory, number> = {
-    depression: STRATEGIES.depression.length,
-    anxiety: STRATEGIES.anxiety.length,
-    walking: STRATEGIES.walking.length,
-    artists: STRATEGIES.artists.length,
-    musicians: STRATEGIES.musicians.length,
-    funny: STRATEGIES.funny.length,
-    strange: STRATEGIES.strange.length,
-    random: Object.values(STRATEGIES).reduce((sum, arr) => sum + arr.length, 0),
+export function getSparkCounts(): Record<SparkCategory, number> {
+  const counts: Record<SparkCategory, number> = {
+    depression: SPARKS.depression.length,
+    anxiety: SPARKS.anxiety.length,
+    walking: SPARKS.walking.length,
+    artists: SPARKS.artists.length,
+    musicians: SPARKS.musicians.length,
+    funny: SPARKS.funny.length,
+    strange: SPARKS.strange.length,
+    random: Object.values(SPARKS).reduce((sum, arr) => sum + arr.length, 0),
   };
   return counts;
 }
@@ -376,16 +378,16 @@ export function getStrategyCounts(): Record<StrategyCategory, number> {
 /**
  * Save a strategy to favorites
  */
-export async function saveToFavorites(strategy: Strategy): Promise<void> {
+export async function saveToFavorites(spark: Spark): Promise<void> {
   try {
     const existing = await AsyncStorage.getItem(FAVORITES_KEY);
-    const favorites: Strategy[] = existing ? JSON.parse(existing) : [];
+    const favorites: Spark[] = existing ? JSON.parse(existing) : [];
 
     // Don't duplicate
-    if (favorites.some(f => f.text === strategy.text)) return;
+    if (favorites.some(f => f.text === spark.text)) return;
 
     favorites.push({
-      ...strategy,
+      ...spark,
       id: `fav_${Date.now()}`, // New ID for favorite
     });
 
@@ -398,13 +400,13 @@ export async function saveToFavorites(strategy: Strategy): Promise<void> {
 /**
  * Remove a strategy from favorites
  */
-export async function removeFromFavorites(strategyId: string): Promise<void> {
+export async function removeFromFavorites(sparkId: string): Promise<void> {
   try {
     const existing = await AsyncStorage.getItem(FAVORITES_KEY);
     if (!existing) return;
 
-    const favorites: Strategy[] = JSON.parse(existing);
-    const filtered = favorites.filter(f => f.id !== strategyId);
+    const favorites: Spark[] = JSON.parse(existing);
+    const filtered = favorites.filter(f => f.id !== sparkId);
 
     await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(filtered));
   } catch (error) {
@@ -415,7 +417,7 @@ export async function removeFromFavorites(strategyId: string): Promise<void> {
 /**
  * Get all favorite strategies
  */
-export async function getFavorites(): Promise<Strategy[]> {
+export async function getFavorites(): Promise<Spark[]> {
   try {
     const data = await AsyncStorage.getItem(FAVORITES_KEY);
     return data ? JSON.parse(data) : [];
@@ -427,23 +429,23 @@ export async function getFavorites(): Promise<Strategy[]> {
 /**
  * Check if a strategy is favorited
  */
-export async function isFavorite(strategyText: string): Promise<boolean> {
+export async function isFavorite(sparkText: string): Promise<boolean> {
   const favorites = await getFavorites();
-  return favorites.some(f => f.text === strategyText);
+  return favorites.some(f => f.text === sparkText);
 }
 
 /**
- * Record strategy in history (for tracking what resonated)
+ * Record spark in history (for tracking what resonated)
  */
-export async function recordStrategyView(strategy: Strategy): Promise<void> {
+export async function recordSparkView(spark: Spark): Promise<void> {
   try {
     const existing = await AsyncStorage.getItem(HISTORY_KEY);
-    const history: { strategy: Strategy; viewedAt: string }[] = existing
+    const history: { spark: Spark; viewedAt: string }[] = existing
       ? JSON.parse(existing)
       : [];
 
     history.push({
-      strategy,
+      spark,
       viewedAt: new Date().toISOString(),
     });
 
@@ -451,14 +453,14 @@ export async function recordStrategyView(strategy: Strategy): Promise<void> {
     const trimmed = history.slice(-100);
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
   } catch (error) {
-    console.error('Failed to record strategy view:', error);
+    console.error('Failed to record spark view:', error);
   }
 }
 
 /**
- * Get strategy history
+ * Get spark history
  */
-export async function getStrategyHistory(): Promise<{ strategy: Strategy; viewedAt: string }[]> {
+export async function getSparkHistory(): Promise<{ spark: Spark; viewedAt: string }[]> {
   try {
     const data = await AsyncStorage.getItem(HISTORY_KEY);
     return data ? JSON.parse(data) : [];
@@ -470,7 +472,7 @@ export async function getStrategyHistory(): Promise<{ strategy: Strategy; viewed
 /**
  * Get category metadata for UI
  */
-export function getCategoryMetadata(): Record<StrategyCategory, { name: string; description: string; emoji: string }> {
+export function getCategoryMetadata(): Record<SparkCategory, { name: string; description: string; emoji: string }> {
   return {
     depression: {
       name: 'Depression',
@@ -518,17 +520,17 @@ export function getCategoryMetadata(): Record<StrategyCategory, { name: string; 
 /**
  * Search strategies by text
  */
-export function searchStrategies(query: string): Strategy[] {
+export function searchSparks(query: string): Spark[] {
   const lowerQuery = query.toLowerCase();
-  const results: Strategy[] = [];
+  const results: Spark[] = [];
 
-  for (const [category, strategies] of Object.entries(STRATEGIES)) {
+  for (const [category, strategies] of Object.entries(SPARKS)) {
     for (const text of strategies) {
       if (text.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: `search_${category}_${results.length}`,
           text,
-          category: category as Exclude<StrategyCategory, 'random'>,
+          category: category as Exclude<SparkCategory, 'random'>,
         });
       }
     }
@@ -541,29 +543,29 @@ export function searchStrategies(query: string): Strategy[] {
  * Get a strategy appropriate for current mood
  * (Can be called when we detect mood from journal)
  */
-export function getStrategyForMood(mood: string): Strategy {
+export function getSparkForMood(mood: string): Spark {
   const moodLower = mood.toLowerCase();
 
   if (moodLower.includes('depress') || moodLower.includes('sad') || moodLower.includes('low') || moodLower.includes('hopeless')) {
-    return getRandomStrategy('depression');
+    return getRandomSpark('depression');
   }
 
   if (moodLower.includes('anxious') || moodLower.includes('worry') || moodLower.includes('stress') || moodLower.includes('panic')) {
-    return getRandomStrategy('anxiety');
+    return getRandomSpark('anxiety');
   }
 
   if (moodLower.includes('stuck') || moodLower.includes('block') || moodLower.includes('creative')) {
-    return getRandomStrategy('artists');
+    return getRandomSpark('artists');
   }
 
   // Default to funny or strange for neutral/unknown moods
-  return Math.random() > 0.5 ? getRandomStrategy('funny') : getRandomStrategy('strange');
+  return Math.random() > 0.5 ? getRandomSpark('funny') : getRandomSpark('strange');
 }
 
 /**
  * Clear all strategy data (for secure delete)
  */
-export async function clearAllStrategyData(): Promise<void> {
+export async function clearAllSparkData(): Promise<void> {
   try {
     await AsyncStorage.multiRemove([FAVORITES_KEY, HISTORY_KEY]);
   } catch (error) {

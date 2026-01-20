@@ -31,6 +31,11 @@ export const FAQ_CONTENT: FAQItem[] = [
   },
   {
     category: 'basics',
+    question: 'What are Sparks?',
+    answer: 'Sparks are creative prompts to help you think differently. Unlike Fireflies (wisdom/support), Sparks are for creativity and play - prompts for artists, musicians, walkers, and anyone wanting to shake up their thinking.',
+  },
+  {
+    category: 'basics',
     question: 'What are Twigs?',
     answer: 'Twigs are quick logs for when you don\'t have time for a full entry. Track mood, sleep, or energy with just a tap.',
   },
@@ -55,6 +60,11 @@ export const FAQ_CONTENT: FAQItem[] = [
     category: 'guide',
     question: 'What are Mood-to-Persona Switches?',
     answer: 'Automatic personality shifts based on what you\'re sharing. Feeling anxious? Your guide becomes more calming (like Luna). Feeling sad? More nurturing (like Fern). These are personalized based on your onboarding answers.',
+  },
+  {
+    category: 'guide',
+    question: 'Do Sparks adapt to my guide?',
+    answer: 'Yes! Sparks match your guide\'s personality. Spark (the persona) delivers prompts with high energy, while Luna offers them contemplatively. The same creative prompt feels different based on who\'s sharing it with you.',
   },
   {
     category: 'guide',
@@ -181,6 +191,22 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'How they work',
         content: 'Tap a firefly to receive wisdom. They draw from your journal patterns, life context, and psychological profile to offer relevant insights.',
+      },
+    ],
+  },
+  {
+    id: 'sparks',
+    emoji: '💡',
+    title: 'Sparks',
+    content: 'Sparks are creative prompts for when you want to think differently. Unlike Fireflies (wisdom/support), Sparks are playful and creative - inspired by Brian Eno\'s Oblique Strategies cards.',
+    subsections: [
+      {
+        title: 'Creative Categories',
+        content: '• For Artists - Visual creative unblocking\\n• For Musicians - Sonic exploration prompts\\n• Walking - Contemplations for when you\'re in motion\\n• Funny - Absurdist humor to break the spell\\n• Strange - Weird perspectives to jar you loose',
+      },
+      {
+        title: 'Persona Adaptation',
+        content: 'Sparks match your guide\'s personality. The same prompt feels different depending on who delivers it - energetic from Spark, contemplative from Luna, direct from Flint. This adds a personal touch to creative exploration.',
       },
     ],
   },
