@@ -342,8 +342,6 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
       : CUSTOM_CATEGORIES[selectedCategory];
   };
 
-  const timeCategories: TimeOfDay[] = ['morning', 'afternoon', 'evening', 'night'];
-
   return (
     <Modal
       visible={visible}
@@ -374,47 +372,45 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
         {!selectedCategory ? (
           // Category picker
           <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Header with Customize link */}
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>
                 Catch a firefly ✨
               </Text>
+              <TouchableOpacity onPress={() => {
+                // TODO: Navigate to customize screen
+                onClose();
+              }}>
+                <Text style={[styles.customizeLink, { color: colors.tint }]}>
+                  Customize
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Time-based row - current time prominent */}
-            <View style={styles.timeRow}>
-              {timeCategories.map((time) => {
-                const category = TIME_CATEGORIES[time];
-                const isCurrent = time === currentTimeOfDay;
-                return (
-                  <TouchableOpacity
-                    key={time}
-                    style={[
-                      styles.timeButton,
-                      isCurrent ? styles.timeButtonCurrent : styles.timeButtonOther,
-                      {
-                        backgroundColor: isCurrent ? colors.tint + '20' : colors.card,
-                        borderColor: isCurrent ? colors.tint : 'transparent',
-                        borderWidth: isCurrent ? 2 : 0,
-                        opacity: isCurrent ? 1 : 0.5,
-                      },
-                    ]}
-                    onPress={() => selectTimeCategory(time)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.timeEmoji, !isCurrent && styles.timeEmojiSmall]}>
-                      {category.emoji}
-                    </Text>
-                    <Text style={[
-                      styles.timeLabel,
-                      { color: isCurrent ? colors.tint : colors.textMuted },
-                      !isCurrent && styles.timeLabelSmall,
-                    ]}>
-                      {category.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* Current time button - only shows current time of day */}
+            <TouchableOpacity
+              style={[
+                styles.currentTimeButton,
+                {
+                  backgroundColor: colors.tint + '15',
+                  borderColor: colors.tint,
+                },
+              ]}
+              onPress={() => selectTimeCategory(currentTimeOfDay)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.currentTimeEmoji}>
+                {TIME_CATEGORIES[currentTimeOfDay].emoji}
+              </Text>
+              <View style={styles.currentTimeText}>
+                <Text style={[styles.currentTimeLabel, { color: colors.tint }]}>
+                  {TIME_CATEGORIES[currentTimeOfDay].label}
+                </Text>
+                <Text style={[styles.currentTimeHint, { color: colors.textMuted }]}>
+                  Tap for a {currentTimeOfDay} thought
+                </Text>
+              </View>
+            </TouchableOpacity>
 
             {/* Divider */}
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -435,20 +431,6 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                 </TouchableOpacity>
               ))}
 
-              {/* Customize button */}
-              <TouchableOpacity
-                style={[styles.categoryButton, styles.customizeButton, { borderColor: colors.border }]}
-                onPress={() => {
-                  // TODO: Navigate to customize screen
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.categoryEmoji}>+</Text>
-                <Text style={[styles.categoryLabel, { color: colors.textMuted }]}>
-                  Customize
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.bottomPadding} />
@@ -514,46 +496,42 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  // Time row styles
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
-  },
-  timeButton: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  timeButtonCurrent: {
-    flex: 1.5,
-  },
-  timeButtonOther: {
-    flex: 0.8,
-  },
-  timeEmoji: {
-    fontSize: 28,
-    marginBottom: 4,
-  },
-  timeEmojiSmall: {
     fontSize: 20,
-  },
-  timeLabel: {
-    fontSize: 12,
     fontWeight: '600',
   },
-  timeLabelSmall: {
-    fontSize: 10,
+  customizeLink: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  // Current time button
+  currentTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 8,
+  },
+  currentTimeEmoji: {
+    fontSize: 36,
+    marginRight: 16,
+  },
+  currentTimeText: {
+    flex: 1,
+  },
+  currentTimeLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  currentTimeHint: {
+    fontSize: 14,
   },
   // Divider
   divider: {
@@ -574,11 +552,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-  },
-  customizeButton: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    backgroundColor: 'transparent',
   },
   categoryEmoji: {
     fontSize: 28,
