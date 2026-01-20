@@ -97,6 +97,13 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
+        <Stack.Screen
+          name="guide/index"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
       </Stack>
     </>
   );
