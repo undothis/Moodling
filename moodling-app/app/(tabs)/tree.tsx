@@ -66,14 +66,14 @@ export default function TreeScreen() {
           <Text style={[styles.fabLabel, { color: colors.text }]}>Fireflies</Text>
         </TouchableOpacity>
 
-        {/* Quick Log Button - Bottom Right */}
+        {/* Twigs Button - Bottom Right */}
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowQuickLogs(true)}
           activeOpacity={0.8}
         >
-          <Text style={styles.fabEmoji}>✓</Text>
-          <Text style={[styles.fabLabel, { color: colors.text }]}>Quick Log</Text>
+          <Text style={styles.fabEmoji}>🪵</Text>
+          <Text style={[styles.fabLabel, { color: colors.text }]}>Twigs</Text>
         </TouchableOpacity>
       </View>
 
