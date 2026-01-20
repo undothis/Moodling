@@ -1,6 +1,6 @@
-# Moodling Developer Guide
+# Mood Leaf Developer Guide
 
-Complete technical documentation for the Moodling codebase.
+Complete technical documentation for the Mood Leaf codebase.
 
 ---
 
@@ -21,8 +21,9 @@ Complete technical documentation for the Moodling codebase.
 13. [Ethics Implementation](#ethics-implementation)
 14. [Testing](#testing)
 15. [Psychological Analysis System](#psychological-analysis-system)
-16. [AI Coach Adaptive System](#ai-coach-adaptive-system) ← NEW
-17. [Future Enhancements](#future-enhancements)
+16. [AI Coach Adaptive System](#ai-coach-adaptive-system)
+17. [AI Data Integration & Learning](#ai-data-integration--learning) ← NEW
+18. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -1786,6 +1787,351 @@ describe('getTimeEnergyInstruction', () => {
   });
 });
 ```
+
+---
+
+## AI Data Integration & Learning
+
+### Overview
+
+The AI in Mood Leaf acts like a "friend who knows everything about you." This is achieved through comprehensive data integration that gives Claude access to ALL user data across 11 distinct sources.
+
+**Key Principles**:
+1. **Traceable Truth** - Every claim must reference actual user data. If data doesn't exist, say so explicitly.
+2. **Universal Data Referencing** - AI can access immediate (today), recent (week), and historical (months/years) data.
+3. **Twigs vs Insights** - Raw atomic facts ("exercised 3 times") are separate from derived interpretations ("exercise helps your mood").
+
+### Architecture
+
+```
+User Question ("How many times did I exercise?")
+    ↓
+claudeAPIService.ts → sendMessage()
+    ↓
+┌───────────────────────────────────────────────────────────┐
+│                    CONTEXT ASSEMBLY                        │
+├───────────────────────────────────────────────────────────┤
+│  1. lifeContext         → getLifeContextForClaude()       │
+│  2. psychContext        → psychAnalysisService.getCompressedContext() │
+│  3. chronotypeContext   → getChronotypeContextForClaude() │
+│  4. healthContext       → getHealthContextForClaude()     │
+│  5. correlationContext  → getCorrelationSummaryForClaude()│
+│  6. logsContext         → getDetailedLogsContextForClaude() ← DETAILED │
+│  7. lifestyleContext    → getLifestyleFactorsContextForClaude() │
+│  8. exposureContext     → getExposureContextForClaude()   │
+│  9. journalContext      → getRecentJournalContextForClaude() │
+│ 10. richContext         → getContextForClaude()           │
+│ 11. conversationContext → buildConversationContext()      │
+└───────────────────────────────────────────────────────────┘
+    ↓
+Claude API (with full context)
+    ↓
+Response: "You've exercised 47 times total - 8 times this week..."
+```
+
+### The 11 Data Sources
+
+| # | Source | Service | What Claude Sees |
+|---|--------|---------|------------------|
+| 1 | **Life Context** | lifeContextService.ts | People, milestones, themes, profession, identity, medications |
+| 2 | **Psychological Profile** | psychAnalysisService.ts | Cognitive patterns, attachment style, values, defense mechanisms |
+| 3 | **Chronotype & Travel** | coachPersonalityService.ts | Sleep rhythm, transitions, jet lag, timezone awareness |
+| 4 | **HealthKit Data** | healthKitService.ts | Heart rate, sleep hours/quality, activity, stress indicators |
+| 5 | **Health Correlations** | healthInsightService.ts | Sleep-mood correlation, activity-mood correlation, trends |
+| 6 | **Detailed Tracking Logs** | quickLogsService.ts | **FULL counts** (today, week, month, all-time), streaks, notes |
+| 7 | **Lifestyle Factors** | patternService.ts | Caffeine, alcohol, exercise, outdoor time, social time, sleep |
+| 8 | **Exposure Ladder** | exposureLadderService.ts | Social anxiety level (1-8), attempts, completion rate, progress |
+| 9 | **Recent Journal Entries** | journalStorage.ts | Actual text from past 7 days with moods and timestamps |
+| 10 | **User Preferences** | userContextService.ts | Communication style, tone preferences, mood trends, triggers |
+| 11 | **Conversation Context** | claudeAPIService.ts | Current chat context, recent messages, immediate mood |
+
+### Detailed Tracking Data (Twigs)
+
+The `getDetailedLogsContextForClaude()` function provides comprehensive tracking data:
+
+```typescript
+// Example output:
+`DETAILED TRACKING DATA (Twigs - raw atomic facts):
+
+  🏃 Exercised (habit_build):
+    - Today: 2 times
+    - This week: 8 times
+    - This month (30 days): 25 times
+    - All time total: 47 times
+    - Current streak: 5 days
+    - Longest streak: 12 days
+    - Weekly average: 5.3 per week
+    - Recent breakdown: Today: 2, Yesterday: 1, 2026-01-18: 2
+    - Recent notes: "Morning jog", "Gym after work"
+    - First logged: 2025-11-15
+    - Last logged: 2026-01-20
+
+  💊 Morning meds (medication):
+    - Today: 1 time
+    - This week: 7 times
+    - This month (30 days): 28 times
+    - All time total: 156 times
+    - Current streak: 28 days
+    - Longest streak: 45 days
+    - Weekly average: 7 per week
+    - First logged: 2025-08-01
+    - Last logged: 2026-01-20
+
+  😰 Anxious (symptom):
+    - Today: 0 times
+    - This week: 2 times
+    - This month (30 days): 8 times
+    - All time total: 34 times
+    - Recent breakdown: 2026-01-18: 1, 2026-01-15: 1
+    - Recent notes: "Before meeting", "Couldn't sleep"
+    - First logged: 2025-09-10
+    - Last logged: 2026-01-18`
+```
+
+**Implementation** (quickLogsService.ts):
+```typescript
+export async function getDetailedLogsContextForClaude(): Promise<string> {
+  const logs = await getQuickLogs();
+  if (logs.length === 0) return '';
+
+  const parts: string[] = ['DETAILED TRACKING DATA (Twigs - raw atomic facts):'];
+
+  for (const log of logs) {
+    const streak = await getStreak(log.id);
+    const todayCount = await getTodayCount(log.id);
+    const weekEntries = await getEntriesForLog(log.id, 7);
+    const monthEntries = await getEntriesForLog(log.id, 30);
+    const allEntries = await getEntriesForLog(log.id);
+
+    // Build comprehensive status with counts, streaks, dates, notes...
+  }
+
+  return parts.join('\n');
+}
+```
+
+### Lifestyle Factors Context
+
+The `getLifestyleFactorsContextForClaude()` function tracks manual daily inputs:
+
+```typescript
+// Example output:
+`LIFESTYLE FACTORS (manually tracked daily):
+
+  Today:
+    - Caffeine: 2 drinks
+    - Exercise: 45 minutes
+    - Outdoor time: 30 minutes
+    - Social time: 120 minutes
+    - Sleep: 7 hours
+
+  2-week averages:
+    - Caffeine: 1.8 drinks/day
+    - Exercise: 32 min/day
+    - Outdoor time: 25 min/day
+    - Social time: 85 min/day
+    - Sleep: 6.8 hrs/night
+
+  Recent daily breakdown:
+    2026-01-20: ☕2, 🏃45m, 🌳30m, 👥120m, 😴7h
+    2026-01-19: ☕1, 🏃30m, 🌳15m, 😴6.5h
+    2026-01-18: ☕3, 🍺2, 👥180m, 😴5h`
+```
+
+### Exposure Ladder Context
+
+The `getExposureContextForClaude()` function tracks social anxiety progress:
+
+```typescript
+// Example output:
+`SOCIAL EXPOSURE PROGRESS (anxiety management):
+
+  Current comfort level: 4/8 - "Short conversation"
+  Level description: Brief but real exchanges
+
+  Progress statistics:
+    - Total attempts: 23
+    - Completed: 19
+    - Highest level attempted: 5/8
+    - Average anxiety reduction: 2.3 points
+    - Current practice streak: 8 days
+
+  Recent exposure attempts (last 30 days):
+    2026-01-20: ✓ Level 4 "Short conversation" (anxiety: 6→4)
+    2026-01-19: ✓ Level 3 "Brief interaction"
+    2026-01-18: ○ Level 5 "One-on-one hangout"
+      Note: "Had to leave early, felt overwhelmed"`
+```
+
+### Recent Journal Context
+
+The `getRecentJournalContextForClaude()` function provides actual journal text:
+
+```typescript
+// Example output:
+`RECENT JOURNAL ENTRIES (what user actually wrote):
+
+  [Mon, Jan 20 9:15 AM] (positive):
+    "Had a great morning workout. Feeling energized and ready for the day."
+
+  [Sun, Jan 19 10:30 PM] (neutral):
+    "Quiet day. Spent time reading and didn't leave the house. Not bad, just quiet."
+
+  [Sat, Jan 18 2:45 PM] (negative):
+    "Anxious about the work presentation on Monday. Keep imagining all the ways..."
+
+  Week summary: 5 entries (positive: 2, neutral: 2, negative: 1)
+  Total journal entries all time: 156
+  Current journaling streak: 12 days`
+```
+
+### Context Assembly in claudeAPIService.ts
+
+```typescript
+async function sendMessage(message: string, context: ConversationContext) {
+  // ... persona and tone setup ...
+
+  // Get ALL context sources
+  const lifeContext = await getLifeContextForClaude();
+  const psychContext = await psychAnalysisService.getCompressedContext();
+  const chronotypeContext = await getChronotypeContextForClaude();
+
+  let healthContext = '';
+  let correlationContext = '';
+  if (await isHealthKitEnabled()) {
+    healthContext = await getHealthContextForClaude();
+    correlationContext = await getCorrelationSummaryForClaude();
+  }
+
+  // DETAILED tracking data (not just summaries)
+  const logsContext = await getDetailedLogsContextForClaude();
+
+  // Lifestyle factors (caffeine, alcohol, exercise, outdoor, social, sleep)
+  const lifestyleContext = await getLifestyleFactorsContextForClaude();
+
+  // Exposure ladder progress
+  const exposureContext = await getExposureContextForClaude();
+
+  // Recent journal entries (actual text)
+  const journalContext = await getRecentJournalContextForClaude();
+
+  // User preferences and mood trends
+  const richContext = await getContextForClaude();
+
+  // Current conversation
+  const conversationContext = buildConversationContext(context);
+
+  // Assemble in order: facts → patterns → immediate context
+  const contextParts = [
+    lifeContext,         // Lifetime overview (people, events, themes)
+    psychContext,        // Psychological profile (cognitive patterns)
+    chronotypeContext,   // Chronotype and travel awareness
+    healthContext,       // HealthKit data (heart rate, sleep, activity)
+    correlationContext,  // Health-mood correlations
+    logsContext,         // DETAILED tracking data (exact counts)
+    lifestyleContext,    // Lifestyle factors (caffeine, alcohol, etc.)
+    exposureContext,     // Social exposure ladder progress
+    journalContext,      // Recent journal entries (actual text)
+    richContext,         // User preferences and mood trends
+    conversationContext  // Current conversation context
+  ].filter(Boolean);
+
+  const fullContext = contextParts.join('\n\n');
+  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+  // ... send to Claude API ...
+}
+```
+
+### What Claude Can Now Answer
+
+With comprehensive data integration, Claude can answer questions like:
+
+| Question | Data Source | Example Response |
+|----------|-------------|------------------|
+| "How many times did I exercise?" | Detailed Logs | "You've exercised 47 times total, 8 times this week" |
+| "When was my last panic attack?" | Detailed Logs | "Your last logged panic attack was January 15th" |
+| "How's my sleep been?" | HealthKit + Lifestyle | "You averaged 6.8 hours this week, down from 7.2" |
+| "What did I write about yesterday?" | Journal Context | "Yesterday you mentioned feeling anxious about..." |
+| "How's my social anxiety progress?" | Exposure Context | "You've completed 19 of 23 attempts, now at level 4" |
+| "Do I drink more coffee on bad days?" | Lifestyle + Correlations | "Your caffeine tends to be higher on anxious days" |
+| "How long have I been journaling?" | Life Context | "You started 8 months ago with 156 entries" |
+| "What are my triggers?" | User Context | "You've noted work deadlines and family calls" |
+
+### Adding New Data Sources
+
+To add a new data source:
+
+1. **Create the context function** in the appropriate service:
+```typescript
+// In myService.ts
+export async function getMyDataContextForClaude(): Promise<string> {
+  const data = await getMyData();
+  if (!data) return '';
+
+  const parts: string[] = ['MY DATA CATEGORY:'];
+  // Format data for Claude...
+  return parts.join('\n');
+}
+```
+
+2. **Import and call it** in claudeAPIService.ts:
+```typescript
+import { getMyDataContextForClaude } from './myService';
+
+// In sendMessage():
+let myDataContext = '';
+try {
+  myDataContext = await getMyDataContextForClaude();
+} catch (error) {
+  console.log('Could not load my data context:', error);
+}
+
+// Add to contextParts array:
+const contextParts = [...existingParts, myDataContext].filter(Boolean);
+```
+
+3. **Document it** here and update tests.
+
+### Testing Data Integration
+
+```typescript
+// Test that Claude receives detailed counts
+describe('getDetailedLogsContextForClaude', () => {
+  it('includes all-time totals', async () => {
+    await createQuickLog('Test', '🧪', 'habit_build');
+    await logEntry(logId);
+    await logEntry(logId);
+
+    const context = await getDetailedLogsContextForClaude();
+    expect(context).toContain('All time total: 2 times');
+  });
+
+  it('includes weekly breakdown', async () => {
+    const context = await getDetailedLogsContextForClaude();
+    expect(context).toContain('This week:');
+    expect(context).toContain('Recent breakdown:');
+  });
+});
+
+// Test lifestyle factors
+describe('getLifestyleFactorsContextForClaude', () => {
+  it('shows today and averages', async () => {
+    await saveFactors(today, { caffeineCount: 2, exerciseMinutes: 30 });
+
+    const context = await getLifestyleFactorsContextForClaude();
+    expect(context).toContain('Caffeine: 2 drinks');
+    expect(context).toContain('2-week averages');
+  });
+});
+```
+
+### Ethics & Privacy
+
+1. **Local Processing** - All context building happens on device
+2. **Compressed Summaries** - Only necessary context sent to API
+3. **User Control** - Users can delete any/all data at any time
+4. **No External Storage** - Claude doesn't retain data between sessions
+5. **Transparent** - Users can see what data exists via Settings
 
 ---
 
