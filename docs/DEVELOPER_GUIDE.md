@@ -20,7 +20,8 @@ Complete technical documentation for the Moodling codebase.
 12. [API Integration](#api-integration)
 13. [Ethics Implementation](#ethics-implementation)
 14. [Testing](#testing)
-15. [Future Enhancements](#future-enhancements)
+15. [Psychological Analysis System](#psychological-analysis-system) ← NEW
+16. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -1225,6 +1226,173 @@ describe('buildLifeContext', () => {
   });
 });
 ```
+
+---
+
+## Psychological Analysis System
+
+### Overview
+
+The psychological analysis system adds a "WHY" layer to Mood Leaf. While the Life Context system tracks *what* happens (facts, events, people), the psychological analysis system understands *why* patterns emerge and *how* to help.
+
+**Key Principle**: Never label, always offer. The system detects patterns but expresses them as gentle suggestions, not clinical diagnoses.
+
+### Architecture
+
+```
+Journal Entry
+    ↓
+Life Context Service ─────→ WHAT (facts, events, people)
+    ↓
+Psych Analysis Service ───→ WHY (patterns, tendencies, style)
+    ↓
+Compressed Profile
+    ↓
+Claude API Context ───────→ Personalized, psychologically-informed responses
+```
+
+### Files
+
+```
+services/
+├── psychTypes.ts           # 450+ detection patterns, types
+└── psychAnalysisService.ts # Analysis engine, profile management
+```
+
+### 30 Psychological Categories
+
+Based on validated clinical and research frameworks:
+
+| Category | Framework | What It Detects |
+|----------|-----------|-----------------|
+| Cognitive Distortions | CBT | all-or-nothing, catastrophizing, mind-reading, etc. |
+| Defense Mechanisms | Vaillant | mature vs. immature coping styles |
+| Attachment Style | Bowlby/Ainsworth | secure, anxious, avoidant, disorganized |
+| Locus of Control | Rotter | internal vs. external attribution |
+| Emotion Regulation | Gross | suppression, rumination, reappraisal, etc. |
+| Polyvagal State | Porges | ventral (safe), sympathetic (fight/flight), dorsal (shutdown) |
+| Mindset | Dweck | fixed vs. growth |
+| Values | Schwartz | 10 core values (security, benevolence, achievement, etc.) |
+| Well-being | Seligman PERMA | positive emotion, engagement, relationships, meaning, accomplishment |
+| Grief Style | Doka/Martin | intuitive vs. instrumental |
+| Money Psychology | Klontz | avoidance, worship, status, vigilance |
+| Relationship Patterns | Gottman | Four Horsemen (criticism, contempt, defensiveness, stonewalling) |
+
+### Usage
+
+```typescript
+import { psychAnalysisService } from '@/services/psychAnalysisService';
+
+// Analyze a journal entry
+const analysis = await psychAnalysisService.analyzeAndUpdateProfile(
+  entryText,
+  entryId
+);
+
+// Access detected patterns
+analysis.cognitiveDistortions    // Thinking pattern signals
+analysis.defenseMechanisms       // Coping style signals
+analysis.attachmentSignals       // Relationship pattern signals
+analysis.polyvagalState          // Nervous system state
+analysis.alerts                  // Gentle suggestions (NOT labels)
+
+// Get compressed context for Claude API
+const psychContext = await psychAnalysisService.getCompressedContext();
+// Returns something like:
+// "THINKING PATTERNS:
+//  - Tends toward catastrophizing (seen 5x)
+//  - Tends toward all or nothing (seen 3x)
+//
+//  COPING STYLE: neurotic defenses
+//  ATTACHMENT: anxious style (70% confidence)
+//  AGENCY: Leans external locus of control
+//  MINDSET: Leans fixed
+//  CORE VALUES: security, benevolence
+//
+//  COMMUNICATION RECOMMENDATIONS:
+//  - Gently challenge worst-case thinking
+//  - Provide extra reassurance and validation"
+```
+
+### Gentle Suggestions (NOT Labels)
+
+The system generates suggestions that offer, not label:
+
+**Wrong** (clinical, labeling):
+- "I notice you're catastrophizing"
+- "You're showing signs of anxious attachment"
+- "That's a cognitive distortion"
+
+**Right** (gentle, offering):
+- "It sounds like this feels really big right now. What would you tell a friend in this situation?"
+- "Waiting for connection can feel so uncertain. You're not alone in that."
+- "Your body might be running a bit hot right now. Sometimes a few slow breaths can help things settle."
+
+### AI Integration
+
+The psychological context is included in Claude API calls:
+
+```typescript
+// In claudeAPIService.ts sendMessage():
+const lifeContext = await getLifeContextForClaude();        // Facts
+const psychContext = await psychAnalysisService.getCompressedContext(); // Patterns
+const healthContext = await getHealthContextForClaude();    // Health
+
+const fullContext = [lifeContext, psychContext, healthContext].join('\n\n');
+```
+
+Claude then receives communication recommendations like:
+- "Gently challenge worst-case thinking"
+- "Provide extra reassurance and validation"
+- "Respect need for space, don't push for closeness"
+- "Frame challenges as learning opportunities"
+
+### Profile Persistence
+
+The psychological profile is built incrementally and persisted:
+
+```typescript
+// Stored in AsyncStorage
+const STORAGE_KEY = 'moodleaf_psychological_profile';
+
+// Profile includes:
+interface PsychologicalProfile {
+  entryCount: number;
+  cognitiveDistortions: { pattern, frequency, lastSeen, examples }[];
+  defenseMechanisms: { mechanism, frequency, lastSeen }[];
+  defenseLevel: 'mature' | 'neurotic' | 'immature';
+  attachmentStyle: AttachmentStyle;
+  attachmentConfidence: number;
+  locusOfControl: { internal: number; external: number };
+  // ... 20+ more fields
+}
+```
+
+### Pattern Detection Example
+
+```typescript
+// Input: "I always fail at everything. Nothing ever works out for me."
+
+// Detection:
+cognitiveDistortions: [
+  { distortion: 'all_or_nothing', matches: ['always', 'everything', 'nothing ever'], confidence: 1.0 }
+]
+
+// Gentle suggestion generated:
+"Sometimes our minds jump to extremes. What might a middle ground look like here?"
+
+// Profile update:
+profile.cognitiveDistortions[0].frequency++ // Increment counter
+profile.cognitiveDistortions[0].lastSeen = now
+```
+
+### Ethics Considerations
+
+1. **No diagnosis**: The system detects patterns, never diagnoses conditions
+2. **Warm language**: All suggestions use tentative, gentle phrasing
+3. **User agency**: Suggestions are offered, not imposed
+4. **Privacy**: All analysis is local, only compressed summary sent to API
+5. **Anti-dependency**: System celebrates user self-awareness, not app usage
 
 ---
 
