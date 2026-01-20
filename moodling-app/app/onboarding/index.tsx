@@ -117,15 +117,15 @@ export default function OnboardingScreen() {
         },
         useDetailedSettings: false,
         adaptiveSettings: {
-          enabled: false,
-          triggers: ['mood_detected', 'time_of_day'],
+          enabled: true, // Adaptive mode on by default - AI adapts to mood, time, content
+          triggers: ['mood_detected', 'time_of_day', 'content_type'],
           basePersona: recommendedPersona,
           moodMappings: {
-            anxious: 'luna',
-            sad: 'fern',
-            angry: 'flint',
-            happy: 'spark',
-            neutral: 'clover',
+            anxious: 'luna',    // Calm, grounding presence for anxiety
+            sad: 'fern',        // Extra gentle nurturing for sadness
+            angry: 'flint',     // Direct acknowledgment for frustration
+            happy: 'spark',     // Match their positive energy
+            neutral: 'clover',  // Warm casual default
           },
         },
         onboardingAnswers: answers,
