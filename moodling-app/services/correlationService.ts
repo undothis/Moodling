@@ -4,7 +4,7 @@
  * Calculates statistical correlations between lifestyle factors and mood.
  * Used to generate data-driven pattern observations.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Observations are tentative ("might", "seems")
  * - Correlation ≠ causation (we're clear about this)
  * - User knows themselves best

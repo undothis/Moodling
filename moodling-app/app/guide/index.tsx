@@ -4,7 +4,7 @@
  * Walks new users through how to use Mood Leaf,
  * focusing on the tree metaphor and core features.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Warm, inviting introduction
  * - No pressure, can skip anytime
  * - Empowers user understanding

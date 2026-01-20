@@ -5,7 +5,7 @@
  * journal history. This allows Claude to reference things from years ago
  * without sending all raw entries.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Data stays on device
  * - User controls what's tracked
  * - No diagnostic labels

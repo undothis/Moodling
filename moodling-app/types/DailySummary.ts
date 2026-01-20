@@ -4,7 +4,7 @@
  * Aggregates journal entries and lifestyle factors for a single day.
  * Used for pattern detection and visualization.
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - All tracking is optional
  * - User controls what they track
  * - Data stays on device

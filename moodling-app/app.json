@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Moodling",
+    "name": "Mood Leaf",
     "slug": "moodling",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,9 +14,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.moodling.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Moodling uses your microphone for voice journaling. All voice processing happens on your device.",
-        "NSCalendarsFullAccessUsageDescription": "Moodling can read your calendar to offer check-ins before and after social events. We never modify your calendar.",
-        "NSHealthShareUsageDescription": "Moodling can read your sleep and activity data to help you notice patterns. This data never leaves your device."
+        "NSMicrophoneUsageDescription": "Mood Leaf uses your microphone for voice journaling. All voice processing happens on your device.",
+        "NSCalendarsFullAccessUsageDescription": "Mood Leaf can read your calendar to offer check-ins before and after social events. We never modify your calendar.",
+        "NSHealthShareUsageDescription": "Mood Leaf can read your sleep and activity data to help you notice patterns. This data never leaves your device."
       }
     },
     "android": {

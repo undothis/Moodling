@@ -9,7 +9,7 @@
  * Goal: Help users see correlations so they can understand themselves
  * better and eventually not need the app (anti-dependency principle).
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - Descriptive, never diagnostic
  * - Empower self-awareness
  * - Encourage real-world solutions

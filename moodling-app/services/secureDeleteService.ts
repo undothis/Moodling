@@ -7,7 +7,7 @@
  * - All storage keys covered
  * - No data remnants
  *
- * Following Moodling Ethics:
+ * Following Mood Leaf Ethics:
  * - User has full control over their data
  * - Deletion is permanent and verifiable
  * - No backups or retention
@@ -16,7 +16,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
- * All storage keys used by Moodling
+ * All storage keys used by Mood Leaf
  * This list must be kept in sync with all services
  */
 const ALL_STORAGE_KEYS = [
@@ -159,7 +159,7 @@ async function secureDeleteKey(key: string, passes: number = 3): Promise<boolean
 }
 
 /**
- * Securely delete ALL Moodling data
+ * Securely delete ALL Mood Leaf data
  * This is the nuclear option - everything goes
  */
 export async function secureDeleteAllData(passes: number = 3): Promise<SecureDeleteResult> {
