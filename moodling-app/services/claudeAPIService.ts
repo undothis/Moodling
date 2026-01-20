@@ -17,6 +17,12 @@ import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
+import {
+  getCoachSettings,
+  generatePersonalityPrompt,
+  getAdaptivePersona,
+  PERSONAS,
+} from './coachPersonalityService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -130,8 +136,17 @@ You don't have to face this alone. A trained counselor can help right now.`,
 /**
  * Build the Moodling system prompt
  */
-function buildSystemPrompt(userContext: string, toneInstruction: string): string {
-  return `You are Moodling, a warm and compassionate companion in a journaling app.
+function buildSystemPrompt(
+  userContext: string,
+  toneInstruction: string,
+  personalityPrompt?: string
+): string {
+  // Use coach personality if available, otherwise default Moodling identity
+  const identity = personalityPrompt
+    ? personalityPrompt
+    : 'You are Moodling, a warm and compassionate companion in a journaling app.';
+
+  return `${identity}
 
 YOUR ROLE:
 - Listen with empathy and without judgment
@@ -401,6 +416,77 @@ export async function getCostData(): Promise<{
   }
 }
 
+// ============ Adaptive Mode Helpers ============
+
+/**
+ * Get current time of day for adaptive persona selection
+ */
+function getCurrentTimeOfDay(): 'morning' | 'afternoon' | 'evening' | 'night' {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+}
+
+/**
+ * Detect mood from message content for adaptive persona selection
+ */
+function detectMoodFromMessage(
+  message: string
+): 'anxious' | 'sad' | 'angry' | 'happy' | 'neutral' | undefined {
+  const lower = message.toLowerCase();
+
+  // Anxious keywords
+  if (
+    lower.includes('anxious') ||
+    lower.includes('worried') ||
+    lower.includes('nervous') ||
+    lower.includes('panic') ||
+    lower.includes('stress') ||
+    lower.includes('overwhelm')
+  ) {
+    return 'anxious';
+  }
+
+  // Sad keywords
+  if (
+    lower.includes('sad') ||
+    lower.includes('depressed') ||
+    lower.includes('down') ||
+    lower.includes('hopeless') ||
+    lower.includes('lonely') ||
+    lower.includes('empty')
+  ) {
+    return 'sad';
+  }
+
+  // Angry keywords
+  if (
+    lower.includes('angry') ||
+    lower.includes('frustrated') ||
+    lower.includes('annoyed') ||
+    lower.includes('furious') ||
+    lower.includes('pissed')
+  ) {
+    return 'angry';
+  }
+
+  // Happy keywords
+  if (
+    lower.includes('happy') ||
+    lower.includes('excited') ||
+    lower.includes('great') ||
+    lower.includes('amazing') ||
+    lower.includes('wonderful') ||
+    lower.includes('good news')
+  ) {
+    return 'happy';
+  }
+
+  return undefined; // No clear mood detected
+}
+
 // ============ Main API Function ============
 
 /**
@@ -429,6 +515,31 @@ export async function sendMessage(
   const tonePrefs = context.toneStyles ?? (await getTonePreferences()).selectedStyles;
   const toneInstruction = getToneInstruction(tonePrefs);
 
+  // Get coach personality settings
+  let personalityPrompt: string | undefined;
+  try {
+    const coachSettings = await getCoachSettings();
+
+    // Determine active persona (with adaptive mode)
+    const timeOfDay = getCurrentTimeOfDay();
+    const detectedMood = detectMoodFromMessage(message);
+
+    const activePersona = getAdaptivePersona(coachSettings, {
+      timeOfDay,
+      detectedMood,
+      userMessage: message,
+    });
+
+    // Generate personality prompt for the active persona
+    const activeSettings = {
+      ...coachSettings,
+      selectedPersona: activePersona,
+    };
+    personalityPrompt = generatePersonalityPrompt(activeSettings);
+  } catch (error) {
+    console.log('Could not load coach personality:', error);
+  }
+
   // Build context and prompt
   // Combine: rich user context (Unit 18B) + lifetime context + health context + conversation context
   const conversationContext = buildConversationContext(context);
@@ -450,7 +561,7 @@ export async function sendMessage(
   // Assemble full context: lifetime overview first, then health + correlations, then recent context, then current conversation
   const contextParts = [lifeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
-  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction);
+  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
 
   const request: ClaudeRequest = {
