@@ -33,12 +33,29 @@
 // ✅ Communication Preferences - validation, solutions, style
 // ✅ Professions - healthcare, tech, education, service, trades, business, creative, legal, government
 //
-// NOT YET IMPLEMENTED (lower priority):
-// ⬜ Temporal patterns (Sunday scaries, seasonal, etc.)
-// ⬜ Coping mechanisms (healthy vs unhealthy)
-// ⬜ Severity markers (high/moderate/low distress)
-// ⬜ Entity extraction patterns (named_person, date_mention, duration, etc.)
+// ALSO IMPLEMENTED IN CODE (added in lifeContextService.ts):
+// ✅ Temporal patterns (Sunday scaries, seasonal, recurring events)
+// ✅ Coping mechanisms (healthy vs unhealthy tracking)
+// ✅ Severity markers (crisis/high/moderate/low/positive distress)
+// ✅ Entity extraction patterns (named_person, age, location, medication_dosage, sobriety_duration)
+//
+// ALSO IMPLEMENTED:
+// ✅ HealthKit integration (healthKitService.ts)
+//    - Heart rate monitoring with spike detection
+//    - Sleep tracking (duration, quality, awakenings)
+//    - Activity tracking (steps, exercise, calories)
+//    - Smart notifications for elevated heart rate
+// ✅ Health Insights & Correlations (healthInsightService.ts)
+//    - Sleep-mood correlation analysis
+//    - Activity-mood correlation analysis
+//    - 90-day correlation data tracking
+//    - Smart popup suggestions based on patterns
+// ✅ Mega prompt with health data awareness (claudeAPIService.ts)
+//
+// NOT YET IMPLEMENTED (future enhancements):
 // ⬜ Compression templates (relationship, condition, event, pattern, preference, goal)
+// ⬜ Watch app integration
+// ⬜ Export reports for therapy
 //
 // ============================================
 
