@@ -910,6 +910,84 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      {/* FAQ & Help Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Help & FAQ
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/guide')}
+        >
+          <Text style={styles.faqEmoji}>🌳</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              App Guide
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Learn how to use Mood Leaf
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <View style={styles.faqDivider} />
+
+        <Text style={[styles.faqSectionLabel, { color: colors.textSecondary }]}>
+          Common Questions
+        </Text>
+
+        <View style={styles.faqList}>
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What is the tree?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your tree is a visual representation of your emotional journey. Each journal entry becomes a leaf, and patterns form branches over time.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What are Fireflies?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Fireflies are gentle bits of wisdom that float around your tree. Tap them for personalized insights based on your journey.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What are Twigs?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Twigs are quick logs for when you don't have time for a full entry. Track mood, sleep, or energy with just a tap.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              How does my guide adapt?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your AI guide learns from your preferences and can adapt based on time of day, your mood, or what you're sharing. Customize this in Coach Settings.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              Is my data private?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Yes! All journal entries and patterns stay on your device. Only coaching messages are sent to Claude's API (if enabled), and they're not stored.
+            </Text>
+          </View>
+        </View>
+      </View>
+
       {/* Privacy Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -1381,5 +1459,58 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  // FAQ styles
+  faqItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  faqEmoji: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  faqContent: {
+    flex: 1,
+  },
+  faqTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  faqSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  faqArrow: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  faqDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    marginVertical: 12,
+  },
+  faqSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  faqList: {
+    gap: 16,
+  },
+  faqQuestion: {
+    gap: 4,
+  },
+  faqQ: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  faqA: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

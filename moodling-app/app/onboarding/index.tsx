@@ -133,11 +133,11 @@ export default function OnboardingScreen() {
 
       await completeOnboarding();
 
-      // Navigate to tree (main hub)
-      router.replace('/(tabs)/tree');
+      // Navigate to guide walkthrough
+      router.replace('/guide');
     } catch (error) {
       console.error('Failed to save onboarding:', error);
-      router.replace('/(tabs)/tree');
+      router.replace('/guide');
     }
   };
 
