@@ -28,13 +28,12 @@ export default function RootLayout() {
     if (isLoading) return;
 
     const inOnboarding = segments[0] === 'onboarding';
+    const inGuide = segments[0] === 'guide';
 
-    if (needsOnboarding && !inOnboarding) {
-      // Redirect to onboarding
+    // Only redirect TO onboarding if needed and not already there
+    // Don't redirect AWAY from onboarding - let the screen handle its own navigation
+    if (needsOnboarding && !inOnboarding && !inGuide) {
       router.replace('/onboarding');
-    } else if (!needsOnboarding && inOnboarding) {
-      // Redirect to tree (main hub)
-      router.replace('/(tabs)/tree');
     }
   }, [isLoading, needsOnboarding, segments]);
 
