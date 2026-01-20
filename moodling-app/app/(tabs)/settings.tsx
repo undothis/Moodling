@@ -11,7 +11,15 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
+import {
+  getCoachSettings,
+  getCoachDisplayName,
+  PERSONAS,
+  CoachPersona,
+  CoachSettings,
+} from '@/services/coachPersonalityService';
 import {
   getReminderSettings,
   saveReminderSettings,
@@ -86,6 +94,9 @@ export default function SettingsScreen() {
   const [userPrefs, setUserPrefs] = useState<UserPreferences>({});
   const [showPersonalization, setShowPersonalization] = useState(false);
 
+  // Coach personality state (Unit 17)
+  const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -123,6 +134,10 @@ export default function SettingsScreen() {
       // Load personalization preferences
       const prefs = await getUserPreferences();
       setUserPrefs(prefs);
+
+      // Load coach personality (Unit 17)
+      const loadedCoachSettings = await getCoachSettings();
+      setCoachSettings(loadedCoachSettings);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -601,6 +616,37 @@ export default function SettingsScreen() {
 
         <Text style={[styles.toneNote, { color: colors.textMuted }]}>
           These preferences shape how reflections and coaching feel. Mix and match to find your fit.
+        </Text>
+      </View>
+
+      {/* Coach Personality Section (Unit 17) */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Your Guide
+          </Text>
+        </View>
+
+        {coachSettings && (
+          <TouchableOpacity
+            style={[styles.coachCard, { backgroundColor: colors.background }]}
+            onPress={() => router.push('/coach/settings')}
+          >
+            <Text style={styles.coachEmoji}>{PERSONAS[coachSettings.selectedPersona].emoji}</Text>
+            <View style={styles.coachInfo}>
+              <Text style={[styles.coachName, { color: colors.text }]}>
+                {getCoachDisplayName(coachSettings)}
+              </Text>
+              <Text style={[styles.coachTagline, { color: colors.textSecondary }]}>
+                {PERSONAS[coachSettings.selectedPersona].tagline}
+              </Text>
+            </View>
+            <Text style={[styles.coachArrow, { color: colors.textMuted }]}>→</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={[styles.coachNote, { color: colors.textMuted }]}>
+          Customize your guide's personality, communication style, and adaptive behaviors.
         </Text>
       </View>
 
@@ -1303,5 +1349,37 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
     marginTop: 12,
+  },
+  // Unit 17: Coach personality styles
+  coachCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  coachEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  coachInfo: {
+    flex: 1,
+  },
+  coachName: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  coachTagline: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  coachArrow: {
+    fontSize: 18,
+    marginLeft: 8,
+  },
+  coachNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
 });
