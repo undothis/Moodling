@@ -221,6 +221,9 @@ Explain:
     •    Why this reduces prompt size
     •    How this saves API costs
     •    How this improves relevance and stability
+    waht the ts services are and what they mean
+    what the main dode of conduct and philosophy of the app is
+    
 
 Coin terms where useful, such as:
     •    “Live Context Psych”
