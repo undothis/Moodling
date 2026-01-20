@@ -29,6 +29,7 @@ import {
   OnboardingQuestion,
   recommendPersonaFromAnswers,
   mapAnswersToSettings,
+  generateMoodMappings,
   saveCoachSettings,
   completeOnboarding,
   getSettingsForPersona,
@@ -108,6 +109,9 @@ export default function OnboardingScreen() {
       const recommendedPersona = recommendPersonaFromAnswers(answers);
       const detailedSettings = mapAnswersToSettings(answers);
 
+      // Generate personalized mood mappings based on user's preferences
+      const personalizedMoodMappings = generateMoodMappings(answers, recommendedPersona);
+
       // Save settings
       await saveCoachSettings({
         selectedPersona: recommendedPersona,
@@ -120,13 +124,7 @@ export default function OnboardingScreen() {
           enabled: true, // Adaptive mode on by default - AI adapts to mood, time, content
           triggers: ['mood_detected', 'time_of_day', 'content_type'],
           basePersona: recommendedPersona,
-          moodMappings: {
-            anxious: 'luna',    // Calm, grounding presence for anxiety
-            sad: 'fern',        // Extra gentle nurturing for sadness
-            angry: 'flint',     // Direct acknowledgment for frustration
-            happy: 'spark',     // Match their positive energy
-            neutral: 'clover',  // Warm casual default
-          },
+          moodMappings: personalizedMoodMappings,
         },
         onboardingAnswers: answers,
       });

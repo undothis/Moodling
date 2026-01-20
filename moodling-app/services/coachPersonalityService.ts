@@ -832,3 +832,77 @@ export function mapAnswersToSettings(
 
   return settings;
 }
+
+/**
+ * Generate personalized mood mappings based on onboarding answers
+ * This determines which persona to switch to for each detected mood
+ */
+export function generateMoodMappings(
+  answers: Record<string, string | string[]>,
+  basePersona: CoachPersona
+): Record<string, CoachPersona> {
+  const supportStyle = answers.support_style as string;
+  const commPref = answers.communication_preference as string;
+  const energyPref = answers.energy_preference as string;
+  const approaches = (answers.approach_preference as string[]) || [];
+
+  // Start with base mappings
+  const mappings: Record<string, CoachPersona> = {
+    anxious: 'luna',
+    sad: 'fern',
+    angry: 'flint',
+    happy: 'spark',
+    neutral: basePersona,
+  };
+
+  // Personalize based on support style preference
+  if (supportStyle === 'solutions') {
+    // They want practical help - use goal-oriented personas
+    mappings.anxious = 'ridge'; // Focus on action over calm
+    mappings.sad = 'ridge';     // Give them something to do
+  } else if (supportStyle === 'validation') {
+    // They want to feel heard - use nurturing personas
+    mappings.anxious = 'fern';  // Extra gentle
+    mappings.angry = 'fern';    // Validate before addressing
+  } else if (supportStyle === 'motivation') {
+    // They want energy - use uplifting personas
+    mappings.sad = 'spark';     // Energize them
+    mappings.anxious = 'spark'; // Positive redirect
+  } else if (supportStyle === 'perspective') {
+    // They want wisdom - use reflective personas
+    mappings.anxious = 'willow';
+    mappings.sad = 'willow';
+    mappings.angry = 'willow';
+  }
+
+  // Further adjust based on communication preference
+  if (commPref === 'gentle') {
+    // Override any direct personas with gentle ones
+    if (mappings.angry === 'flint') mappings.angry = 'fern';
+    if (mappings.anxious === 'ridge') mappings.anxious = 'luna';
+  } else if (commPref === 'direct') {
+    // They can handle directness even in tough moments
+    if (mappings.sad === 'fern') mappings.sad = 'flint';
+  }
+
+  // Adjust based on energy preference
+  if (energyPref === '0') {
+    // Prefer calm energy across the board
+    if (mappings.happy === 'spark') mappings.happy = 'clover';
+    if (mappings.anxious === 'spark') mappings.anxious = 'luna';
+  } else if (energyPref === '2') {
+    // Prefer high energy
+    if (mappings.neutral === 'clover') mappings.neutral = 'spark';
+  }
+
+  // Adjust based on approaches they're interested in
+  if (approaches.includes('mindfulness') || approaches.includes('spiritual')) {
+    mappings.anxious = 'luna'; // Mindful presence for anxiety
+  }
+  if (approaches.includes('somatic')) {
+    // Body-aware personas
+    if (mappings.anxious !== 'luna') mappings.anxious = 'luna';
+  }
+
+  return mappings;
+}
