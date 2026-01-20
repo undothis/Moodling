@@ -76,6 +76,16 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Does the guide help with jet lag?',
     answer: 'After travel, your guide notices when your rhythm is off and adjusts accordingly. It won\'t pressure you to be energetic when you\'re exhausted, and it can offer tips to help you readjust to your new time zone gradually.',
   },
+  {
+    category: 'guide',
+    question: 'How does travel tracking work?',
+    answer: 'During onboarding, you\'ll share how often you travel across time zones. If you travel frequently, your guide knows your rhythm may be chronically disrupted. After specific trips, it can detect jet lag and adjust for up to 2-3 weeks while you readjust.',
+  },
+  {
+    category: 'guide',
+    question: 'What gets compressed and sent to AI?',
+    answer: 'Your chronotype, any rhythm transitions you\'re working on, and recent travel are compressed into a brief summary. This helps your guide understand your current state without sending raw data. Example: "Night owl transitioning to early bird, 12 days in, recently traveled east (6h shift, 5 days ago)."',
+  },
 
   // Privacy
   {

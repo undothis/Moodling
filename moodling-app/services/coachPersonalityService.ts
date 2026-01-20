@@ -213,6 +213,29 @@ export interface AdaptiveSettings {
 // User's natural sleep schedule / chronotype
 export type Chronotype = 'early_bird' | 'normal' | 'night_owl';
 
+// Travel frequency for timezone adaptation
+export type TravelFrequency = 'rarely' | 'occasionally' | 'frequently';
+
+// Chronotype transition settings
+export interface ChronotypeTransition {
+  isTransitioning: boolean;        // Are they actively trying to change?
+  currentType: Chronotype;         // Where they are now
+  targetType?: Chronotype;         // Where they want to be
+  startedAt?: string;              // When they started transitioning
+  progressNotes?: string[];        // Track progress over time
+}
+
+// Travel and timezone settings
+export interface TravelSettings {
+  frequency: TravelFrequency;      // How often they travel across zones
+  recentTravel?: {
+    date: string;                  // When they last traveled
+    timezoneShift: number;         // Hours shifted (+/-)
+    direction: 'east' | 'west';    // Direction of travel
+  };
+  homeTimezone?: string;           // Their home timezone
+}
+
 export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
@@ -229,6 +252,12 @@ export interface CoachSettings {
 
   // User's natural rhythm (detected from patterns or set manually)
   chronotype?: Chronotype;
+
+  // Chronotype transition (if trying to change sleep schedule)
+  chronotypeTransition?: ChronotypeTransition;
+
+  // Travel and timezone awareness
+  travelSettings?: TravelSettings;
 
   // Onboarding answers (for context)
   onboardingAnswers: {
@@ -580,6 +609,36 @@ export function generatePersonalityPrompt(
     parts.push(timeInstruction);
   }
 
+  // Chronotype transition support
+  if (settings.chronotypeTransition?.isTransitioning) {
+    const { currentType, targetType } = settings.chronotypeTransition;
+    if (targetType === 'early_bird') {
+      parts.push(`User is transitioning from ${currentType} to early bird. Gently encourage earlier wind-downs, celebrate morning check-ins, and be patient with setbacks. Don't shame late nights but nudge toward earlier sleep when appropriate.`);
+    } else if (targetType === 'night_owl') {
+      parts.push(`User is transitioning to a later schedule. Support their shift without judgment. Help them find their optimal rhythm.`);
+    } else {
+      parts.push(`User is working on schedule flexibility. Help them adapt to changing demands without stress.`);
+    }
+  }
+
+  // Travel and jet lag awareness
+  if (settings.travelSettings) {
+    const { frequency, recentTravel } = settings.travelSettings;
+    if (frequency === 'frequently') {
+      parts.push('User travels frequently across time zones. Be aware their rhythm may be disrupted. Don\'t assume standard day/night patterns.');
+    }
+    if (recentTravel) {
+      const daysSinceTravel = Math.floor(
+        (Date.now() - new Date(recentTravel.date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSinceTravel < 14) {
+        const shift = recentTravel.timezoneShift;
+        const direction = recentTravel.direction;
+        parts.push(`User recently traveled ${direction} (${shift}h shift, ${daysSinceTravel} days ago). They may still be adjusting. Be gentle about energy expectations and offer jet lag recovery tips if relevant.`);
+      }
+    }
+  }
+
   // User's base energy preference (combined with time-of-day)
   if (detailed.energyLevel === 'calm') {
     parts.push('The user prefers calm energy - lean into grounding even more.');
@@ -725,6 +784,95 @@ export function getAdaptivePersona(
 }
 
 // ============================================
+// COMPRESSED CONTEXT FOR CLAUDE
+// ============================================
+
+/**
+ * Generate compressed chronotype and travel context for Claude API.
+ * This supplements the psych profile with rhythm/travel awareness.
+ */
+export async function getChronotypeContextForClaude(): Promise<string> {
+  const settings = await getCoachSettings();
+  const lines: string[] = [];
+
+  // Chronotype
+  if (settings.chronotype) {
+    const typeLabels: Record<Chronotype, string> = {
+      early_bird: 'early bird (morning person)',
+      normal: 'standard daytime rhythm',
+      night_owl: 'night owl (evening person)',
+    };
+    lines.push(`CHRONOTYPE: ${typeLabels[settings.chronotype]}`);
+  }
+
+  // Chronotype transition
+  if (settings.chronotypeTransition?.isTransitioning) {
+    const { currentType, targetType, startedAt, progressNotes } = settings.chronotypeTransition;
+    lines.push('');
+    lines.push('RHYTHM TRANSITION:');
+    lines.push(`- Currently: ${currentType} → Goal: ${targetType || 'more flexible'}`);
+
+    if (startedAt) {
+      const daysIntoTransition = Math.floor(
+        (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      lines.push(`- Started: ${daysIntoTransition} days ago`);
+    }
+
+    if (progressNotes && progressNotes.length > 0) {
+      const recentNote = progressNotes[progressNotes.length - 1];
+      lines.push(`- Recent progress: ${recentNote}`);
+    }
+
+    // Add supportive context
+    if (targetType === 'early_bird') {
+      lines.push('- Support: Encourage earlier wind-downs, celebrate morning check-ins, patience with setbacks');
+    } else if (targetType === 'night_owl') {
+      lines.push('- Support: Help find optimal late rhythm without judgment');
+    }
+  }
+
+  // Travel awareness
+  if (settings.travelSettings) {
+    const { frequency, recentTravel, homeTimezone } = settings.travelSettings;
+
+    lines.push('');
+    lines.push('TRAVEL & TIMEZONE:');
+    lines.push(`- Travel frequency: ${frequency}`);
+
+    if (homeTimezone) {
+      lines.push(`- Home timezone: ${homeTimezone}`);
+    }
+
+    if (recentTravel) {
+      const daysSinceTravel = Math.floor(
+        (Date.now() - new Date(recentTravel.date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (daysSinceTravel < 21) {
+        lines.push(`- Recent travel: ${recentTravel.direction} (${Math.abs(recentTravel.timezoneShift)}h shift)`);
+        lines.push(`- Days since travel: ${daysSinceTravel}`);
+
+        // Jet lag recovery guidance
+        if (daysSinceTravel < 3) {
+          lines.push('- Status: Acute jet lag phase - expect disrupted sleep and energy');
+        } else if (daysSinceTravel < 7) {
+          lines.push('- Status: Adjusting - sleep may still be off, be patient');
+        } else if (daysSinceTravel < 14) {
+          lines.push('- Status: Mostly adjusted - minor lingering effects possible');
+        }
+      }
+    }
+
+    if (frequency === 'frequently') {
+      lines.push('- Note: Frequent traveler - rhythm may be chronically disrupted');
+    }
+  }
+
+  return lines.length > 0 ? lines.join('\n') : '';
+}
+
+// ============================================
 // ONBOARDING QUESTIONS
 // ============================================
 
@@ -808,6 +956,29 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       { id: 'early_bird', emoji: '🌅', label: 'Early bird', description: 'I come alive in the morning' },
       { id: 'normal', emoji: '☀️', label: 'Daytime person', description: 'Pretty standard schedule' },
       { id: 'night_owl', emoji: '🦉', label: 'Night owl', description: 'I do my best thinking late' },
+    ],
+  },
+  {
+    id: 'chronotype_change',
+    question: "Are you trying to change your sleep schedule?",
+    subtitle: "Your guide can support gradual rhythm shifts",
+    type: 'single',
+    options: [
+      { id: 'no', emoji: '✓', label: 'No, I\'m good', description: 'My current rhythm works for me' },
+      { id: 'earlier', emoji: '🌅', label: 'Want earlier mornings', description: 'Trying to become more of a morning person' },
+      { id: 'later', emoji: '🌙', label: 'Want later nights', description: 'Trying to shift to a later schedule' },
+      { id: 'flexible', emoji: '🔄', label: 'Want more flexibility', description: 'Adapting to changing demands' },
+    ],
+  },
+  {
+    id: 'travel_frequency',
+    question: "Do you travel across time zones?",
+    subtitle: "Helps your guide support jet lag recovery",
+    type: 'single',
+    options: [
+      { id: 'rarely', emoji: '🏠', label: 'Rarely', description: 'I mostly stay in one timezone' },
+      { id: 'occasionally', emoji: '✈️', label: 'Occasionally', description: 'A few times a year' },
+      { id: 'frequently', emoji: '🌍', label: 'Frequently', description: 'Regular international travel' },
     ],
   },
   {

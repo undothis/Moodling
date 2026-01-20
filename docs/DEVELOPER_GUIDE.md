@@ -1606,6 +1606,55 @@ interface ChronotypeGoal {
 - Celebrates morning check-ins
 - Supports setbacks without judgment
 
+### Chronotype & Travel Context Compression
+
+The `getChronotypeContextForClaude()` function generates compressed context for the AI:
+
+```typescript
+// Example output from getChronotypeContextForClaude()
+`CHRONOTYPE: night owl (evening person)
+
+RHYTHM TRANSITION:
+- Currently: night_owl → Goal: early_bird
+- Started: 12 days ago
+- Recent progress: Successfully woke at 7am twice this week
+- Support: Encourage earlier wind-downs, celebrate morning check-ins, patience with setbacks
+
+TRAVEL & TIMEZONE:
+- Travel frequency: frequently
+- Home timezone: America/New_York
+- Recent travel: east (6h shift)
+- Days since travel: 5
+- Status: Adjusting - sleep may still be off, be patient`
+```
+
+**Data Stored in CoachSettings**:
+```typescript
+interface ChronotypeTransition {
+  isTransitioning: boolean;
+  currentType: Chronotype;
+  targetType?: Chronotype;
+  startedAt?: string;
+  progressNotes?: string[];
+}
+
+interface TravelSettings {
+  frequency: 'rarely' | 'occasionally' | 'frequently';
+  recentTravel?: {
+    date: string;
+    timezoneShift: number;
+    direction: 'east' | 'west';
+  };
+  homeTimezone?: string;
+}
+```
+
+**Compression Strategy**:
+- Only includes relevant data (no empty sections)
+- Jet lag context expires after ~3 weeks
+- Progress notes limited to most recent
+- Provides actionable support instructions for AI
+
 ### Generating the Personality Prompt
 
 ```typescript
@@ -1661,8 +1710,11 @@ async function sendMessage(message: string, context: ConversationContext) {
   // 5. Get psychological context
   const psychContext = await psychAnalysisService.getCompressedContext();
 
-  // 6. Build full context and send to Claude
-  const contextParts = [lifeContext, psychContext, healthContext, ...];
+  // 6. Get chronotype and travel context
+  const chronotypeContext = await getChronotypeContextForClaude();
+
+  // 7. Build full context and send to Claude
+  const contextParts = [lifeContext, psychContext, chronotypeContext, healthContext, ...];
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
 }
 ```
@@ -1679,6 +1731,7 @@ SYSTEM PROMPT:
 └── User Context:
     ├── Life Context (facts, events, people)
     ├── Psychological Profile (cognitive patterns, attachment style)
+    ├── Chronotype & Travel (rhythm, transitions, jet lag)
     ├── Health Context (sleep, activity, heart rate)
     └── Current Conversation Context (recent mood, upcoming events)
 ```
@@ -1690,8 +1743,10 @@ SYSTEM PROMPT:
 3. **"How do you prefer to be spoken to?"** - Communication preference
 4. **"What energy level do you prefer?"** - Calm ↔ Energetic slider
 5. **"When are you most yourself?"** - Chronotype selection
-6. **"Which approaches interest you?"** - Mindfulness, CBT, Somatic, etc.
-7. **"Meet your guides"** - Initial persona selection
+6. **"Are you trying to change your sleep schedule?"** - Chronotype transition (earlier/later/flexible)
+7. **"Do you travel across time zones?"** - Travel frequency (rarely/occasionally/frequently)
+8. **"Which approaches interest you?"** - Mindfulness, CBT, Somatic, etc.
+9. **"Meet your guides"** - Initial persona selection
 
 All answers influence:
 - Recommended persona

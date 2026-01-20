@@ -22,6 +22,7 @@ import {
   getCoachSettings,
   generatePersonalityPrompt,
   getAdaptivePersona,
+  getChronotypeContextForClaude,
   PERSONAS,
 } from './coachPersonalityService';
 
@@ -627,8 +628,16 @@ export async function sendMessage(
     console.log('Could not load psych context:', error);
   }
 
-  // Assemble full context: lifetime overview first, then psych profile, health + correlations, then recent context, then current conversation
-  const contextParts = [lifeContext, psychContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
+  // Get chronotype and travel context (rhythm awareness, jet lag, transitions)
+  let chronotypeContext = '';
+  try {
+    chronotypeContext = await getChronotypeContextForClaude();
+  } catch (error) {
+    console.log('Could not load chronotype context:', error);
+  }
+
+  // Assemble full context: lifetime overview first, then psych profile, chronotype/travel, health + correlations, then recent context, then current conversation
+  const contextParts = [lifeContext, psychContext, chronotypeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
