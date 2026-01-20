@@ -57,6 +57,8 @@ moodling-app/
 │   ├── userContextService.ts     # User context & keywords
 │   ├── healthKitService.ts       # Apple HealthKit integration
 │   ├── healthInsightService.ts   # Correlation & insights
+│   ├── obliqueStrategiesService.ts # Oblique strategies cards
+│   ├── secureDeleteService.ts    # Secure data deletion
 │   ├── tonePreferencesService.ts # Communication style
 │   ├── sentimentAnalysis.ts      # Mood detection
 │   ├── patternService.ts         # Pattern detection
@@ -811,6 +813,141 @@ You don't have to face this alone.`,
   source: 'crisis',
   cost: 0,
 };
+```
+
+---
+
+---
+
+### obliqueStrategiesService.ts
+
+**Purpose**: Provides Oblique Strategies-style cards for creative and emotional unblocking.
+
+**Categories**:
+- `depression` - Gentle nudges when everything feels heavy (30 cards)
+- `anxiety` - Grounding prompts when mind is racing (30 cards)
+- `walking` - Contemplations for motion (30 cards)
+- `artists` - Creative unblocking for visual creators (30 cards)
+- `musicians` - Prompts for sonic exploration (30 cards)
+- `funny` - Absurdist humor to break the spell (30 cards)
+- `strange` - Weird perspectives to jar you loose (30 cards)
+- `random` - Pull from any category
+
+**Key Exports**:
+```typescript
+interface Strategy {
+  id: string;
+  text: string;
+  category: StrategyCategory;
+  author?: string;
+}
+
+// Get a random strategy
+getRandomStrategy(category: StrategyCategory): Strategy
+
+// Get multiple unique strategies
+getStrategies(category: StrategyCategory, count: number): Strategy[]
+
+// Favorites management
+saveToFavorites(strategy: Strategy): Promise<void>
+removeFromFavorites(strategyId: string): Promise<void>
+getFavorites(): Promise<Strategy[]>
+
+// Get strategy based on detected mood
+getStrategyForMood(mood: string): Strategy
+
+// Search strategies
+searchStrategies(query: string): Strategy[]
+```
+
+**Example strategies**:
+```typescript
+// Depression
+"Your brain is lying to you. It's very convincing, but it's still lying."
+
+// Anxiety
+"Name five things you can see. You're here, not there."
+
+// Walking
+"Find something beautiful that no one else has noticed today."
+
+// Artists
+"Make the mistake on purpose."
+
+// Musicians
+"What's the note you're afraid to play?"
+
+// Funny
+"What if this problem belongs to someone else and you just found it?"
+
+// Strange
+"You are a ghost who forgot they died. What unfinished business brought you here?"
+```
+
+---
+
+### secureDeleteService.ts
+
+**Purpose**: Secure, comprehensive data deletion with verification.
+
+**Key Exports**:
+```typescript
+interface SecureDeleteResult {
+  success: boolean;
+  keysDeleted: number;
+  keysVerified: number;
+  errors: string[];
+  timestamp: string;
+}
+
+// Secure delete all data (3-pass overwrite)
+secureDeleteAllData(passes?: number): Promise<SecureDeleteResult>
+
+// Delete specific category
+secureDeleteCategory(category: 'journal' | 'chat' | 'health' | 'context' | 'strategies' | 'settings'): Promise<SecureDeleteResult>
+
+// Quick delete (no overwrite, faster)
+quickDeleteAllData(): Promise<SecureDeleteResult>
+
+// Get storage statistics
+getStorageStats(): Promise<{ totalKeys, moodlingKeys, estimatedSize, keyDetails }>
+
+// Export before delete (safety net)
+exportBeforeDelete(): Promise<Record<string, unknown>>
+
+// Deletion confirmation
+generateDeletionCode(): string
+verifyDeletionCode(input: string, code: string): boolean
+```
+
+**Secure deletion process**:
+```typescript
+async function secureDeleteKey(key: string, passes: number = 3) {
+  // 1. Overwrite with random garbage data (multiple passes)
+  for (let i = 0; i < passes; i++) {
+    const garbage = generateRandomGarbage();
+    await AsyncStorage.setItem(key, garbage);
+  }
+
+  // 2. Delete the key
+  await AsyncStorage.removeItem(key);
+
+  // 3. Verify deletion
+  const value = await AsyncStorage.getItem(key);
+  return value === null;
+}
+```
+
+**All tracked storage keys**:
+```typescript
+const ALL_STORAGE_KEYS = [
+  // Journal
+  'moodling_journal_entries',
+  'moodling_journal_drafts',
+  // Life Context
+  'moodling_life_context',
+  // ... 30+ keys total
+];
 ```
 
 ---

@@ -51,11 +51,26 @@
 //    - 90-day correlation data tracking
 //    - Smart popup suggestions based on patterns
 // ✅ Mega prompt with health data awareness (claudeAPIService.ts)
+// ✅ Oblique Strategies (obliqueStrategiesService.ts)
+//    - 210+ strategy cards across 7 categories
+//    - Depression, anxiety, walking, artists, musicians, funny, strange
+//    - Favorites and history tracking
+//    - Mood-based strategy selection
+// ✅ Secure Delete (secureDeleteService.ts)
+//    - 3-pass overwrite before deletion
+//    - Verification of complete removal
+//    - Category-specific deletion
+//    - Storage statistics and export before delete
+// ✅ Comprehensive Documentation
+//    - USER_FAQ.md - Searchable FAQ with code of conduct, data storage, learning explanation
+//    - USER_MANUAL.md - Complete user manual
+//    - DEVELOPER_GUIDE.md - Full technical documentation
 //
 // NOT YET IMPLEMENTED (future enhancements):
 // ⬜ Compression templates (relationship, condition, event, pattern, preference, goal)
 // ⬜ Watch app integration
 // ⬜ Export reports for therapy
+// ⬜ Android support
 //
 // ============================================
 
