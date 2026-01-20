@@ -1,6 +1,7 @@
 // memory-extraction-patterns.ts
 // Comprehensive keyword detection for personal context extraction
-<<<<<<< Updated upstream
+// For use with Moodling (Mood Leaf) and similar therapeutic AI applications
+// Version 2.0 - Complete consolidated edition
 //
 // ============================================
 // IMPLEMENTATION STATUS
@@ -86,10 +87,6 @@
 // ⬜ Android support
 //
 // ============================================
-=======
-// For use with Moodling and similar therapeutic AI applications
-// Version 2.0 - Complete consolidated edition
->>>>>>> Stashed changes
 
 export const MEMORY_EXTRACTION_PATTERNS = {
 

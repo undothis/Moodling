@@ -4,12 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 
 /**
- * Moodling Tab Navigation
+ * Mood Leaf Tab Navigation
  *
- * Three tabs following the megaprompt structure:
- * 1. Journal - Write entries (primary)
- * 2. Insights - See patterns (secondary)
- * 3. Settings - Configure app
+ * Four tabs following the tree metaphor:
+ * 1. Tree - Visual home with interactive tree (primary)
+ * 2. Journal - Write entries (leaves)
+ * 3. Insights - See patterns (weather/health)
+ * 4. Settings - Configure app (garden settings)
  *
  * No badges, no notification dots, no engagement tricks.
  */
@@ -41,6 +42,19 @@ export default function TabLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="tree"
+        options={{
+          title: 'Tree',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'leaf' : 'leaf-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
