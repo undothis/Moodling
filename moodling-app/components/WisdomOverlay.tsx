@@ -1,6 +1,7 @@
 /**
- * Wisdom Overlay
+ * Fireflies Overlay
  *
+ * Little sparks of light in the dark.
  * Oblique Strategies-inspired wisdom cards.
  * User picks a category, gets a random inspirational thought.
  *
@@ -272,7 +273,7 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
           <>
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>
-                What do you need?
+                Catch a firefly ✨
               </Text>
             </View>
 

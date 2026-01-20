@@ -54,11 +54,11 @@ export default function TreeScreen() {
         mood="neutral"
       />
 
-      {/* Floating action buttons */}
-      <View style={styles.floatingButtons}>
+      {/* Floating action buttons - positioned above tree labels */}
+      <View style={styles.floatingButtons} pointerEvents="box-none">
         {/* Quick Log Button - Bottom Left */}
         <TouchableOpacity
-          style={[styles.fab, styles.fabLeft, { backgroundColor: colors.card }]}
+          style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowQuickLogs(true)}
           activeOpacity={0.8}
         >
@@ -66,14 +66,14 @@ export default function TreeScreen() {
           <Text style={[styles.fabLabel, { color: colors.text }]}>Quick Log</Text>
         </TouchableOpacity>
 
-        {/* Wisdom Button - Bottom Right */}
+        {/* Fireflies Button - Bottom Right */}
         <TouchableOpacity
-          style={[styles.fab, styles.fabRight, { backgroundColor: colors.card }]}
+          style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowWisdom(true)}
           activeOpacity={0.8}
         >
           <Text style={styles.fabEmoji}>✨</Text>
-          <Text style={[styles.fabLabel, { color: colors.text }]}>Wisdom</Text>
+          <Text style={[styles.fabLabel, { color: colors.text }]}>Fireflies</Text>
         </TouchableOpacity>
       </View>
 
@@ -98,28 +98,27 @@ const styles = StyleSheet.create({
   },
   floatingButtons: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 120,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    zIndex: 100,
   },
   fab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
     gap: 6,
   },
-  fabLeft: {},
-  fabRight: {},
   fabEmoji: {
     fontSize: 18,
   },
