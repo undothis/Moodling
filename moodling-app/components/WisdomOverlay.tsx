@@ -1,19 +1,12 @@
 /**
  * Fireflies Overlay
  *
- * Little sparks of light in the dark.
- * Oblique Strategies-inspired wisdom cards.
- * User picks a category, gets a random inspirational thought.
+ * Time-based and customizable wisdom/inspiration cards.
  *
- * Categories:
- * - Anxiety / Worry
- * - Walking / Movement
- * - Music / Sound
- * - Art / Creativity
- * - Nature
- * - Breath / Body
- * - Connection
- * - Perspective
+ * Structure:
+ * - Top row: Time-based categories (Morning, Afternoon, Evening, Night)
+ *   Auto-highlights current time of day
+ * - Below: Customizable categories (Anxiety, Movement, Creativity, etc.)
  */
 
 import { useState, useEffect } from 'react';
@@ -27,13 +20,93 @@ import {
   useColorScheme,
   Animated,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Wisdom categories with prompts/quotes
-const WISDOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms: string[] }> = {
+// Time of day detection
+type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+function getCurrentTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  if (hour >= 18 && hour < 21) return 'evening';
+  return 'night';
+}
+
+// Time-based wisdoms - geared to each time of day
+const TIME_CATEGORIES: Record<TimeOfDay, { emoji: string; label: string; wisdoms: string[] }> = {
+  morning: {
+    emoji: '☀️',
+    label: 'Morning',
+    wisdoms: [
+      "What would make today feel complete?",
+      "One thing you're looking forward to today?",
+      "How did you sleep? That affects everything.",
+      "Morning pages: write three pages of anything. Don't think.",
+      "What's the one thing that matters most today?",
+      "Stretch before you scroll.",
+      "Drink water. Your brain is dehydrated from sleep.",
+      "What can you let go of from yesterday?",
+      "Set one tiny intention. Just one.",
+      "The day hasn't decided what it is yet. Neither have you.",
+    ],
+  },
+  afternoon: {
+    emoji: '🌤️',
+    label: 'Afternoon',
+    wisdoms: [
+      "Midday slump? Step outside for two minutes.",
+      "How's your energy? Might need fuel or rest.",
+      "What's working today? Do more of that.",
+      "Unclench your jaw. Drop your shoulders.",
+      "You're halfway through. How do you want to finish?",
+      "Take a break. Your brain solves problems in the background.",
+      "Eat something green. Or at least something.",
+      "What can you delegate or delay?",
+      "Check in: are you doing or avoiding?",
+      "Afternoon light is good for your circadian rhythm. Find some.",
+    ],
+  },
+  evening: {
+    emoji: '🌅',
+    label: 'Evening',
+    wisdoms: [
+      "What went well today? Name one thing.",
+      "Start winding down. Screen brightness down.",
+      "Did you move your body today? A short walk counts.",
+      "Evening is for letting go, not catching up.",
+      "What are you grateful for? Even small things.",
+      "Prepare something small for tomorrow-you.",
+      "The work will be there tomorrow. You don't have to finish tonight.",
+      "How are you really feeling right now?",
+      "Did you connect with anyone today?",
+      "What would make tonight restful?",
+    ],
+  },
+  night: {
+    emoji: '🌙',
+    label: 'Night',
+    wisdoms: [
+      "Can't sleep? Write down what's on your mind. Get it out of your head.",
+      "Your worries feel bigger at night. They'll shrink by morning.",
+      "Body scan: where are you holding tension?",
+      "Tomorrow is a fresh start. This day is done.",
+      "You did enough today. You are enough.",
+      "Night thoughts lie. Don't trust them completely.",
+      "Breathe slowly. Your heart will follow.",
+      "What would you tell a friend who can't sleep?",
+      "The world keeps spinning while you rest. Let it.",
+      "Sleep is productive. Your brain needs it to function.",
+    ],
+  },
+};
+
+// Customizable categories
+const CUSTOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms: string[] }> = {
   anxiety: {
     emoji: '🌊',
     label: 'Anxiety',
@@ -50,7 +123,7 @@ const WISDOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms:
       "Sometimes the bravest thing is to just keep breathing.",
     ],
   },
-  walking: {
+  movement: {
     emoji: '🚶',
     label: 'Movement',
     wisdoms: [
@@ -64,6 +137,22 @@ const WISDOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms:
       "The body holds wisdom. What is it telling you?",
       "Shake it off. Literally. Animals do this to release trauma.",
       "Dance in your kitchen. No one's watching.",
+    ],
+  },
+  creativity: {
+    emoji: '🎨',
+    label: 'Creativity',
+    wisdoms: [
+      "Scribble without purpose. Let the pen wander.",
+      "What color is this feeling? Put it on paper.",
+      "Bad art is still art. Make something ugly on purpose.",
+      "Creativity isn't about the result. It's about the process.",
+      "Take a photo of something beautiful nearby. It exists.",
+      "Write the worst poem ever. Free yourself from good.",
+      "Doodle while you think. Your hands know things.",
+      "What would you make if no one would ever see it?",
+      "Rearrange something. Move furniture. Change perspective.",
+      "Creation is the opposite of destruction. Create anything.",
     ],
   },
   music: {
@@ -80,38 +169,6 @@ const WISDOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms:
       "Listen to something from a happier time. Your brain remembers.",
       "Silence is also music. The pause between notes.",
       "Make a playlist called 'For When I Feel This Way'.",
-    ],
-  },
-  art: {
-    emoji: '🎨',
-    label: 'Creativity',
-    wisdoms: [
-      "Scribble without purpose. Let the pen wander.",
-      "What color is this feeling? Put it on paper.",
-      "Bad art is still art. Make something ugly on purpose.",
-      "Creativity isn't about the result. It's about the process.",
-      "Take a photo of something beautiful nearby. It exists.",
-      "Write the worst poem ever. Free yourself from good.",
-      "Doodle while you think. Your hands know things.",
-      "What would you make if no one would ever see it?",
-      "Rearrange something. Move furniture. Change perspective.",
-      "Creation is the opposite of destruction. Create anything.",
-    ],
-  },
-  nature: {
-    emoji: '🌳',
-    label: 'Nature',
-    wisdoms: [
-      "Find the nearest plant and really look at it.",
-      "Trees don't hurry. They still grow.",
-      "You are nature too. Don't forget.",
-      "Watch clouds for five minutes. They're always changing.",
-      "Put your hands in soil. It's grounding, literally.",
-      "The sun rose today. It will rise tomorrow.",
-      "Water follows the path of least resistance. You can too.",
-      "Seasons change. So do moods. Nothing is permanent.",
-      "Find something growing through concrete. Life persists.",
-      "The moon is there even when you can't see it.",
     ],
   },
   breath: {
@@ -162,6 +219,22 @@ const WISDOM_CATEGORIES: Record<string, { emoji: string; label: string; wisdoms:
       "Done is better than perfect. Good enough is good enough.",
     ],
   },
+  sleep: {
+    emoji: '😴',
+    label: 'Sleep',
+    wisdoms: [
+      "Put the phone down. The blue light is lying to your brain.",
+      "Write tomorrow's to-do list. Get it out of your head.",
+      "Your bedroom should be cool, dark, and quiet.",
+      "No screens an hour before bed. Read something boring.",
+      "Counting sheep is silly. Try counting breaths instead.",
+      "Your body wants to sleep. Stop fighting it.",
+      "Caffeine has a 6-hour half-life. That afternoon coffee is still in you.",
+      "Same bedtime every night. Your body loves routine.",
+      "If you can't sleep, get up. Don't train your brain that bed = awake.",
+      "Progressive muscle relaxation: tense and release, head to toe.",
+    ],
+  },
 };
 
 interface WisdomOverlayProps {
@@ -175,10 +248,17 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentWisdom, setCurrentWisdom] = useState<string>('');
+  const [isTimeCategory, setIsTimeCategory] = useState(false);
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>(getCurrentTimeOfDay);
 
   // Animation
   const slideAnim = useState(new Animated.Value(SCREEN_HEIGHT))[0];
   const fadeAnim = useState(new Animated.Value(0))[0];
+
+  // Update time of day
+  useEffect(() => {
+    setCurrentTimeOfDay(getCurrentTimeOfDay());
+  }, [visible]);
 
   // Animate in/out
   useEffect(() => {
@@ -211,23 +291,35 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
       // Reset state when closing
       setSelectedCategory(null);
       setCurrentWisdom('');
+      setIsTimeCategory(false);
     }
   }, [visible, slideAnim, fadeAnim]);
 
-  // Pick a random wisdom from category
-  const selectCategory = (categoryKey: string) => {
-    const category = WISDOM_CATEGORIES[categoryKey];
+  // Select a time-based category
+  const selectTimeCategory = (time: TimeOfDay) => {
+    const category = TIME_CATEGORIES[time];
+    const randomIndex = Math.floor(Math.random() * category.wisdoms.length);
+    setSelectedCategory(time);
+    setCurrentWisdom(category.wisdoms[randomIndex]);
+    setIsTimeCategory(true);
+  };
+
+  // Select a custom category
+  const selectCustomCategory = (categoryKey: string) => {
+    const category = CUSTOM_CATEGORIES[categoryKey];
     const randomIndex = Math.floor(Math.random() * category.wisdoms.length);
     setSelectedCategory(categoryKey);
     setCurrentWisdom(category.wisdoms[randomIndex]);
+    setIsTimeCategory(false);
   };
 
   // Get another wisdom from same category
   const getAnother = () => {
     if (!selectedCategory) return;
-    const category = WISDOM_CATEGORIES[selectedCategory];
+    const category = isTimeCategory
+      ? TIME_CATEGORIES[selectedCategory as TimeOfDay]
+      : CUSTOM_CATEGORIES[selectedCategory];
     let newIndex = Math.floor(Math.random() * category.wisdoms.length);
-    // Avoid same wisdom if possible
     const currentIndex = category.wisdoms.indexOf(currentWisdom);
     if (category.wisdoms.length > 1 && newIndex === currentIndex) {
       newIndex = (newIndex + 1) % category.wisdoms.length;
@@ -239,7 +331,18 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
   const goBack = () => {
     setSelectedCategory(null);
     setCurrentWisdom('');
+    setIsTimeCategory(false);
   };
+
+  // Get current category data
+  const getCurrentCategory = () => {
+    if (!selectedCategory) return null;
+    return isTimeCategory
+      ? TIME_CATEGORIES[selectedCategory as TimeOfDay]
+      : CUSTOM_CATEGORIES[selectedCategory];
+  };
+
+  const timeCategories: TimeOfDay[] = ['morning', 'afternoon', 'evening', 'night'];
 
   return (
     <Modal
@@ -270,19 +373,51 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
 
         {!selectedCategory ? (
           // Category picker
-          <>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>
                 Catch a firefly ✨
               </Text>
             </View>
 
+            {/* Time-based row */}
+            <View style={styles.timeRow}>
+              {timeCategories.map((time) => {
+                const category = TIME_CATEGORIES[time];
+                const isCurrent = time === currentTimeOfDay;
+                return (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.timeButton,
+                      {
+                        backgroundColor: isCurrent ? colors.tint + '20' : colors.card,
+                        borderColor: isCurrent ? colors.tint : 'transparent',
+                        borderWidth: isCurrent ? 2 : 0,
+                      },
+                    ]}
+                    onPress={() => selectTimeCategory(time)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.timeEmoji}>{category.emoji}</Text>
+                    <Text style={[styles.timeLabel, { color: isCurrent ? colors.tint : colors.text }]}>
+                      {category.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Divider */}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            {/* Custom categories grid */}
             <View style={styles.categoryGrid}>
-              {Object.entries(WISDOM_CATEGORIES).map(([key, category]) => (
+              {Object.entries(CUSTOM_CATEGORIES).map(([key, category]) => (
                 <TouchableOpacity
                   key={key}
                   style={[styles.categoryButton, { backgroundColor: colors.card }]}
-                  onPress={() => selectCategory(key)}
+                  onPress={() => selectCustomCategory(key)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.categoryEmoji}>{category.emoji}</Text>
@@ -292,7 +427,9 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                 </TouchableOpacity>
               ))}
             </View>
-          </>
+
+            <View style={styles.bottomPadding} />
+          </ScrollView>
         ) : (
           // Wisdom display
           <>
@@ -304,7 +441,7 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
 
             <View style={styles.wisdomContainer}>
               <Text style={styles.wisdomEmoji}>
-                {WISDOM_CATEGORIES[selectedCategory].emoji}
+                {getCurrentCategory()?.emoji}
               </Text>
               <Text style={[styles.wisdomText, { color: colors.text }]}>
                 {currentWisdom}
@@ -319,10 +456,10 @@ export function WisdomOverlay({ visible, onClose }: WisdomOverlayProps) {
                 Show me another
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.bottomPadding} />
           </>
         )}
-
-        <View style={styles.bottomPadding} />
       </Animated.View>
     </Modal>
   );
@@ -340,8 +477,8 @@ const styles = StyleSheet.create({
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    minHeight: 350,
-    maxHeight: SCREEN_HEIGHT * 0.75,
+    minHeight: 400,
+    maxHeight: SCREEN_HEIGHT * 0.8,
     paddingHorizontal: 20,
   },
   handleContainer: {
@@ -354,13 +491,41 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: '600',
     textAlign: 'center',
   },
+  // Time row styles
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
+  },
+  timeButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  timeEmoji: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  timeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // Divider
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  // Custom categories grid
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -376,14 +541,15 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   categoryEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 28,
+    marginBottom: 6,
   },
   categoryLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     textAlign: 'center',
   },
+  // Wisdom display
   backButton: {
     paddingVertical: 8,
   },
