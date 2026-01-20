@@ -73,10 +73,24 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     emoji: '💬',
-    title: 'Your Guide is Here',
+    title: 'Meet Your Guide',
     description:
-      "Your AI guide (the one you just picked!) is available for coaching conversations whenever you need support or want to process something.",
-    tip: "Find your guide in the Coach tab.",
+      "Your AI guide has 7 nature-themed personalities: Clover (warm), Spark (energetic), Willow (wise), Luna (mindful), Ridge (focused), Flint (direct), and Fern (nurturing).",
+    tip: "You can change your guide anytime in Coach Settings.",
+  },
+  {
+    emoji: '🎭',
+    title: 'Your Guide Adapts',
+    description:
+      "With Adaptive Mode on, your guide shifts to support you better. Feeling anxious? It becomes more calming. Sad? More nurturing. It matches what you need in the moment.",
+    tip: "These shifts are personalized based on your onboarding answers.",
+  },
+  {
+    emoji: '🌙',
+    title: 'Day & Night Rhythm',
+    description:
+      "Your guide adjusts energy throughout the day - more awakening in the morning, calmer at night. It also respects whether you're an early bird or night owl.",
+    tip: "Set your chronotype during onboarding or in Coach Settings.",
   },
   {
     emoji: '🔒',

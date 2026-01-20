@@ -667,6 +667,14 @@ When off, your guide stays as your chosen base persona all the time.
 
 **Enable/disable**: Settings > Coach Settings > Adaptive Mode
 
+### Can I change my chronotype over time?
+
+Yes! If you're a night owl wanting to become more of a morning person, your guide can help you gradually shift. It will adjust energy and encouragement to support your transition, gently nudging earlier wind-downs and celebrating morning wins.
+
+### Does the guide help with jet lag or travel?
+
+After travel, your guide notices when your rhythm is off and adjusts accordingly. It won't pressure you to be energetic when you're exhausted, and it can offer tips to help you readjust to your new time zone gradually. The guide understands that travel disrupts sleep patterns and adapts its energy and expectations to support your body's natural recalibration.
+
 ### How does my guide know what I need?
 
 Your guide combines several signals:
@@ -676,6 +684,7 @@ Your guide combines several signals:
 3. **Time of day** - Current time + your chronotype
 4. **Your psychological patterns** - Noticed over time from your journals (cognitive patterns, attachment style)
 5. **Your life context** - Facts, events, and people from your story
+6. **Travel & rhythm disruption** - Notices when your sleep patterns are off
 
 All of this creates a personalized experience where the guide adapts to you without you having to ask.
 

@@ -410,6 +410,38 @@ export default function SettingsScreen() {
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/user-manual')}
+        >
+          <Text style={styles.faqEmoji}>📖</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Full User Manual
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Complete guide to all features
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/faq')}
+        >
+          <Text style={styles.faqEmoji}>❓</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Full FAQ
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              All questions answered
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
         <View style={styles.faqDivider} />
 
         <Text style={[styles.faqSectionLabel, { color: colors.textSecondary }]}>
@@ -446,10 +478,28 @@ export default function SettingsScreen() {
 
           <View style={styles.faqQuestion}>
             <Text style={[styles.faqQ, { color: colors.text }]}>
+              What are Personas?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your guide has 7 nature-themed personalities: Clover (warm & casual), Spark (energetic), Willow (wise), Luna (mindful), Ridge (goal-focused), Flint (direct), and Fern (nurturing). Pick one during onboarding or change anytime in Coach Settings.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
               How does my guide adapt?
             </Text>
             <Text style={[styles.faqA, { color: colors.textSecondary }]}>
-              Your AI guide learns from your preferences and can adapt based on time of day, your mood, or what you're sharing. Customize this in Coach Settings.
+              With Adaptive Mode on, your guide can shift personalities based on your mood (anxious → calming Luna, sad → nurturing Fern). It also adjusts energy throughout the day—more energizing in the morning, calmer at night.
+            </Text>
+          </View>
+
+          <View style={styles.faqQuestion}>
+            <Text style={[styles.faqQ, { color: colors.text }]}>
+              What is Chronotype?
+            </Text>
+            <Text style={[styles.faqA, { color: colors.textSecondary }]}>
+              Your natural rhythm—early bird, normal, or night owl. Your guide respects this: night owls won't get "wind down" pressure at 10pm if that's their productive time. Set this during onboarding or in Coach Settings.
             </Text>
           </View>
 

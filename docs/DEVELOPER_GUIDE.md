@@ -1541,6 +1541,71 @@ Users set their natural rhythm during onboarding:
 - Early birds need calmer energy earlier in the evening
 - The coach matches their natural rhythm, not a one-size-fits-all schedule
 
+### Travel Awareness & Jet Lag Support
+
+The system can detect travel and timezone changes to help users adjust:
+
+**Data Sources**:
+```typescript
+// Phone timezone detection
+const currentTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const previousTimezone = await AsyncStorage.getItem('last_known_timezone');
+
+// Calendar integration (with permission)
+const upcomingTravel = await getCalendarEventsWithTimezoneChanges();
+const vacationEvents = await getCalendarEventsMatching(['vacation', 'trip', 'travel']);
+```
+
+**Travel Detection Triggers**:
+1. **Timezone change** - Phone reports different timezone than stored
+2. **Calendar vacation** - Upcoming or active vacation events
+3. **Calendar timezone** - Events in different timezones
+4. **Sleep pattern disruption** - HealthKit shows irregular sleep
+
+**Adaptation Behavior**:
+```typescript
+interface TravelState {
+  isInTransit: boolean;
+  originTimezone: string;
+  currentTimezone: string;
+  hoursDifference: number;
+  daysSinceTravel: number;
+  adjustmentPhase: 'acute' | 'adjusting' | 'adjusted';
+}
+
+function getTravelAwareEnergyInstruction(travelState: TravelState): string {
+  if (travelState.adjustmentPhase === 'acute') {
+    return 'The user recently traveled across time zones. Be extra gentle about energy expectations. Don\'t pressure alertness or wind-down based on local time—their body is still adjusting.';
+  }
+  if (travelState.adjustmentPhase === 'adjusting') {
+    return `The user is ${travelState.daysSinceTravel} days into adjusting to a new timezone. Gently encourage alignment with local time while being patient with fatigue.`;
+  }
+  return ''; // Fully adjusted
+}
+```
+
+**Jet Lag Tips Generation**:
+- Offers gradual adjustment suggestions
+- Recommends light exposure timing
+- Suggests meal timing adjustments
+- Celebrates small wins in adjustment
+- Doesn't pressure when user is exhausted
+
+**Chronotype Transition Support**:
+If a user wants to shift their chronotype (e.g., night owl → early bird):
+```typescript
+interface ChronotypeGoal {
+  currentChronotype: Chronotype;
+  goalChronotype: Chronotype;
+  transitionStartDate: string;
+  targetShiftMinutesPerWeek: number;
+}
+```
+- Tracks gradual progress
+- Adjusts wind-down encouragement timing
+- Celebrates morning check-ins
+- Supports setbacks without judgment
+
 ### Generating the Personality Prompt
 
 ```typescript

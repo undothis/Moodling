@@ -11,13 +11,14 @@ A complete guide to all features and functionality in Moodling.
 3. [Getting Started](#getting-started)
 4. [Journaling](#journaling)
 5. [AI Chat Companion](#ai-chat-companion)
-6. [Life Context System](#life-context-system)
-7. [HealthKit Integration](#healthkit-integration)
-8. [Patterns & Insights](#patterns--insights)
-9. [Notifications](#notifications)
-10. [Settings & Personalization](#settings--personalization)
-11. [Privacy & Security](#privacy--security)
-12. [Troubleshooting](#troubleshooting)
+6. [Your AI Guide](#your-ai-guide)
+7. [Life Context System](#life-context-system)
+8. [HealthKit Integration](#healthkit-integration)
+9. [Patterns & Insights](#patterns--insights)
+10. [Notifications](#notifications)
+11. [Settings & Personalization](#settings--personalization)
+12. [Privacy & Security](#privacy--security)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -213,6 +214,90 @@ If you mention self-harm, suicide, or crisis:
 
 ---
 
+## Your AI Guide
+
+### Meet the Personas
+
+Your AI guide has 7 nature-themed personalities, each with a distinct style:
+
+| Persona | Emoji | Style | Best For |
+|---------|-------|-------|----------|
+| **Clover** | 🍀 | Warm, casual, relatable | Everyday check-ins, friendly chat |
+| **Spark** | ✨ | Energetic, motivating, uplifting | Celebrating wins, building momentum |
+| **Willow** | 🌿 | Calm, wise, reflective | Deep exploration, gaining perspective |
+| **Luna** | 🌙 | Mindful, grounding, present | Anxiety, overwhelm, finding calm |
+| **Ridge** | ⛰️ | Focused, goal-oriented, practical | Problem-solving, making plans |
+| **Flint** | 🔥 | Direct, honest, no-nonsense | When you need straight talk |
+| **Fern** | 🌱 | Gentle, soft, nurturing | Sadness, grief, needing care |
+
+You pick your base persona during onboarding, but your guide can adapt beyond that.
+
+### Adaptive Mode
+
+When Adaptive Mode is on, your guide automatically adjusts to support you better:
+
+#### Mood-to-Persona Switches
+Your guide can temporarily shift personality based on what you're sharing:
+- **Feeling anxious?** → More calming, grounding (like Luna)
+- **Feeling sad?** → More gentle, nurturing (like Fern)
+- **Feeling frustrated?** → More direct, validating (like Flint)
+- **Feeling great?** → More energetic, celebratory (like Spark)
+
+These switches are **personalized to you** based on your onboarding answers. If you said you prefer practical solutions when struggling, you'll get a more action-oriented guide instead of just comfort.
+
+#### Time-of-Day Energy
+Your guide subtly adjusts energy throughout the day:
+- **Morning**: Gentle, awakening energy
+- **Afternoon**: Steady, supportive energy
+- **Evening**: Softening, winding-down energy
+- **Night**: Calm, soothing, preparing for rest
+
+You won't see these shifts announced—they just happen naturally.
+
+### Chronotype Awareness
+
+Your guide respects your natural rhythm based on whether you're an early bird, night owl, or somewhere in between:
+
+| Your Chronotype | Morning | Evening |
+|-----------------|---------|---------|
+| **Early Bird** | Full energy, engaged | Winding down earlier |
+| **Normal** | Gentle awakening | Gradual softening |
+| **Night Owl** | Low-key, no pressure | Still engaged, wind-down when ready |
+
+A night owl journaling at 10pm won't get "time to sleep" pressure if that's their productive time.
+
+### Customizing Your Guide
+
+#### Change Your Persona
+Go to **Settings** > **Coach Settings** > **Choose Persona** to switch your base guide.
+
+#### Custom Name
+Give your guide a custom name that feels right to you.
+
+#### Toggle Adaptive Mode
+Turn automatic personality shifts on/off in **Settings** > **Coach Settings** > **Adaptive Mode**.
+
+#### Detailed Settings
+For fine-tuned control, access detailed settings:
+- **Energy level**: Calm ↔ Energetic
+- **Directness**: Gentle ↔ Direct
+- **Validation style**: Heavy ↔ Light
+- **Response length**: Brief ↔ Detailed
+- **Therapeutic approaches**: Mindfulness, CBT, Somatic, etc.
+
+### What Your Guide Knows
+
+Your AI guide receives context to personalize responses:
+- **Your personality preferences** from onboarding
+- **Life context** (people, events, themes from your journals)
+- **Psychological patterns** (communication style, coping patterns)
+- **Health data** (if HealthKit enabled)
+- **Current time and your chronotype**
+
+This creates a guide that "just gets you" without you having to explain yourself every time.
+
+---
+
 ## Life Context System
 
 ### What is Life Context?
@@ -401,6 +486,42 @@ Customize in **Settings** > **Notifications**:
 ---
 
 ## Settings & Personalization
+
+### Coach Settings
+
+Customize your AI guide:
+
+#### Choose Persona
+Select from 7 nature-themed personalities:
+- 🍀 **Clover** - Warm & casual
+- ✨ **Spark** - Energetic & motivating
+- 🌿 **Willow** - Calm & wise
+- 🌙 **Luna** - Mindful & grounding
+- ⛰️ **Ridge** - Focused & practical
+- 🔥 **Flint** - Direct & honest
+- 🌱 **Fern** - Gentle & nurturing
+
+#### Custom Name
+Give your guide a name that feels right to you (e.g., "Sage" instead of "Willow").
+
+#### Adaptive Mode
+Toggle automatic personality adaptation:
+- **On**: Guide shifts based on your mood, time of day, and chronotype
+- **Off**: Guide stays as your chosen persona
+
+#### Chronotype
+Set your natural rhythm:
+- **Early Bird** - You come alive in the morning
+- **Daytime Person** - Standard schedule
+- **Night Owl** - You do your best thinking late
+
+#### Detailed Settings
+Fine-tune your guide's communication style:
+- Energy level (Calm ↔ Energetic)
+- Directness (Gentle ↔ Direct)
+- Validation style (Heavy ↔ Light)
+- Response length (Brief ↔ Detailed)
+- Therapeutic approaches (Mindfulness, CBT, Somatic, Strengths-based)
 
 ### Tone Preferences
 
