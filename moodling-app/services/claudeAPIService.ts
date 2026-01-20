@@ -438,7 +438,7 @@ function detectMoodFromMessage(
 ): 'anxious' | 'sad' | 'angry' | 'happy' | 'neutral' | undefined {
   const lower = message.toLowerCase();
 
-  // Anxious keywords - anxiety, worry, fear, overwhelm
+  // Anxious keywords - anxiety, worry, fear, overwhelm + somatic compression
   if (
     lower.includes('anxious') ||
     lower.includes('worried') ||
@@ -453,12 +453,19 @@ function detectMoodFromMessage(
     lower.includes('on edge') ||
     lower.includes('can\'t stop thinking') ||
     lower.includes('racing thoughts') ||
-    lower.includes('freaking out')
+    lower.includes('freaking out') ||
+    // Somatic compression keywords
+    lower.includes('chest tight') ||
+    lower.includes('can\'t breathe') ||
+    lower.includes('heart racing') ||
+    lower.includes('stomach knots') ||
+    lower.includes('shaking') ||
+    lower.includes('tension')
   ) {
     return 'anxious';
   }
 
-  // Sad keywords - depression, grief, loss, loneliness
+  // Sad keywords - depression, grief, loss, loneliness + somatic compression
   if (
     lower.includes('sad') ||
     lower.includes('depressed') ||
@@ -474,12 +481,19 @@ function detectMoodFromMessage(
     lower.includes('heartbroken') ||
     lower.includes('numb') ||
     lower.includes('worthless') ||
-    lower.includes('give up')
+    lower.includes('give up') ||
+    // Somatic compression keywords
+    lower.includes('heavy') ||
+    lower.includes('weight on') ||
+    lower.includes('exhausted') ||
+    lower.includes('drained') ||
+    lower.includes('no energy') ||
+    lower.includes('can\'t get up')
   ) {
     return 'sad';
   }
 
-  // Angry keywords - frustration, irritation, rage
+  // Angry keywords - frustration, irritation, rage + somatic compression
   if (
     lower.includes('angry') ||
     lower.includes('frustrated') ||
@@ -491,12 +505,18 @@ function detectMoodFromMessage(
     lower.includes('irritated') ||
     lower.includes('fed up') ||
     lower.includes('sick of') ||
-    lower.includes('hate')
+    lower.includes('hate') ||
+    // Somatic compression keywords
+    lower.includes('clenched') ||
+    lower.includes('tight jaw') ||
+    lower.includes('boiling') ||
+    lower.includes('blood pressure') ||
+    lower.includes('want to scream')
   ) {
     return 'angry';
   }
 
-  // Happy keywords - joy, excitement, gratitude, accomplishment
+  // Happy keywords - joy, excitement, gratitude, accomplishment + somatic release
   if (
     lower.includes('happy') ||
     lower.includes('excited') ||
@@ -512,7 +532,14 @@ function detectMoodFromMessage(
     lower.includes('finally') ||
     lower.includes('celebration') ||
     lower.includes('best day') ||
-    lower.includes('so good')
+    lower.includes('so good') ||
+    // Somatic release keywords
+    lower.includes('feel light') ||
+    lower.includes('weight lifted') ||
+    lower.includes('relief') ||
+    lower.includes('relaxed') ||
+    lower.includes('at peace') ||
+    lower.includes('smile')
   ) {
     return 'happy';
   }
