@@ -56,17 +56,7 @@ export default function TreeScreen() {
 
       {/* Floating action buttons - positioned above tree labels */}
       <View style={styles.floatingButtons} pointerEvents="box-none">
-        {/* Quick Log Button - Bottom Left */}
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.card }]}
-          onPress={() => setShowQuickLogs(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.fabEmoji}>✓</Text>
-          <Text style={[styles.fabLabel, { color: colors.text }]}>Quick Log</Text>
-        </TouchableOpacity>
-
-        {/* Fireflies Button - Bottom Right */}
+        {/* Fireflies Button - Bottom Left */}
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowWisdom(true)}
@@ -74,6 +64,16 @@ export default function TreeScreen() {
         >
           <Text style={styles.fabEmoji}>✨</Text>
           <Text style={[styles.fabLabel, { color: colors.text }]}>Fireflies</Text>
+        </TouchableOpacity>
+
+        {/* Quick Log Button - Bottom Right */}
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.card }]}
+          onPress={() => setShowQuickLogs(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.fabEmoji}>✓</Text>
+          <Text style={[styles.fabLabel, { color: colors.text }]}>Quick Log</Text>
         </TouchableOpacity>
       </View>
 
