@@ -15,6 +15,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAPIKey, CLAUDE_CONFIG } from './claudeAPIService';
 import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
+import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
+import { getChronotypeContextForClaude } from './coachPersonalityService';
+import { getLogsContextForClaude } from './quickLogsService';
 import { psychAnalysisService } from './psychAnalysisService';
 
 const STORAGE_KEYS = {
@@ -153,6 +156,38 @@ async function buildWisdomContext(): Promise<string> {
     }
   } catch (e) {
     console.log('Could not load psych context:', e);
+  }
+
+  // Get chronotype and travel context (rhythm awareness)
+  try {
+    const chronotypeContext = await getChronotypeContextForClaude();
+    if (chronotypeContext) {
+      parts.push('RHYTHM & TRAVEL:\n' + chronotypeContext);
+    }
+  } catch (e) {
+    console.log('Could not load chronotype context:', e);
+  }
+
+  // Get health context if enabled (sleep, activity, heart rate)
+  try {
+    if (await isHealthKitEnabled()) {
+      const healthContext = await getHealthContextForClaude();
+      if (healthContext) {
+        parts.push('HEALTH STATUS:\n' + healthContext);
+      }
+    }
+  } catch (e) {
+    console.log('Could not load health context:', e);
+  }
+
+  // Get quick logs context (habit tracking, medications)
+  try {
+    const logsContext = await getLogsContextForClaude();
+    if (logsContext) {
+      parts.push('TRACKING:\n' + logsContext);
+    }
+  } catch (e) {
+    console.log('Could not load logs context:', e);
   }
 
   return parts.join('\n\n');

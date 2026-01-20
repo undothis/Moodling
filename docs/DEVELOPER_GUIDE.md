@@ -447,16 +447,22 @@ Context is assembled in layers:
 
 ```typescript
 // In sendMessage():
-const lifeContext = await getLifeContextForClaude();        // Long-term memory
-const healthContext = await getHealthContextForClaude();    // Current health data
-const correlationContext = await getCorrelationSummaryForClaude(); // Patterns
-const richContext = await getContextForClaude();            // Recent context
-const conversationContext = buildConversationContext(ctx);  // Immediate context
+const lifeContext = await getLifeContextForClaude();        // Long-term memory (topics, milestones, people)
+const psychContext = await psychAnalysisService.getCompressedContext(); // Psychological profile
+const chronotypeContext = await getChronotypeContextForClaude(); // Sleep rhythm, travel, jet lag
+const healthContext = await getHealthContextForClaude();    // Current health data (if HealthKit enabled)
+const correlationContext = await getCorrelationSummaryForClaude(); // Health-mood patterns
+const logsContext = await getLogsContextForClaude();        // Habit tracking, medications, symptoms
+const richContext = await getContextForClaude();            // Recent journal context
+const conversationContext = buildConversationContext(ctx);  // Immediate conversation context
 
 const contextParts = [
   lifeContext,
+  psychContext,
+  chronotypeContext,
   healthContext,
   correlationContext,
+  logsContext,
   richContext,
   conversationContext
 ].filter(Boolean);

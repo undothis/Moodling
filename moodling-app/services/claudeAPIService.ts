@@ -17,6 +17,7 @@ import { getContextForClaude } from './userContextService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
+import { getLogsContextForClaude } from './quickLogsService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -636,8 +637,16 @@ export async function sendMessage(
     console.log('Could not load chronotype context:', error);
   }
 
-  // Assemble full context: lifetime overview first, then psych profile, chronotype/travel, health + correlations, then recent context, then current conversation
-  const contextParts = [lifeContext, psychContext, chronotypeContext, healthContext, correlationContext, richContext, conversationContext].filter(Boolean);
+  // Get quick logs context (habit tracking, medications, symptoms)
+  let logsContext = '';
+  try {
+    logsContext = await getLogsContextForClaude();
+  } catch (error) {
+    console.log('Could not load quick logs context:', error);
+  }
+
+  // Assemble full context: lifetime overview first, then psych profile, chronotype/travel, health + correlations, quick logs, then recent context, then current conversation
+  const contextParts = [lifeContext, psychContext, chronotypeContext, healthContext, correlationContext, logsContext, richContext, conversationContext].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
   const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
   const messages = buildMessages(message, context.recentMessages);
