@@ -228,16 +228,34 @@ RESPONSE GUIDELINES:
 /**
  * Build conversation context string from ConversationContext
  * This captures immediate conversation state (mood, events)
+ * CRITICAL: Always includes current date/time so Claude can reference data correctly
  */
 function buildConversationContext(context: ConversationContext): string {
   const parts: string[] = [];
+
+  // ALWAYS include current date and time - critical for data referencing
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  parts.push(`CURRENT DATE AND TIME: ${dateStr}, ${timeStr} (${timezone})`);
+  parts.push(`ISO: ${now.toISOString()}`);
 
   if (context.recentMood) {
     parts.push(`Recent mood: ${context.recentMood.emoji} ${context.recentMood.description}`);
   }
   if (context.upcomingEvent) {
-    const timeStr = context.upcomingEvent.time.toLocaleString();
-    parts.push(`Upcoming event: ${context.upcomingEvent.title} at ${timeStr}`);
+    const eventTimeStr = context.upcomingEvent.time.toLocaleString();
+    parts.push(`Upcoming event: ${context.upcomingEvent.title} at ${eventTimeStr}`);
   }
   if (context.relevantPatterns && context.relevantPatterns.length > 0) {
     const patternStr = context.relevantPatterns.map(p => p.shortDescription).join(', ');

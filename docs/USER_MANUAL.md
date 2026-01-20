@@ -1,6 +1,6 @@
-# Moodling User Manual
+# Mood Leaf User Manual
 
-A complete guide to all features and functionality in Moodling.
+A complete guide to all features and functionality in Mood Leaf.
 
 ---
 
@@ -24,18 +24,18 @@ A complete guide to all features and functionality in Moodling.
 
 ## Introduction
 
-### What is Moodling?
+### What is Mood Leaf?
 
-Moodling is a mental health journaling app with an AI companion that truly remembers you. Unlike generic chatbots, Moodling:
+Mood Leaf is a mental health journaling app with an AI companion that truly remembers you. Unlike generic chatbots, Mood Leaf:
 
 - **Remembers your story** - People, events, challenges, and progress
 - **Sees patterns** - Connects your mood to sleep, activity, and life events
 - **Builds self-awareness** - Helps you understand yourself so you eventually don't need the app
 - **Respects your privacy** - All data stays on your device
 
-### Who is Moodling for?
+### Who is Mood Leaf for?
 
-Moodling is designed for anyone who wants to:
+Mood Leaf is designed for anyone who wants to:
 - Process thoughts and emotions through journaling
 - Have a supportive conversation partner
 - Track mood patterns over time
@@ -46,18 +46,18 @@ Moodling is designed for anyone who wants to:
 
 ## Core Philosophy
 
-### The Moodling Ethics
+### The Mood Leaf Ethics
 
-Moodling follows strict ethical principles:
+Mood Leaf follows strict ethical principles:
 
 #### 1. Never Diagnose
-Moodling will never label you with conditions. Instead of "you have anxiety," it says "you've been mentioning feeling anxious lately."
+Mood Leaf will never label you with conditions. Instead of "you have anxiety," it says "you've been mentioning feeling anxious lately."
 
 #### 2. Tentative Language
-Moodling uses phrases like "it seems," "I wonder if," and "you might notice" because only YOU know your experience.
+Mood Leaf uses phrases like "it seems," "I wonder if," and "you might notice" because only YOU know your experience.
 
 #### 3. Anti-Dependency
-Moodling is designed to help you NOT need it. It:
+Mood Leaf is designed to help you NOT need it. It:
 - Encourages real-world connections
 - Celebrates when you solve things yourself
 - Suggests stepping away when appropriate
@@ -67,7 +67,7 @@ Moodling is designed to help you NOT need it. It:
 Your data never leaves your device. Period.
 
 #### 5. Encourage Professional Help
-For serious or persistent struggles, Moodling always encourages seeking professional support.
+For serious or persistent struggles, Mood Leaf always encourages seeking professional support.
 
 ---
 
@@ -75,20 +75,20 @@ For serious or persistent struggles, Moodling always encourages seeking professi
 
 ### Initial Setup
 
-1. **Download Moodling** from the App Store
+1. **Download Mood Leaf** from the App Store
 2. **Open the app** and complete the brief onboarding
 3. **Set your tone preferences** (optional - can change later)
 4. **Add your API key** in Settings (required for AI chat)
 
 ### Setting Up Your API Key
 
-Moodling uses Claude AI, which requires an API key from Anthropic:
+Mood Leaf uses Claude AI, which requires an API key from Anthropic:
 
 1. Visit [console.anthropic.com](https://console.anthropic.com)
 2. Create an account or sign in
 3. Generate a new API key
 4. Copy the key
-5. In Moodling: **Settings** > **API Key** > Paste and save
+5. In Mood Leaf: **Settings** > **API Key** > Paste and save
 
 Your key is stored securely on your device.
 
@@ -99,7 +99,7 @@ For enhanced insights, connect HealthKit:
 1. Go to **Settings** > **HealthKit**
 2. Tap **Enable HealthKit**
 3. Allow access to requested health data
-4. Moodling will now incorporate health data into insights
+4. Mood Leaf will now incorporate health data into insights
 
 ---
 
@@ -121,7 +121,7 @@ For enhanced insights, connect HealthKit:
 
 ### What Happens When You Save
 
-When you save an entry, Moodling automatically:
+When you save an entry, Mood Leaf automatically:
 
 1. **Analyzes sentiment** - Detects overall mood (positive, negative, neutral)
 2. **Extracts topics** - Identifies people, events, themes
@@ -143,7 +143,7 @@ Entries are automatically tagged with detected topics like:
 - Life areas (work, health, relationships)
 
 #### Talk About This
-From any entry, tap **"Talk about this"** to start a conversation with Moodling specifically about that entry's content.
+From any entry, tap **"Talk about this"** to start a conversation with Mood Leaf specifically about that entry's content.
 
 ### Viewing History
 
@@ -158,7 +158,7 @@ From any entry, tap **"Talk about this"** to start a conversation with Moodling 
 
 ### How Chat Works
 
-When you chat with Moodling:
+When you chat with Mood Leaf:
 
 1. Your message is analyzed for crisis keywords (handled first)
 2. Context is gathered (life context, health data, conversation history)
@@ -167,7 +167,7 @@ When you chat with Moodling:
 
 ### Conversation Approach
 
-Moodling follows a consistent approach:
+Mood Leaf follows a consistent approach:
 
 1. **VALIDATE** - Acknowledge your feelings first
 2. **EXPLORE** - Ask clarifying questions if needed
@@ -177,17 +177,17 @@ Moodling follows a consistent approach:
 ### Different Conversation Modes
 
 #### Venting Mode
-If you say things like "I just need to vent" or "let me get this off my chest," Moodling focuses purely on validation without problem-solving.
+If you say things like "I just need to vent" or "let me get this off my chest," Mood Leaf focuses purely on validation without problem-solving.
 
 #### Advice Mode
-If you ask "what should I do?" or "need advice," Moodling helps explore options while still encouraging your own wisdom.
+If you ask "what should I do?" or "need advice," Mood Leaf helps explore options while still encouraging your own wisdom.
 
 #### Processing Mode
-For exploring complex feelings, Moodling asks gentle questions to help you understand what you're experiencing.
+For exploring complex feelings, Mood Leaf asks gentle questions to help you understand what you're experiencing.
 
-### What Moodling Knows About You
+### What Mood Leaf Knows About You
 
-During chat, Moodling has access to:
+During chat, Mood Leaf has access to:
 
 - **Life Context** - Key people, events, themes from your journaling history
 - **Recent Mood** - Your current emotional state
@@ -197,7 +197,7 @@ During chat, Moodling has access to:
 
 ### Response Characteristics
 
-Moodling responses are:
+Mood Leaf responses are:
 - **Concise** - Usually 2-4 sentences
 - **Focused** - One question at most per response
 - **Tentative** - Uses "it seems," "I wonder if"
@@ -206,7 +206,7 @@ Moodling responses are:
 ### Crisis Handling
 
 If you mention self-harm, suicide, or crisis:
-1. Moodling immediately provides crisis resources
+1. Mood Leaf immediately provides crisis resources
 2. 988 Suicide & Crisis Lifeline
 3. Crisis Text Line
 4. International resources
@@ -287,14 +287,49 @@ For fine-tuned control, access detailed settings:
 
 ### What Your Guide Knows
 
-Your AI guide receives context to personalize responses:
-- **Your personality preferences** from onboarding
-- **Life context** (people, events, themes from your journals)
-- **Psychological patterns** (communication style, coping patterns)
-- **Health data** (if HealthKit enabled)
-- **Current time and your chronotype**
+Your AI guide is like a friend who knows everything about you. It has access to **all your data** with full timestamps, so it can answer specific questions and make accurate references.
 
-This creates a guide that "just gets you" without you having to explain yourself every time.
+#### Complete Data Access
+
+| Data Type | What It Knows | Example Questions It Can Answer |
+|-----------|---------------|--------------------------------|
+| **Tracking Logs** | Every habit, med, symptom tap with exact counts | "How many times did I exercise this month?" |
+| **Journal Entries** | Recent entries with full text, dates, and moods | "What did I write about yesterday?" |
+| **Lifestyle Factors** | Caffeine, alcohol, sleep, outdoor time, social time | "How much coffee have I had this week?" |
+| **Social Exposure** | Anxiety levels, attempts, progress over time | "How's my social anxiety practice going?" |
+| **Health Data** | Heart rate, sleep hours/quality, activity trends | "How did I sleep last night?" |
+| **Life Context** | People, milestones, themes from your entire history | "When did I start therapy?" |
+| **Current Date/Time** | Always knows exactly what "today" and "now" mean | "How does today compare to last week?" |
+
+#### Timestamped Everything
+
+Every piece of data includes timestamps so your guide can:
+- Know exactly when things happened
+- Calculate accurate totals ("47 times total, 8 this week")
+- Make time-based comparisons ("You exercised more this month than last")
+- Reference specific dates ("Your last panic attack was January 15th")
+
+#### Example: Asking About Exercise
+
+When you ask "How many times have I exercised?", your guide sees:
+
+```
+🏃 Exercised:
+    - Today: 2 times
+    - This week: 8 times
+    - This month: 25 times
+    - All time total: 47 times
+    - Current streak: 5 days
+    - Longest streak: 12 days
+    - First logged: November 15, 2025
+    - Last logged: Today
+```
+
+This means it can give you real answers based on your actual data, not generic responses.
+
+#### Privacy Note
+
+While your guide has access to all this data, it's processed entirely on your device. Only compressed summaries are sent to the AI—never your raw journal entries or personal details.
 
 ---
 
@@ -302,7 +337,7 @@ This creates a guide that "just gets you" without you having to explain yourself
 
 ### What is Life Context?
 
-Life Context is Moodling's memory of your story. It extracts and remembers:
+Life Context is Mood Leaf's memory of your story. It extracts and remembers:
 
 #### People
 - Family (mom, dad, siblings, etc.)
@@ -349,7 +384,7 @@ Go to **Settings** > **Life Context** to see:
 
 ### Correcting Information
 
-If Moodling gets something wrong, just tell it in chat:
+If Mood Leaf gets something wrong, just tell it in chat:
 - "Actually, Sarah is my therapist, not my friend"
 - "I'm not married anymore, we divorced"
 
@@ -361,7 +396,7 @@ The context will update based on new information.
 
 ### Available Health Data
 
-When enabled, Moodling accesses:
+When enabled, Mood Leaf accesses:
 
 #### Heart Rate
 - Current heart rate
@@ -383,7 +418,7 @@ When enabled, Moodling accesses:
 
 ### Heart Rate Spike Detection
 
-Moodling monitors your heart rate for significant spikes:
+Mood Leaf monitors your heart rate for significant spikes:
 
 1. **Baseline tracking** - Learns your normal resting heart rate
 2. **Spike detection** - Notices when HR goes 30%+ above baseline
@@ -394,14 +429,14 @@ This helps you connect physical sensations to emotional experiences.
 
 ### Sleep Impact Awareness
 
-When you chat, Moodling considers your sleep:
+When you chat, Mood Leaf considers your sleep:
 - Acknowledges if you had poor sleep
 - Notes it might affect how you're feeling
 - Doesn't make assumptions, just observations
 
 ### Activity Correlation
 
-Moodling tracks how activity relates to mood:
+Mood Leaf tracks how activity relates to mood:
 - Notes if you've been more/less active than usual
 - May gently suggest movement as self-care
 - Points out patterns if you feel better on active days
@@ -412,7 +447,7 @@ Moodling tracks how activity relates to mood:
 
 ### Correlation Tracking
 
-Moodling tracks correlations over 90 days:
+Mood Leaf tracks correlations over 90 days:
 
 #### Sleep-Mood Correlation
 - Compares mood scores on good sleep vs. poor sleep nights
@@ -424,7 +459,7 @@ Moodling tracks correlations over 90 days:
 
 ### Insight Types
 
-Moodling generates several insight types:
+Mood Leaf generates several insight types:
 
 #### Heart Rate Check-ins
 > "Your heart rate is elevated. Want to share what's going on?"
@@ -525,7 +560,7 @@ Fine-tune your guide's communication style:
 
 ### Tone Preferences
 
-Choose how Moodling communicates:
+Choose how Mood Leaf communicates:
 
 #### Warm & Nurturing
 Gentle, supportive, comforting language.
@@ -578,7 +613,7 @@ You can select multiple styles to blend.
 
 ### What's Sent to AI
 
-When you chat, Moodling sends:
+When you chat, Mood Leaf sends:
 - Your current message
 - Recent conversation history (last ~6 messages)
 - A **compressed summary** of life context (not raw entries)
@@ -590,7 +625,7 @@ This is sent encrypted to Anthropic's API.
 
 - Full text of all journal entries
 - Your API key to anyone but Anthropic
-- Data to Moodling servers (we don't have any)
+- Data to Mood Leaf servers (we don't have any)
 - Information to third parties
 
 ### Anthropic's Privacy
@@ -629,8 +664,8 @@ You can always:
 ### HealthKit Not Syncing
 
 1. Go to Settings > Privacy > Health
-2. Verify Moodling has access
-3. Disable and re-enable in Moodling settings
+2. Verify Mood Leaf has access
+3. Disable and re-enable in Mood Leaf settings
 
 ### App Running Slowly
 
@@ -640,13 +675,13 @@ You can always:
 
 ### Notifications Not Working
 
-1. Check iOS Settings > Notifications > Moodling
+1. Check iOS Settings > Notifications > Mood Leaf
 2. Ensure notifications are enabled in app settings
 3. Check quiet hours aren't active
 
 ### Wrong Information in Context
 
-Tell Moodling the correct information in chat:
+Tell Mood Leaf the correct information in chat:
 > "I want to correct something - [correct info]"
 
 The life context will update.
@@ -683,4 +718,4 @@ Join our community to share tips and feedback: [community link]
 
 ---
 
-*Moodling - Your companion for emotional wellness and self-discovery.*
+*Mood Leaf - Your companion for emotional wellness and self-discovery.*
