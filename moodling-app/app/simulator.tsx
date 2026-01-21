@@ -6,7 +6,7 @@
  * and accurately referencing data.
  *
  * Features:
- * - On/Off toggle
+ * - On/Off toggle with active timer
  * - Global Test button
  * - Per-service tests
  * - Reference Challenge generator (with "well" to copy prompts)
@@ -14,7 +14,7 @@
  * - Failure logs viewer
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -31,17 +31,19 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Storage key for tracking activation time
+const SIMULATOR_ACTIVATED_AT_KEY = '@moodling/simulator_activated_at';
 
 // Cross-platform clipboard helper (no external dependency required)
 const copyToClipboard = async (text: string): Promise<boolean> => {
   try {
     if (Platform.OS === 'web') {
-      // Web: use navigator.clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
         return true;
       }
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
@@ -52,7 +54,6 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
       document.body.removeChild(textArea);
       return true;
     } else {
-      // React Native: use the Clipboard from react-native (deprecated but still works)
       const { Clipboard } = require('react-native');
       if (Clipboard && Clipboard.setString) {
         Clipboard.setString(text);
@@ -65,6 +66,8 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
     return false;
   }
 };
+
+// Import service functions
 import {
   isSimulatorEnabled,
   setSimulatorEnabled,
@@ -103,6 +106,14 @@ export default function SimulatorScreen() {
     hasPsychProfile: boolean;
   } | null>(null);
 
+  // Error state for debugging
+  const [lastError, setLastError] = useState<string | null>(null);
+
+  // Active timer state
+  const [activatedAt, setActivatedAt] = useState<Date | null>(null);
+  const [activeTime, setActiveTime] = useState<string>('');
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Challenge well state
   const [currentChallenge, setCurrentChallenge] = useState<VerificationPrompt | null>(null);
   const [challengePrompt, setChallengePrompt] = useState('');
@@ -114,23 +125,94 @@ export default function SimulatorScreen() {
   const [showReport, setShowReport] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-  // Load state when screen is focused (including when navigating back)
+  // Format active time
+  const formatActiveTime = (startDate: Date): string => {
+    const now = new Date();
+    const diffMs = now.getTime() - startDate.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const hours = Math.floor(diffSec / 3600);
+    const minutes = Math.floor((diffSec % 3600) / 60);
+    const seconds = diffSec % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  };
+
+  // Start/stop timer
+  useEffect(() => {
+    if (enabled && activatedAt) {
+      // Update immediately
+      setActiveTime(formatActiveTime(activatedAt));
+
+      // Start interval
+      timerRef.current = setInterval(() => {
+        setActiveTime(formatActiveTime(activatedAt));
+      }, 1000);
+    } else {
+      setActiveTime('');
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [enabled, activatedAt]);
+
+  // Load state when screen is focused
   const loadState = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLastError(null);
+
+      // Load enabled state directly from AsyncStorage as backup check
+      const storedEnabled = await AsyncStorage.getItem('@moodling/simulator_mode_enabled');
+      const isEnabled = storedEnabled === 'true';
+      setEnabled(isEnabled);
+
+      // Load activation time
+      const storedActivatedAt = await AsyncStorage.getItem(SIMULATOR_ACTIVATED_AT_KEY);
+      if (storedActivatedAt && isEnabled) {
+        setActivatedAt(new Date(storedActivatedAt));
+      } else if (!isEnabled) {
+        setActivatedAt(null);
+      }
+
+      // Load state from service
       const [state, logs, summary] = await Promise.all([
-        getSimulatorState(),
-        getFailureLogs(),
-        getDataSummary(),
+        getSimulatorState().catch(e => {
+          console.error('[Simulator] getSimulatorState error:', e);
+          return null;
+        }),
+        getFailureLogs().catch(e => {
+          console.error('[Simulator] getFailureLogs error:', e);
+          return [];
+        }),
+        getDataSummary().catch(e => {
+          console.error('[Simulator] getDataSummary error:', e);
+          return null;
+        }),
       ]);
 
-      setEnabled(state.enabled);
-      setLastGlobalResult(state.lastGlobalResult);
-      setServiceResults(state.serviceResults as Record<string, ServiceTestResult>);
+      if (state) {
+        setLastGlobalResult(state.lastGlobalResult);
+        setServiceResults(state.serviceResults as Record<string, ServiceTestResult>);
+      }
       setFailureLogs(logs);
       setDataSummary(summary);
     } catch (error) {
-      console.error('Failed to load simulator state:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Failed to load state:', errorMsg);
+      setLastError(`Load error: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -146,19 +228,53 @@ export default function SimulatorScreen() {
   // Toggle enabled state with error handling
   const handleToggle = async (value: boolean) => {
     const previousValue = enabled;
-    setEnabled(value); // Optimistic update
+    const previousActivatedAt = activatedAt;
+
+    // Optimistic update
+    setEnabled(value);
+    setLastError(null);
+
+    if (value) {
+      const now = new Date();
+      setActivatedAt(now);
+      try {
+        await AsyncStorage.setItem(SIMULATOR_ACTIVATED_AT_KEY, now.toISOString());
+      } catch (e) {
+        console.error('[Simulator] Failed to save activation time:', e);
+      }
+    } else {
+      setActivatedAt(null);
+      try {
+        await AsyncStorage.removeItem(SIMULATOR_ACTIVATED_AT_KEY);
+      } catch (e) {
+        console.error('[Simulator] Failed to remove activation time:', e);
+      }
+    }
 
     try {
       await setSimulatorEnabled(value);
       console.log('[Simulator] Mode set to:', value);
+
+      // Verify it was saved
+      const verify = await AsyncStorage.getItem('@moodling/simulator_mode_enabled');
+      console.log('[Simulator] Verified storage value:', verify);
+
+      if ((verify === 'true') !== value) {
+        throw new Error('Storage verification failed');
+      }
     } catch (error) {
-      console.error('[Simulator] Failed to save enabled state:', error);
-      setEnabled(previousValue); // Revert on failure
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Failed to save enabled state:', errorMsg);
+      setLastError(`Toggle error: ${errorMsg}`);
+
+      // Revert on failure
+      setEnabled(previousValue);
+      setActivatedAt(previousActivatedAt);
 
       if (Platform.OS === 'web') {
-        window.alert('Failed to save setting. Please try again.');
+        window.alert(`Failed to save setting: ${errorMsg}`);
       } else {
-        Alert.alert('Error', 'Failed to save setting. Please try again.');
+        Alert.alert('Error', `Failed to save setting: ${errorMsg}`);
       }
     }
   };
@@ -166,8 +282,12 @@ export default function SimulatorScreen() {
   // Run global test
   const handleGlobalTest = async () => {
     setIsTesting(true);
+    setLastError(null);
     try {
+      console.log('[Simulator] Starting global test...');
       const result = await runGlobalTest();
+      console.log('[Simulator] Global test result:', result);
+
       setLastGlobalResult(result.passed ? 'pass' : 'fail');
       setServiceResults(
         result.results.reduce((acc, r) => {
@@ -187,7 +307,15 @@ export default function SimulatorScreen() {
         Alert.alert(result.passed ? 'Success' : 'Issues Found', message);
       }
     } catch (error) {
-      console.error('Global test failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Global test failed:', errorMsg);
+      setLastError(`Test error: ${errorMsg}`);
+
+      if (Platform.OS === 'web') {
+        window.alert(`Test failed: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', `Test failed: ${errorMsg}`);
+      }
     } finally {
       setIsTesting(false);
     }
@@ -196,12 +324,27 @@ export default function SimulatorScreen() {
   // Run single service test
   const handleServiceTest = async (service: AIServiceType) => {
     setIsTesting(true);
+    setLastError(null);
     try {
+      console.log(`[Simulator] Testing service: ${service}`);
       const result = await runServiceTest(service);
+      console.log(`[Simulator] Service test result:`, result);
+
       setServiceResults(prev => ({ ...prev, [service]: result }));
       setFailureLogs(await getFailureLogs());
+
+      if (Platform.OS === 'web') {
+        window.alert(`${service}: ${result.passed ? 'PASS' : 'FAIL'} (${result.overallScore}/100)`);
+      } else {
+        Alert.alert(
+          result.passed ? 'Pass' : 'Fail',
+          `${service}: ${result.overallScore}/100`
+        );
+      }
     } catch (error) {
-      console.error(`Test for ${service} failed:`, error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Simulator] Test for ${service} failed:`, errorMsg);
+      setLastError(`${service} test error: ${errorMsg}`);
     } finally {
       setIsTesting(false);
     }
@@ -209,19 +352,26 @@ export default function SimulatorScreen() {
 
   // Generate random challenge
   const handleRandomChallenge = async () => {
+    setLastError(null);
     try {
+      console.log('[Simulator] Generating random challenge...');
       const result = await generateChallengeForChat();
+      console.log('[Simulator] Challenge generated:', result);
+
       setCurrentChallenge(result.challenge);
       setChallengePrompt(result.prefilledPrompt);
       setExpectedData(result.expectedData);
       setShowChallengeCategories(false);
     } catch (error) {
-      console.error('Failed to generate challenge:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Failed to generate challenge:', errorMsg);
+      setLastError(`Challenge error: ${errorMsg}`);
     }
   };
 
   // Generate category-specific challenge
   const handleCategoryChallenge = async (category: string) => {
+    setLastError(null);
     try {
       const result = await generateChallengeByCategory(category as VerificationPrompt['category']);
       if (result.challenge) {
@@ -231,7 +381,9 @@ export default function SimulatorScreen() {
       }
       setShowChallengeCategories(false);
     } catch (error) {
-      console.error('Failed to generate category challenge:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Failed to generate category challenge:', errorMsg);
+      setLastError(`Category challenge error: ${errorMsg}`);
     }
   };
 
@@ -258,12 +410,17 @@ export default function SimulatorScreen() {
   // Generate diagnostic report
   const handleGenerateReport = async () => {
     setIsGeneratingReport(true);
+    setLastError(null);
     try {
+      console.log('[Simulator] Generating diagnostic report...');
       const report = await generateDiagnosticReport();
+      console.log('[Simulator] Report generated, length:', report.length);
       setDiagnosticReport(report);
       setShowReport(true);
     } catch (error) {
-      console.error('Failed to generate report:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Failed to generate report:', errorMsg);
+      setLastError(`Report error: ${errorMsg}`);
     } finally {
       setIsGeneratingReport(false);
     }
@@ -326,6 +483,9 @@ export default function SimulatorScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.tint} />
+        <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+          Loading Simulator...
+        </Text>
       </View>
     );
   }
@@ -351,7 +511,14 @@ export default function SimulatorScreen() {
         </View>
       </View>
 
-      {/* Enable Toggle */}
+      {/* Error Display */}
+      {lastError && (
+        <View style={[styles.errorBox, { backgroundColor: '#FFEBEE' }]}>
+          <Text style={styles.errorText}>{lastError}</Text>
+        </View>
+      )}
+
+      {/* Enable Toggle with Active Timer */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.toggleRow}>
           <View style={styles.toggleInfo}>
@@ -369,6 +536,17 @@ export default function SimulatorScreen() {
             thumbColor="#FFFFFF"
           />
         </View>
+
+        {/* Active Timer Visualization */}
+        {enabled && (
+          <View style={[styles.activeIndicator, { backgroundColor: '#E8F5E9' }]}>
+            <View style={styles.activeDot} />
+            <View style={styles.activeInfo}>
+              <Text style={styles.activeLabel}>ACTIVE</Text>
+              <Text style={styles.activeTime}>{activeTime || 'Starting...'}</Text>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Data Summary */}
@@ -376,7 +554,7 @@ export default function SimulatorScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Data Available
         </Text>
-        {dataSummary && (
+        {dataSummary ? (
           <View style={styles.dataSummary}>
             <View style={styles.dataRow}>
               <Text style={[styles.dataLabel, { color: colors.textSecondary }]}>Twigs</Text>
@@ -399,6 +577,10 @@ export default function SimulatorScreen() {
               </Text>
             </View>
           </View>
+        ) : (
+          <Text style={[styles.noDataText, { color: colors.textMuted }]}>
+            Unable to load data summary
+          </Text>
         )}
       </View>
 
@@ -668,6 +850,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -688,6 +874,15 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     marginTop: 4,
+  },
+  errorBox: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#C62828',
+    fontSize: 13,
   },
   section: {
     borderRadius: 16,
@@ -726,6 +921,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
+  activeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 10,
+  },
+  activeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
+    marginRight: 10,
+  },
+  activeInfo: {
+    flex: 1,
+  },
+  activeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2E7D32',
+    letterSpacing: 1,
+  },
+  activeTime: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1B5E20',
+    marginTop: 2,
+  },
   dataSummary: {
     marginTop: 8,
   },
@@ -742,6 +966,11 @@ const styles = StyleSheet.create({
   dataValue: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  noDataText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
   },
   testButton: {
     padding: 14,
