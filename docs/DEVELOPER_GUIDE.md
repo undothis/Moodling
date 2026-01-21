@@ -1789,6 +1789,86 @@ COMMUNICATION RECOMMENDATIONS:
 ```
 **~85 tokens (~70% reduction)**
 
+### AI vs User Display (CRITICAL)
+
+MoodPrint has **two different presentations** - what Claude sees vs what users see. This is a critical ethical distinction.
+
+#### What Claude Sees (Internal/Technical)
+
+Claude receives the compressed clinical format for accuracy:
+
+```
+[PSYCH n=42] | CD:catastrophizing,all_or_nothing | DEF:neurotic(rationalize,project) | ATT:anxious/70 | LOC:int MIND:growth | TEMPORAL:worst=Sun_evening,best=morning | NEEDS:reassure,challenge_worst_case
+```
+
+This uses clinical shorthand because:
+- Claude needs precise psychological terminology to respond appropriately
+- Compression saves tokens and cost
+- Claude can translate clinical terms into warm, human language
+
+#### What Users See (Empowering/Friendly)
+
+When users view their MoodPrint (via `/moodprint` command), they see a **completely reframed** version:
+
+```
+🌿 Your MoodPrint
+━━━━━━━━━━━━━━━━━
+📊 Your Journey
+   42 reflections since Nov 15
+
+💚 What Helps You Most
+   • Extra reassurance when things feel uncertain
+   • Gentle reality checks on worst-case thinking
+
+⏰ Your Rhythms
+   • You shine brightest: Mornings
+   • Need extra care: Sunday evenings
+
+🤝 How You Connect
+   • Strong bonds with friends
+   • Still learning in romantic relationships
+
+🌱 You're Working On
+   • Seeing shades of gray (not just extremes)
+   • Trusting that things can work out
+
+🏆 Your Wins
+   • You show up and reflect regularly
+   • You're building self-awareness
+
+All insights stay on your device 🔒
+```
+
+#### Why Two Versions?
+
+| Clinical Term (AI) | User-Friendly Version | Why Change? |
+|--------------------|----------------------|-------------|
+| `CD:catastrophizing` | "Gentle reality checks on worst-case thinking" | Empowers rather than labels |
+| `ATT:anxious` | "Still learning in romantic relationships" | Growth-focused, not diagnostic |
+| `DEF:neurotic` | (Not shown) | Clinical labels can harm |
+| `TEMPORAL:worst=Sun_evening` | "Need extra care: Sunday evenings" | Supportive framing |
+| `NEEDS:reassure` | "Extra reassurance when things feel uncertain" | Describes help, not deficiency |
+
+#### Implementation Rule
+
+```typescript
+// WRONG - Never show this to users
+const userDisplay = await psychAnalysisService.getCompressedContext();
+
+// RIGHT - Transform to friendly format
+const userDisplay = await psychAnalysisService.getUserFriendlyProfile();
+```
+
+#### What NOT to Show Users
+
+- Clinical terms (anxious attachment, neurotic, catastrophizing, distortion)
+- Labels or anything that sounds like a diagnosis
+- Percentages or scores that feel like grades
+- Defense mechanism names
+- Anything that reads like "here's what's wrong with you"
+
+**The golden rule:** If a depressed person would feel worse reading it, reframe it.
+
 ---
 
 ## Text-to-Speech (TTS) System
