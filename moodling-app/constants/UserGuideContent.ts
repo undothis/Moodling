@@ -27,12 +27,17 @@ export const FAQ_CONTENT: FAQItem[] = [
   {
     category: 'basics',
     question: 'What are Fireflies?',
-    answer: 'Fireflies are gentle bits of wisdom that float around your tree. Tap them for personalized insights based on your journey.',
+    answer: 'Fireflies are Personal wisdom—AI-generated insights written specifically for you. They reference your life: your mom, your job, your patterns. They change as your life changes.',
   },
   {
     category: 'basics',
     question: 'What are Sparks?',
-    answer: 'Sparks are creative prompts to help you think differently. Unlike Fireflies (wisdom/support), Sparks are for creativity and play - prompts for artists, musicians, walkers, and anyone wanting to shake up their thinking.',
+    answer: 'Sparks are Universal wisdom—210+ curated prompts from a pre-written library. Like a book of quotes, they speak to universal human experience. What adapts is selection: the right Spark finds you based on your mood.',
+  },
+  {
+    category: 'basics',
+    question: 'Sparks vs Fireflies—what\'s the difference?',
+    answer: 'Sparks are Universal (pre-written, for everyone), Fireflies are Personal (AI-generated, just for you). Sparks are like a book of timeless quotes; Fireflies are like a note from a friend who knows your situation.',
   },
   {
     category: 'basics',
@@ -115,6 +120,23 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Can I redo the onboarding?',
     answer: 'Yes! Go to Settings > Help & FAQ > Redo Onboarding to start fresh with new preferences.',
   },
+
+  // Calendar Integration
+  {
+    category: 'features',
+    question: 'How does Calendar integration work?',
+    answer: 'When enabled, your guide can see your upcoming events—meetings, travel, deadlines. It can offer support before a big presentation, notice when you\'re overbooked, and adapt to jet lag after trips.',
+  },
+  {
+    category: 'features',
+    question: 'What calendar info does my guide see?',
+    answer: 'Event titles, times, and locations for the next 7 days. It detects travel (flights, timezone changes), important events (interviews, appointments), and your overall busyness level. Event contents/notes are not shared.',
+  },
+  {
+    category: 'privacy',
+    question: 'Is my calendar data private?',
+    answer: 'Yes. Calendar data stays on your device. Only brief summaries ("interview tomorrow at 2pm") are included in AI context when you chat. You can disable calendar integration anytime in Settings.',
+  },
 ];
 
 // ============================================
@@ -142,6 +164,10 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'What makes it different',
         content: '• Remembers your story - people, events, challenges, progress\n• Sees patterns - connects mood to sleep, activity, life events\n• Builds self-awareness - helps you understand yourself\n• Respects privacy - all data stays on your device',
+      },
+      {
+        title: 'The whole app adapts',
+        content: 'Every part of Mood Leaf evolves with you:\n• Your Guide - Personality shifts based on mood, time, and what\'s helped before\n• Sparks - Mood-matched prompts from a universal library\n• Fireflies - AI regenerates personal wisdom using your latest context\n• Life Context - Grows automatically as you journal\n• Psych Profile - Updates based on new patterns\n• Health Insights - Correlations improve with more data\n\nThe longer you use Mood Leaf, the more it knows you.',
       },
     ],
   },
@@ -200,28 +226,36 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
   {
     id: 'fireflies',
     emoji: '✨',
-    title: 'Fireflies',
-    content: 'Fireflies are gentle bits of wisdom that float around your tree. They\'re personalized based on your journey, psychological patterns, and current context.',
+    title: 'Fireflies (Personal Wisdom)',
+    content: 'Fireflies are Personal wisdom—AI-generated insights written specifically for you. They reference your life: your mom, your job, your patterns, your journey. They change as your life changes.',
     subsections: [
       {
         title: 'How they work',
-        content: 'Tap a firefly to receive wisdom. They draw from your journal patterns, life context, and psychological profile to offer relevant insights.',
+        content: 'Tap a firefly to receive personalized wisdom. The AI draws from your journal patterns, life context, psychological profile, and current situation to generate insights that speak directly to you.',
+      },
+      {
+        title: 'Why they\'re different',
+        content: 'A generic app might say "Take time for yourself." Fireflies say "Your mom\'s visit is next week—maybe that walk by the river would help you reset before?" They know your story.',
       },
     ],
   },
   {
     id: 'sparks',
     emoji: '💡',
-    title: 'Sparks',
-    content: 'Sparks are creative prompts for when you want to think differently. Unlike Fireflies (wisdom/support), Sparks are playful and creative - inspired by Brian Eno\'s Oblique Strategies cards.',
+    title: 'Sparks (Universal Wisdom)',
+    content: 'Sparks are Universal wisdom—210+ curated prompts from a pre-written library inspired by Brian Eno\'s Oblique Strategies. They speak to universal human experience. What adapts is selection: the right Spark finds you.',
     subsections: [
       {
         title: 'Creative Categories',
-        content: '• For Artists - Visual creative unblocking\\n• For Musicians - Sonic exploration prompts\\n• Walking - Contemplations for when you\'re in motion\\n• Funny - Absurdist humor to break the spell\\n• Strange - Weird perspectives to jar you loose',
+        content: '• For Artists - Visual creative unblocking\n• For Musicians - Sonic exploration prompts\n• Walking - Contemplations for when you\'re in motion\n• Funny - Absurdist humor to break the spell\n• Strange - Weird perspectives to jar you loose',
       },
       {
-        title: 'Persona Adaptation',
-        content: 'Sparks match your guide\'s personality. The same prompt feels different depending on who delivers it - energetic from Spark, contemplative from Luna, direct from Flint. This adds a personal touch to creative exploration.',
+        title: 'Adaptive Selection',
+        content: 'Sparks adapt to your mood and time of day. Anxious at 11pm? You\'ll see grounding prompts. Energetic in the morning? More action-oriented ones. The library is universal, but selection is personal.',
+      },
+      {
+        title: 'Universal vs Personal',
+        content: 'Sparks = Universal (like a book of quotes—timeless, you find the right one)\nFireflies = Personal (like a friend\'s note—written knowing your situation)\n\nBoth adapt. Sparks adapt which prompt finds you. Fireflies adapt the content itself.',
       },
     ],
   },
@@ -266,6 +300,30 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Tone Preferences',
         content: '• Warm & Nurturing - Gentle, supportive\n• Direct & Practical - Straightforward\n• Thoughtful & Reflective - Contemplative\n• Encouraging & Uplifting - Motivating',
+      },
+    ],
+  },
+  {
+    id: 'calendar',
+    emoji: '📅',
+    title: 'Calendar Integration',
+    content: 'Connect your iOS Calendar so your guide understands your schedule. A packed week feels different than an open one. An interview tomorrow creates different anxiety than a free weekend.',
+    subsections: [
+      {
+        title: 'What your guide sees',
+        content: '• Today\'s events - Meetings, appointments, deadlines\n• Week overview - Schedule density and busyness level\n• Travel events - Flights, trips, timezone changes\n• Important events - Interviews, doctor visits, deadlines',
+      },
+      {
+        title: 'How it helps',
+        content: '• Acknowledges busy periods ("You have a packed week")\n• Prepares you for important events ("Interview tomorrow?")\n• Detects travel and anticipates jet lag\n• Understands context without you explaining',
+      },
+      {
+        title: 'Travel & jet lag',
+        content: 'When your calendar shows travel:\n• Your guide notices timezone changes\n• Adjusts expectations during recovery\n• Connects with chronotype awareness\n• Doesn\'t pressure you when you\'re adjusting',
+      },
+      {
+        title: 'Privacy',
+        content: 'Only event titles, times, and locations are read. Data stays on your device. We never see or store your calendar. You can disable anytime in Settings.',
       },
     ],
   },

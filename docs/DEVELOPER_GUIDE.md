@@ -6,25 +6,105 @@ Complete technical documentation for the Mood Leaf codebase.
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Project Structure](#project-structure)
-3. [Services](#services)
-4. [Data Models](#data-models)
-5. [The Mega Prompt System](#the-mega-prompt-system)
-6. [Life Context System](#life-context-system)
-7. [HealthKit Integration](#healthkit-integration)
-8. [Health Insights & Correlations](#health-insights--correlations)
-9. [Keyword Detection System](#keyword-detection-system)
-10. [Crisis Handling](#crisis-handling)
-11. [Storage & Persistence](#storage--persistence)
-12. [API Integration](#api-integration)
-13. [Ethics Implementation](#ethics-implementation)
-14. [Testing](#testing)
-15. [Psychological Analysis System](#psychological-analysis-system)
-16. [AI Coach Adaptive System](#ai-coach-adaptive-system)
-17. [AI Data Integration & Learning](#ai-data-integration--learning)
-18. [AI Adaptation Verification System](#ai-adaptation-verification-system) ← NEW
-19. [Future Enhancements](#future-enhancements)
+1. [Documentation Architecture & Sync](#documentation-architecture--sync)
+2. [Architecture Overview](#architecture-overview)
+3. [Project Structure](#project-structure)
+4. [Services](#services)
+5. [Data Models](#data-models)
+6. [The Mega Prompt System](#the-mega-prompt-system)
+7. [Life Context System](#life-context-system)
+8. [HealthKit Integration](#healthkit-integration)
+9. [Health Insights & Correlations](#health-insights--correlations)
+10. [Keyword Detection System](#keyword-detection-system)
+11. [Crisis Handling](#crisis-handling)
+12. [Storage & Persistence](#storage--persistence)
+13. [API Integration](#api-integration)
+14. [Ethics Implementation](#ethics-implementation)
+15. [Testing](#testing)
+16. [Psychological Analysis System](#psychological-analysis-system)
+17. [AI Coach Adaptive System](#ai-coach-adaptive-system)
+18. [AI Data Integration & Learning](#ai-data-integration--learning)
+19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
+20. [Future Enhancements](#future-enhancements)
+
+---
+
+## Documentation Architecture & Sync
+
+### Source of Truth
+
+Mood Leaf documentation exists in two places that must stay in sync:
+
+| Location | Purpose | Updates |
+|----------|---------|---------|
+| `moodling-app/constants/UserGuideContent.ts` | **Primary source** - Powers in-app FAQ and Manual | Edit here first |
+| `docs/*.md` files | External docs, detailed reference, onboarding | Mirror key content |
+
+### The Sync Rule
+
+**`UserGuideContent.ts` is the source of truth for user-facing content.**
+
+When you add a new feature or change terminology:
+1. Update `UserGuideContent.ts` FIRST (this is what users see in the app)
+2. Then update relevant `docs/*.md` files for consistency
+
+### File Structure
+
+```typescript
+// FAQ_CONTENT - Quick Q&A shown in Help screen
+export const FAQ_CONTENT: FAQItem[] = [
+  {
+    category: 'basics' | 'guide' | 'privacy' | 'features',
+    question: 'What is X?',
+    answer: 'X is...',
+  },
+];
+
+// USER_MANUAL_CONTENT - Full manual sections
+export const USER_MANUAL_CONTENT: ManualSection[] = [
+  {
+    id: 'unique-id',
+    emoji: '🌳',
+    title: 'Section Title',
+    content: 'Main description...',
+    subsections: [
+      { title: 'Subsection', content: 'Details...' },
+    ],
+  },
+];
+```
+
+### Adding New Features Checklist
+
+When adding a new feature (e.g., Calendar Integration):
+
+- [ ] **Code** - Implement in `services/` or `app/`
+- [ ] **UserGuideContent.ts** - Add FAQ items and/or Manual section
+- [ ] **MOOD_LEAF_OVERVIEW.md** - Add detailed documentation
+- [ ] **Handoff.md** - Update if it affects AI context sources
+- [ ] **package.json** - Add dependencies if needed
+
+### Terminology Reference
+
+Keep these consistent across all docs:
+
+| Term | Definition | NOT |
+|------|------------|-----|
+| **Sparks** | Universal wisdom (pre-written prompts) | Oblique Strategies |
+| **Fireflies** | Personal wisdom (AI-generated) | Wisdoms, Insights |
+| **Twigs** | Quick logs/tracking | Branches, Logs |
+| **Guide** | AI coach/companion | Bot, Assistant |
+| **Personas** | 7 nature-themed personalities | Characters, Modes |
+| **Adaptive Mode** | Always-on adaptation | Toggle, Setting |
+
+### Universal vs Personal (Key Distinction)
+
+- **Sparks = Universal** (pre-written, for everyone, selection adapts)
+- **Fireflies = Personal** (AI-generated, just for you, content adapts)
+
+Use the analogy:
+- Sparks = Book of quotes (timeless, you find the right one)
+- Fireflies = Friend's note (written knowing your situation)
 
 ---
 
