@@ -464,7 +464,7 @@ export default function SimulatorScreen() {
         }
       }
 
-      // === CHECK 2: Does AI reference ACTUAL life events/people? ===
+      // === CHECK 2: Does AI reference ACTUAL life events/people from compression? ===
       if (realData.lifeContextKeywords.length > 0) {
         const referencedKeywords: string[] = [];
         for (const keyword of realData.lifeContextKeywords) {
@@ -473,9 +473,57 @@ export default function SimulatorScreen() {
           }
         }
         if (referencedKeywords.length > 0) {
-          positives.push(`Referenced real life context: ${referencedKeywords.join(', ')}`);
+          positives.push(`Referenced life context: ${referencedKeywords.slice(0, 5).join(', ')}`);
         } else if (currentChallenge.category === 'cross_domain' || currentChallenge.category === 'long_term_correlation') {
           issues.push(`AI didn't reference known life context (${realData.lifeContextKeywords.slice(0, 3).join(', ')}...)`);
+        }
+      }
+
+      // === CHECK 2B: Check full life context for specific references ===
+      if (realData.lifeContextFull && realData.lifeContextFull.length > 50) {
+        // Extract specific phrases from life context (e.g., "broke up with girlfriend")
+        const lifeEvents: string[] = [];
+        const eventPatterns = [
+          /broke up with (\w+)/gi,
+          /started (\w+)/gi,
+          /quit (\w+)/gi,
+          /got a (\w+)/gi,
+          /feeling (\w+)/gi,
+        ];
+        for (const pattern of eventPatterns) {
+          const matches = realData.lifeContextFull.match(pattern);
+          if (matches) lifeEvents.push(...matches);
+        }
+
+        let foundLifeRef = false;
+        for (const event of lifeEvents) {
+          const eventWords = event.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+          for (const word of eventWords) {
+            if (responseLower.includes(word)) {
+              foundLifeRef = true;
+              break;
+            }
+          }
+          if (foundLifeRef) break;
+        }
+        if (foundLifeRef) {
+          positives.push('Referenced specific life events from compression');
+        }
+      }
+
+      // === CHECK 2C: Check psych profile references ===
+      if (realData.psychProfileFull && realData.psychProfileFull.length > 30) {
+        const psychWords = realData.psychProfileFull.toLowerCase()
+          .split(/\s+/)
+          .filter(w => w.length > 5 && !['profile', 'established', 'psychological'].includes(w));
+
+        let foundPsychRef = false;
+        for (const word of psychWords) {
+          if (responseLower.includes(word)) {
+            foundPsychRef = true;
+            positives.push(`Referenced psych profile element: "${word}"`);
+            break;
+          }
         }
       }
 
