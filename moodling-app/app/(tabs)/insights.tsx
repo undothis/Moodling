@@ -13,13 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import {
   DailySummary,
-  LifestyleFactors,
-  TRACKABLE_FACTORS,
-  getTodayDateString,
 } from '@/types/DailySummary';
 import {
-  getFactors,
-  saveFactors,
   getRecentSummaries,
 } from '@/services/patternService';
 import {
@@ -46,7 +41,6 @@ export default function InsightsScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
-  const [factors, setFactors] = useState<LifestyleFactors>({});
   const [recentDays, setRecentDays] = useState<DailySummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,12 +48,7 @@ export default function InsightsScreen() {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const today = getTodayDateString();
-      const [todayFactors, summaries] = await Promise.all([
-        getFactors(today),
-        getRecentSummaries(7),
-      ]);
-      setFactors(todayFactors);
+      const summaries = await getRecentSummaries(7);
       setRecentDays(summaries);
     } catch (error) {
       console.error('Failed to load insights data:', error);
@@ -73,27 +62,6 @@ export default function InsightsScreen() {
       loadData();
     }, [loadData])
   );
-
-  // Handle factor adjustment
-  const adjustFactor = async (key: keyof LifestyleFactors, delta: number) => {
-    const current = (factors[key] as number) || 0;
-    const config = TRACKABLE_FACTORS.find((f) => f.key === key);
-    if (!config) return;
-
-    const newValue = Math.max(0, Math.min(config.max, current + delta));
-    const newFactors = { ...factors, [key]: newValue };
-    setFactors(newFactors);
-
-    const today = getTodayDateString();
-    await saveFactors(today, newFactors);
-  };
-
-  // Format factor display value
-  const formatValue = (key: keyof LifestyleFactors, value: number | undefined) => {
-    const config = TRACKABLE_FACTORS.find((f) => f.key === key);
-    if (!config || value === undefined) return '0';
-    return `${value}${config.unit}`;
-  };
 
   // Calculate week stats
   const weekStats = {
@@ -249,54 +217,6 @@ export default function InsightsScreen() {
           </Text>
         </View>
       )}
-
-      {/* Quick Log Section */}
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Quick Log (optional)
-        </Text>
-        <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-          Track what matters to you
-        </Text>
-
-        {isLoading ? (
-          <ActivityIndicator style={styles.loader} color={colors.tint} />
-        ) : (
-          <View style={styles.factorList}>
-            {TRACKABLE_FACTORS.map((factor) => (
-              <View key={factor.key} style={styles.factorRow}>
-                <View style={styles.factorLabel}>
-                  <Text style={styles.factorEmoji}>{factor.emoji}</Text>
-                  <Text style={[styles.factorName, { color: colors.text }]}>
-                    {factor.label}
-                  </Text>
-                </View>
-                <View style={styles.factorControls}>
-                  <TouchableOpacity
-                    style={[styles.factorButton, { backgroundColor: colors.background }]}
-                    onPress={() => adjustFactor(factor.key, -factor.step)}
-                  >
-                    <Text style={[styles.factorButtonText, { color: colors.text }]}>−</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.factorValue, { color: colors.text }]}>
-                    {formatValue(factor.key, factors[factor.key] as number)}
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.factorButton, { backgroundColor: colors.background }]}
-                    onPress={() => adjustFactor(factor.key, factor.step)}
-                  >
-                    <Text style={[styles.factorButtonText, { color: colors.text }]}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <Text style={[styles.factorHint, { color: colors.textMuted }]}>
-          This helps Mood Leaf notice patterns over time.
-        </Text>
-      </View>
 
       {/* Social Exposure Ladder (Unit 21) */}
       <TouchableOpacity
@@ -500,7 +420,7 @@ function generateObservations(days: DailySummary[]): Observation[] {
   if (observations.length === 0) {
     observations.push({
       emoji: '💡',
-      text: 'Log some factors above and write entries to see patterns emerge.',
+      text: 'Write some journal entries or log Twigs to see patterns emerge.',
     });
   }
 
@@ -536,10 +456,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     marginBottom: 12,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    marginBottom: 16,
   },
   loader: {
     marginVertical: 20,
@@ -654,53 +570,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     marginTop: 8,
-  },
-  // Factor list styles
-  factorList: {
-    gap: 12,
-  },
-  factorRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  factorLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  factorEmoji: {
-    fontSize: 20,
-  },
-  factorName: {
-    fontSize: 15,
-  },
-  factorControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  factorButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  factorButtonText: {
-    fontSize: 20,
-    fontWeight: '500',
-  },
-  factorValue: {
-    fontSize: 15,
-    fontWeight: '500',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  factorHint: {
-    marginTop: 16,
-    fontSize: 13,
-    fontStyle: 'italic',
   },
   disclaimer: {
     paddingVertical: 20,

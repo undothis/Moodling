@@ -1094,6 +1094,35 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Developer Tools Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Developer Tools
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/simulator')}
+        >
+          <Text style={styles.faqEmoji}>🔬</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Simulator Mode
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              AI adaptation verification & testing
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.devNote, { color: colors.textMuted }]}>
+          Test AI referencing accuracy and troubleshoot issues.
+        </Text>
+      </View>
+
       {/* About Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -1600,5 +1629,12 @@ const styles = StyleSheet.create({
   faqA: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  // Developer tools styles
+  devNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
+    marginTop: 4,
   },
 });
