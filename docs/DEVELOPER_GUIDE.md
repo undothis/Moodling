@@ -26,7 +26,17 @@ Complete technical documentation for the Mood Leaf codebase.
 18. [AI Data Integration & Learning](#ai-data-integration--learning)
 19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
 20. [Cycle Tracking System](#cycle-tracking-system)
-21. [Future Enhancements](#future-enhancements)
+21. [Slash Commands System](#slash-commands-system)
+22. [Skills System](#skills-system)
+23. [Games System](#games-system)
+24. [Collection System](#collection-system)
+25. [Subscription System](#subscription-system)
+26. [Chat Integration](#chat-integration)
+27. [Voice Chat System](#voice-chat-system)
+28. [Emotion Detection System](#emotion-detection-system)
+29. [Teaching System](#teaching-system)
+30. [Fidget Pad Game](#fidget-pad-game)
+31. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -417,6 +427,144 @@ getToneInstruction(styles: ToneStyle[]): string
 // Returns combined instruction like:
 // "Warm and nurturing while also being direct and practical"
 ```
+
+---
+
+### collectionService.ts
+
+**Purpose**: D&D-style gamification system that tracks user activity and unlocks collectibles (artifacts, titles, card backs) based on usage patterns. Designed with zero-pressure principles — progress never decreases.
+
+**Key Types**:
+```typescript
+export type CollectibleType = 'artifact' | 'title' | 'card_back' | 'skill' | 'coach_perk';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+export type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+
+export interface Collectible {
+  id: string;
+  type: CollectibleType;
+  name: string;
+  emoji: string;
+  rarity: Rarity;
+  description: string;
+  lore?: string;           // Flavor text for immersion
+  skillType?: SkillType;   // Related skill category
+  unlockedAt?: string;     // ISO date when unlocked
+  isHidden?: boolean;      // Secret collectibles
+}
+
+export interface UnlockTrigger {
+  type: 'milestone' | 'usage_pattern' | 'exploration' | 'random' | 'time_based';
+  condition: string;       // Human-readable condition
+  check: (stats: UsageStats) => boolean;  // Evaluation function
+}
+
+export interface UsageStats {
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+  uniqueActivitiesUsed: Set<string>;
+  nightOwlCount: number;      // Activities after midnight
+  earlyBirdCount: number;     // Activities before 6am
+  personasUsed: Set<string>;  // Coaches talked to
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+**Key Exports**:
+```typescript
+// Record user activity (called after any skill/exercise/game)
+recordActivity(activityType: string, activityId: string): Promise<void>
+
+// Get user's collection
+getCollection(): Promise<Collectible[]>
+
+// Unlock a specific collectible
+unlockCollectible(collectibleId: string): Promise<Collectible | null>
+
+// Check for new unlocks (called after recordActivity)
+checkForUnlocks(): Promise<Collectible[]>
+
+// Get usage statistics
+getUsageStats(): Promise<UsageStats>
+
+// Format collection for chat display
+formatCollectionForChat(): Promise<string>
+
+// Format stats for chat display
+formatStatsForChat(): Promise<string>
+```
+
+**Collectible Categories**:
+
+*Artifacts (15+)*:
+- `calm_stone` — First breathing session (common)
+- `breath_feather` — 10 breathing exercises (uncommon)
+- `starlight_vial` — Practice at 3am (rare)
+- `rainbow_prism` — Try all skill types (legendary)
+
+*Titles (10+)*:
+- `breath_wanderer` — Practice breathing 5 times
+- `grounding_guardian` — Master grounding exercises
+- `night_owl` — Practice after midnight
+- `dawn_keeper` — Practice before 6am
+
+*Card Backs (5)*:
+- `mist` — Starter card back (common)
+- `forest` — Try 3 different skills (uncommon)
+- `sunset` — Reach 50 total activities (rare)
+- `aurora` — Unlock 10 artifacts (legendary)
+
+**Unlock Trigger Types**:
+```typescript
+// Milestone - Activity count thresholds
+{ type: 'milestone', check: (s) => s.breathingCount >= 10 }
+
+// Usage Pattern - Detecting user preferences
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration - Trying new things
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random - Chance-based unlocks (evaluated per session)
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based - When activities occur
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+**Smart Unlock Engine**:
+```typescript
+async function checkForUnlocks(): Promise<Collectible[]> {
+  const stats = await getUsageStats();
+  const collection = await getCollection();
+  const unlockedIds = new Set(collection.map(c => c.id));
+
+  const newUnlocks: Collectible[] = [];
+
+  for (const [collectible, trigger] of UNLOCK_CONDITIONS) {
+    if (!unlockedIds.has(collectible.id) && trigger.check(stats)) {
+      await unlockCollectible(collectible.id);
+      newUnlocks.push(collectible);
+    }
+  }
+
+  return newUnlocks;
+}
+```
+
+**Anti-Pressure Design Principles**:
+- Progress bars never decrease
+- No streaks that punish missed days
+- No time-limited content or FOMO
+- Celebrates presence, not performance
+- Random unlocks add delight without pressure
 
 ---
 
@@ -2980,7 +3128,7 @@ The slash command system allows users to interact with Mood Leaf through text co
 | `skill` | `/skills`, `/games` | Browse skills and activities |
 | `exercise` | `/breathe`, `/ground`, `/calm` | Start guided exercises |
 | `power` | `/clear`, `/settings` | Utility commands |
-| `info` | `/help`, `/status` | Information commands |
+| `info` | `/help`, `/status`, `/collection`, `/stats` | Information commands |
 | `secret` | `/love`, `/hug`, `/wisdom` | Easter eggs |
 
 ### Command Flow
@@ -3095,6 +3243,11 @@ interface Exercise {
   type: ExerciseType;
   steps: ExerciseStep[];
   tags: string[];          // ['quick', 'anxiety', 'sleep']
+
+  // D&D-style collectible attributes
+  skillType: SkillType;    // 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore'
+  rarity: Rarity;          // 'common' | 'uncommon' | 'rare' | 'legendary'
+  lore?: string;           // Flavor text for collection card view
 }
 
 interface ExerciseStep {
@@ -3178,6 +3331,209 @@ Slow, pressure-free versions of classics:
 - Calm Sudoku (hints, no timer)
 - Gentle Pong (slow motion)
 - Memory Garden (match to grow flowers)
+
+---
+
+## Collection System
+
+A D&D-inspired gamification layer that tracks user activity patterns and unlocks collectibles. Designed with zero-pressure principles for mental health apps.
+
+### Architecture
+
+**Files:**
+- `services/collectionService.ts` - Core collection logic, unlock triggers, usage tracking
+- `services/skillsService.ts` - Skill/exercise definitions with D&D attributes
+- `services/slashCommandService.ts` - `/collection` and `/stats` commands
+
+### Core Concepts
+
+**Collectible Types:**
+| Type | Description |
+|------|-------------|
+| `artifact` | Symbolic items earned through milestones |
+| `title` | Display names reflecting journey |
+| `card_back` | Customize skill card appearances |
+| `skill` | Unlock special skills |
+| `coach_perk` | Special coach interactions |
+
+**Skill Types (D&D Attribute):**
+| Type | Focus Area |
+|------|------------|
+| `calm` | Breathing, relaxation |
+| `ground` | Anchoring, presence |
+| `focus` | Attention, concentration |
+| `challenge` | Thought work, CBT |
+| `connect` | Social, relationships |
+| `restore` | Recovery, healing |
+
+**Rarity Levels:**
+| Rarity | Color | Unlock Difficulty |
+|--------|-------|-------------------|
+| `common` | ⚪ White | Easy/starter |
+| `uncommon` | 🟢 Green | Moderate effort |
+| `rare` | 🔵 Blue | Significant dedication |
+| `legendary` | 🟣 Purple | Mastery/secret |
+
+### Usage Tracking
+
+The system silently tracks activity patterns:
+
+```typescript
+interface UsageStats {
+  // Activity counts by type
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+
+  // Exploration tracking
+  uniqueActivitiesUsed: Set<string>;
+  personasUsed: Set<string>;
+
+  // Time patterns
+  nightOwlCount: number;      // After midnight
+  earlyBirdCount: number;     // Before 6am
+
+  // Pattern analysis
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+**Recording Activity:**
+```typescript
+// Called after any skill, exercise, or game completion
+await recordActivity('breathing', 'box_breathing');
+
+// Automatically:
+// 1. Updates usage stats
+// 2. Detects patterns (favorite activity, time preferences)
+// 3. Triggers unlock checks
+// 4. Shows notification for new unlocks
+```
+
+### Unlock Trigger System
+
+Five trigger types evaluate whether to unlock collectibles:
+
+```typescript
+type UnlockTriggerType =
+  | 'milestone'      // Activity count thresholds
+  | 'usage_pattern'  // Detecting user preferences
+  | 'exploration'    // Trying new things
+  | 'random'         // Chance-based surprises
+  | 'time_based';    // When activities occur
+
+interface UnlockTrigger {
+  type: UnlockTriggerType;
+  condition: string;                    // Human-readable
+  check: (stats: UsageStats) => boolean; // Evaluation function
+}
+```
+
+**Example Triggers:**
+```typescript
+// Milestone: First breathing exercise
+{ type: 'milestone', check: (s) => s.breathingCount >= 1 }
+
+// Usage Pattern: Breathing is their favorite
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration: Tried 5 different activities
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random: 5% chance per session (adds delight)
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based: Night owl (3+ activities after midnight)
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+### Adding New Collectibles
+
+1. Define the collectible:
+```typescript
+const newArtifact: Collectible = {
+  id: 'ancient_scroll',
+  type: 'artifact',
+  name: 'Ancient Scroll',
+  emoji: '📜',
+  rarity: 'rare',
+  description: 'Earned by exploring the depths of mindfulness',
+  lore: 'Said to contain wisdom from a thousand breaths...',
+  skillType: 'calm',
+};
+```
+
+2. Add unlock condition:
+```typescript
+UNLOCK_CONDITIONS.set(newArtifact, {
+  type: 'exploration',
+  condition: 'Complete 10 different exercises',
+  check: (stats) => stats.uniqueActivitiesUsed.size >= 10,
+});
+```
+
+3. The system handles:
+   - Checking eligibility after each activity
+   - Unlocking and persisting
+   - Showing celebration notification
+
+### Slash Commands Integration
+
+```typescript
+// /collection - View all unlocked items
+registerCommand({
+  name: 'collection',
+  aliases: ['artifacts', 'inventory', 'bag'],
+  handler: async () => {
+    const text = await formatCollectionForChat();
+    return { type: 'menu', success: true, message: text };
+  },
+});
+
+// /stats - View activity patterns
+registerCommand({
+  name: 'stats',
+  aliases: ['activity', 'progress'],
+  handler: async () => {
+    const text = await formatStatsForChat();
+    return { type: 'message', success: true, message: text };
+  },
+});
+```
+
+### Anti-Pressure Design Principles
+
+Critical for mental health apps:
+
+| Principle | Implementation |
+|-----------|----------------|
+| **No punishment** | Progress bars never decrease |
+| **No streaks** | Milestones count total, not consecutive |
+| **No FOMO** | Nothing expires or disappears |
+| **No comparisons** | Personal journey only |
+| **Surprise rewards** | Random unlocks add joy without pressure |
+| **Celebrates presence** | Every session counts equally |
+
+### Storage
+
+```typescript
+// Collection data persisted via AsyncStorage
+const STORAGE_KEY = '@mood_leaf_collection';
+const STATS_KEY = '@mood_leaf_usage_stats';
+
+// Structure
+{
+  unlockedCollectibles: Collectible[];
+  usageStats: UsageStats;
+  lastUpdated: string;
+}
+```
 
 ---
 

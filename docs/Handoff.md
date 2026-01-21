@@ -410,3 +410,164 @@ A comprehensive slash command system allowing users to type `/` commands in chat
 - Voice and emotion features require explicit opt-in
 - Teaching system uses same anti-dependency principles as exercise tracking
 - All work cross-platform: iOS, Android, Web
+
+---
+
+## 13. COLLECTION SYSTEM - D&D-Style Gamification (January 2026)
+
+### Overview
+
+A gamification layer that rewards users for naturally using the app. Think D&D character sheets meets collectible card games. The system tracks usage patterns and unlocks artifacts, titles, and card backs without any pressure mechanics.
+
+### Design Philosophy
+
+| Principle | Implementation |
+|-----------|----------------|
+| **No punishment** | Progress bars never decrease |
+| **No streaks** | Milestones count total, not consecutive |
+| **No FOMO** | Nothing expires or disappears |
+| **No comparisons** | Personal journey only |
+| **Surprise rewards** | Random unlocks add joy without pressure |
+
+### What Was Built
+
+**New Service:** `services/collectionService.ts` (~800 lines)
+
+**Core Types:**
+```typescript
+type CollectibleType = 'artifact' | 'title' | 'card_back' | 'skill' | 'coach_perk';
+type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+type UnlockTriggerType = 'milestone' | 'usage_pattern' | 'exploration' | 'random' | 'time_based';
+```
+
+### Collectibles
+
+**Artifacts (15+):**
+- `calm_stone` — First breathing session (common)
+- `breath_feather` — 10 breathing exercises (uncommon)
+- `starlight_vial` — Practice at 3am (rare)
+- `rainbow_prism` — Try all skill types (legendary)
+- `dawn_crystal` — Practice before 6am (rare)
+- `night_lantern` — 5 practices after midnight (rare)
+
+**Titles (10+):**
+- `breath_wanderer` — Practice breathing 5 times
+- `grounding_guardian` — Master grounding exercises
+- `night_owl` — Practice after midnight
+- `dawn_keeper` — Practice before 6am
+- `explorer` — Try 10 different activities
+
+**Card Backs (5):**
+- `mist` (Common) — Default starter
+- `forest` (Uncommon) — Try 3 different skills
+- `sunset` (Rare) — Reach 50 total activities
+- `aurora` (Legendary) — Unlock 10 artifacts
+
+### Unlock Triggers
+
+The smart unlock engine evaluates user activity patterns:
+
+```typescript
+// Milestone - Activity thresholds
+{ type: 'milestone', check: (s) => s.breathingCount >= 10 }
+
+// Usage Pattern - User preferences
+{ type: 'usage_pattern', check: (s) => s.favoriteActivity === 'breathing' }
+
+// Exploration - Trying new things
+{ type: 'exploration', check: (s) => s.uniqueActivitiesUsed.size >= 5 }
+
+// Random - 5% chance per session
+{ type: 'random', check: () => Math.random() < 0.05 }
+
+// Time-based - When activities occur
+{ type: 'time_based', check: (s) => s.nightOwlCount >= 3 }
+```
+
+### Usage Statistics Tracked
+
+```typescript
+interface UsageStats {
+  breathingCount: number;
+  groundingCount: number;
+  journalCount: number;
+  bodyScanCount: number;
+  thoughtChallengeCount: number;
+  gameCount: number;
+  lessonCount: number;
+  totalActivities: number;
+  uniqueActivitiesUsed: Set<string>;
+  nightOwlCount: number;      // After midnight
+  earlyBirdCount: number;     // Before 6am
+  personasUsed: Set<string>;
+  favoriteActivity?: string;
+  activityDistribution: Record<string, number>;
+}
+```
+
+### Skills System Updates
+
+Added D&D-style attributes to all skills and exercises in `skillsService.ts`:
+
+```typescript
+interface Skill {
+  // ... existing fields
+  skillType: SkillType;  // 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore'
+  rarity: Rarity;        // 'common' | 'uncommon' | 'rare' | 'legendary'
+  lore?: string;         // Flavor text for collection view
+}
+```
+
+**Example:**
+```typescript
+{
+  id: 'box_breathing',
+  name: 'Box Breathing',
+  skillType: 'calm',
+  rarity: 'common',
+  lore: 'Used by Navy SEALs to stay calm under pressure. Four equal counts, like the sides of a box.'
+}
+```
+
+### New Slash Commands
+
+Added to `slashCommandService.ts`:
+
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `/collection` | `/artifacts`, `/inventory`, `/bag` | View unlocked collectibles |
+| `/stats` | `/activity`, `/progress` | View usage patterns and stats |
+
+### Integration Points
+
+1. **After any skill/exercise/game completes:**
+   ```typescript
+   await recordActivity('breathing', 'box_breathing');
+   const unlocks = await checkForUnlocks();
+   if (unlocks.length > 0) showUnlockCelebration(unlocks);
+   ```
+
+2. **Chat commands show collection/stats:**
+   ```typescript
+   // /collection → formatCollectionForChat()
+   // /stats → formatStatsForChat()
+   ```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `services/collectionService.ts` | NEW - Full collection system |
+| `services/skillsService.ts` | Added skillType, rarity, lore to all skills/exercises |
+| `services/slashCommandService.ts` | Added /collection and /stats commands |
+| `docs/USER_MANUAL.md` | Added Collection System section |
+| `docs/DEVELOPER_GUIDE.md` | Added collectionService docs, Collection System section |
+
+### Next Steps for Collection System
+
+1. **Build Collection UI** - Visual card collection view
+2. **Skill Preview Cards** - Tap to see D&D-style card with rarity, lore, type
+3. **Unlock Celebrations** - Animated notifications for new unlocks
+4. **Stats Dashboard** - Progress bars by skill type
+5. **Coach Integration** - Coaches can reference collection progress

@@ -657,6 +657,8 @@ Type commands starting with `/` in the chat to access quick features and switch 
 | `/help` | Show all available commands |
 | `/skills` | Browse skills and exercises |
 | `/games` | Browse mindful games |
+| `/collection` | View your artifacts and unlocks |
+| `/stats` | See your activity patterns |
 | `/breathe` | Start breathing exercise |
 | `/ground` | Start 5-4-3-2-1 grounding |
 | `/calm` | Auto-pick calming technique |
@@ -699,7 +701,7 @@ Start exercises directly from chat:
 
 ## Skills & Exercises
 
-Skills are capabilities you can develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt.
+Skills are capabilities you can develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a **type** (Calm, Ground, Focus, Challenge, Connect, Restore) and **rarity** (Common → Legendary), giving the experience a collectible card game feel.
 
 ### Skill Categories
 
@@ -797,6 +799,99 @@ Games designed to calm, ground, and build skills — not to addict.
 ### Accessing Games
 
 Type `/games` in chat or tap the **Skills** button and look for the games section.
+
+---
+
+## Collection System
+
+As you use Mood Leaf, you'll naturally discover and unlock collectibles — artifacts, titles, and more. This D&D-inspired system celebrates your journey without any pressure.
+
+### How It Works
+
+Every time you practice a skill, play a game, or explore the app, you're building toward unlocks. The system quietly tracks your patterns and rewards consistency, curiosity, and presence.
+
+**Key principles:**
+- 🎮 **No pressure** — Progress bars never decrease
+- 🚫 **No streaks** — Missing a day doesn't hurt you
+- 🎁 **Surprise rewards** — Unlocks appear when you least expect them
+- 📊 **Your patterns** — The system learns what YOU gravitate toward
+
+### Skill Types & Rarity
+
+Every skill and exercise has a **type** and **rarity**, giving them a collectible card game feel:
+
+**Skill Types:**
+| Type | Focus |
+|------|-------|
+| 🌊 **Calm** | Breathing, relaxation |
+| 🦶 **Ground** | Anchoring, presence |
+| 🎯 **Focus** | Attention, concentration |
+| 💪 **Challenge** | Thought work, CBT |
+| 🤝 **Connect** | Social, relationships |
+| ✨ **Restore** | Recovery, healing |
+
+**Rarity Levels:**
+| Rarity | Description |
+|--------|-------------|
+| ⚪ **Common** | Foundational skills everyone starts with |
+| 🟢 **Uncommon** | Slightly specialized techniques |
+| 🔵 **Rare** | Advanced or unique approaches |
+| 🟣 **Legendary** | Mastery-level or secret unlocks |
+
+### Collectible Types
+
+**🏺 Artifacts** — Symbolic items earned through milestones
+- *Calm Stone* — First breathing session
+- *Breath Feather* — 10 breathing exercises
+- *Starlight Vial* — Practice at 3am
+- *Rainbow Prism* — Try all skill types
+
+**📜 Titles** — Names that reflect your journey
+- *Breath Wanderer* — Practice breathing 5 times
+- *Grounding Guardian* — Master grounding exercises
+- *Night Owl* — Practice after midnight
+- *Dawn Keeper* — Practice before 6am
+
+**🎴 Card Backs** — Customize your skill cards
+- *Mist* (Common) — Starter card back
+- *Forest* (Uncommon) — Try 3 different skills
+- *Sunset* (Rare) — Reach 50 total activities
+- *Aurora* (Legendary) — Unlock 10 artifacts
+
+**🧑‍🏫 Coach Perks** — Special coach interactions unlocked through use
+
+### Viewing Your Collection
+
+Type `/collection` (or `/artifacts`, `/inventory`, `/bag`) to see:
+- All unlocked collectibles
+- Progress toward next unlocks
+- Your collection stats
+
+Type `/stats` to see:
+- Activity breakdown by type
+- Your favorite activities
+- Time-of-day patterns
+- How the app sees your journey
+
+### Smart Unlocks
+
+The system notices what you naturally do:
+- **Breathing a lot?** → Unlock breathing artifacts and titles
+- **Late-night user?** → Earn "Night Owl" title and related rewards
+- **Trying everything?** → Get explorer achievements
+- **Consistent practice?** → Milestone rewards appear
+
+Unlocks happen automatically — just use the app in whatever way helps you.
+
+### Zero Pressure Design
+
+This collection system is intentionally different from typical gamification:
+- **No punishment** — You can't lose progress
+- **No FOMO** — Nothing expires or disappears
+- **No comparisons** — It's your personal journey
+- **Celebrates presence** — Every session counts equally
+
+The goal is to make self-care feel rewarding, not obligatory.
 
 ---
 
