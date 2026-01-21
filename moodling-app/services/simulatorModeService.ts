@@ -15,7 +15,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from './journalStorage';
-import { getAllQuickLogs } from './quickLogsService';
+import { getAllQuickLogs, getAllLogEntries, LogEntry } from './quickLogsService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { psychAnalysisService } from './psychAnalysisService';
 import { getRecentSummaries } from './patternService';
@@ -241,12 +241,18 @@ async function gatherDataContext(): Promise<DataContext> {
   const todayStr = now.toISOString().split('T')[0];
 
   // Get all data sources
-  const [allLogs, allJournals, lifeContext, weekSummaries] = await Promise.all([
+  // - logTemplates: QuickLog[] (the twig definitions like "Took meds")
+  // - logEntries: LogEntry[] (actual instances when user logged something)
+  const [logTemplates, logEntries, allJournals, lifeContext, weekSummaries] = await Promise.all([
     getAllQuickLogs(),
+    getAllLogEntries(),
     getAllEntries(),
     getLifeContextForClaude(),
     getRecentSummaries(7),
   ]);
+
+  // Build a map of logId -> template for quick lookup
+  const templateMap = new Map(logTemplates.map(t => [t.id, t]));
 
   // Get exposure ladder
   let exposureSteps: { name: string; status: string }[] = [];
@@ -268,10 +274,13 @@ async function gatherDataContext(): Promise<DataContext> {
     // Psych profile may not exist
   }
 
-  // Filter today's data
-  const todayTwigs = Object.entries(allLogs)
-    .filter(([date]) => date === todayStr)
-    .flatMap(([_, logs]) => logs.map(l => `${l.emoji} ${l.name}`));
+  // Filter today's twig entries
+  const todayTwigs = logEntries
+    .filter(e => e.timestamp.startsWith(todayStr))
+    .map(e => {
+      const template = templateMap.get(e.logId);
+      return template ? `${template.emoji} ${template.name}` : `[Unknown] Entry`;
+    });
 
   const todayJournals = allJournals
     .filter(j => j.createdAt.startsWith(todayStr))
@@ -281,9 +290,16 @@ async function gatherDataContext(): Promise<DataContext> {
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const recentTwigs = Object.entries(allLogs)
-    .filter(([date]) => new Date(date) >= sevenDaysAgo)
-    .flatMap(([date, logs]) => logs.map(l => ({ date, name: l.name, emoji: l.emoji })))
+  const recentTwigs = logEntries
+    .filter(e => new Date(e.timestamp) >= sevenDaysAgo)
+    .map(e => {
+      const template = templateMap.get(e.logId);
+      return {
+        date: e.timestamp.split('T')[0],
+        name: template?.name || 'Unknown',
+        emoji: template?.emoji || '?',
+      };
+    })
     .slice(0, 50);
 
   const recentJournals = allJournals
@@ -296,7 +312,7 @@ async function gatherDataContext(): Promise<DataContext> {
     .slice(0, 20);
 
   return {
-    twigCount: Object.values(allLogs).reduce((sum, logs) => sum + logs.length, 0),
+    twigCount: logEntries.length,
     journalCount: allJournals.length,
     todayTwigs,
     todayJournals,

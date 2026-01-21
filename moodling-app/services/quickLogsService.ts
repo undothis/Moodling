@@ -273,7 +273,7 @@ export async function reorderQuickLogs(orderedIds: string[]): Promise<void> {
 /**
  * Get all log entries
  */
-async function getAllLogEntries(): Promise<LogEntry[]> {
+export async function getAllLogEntries(): Promise<LogEntry[]> {
   try {
     const data = await AsyncStorage.getItem(LOG_ENTRIES_KEY);
     return data ? JSON.parse(data) : [];
