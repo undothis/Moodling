@@ -417,9 +417,8 @@ export default function JournalScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.entryHeader}>
-                {latestEntry.sentiment && (
-                  <Text style={styles.moodEmoji}>{latestEntry.sentiment.emoji}</Text>
-                )}
+                {/* Mood emoji removed - Mental health safe design:
+                    No sad faces - text speaks for itself */}
                 <Text style={[styles.savedEntryTime, { color: colors.textMuted }]}>
                   {formatTimestamp(latestEntry.createdAt)}
                 </Text>

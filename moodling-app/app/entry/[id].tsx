@@ -187,9 +187,9 @@ export default function EntryDetailScreen() {
         {/* Date and time */}
         <View style={styles.dateContainer}>
           <View style={styles.dateRow}>
-            {entry.sentiment && (
-              <Text style={styles.moodEmoji}>{entry.sentiment.emoji}</Text>
-            )}
+            {/* Mood emoji removed - Mental health safe design:
+                Showing sad faces reinforces negative feelings.
+                The entry text speaks for itself. */}
             <View>
               <Text style={[styles.date, { color: colors.textSecondary }]}>
                 {formatFullDate(entry.createdAt)}

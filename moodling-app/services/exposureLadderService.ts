@@ -305,14 +305,21 @@ export async function getProgressStats(): Promise<{
   const highestLevel = Math.max(...levels) as ExposureLevel;
 
   // Calculate streak
+  // Helper to get local date as YYYY-MM-DD (avoids UTC timezone issues)
+  const getLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   let streakDays = 0;
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < 365; i++) {
     const checkDate = new Date(today);
     checkDate.setDate(checkDate.getDate() - i);
-    const dateStr = checkDate.toISOString().split('T')[0];
+    const dateStr = getLocalDate(checkDate);
 
     const hasAttempt = history.some(a => a.date.split('T')[0] === dateStr);
     if (hasAttempt) {

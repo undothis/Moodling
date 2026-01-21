@@ -392,7 +392,7 @@ The system prompt is built from multiple components:
 
 ```typescript
 function buildSystemPrompt(userContext: string, toneInstruction: string): string {
-  return `You are Moodling, a warm and compassionate companion...
+  return `You are the Sprout, a warm and compassionate companion...
 
 YOUR ROLE:
 - Listen with empathy and without judgment
@@ -1733,7 +1733,7 @@ The AI receives a rich, personalized context:
 ```
 SYSTEM PROMPT:
 ├── Personality Prompt (persona identity, traits, time-aware energy)
-├── Role & Boundaries (Moodling Ethics)
+├── Role & Boundaries (Mood Leaf Ethics)
 ├── Conversation Approach (validate → explore → support → empower)
 └── User Context:
     ├── Life Context (facts, events, people)

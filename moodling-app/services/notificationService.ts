@@ -299,7 +299,10 @@ async function getDaysSinceAdaptiveCheck(): Promise<number> {
  */
 async function markAdaptiveCheckDone(): Promise<void> {
   try {
-    await AsyncStorage.setItem(STORAGE_KEYS.LAST_ADAPTIVE_CHECK, new Date().toISOString().split('T')[0]);
+    // Use local date to avoid UTC timezone issues
+    const now = new Date();
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_ADAPTIVE_CHECK, localDate);
   } catch (error) {
     console.error('Failed to mark adaptive check:', error);
   }

@@ -122,32 +122,32 @@ export default function InsightsScreen() {
         </Text>
       </View>
 
-      {/* Your Week - Mood Chart */}
+      {/* Little Wins This Week - Focus on positive, not mood states */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Your Week
+          Little Wins This Week
         </Text>
 
         {isLoading ? (
           <ActivityIndicator style={styles.loader} color={colors.tint} />
         ) : (
           <>
-            {/* Mood emoji row */}
+            {/* Wins indicator row - focus on positive actions, not mood states */}
             <View style={styles.moodChart}>
               {recentDays.map((day) => (
                 <View key={day.date} style={styles.chartDay}>
                   <Text style={[styles.chartDayLabel, { color: colors.textMuted }]}>
                     {getDayAbbr(day.date)}
                   </Text>
-                  <Text style={styles.chartEmoji}>{getMoodEmoji(day)}</Text>
-                  {/* Mood bar */}
+                  <Text style={styles.chartEmoji}>{getWinsEmoji(day)}</Text>
+                  {/* Activity bar - shows engagement, not mood judgment */}
                   <View style={[styles.moodBarContainer, { backgroundColor: colors.background }]}>
                     <View
                       style={[
                         styles.moodBar,
                         {
-                          height: getMoodBarHeight(day),
-                          backgroundColor: getMoodBarColor(day, colors),
+                          height: getEngagementBarHeight(day),
+                          backgroundColor: getEngagementBarColor(day, colors),
                         },
                       ]}
                     />
@@ -173,11 +173,11 @@ export default function InsightsScreen() {
             {/* Legend */}
             <View style={styles.legend}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
-                <Text style={[styles.legendText, { color: colors.textMuted }]}>mood</Text>
+                <View style={[styles.legendDot, { backgroundColor: colors.tint }]} />
+                <Text style={[styles.legendText, { color: colors.textMuted }]}>engagement</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.tint }]} />
+                <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
                 <Text style={[styles.legendText, { color: colors.textMuted }]}>sleep</Text>
               </View>
             </View>
@@ -205,11 +205,11 @@ export default function InsightsScreen() {
         )}
       </View>
 
-      {/* What We Notice - Pattern Observations */}
+      {/* What's Working - Focus on positive patterns */}
       {observations.length > 0 && (
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            What We Notice
+            What's Working
           </Text>
           {observations.map((obs, index) => {
             // Check if this is a correlation observation (has confidence)
@@ -326,27 +326,43 @@ export default function InsightsScreen() {
   );
 }
 
-// Helper: Get mood emoji for a day
-function getMoodEmoji(day: DailySummary): string {
-  if (day.entryCount === 0) return '·';
-  switch (day.moodCategory) {
-    case 'very_positive':
-      return '😊';
-    case 'positive':
-      return '🙂';
-    case 'slightly_positive':
-      return '🌤️';
-    case 'neutral':
-      return '😐';
-    case 'slightly_negative':
-      return '🌧️';
-    case 'negative':
-      return '😔';
-    case 'very_negative':
-      return '😢';
-    default:
-      return '·';
-  }
+/**
+ * Helper: Get "wins" emoji for a day
+ *
+ * MENTAL HEALTH SAFE DESIGN:
+ * - NEVER show sad faces or negative emojis
+ * - Focus on "little wins" - things they DID, not how they felt
+ * - A depressed user should see evidence of resilience, not reinforcement of sadness
+ * - Even on hard days, journaling itself is a win
+ */
+function getWinsEmoji(day: DailySummary): string {
+  if (day.entryCount === 0) return '·'; // No data - neutral dot
+
+  // Count the "wins" for this day
+  const wins: string[] = [];
+
+  // Journaling is always a win
+  if (day.entryCount > 0) wins.push('📝');
+
+  // Good sleep is a win
+  if (day.factors.sleepHours && day.factors.sleepHours >= 7) wins.push('😴');
+
+  // Exercise is a win
+  if (day.factors.exerciseMinutes && day.factors.exerciseMinutes >= 15) wins.push('💪');
+
+  // Going outside is a win
+  if (day.factors.outdoorMinutes && day.factors.outdoorMinutes >= 15) wins.push('🌳');
+
+  // Social time is a win
+  if (day.factors.socialMinutes && day.factors.socialMinutes >= 15) wins.push('👥');
+
+  // If multiple wins, show star. If just journaled, show that.
+  // The point: EVERY DAY they engaged is a win, never a failure
+  if (wins.length >= 3) return '⭐'; // Multiple wins = star day
+  if (wins.length >= 2) return '✨'; // A couple wins = sparkle
+  if (wins.length >= 1) return '🌱'; // At least they showed up = growth
+
+  return '🌱'; // Default: growth (they journaled, that counts)
 }
 
 // Helper: Get day abbreviation
@@ -355,21 +371,58 @@ function getDayAbbr(dateString: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2);
 }
 
-// Helper: Get mood bar height (0-40px based on sentiment)
-function getMoodBarHeight(day: DailySummary): number {
-  if (day.entryCount === 0 || day.averageSentiment === null) return 4;
-  // Convert -1 to 1 sentiment to 4 to 40 height
-  const normalized = (day.averageSentiment + 1) / 2; // 0 to 1
+/**
+ * Helper: Get engagement bar height based on ACTIVITY, not mood
+ *
+ * This measures "how much did they engage with self-care" not "how sad were they"
+ */
+function getEngagementBarHeight(day: DailySummary): number {
+  if (day.entryCount === 0) return 4;
+
+  // Score based on positive actions, not mood
+  let score = 0;
+
+  // Journaling counts
+  score += Math.min(day.entryCount * 10, 20); // Up to 20 points for journaling
+
+  // Sleep quality counts (7+ hours = good)
+  if (day.factors.sleepHours) {
+    score += Math.min(day.factors.sleepHours * 3, 21); // Up to 21 points for sleep
+  }
+
+  // Exercise counts
+  if (day.factors.exerciseMinutes) {
+    score += Math.min(day.factors.exerciseMinutes / 3, 15); // Up to 15 points
+  }
+
+  // Social counts
+  if (day.factors.socialMinutes) {
+    score += Math.min(day.factors.socialMinutes / 6, 10); // Up to 10 points
+  }
+
+  // Outdoor counts
+  if (day.factors.outdoorMinutes) {
+    score += Math.min(day.factors.outdoorMinutes / 6, 10); // Up to 10 points
+  }
+
+  // Convert score (0-76) to height (4-40)
+  const normalized = Math.min(score / 50, 1); // Cap at 50 for full bar
   return Math.max(4, Math.round(normalized * 36) + 4);
 }
 
-// Helper: Get mood bar color
-function getMoodBarColor(day: DailySummary, colors: typeof Colors.light): string {
+/**
+ * Helper: Get engagement bar color
+ *
+ * MENTAL HEALTH SAFE: Always use positive/neutral colors, never "warning" colors
+ * We don't color-code bad days - that reinforces negative feelings
+ */
+function getEngagementBarColor(day: DailySummary, colors: typeof Colors.light): string {
   if (day.entryCount === 0) return colors.border;
-  if (day.averageSentiment === null) return colors.border;
-  if (day.averageSentiment >= 0.1) return colors.success || '#4CAF50';
-  if (day.averageSentiment >= -0.1) return colors.textMuted;
-  return '#FF9800';
+
+  // Always use the app's tint color (positive association)
+  // The HEIGHT shows engagement level, not the color
+  // No red/orange "warning" colors for low engagement
+  return colors.tint;
 }
 
 // Helper: Get sleep bar height (0-40px based on hours)

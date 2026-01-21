@@ -1,6 +1,6 @@
 // memory-extraction-patterns.ts
 // Comprehensive keyword detection for personal context extraction
-// For use with Moodling (Mood Leaf) and similar therapeutic AI applications
+// For use with Mood Leaf and similar therapeutic AI applications
 // Version 2.0 - Complete consolidated edition
 //
 // ============================================
@@ -78,7 +78,7 @@
 //    - Tree metaphor: Leaves (journal), Sprout (AI), Branches (habits), Weather (health)
 //    - Anti-dependency design principles
 //    - Visual language and naming conventions
-//    - Rebrand mapping from Moodling to Mood Leaf
+//    - Rebrand mapping to Mood Leaf
 //
 // NOT YET IMPLEMENTED (future enhancements):
 // ⬜ Compression templates (relationship, condition, event, pattern, preference, goal)
@@ -1831,7 +1831,7 @@ add more ----Some are duplicates
 
 // memory-extraction-patterns-v3.ts
 // Comprehensive keyword detection for personal context extraction
-// For use with Moodling and similar therapeutic/personalization AI applications
+// For use with Mood Leaf and similar therapeutic/personalization AI applications
 // Version 3.0 - Ultimate expanded edition
 // 
 // STATS: ~200+ subcategories, ~7000+ keywords

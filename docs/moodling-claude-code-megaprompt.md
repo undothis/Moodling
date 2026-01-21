@@ -1,4 +1,4 @@
-# MOODLING — Claude Code Mega-Prompt
+# MOOD LEAF — Claude Code Mega-Prompt
 ## iOS-Only · Local-First · Vibe-Coding · Atomic Units
 
 ---
@@ -18,7 +18,7 @@ This means we go slow, small, and true — never fast and wrong.
 
 ## What We Are Building
 
-**Moodling** is an adaptive mood-journaling and reflection companion app for iOS.
+**Mood Leaf** is an adaptive mood-journaling and reflection companion app for iOS.
 
 Its purpose is to help users:
 - Track emotional, somatic, relational, and behavioral data via free-form journaling
@@ -27,7 +27,7 @@ Its purpose is to help users:
 - Build real-world skills and habits
 - Leave the app to engage with the world
 
-**Moodling's highest success is when users need it less, not more.**
+**Mood Leaf's highest success is when users need it less, not more.**
 
 ---
 
@@ -35,7 +35,7 @@ Its purpose is to help users:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MOODLING ETHICS - HARDCODED                  │
+│                    MOOD LEAF ETHICS - HARDCODED                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ❌ NEVER diagnose mental health conditions                     │
@@ -248,7 +248,7 @@ PHASE 7: ADVANCED FEATURES (Units 20-22)
 | 12 | Pattern-detecting app with visualizations |
 | 15 | Ethically-designed app with anti-dependency |
 | 18C | **Full AI coaching with personalization + training data** |
-| 22 | Complete Moodling with all features |
+| 22 | Complete Mood Leaf with all features |
 
 **Data Strategy:**
 - Units 0-15: 100% local, no backend needed
@@ -276,8 +276,8 @@ PHASE 7: ADVANCED FEATURES (Units 20-22)
 
 **Folder structure:**
 ```
-Moodling/
-├── MoodlingApp.swift          # App entry point
+Mood Leaf/
+├── Mood LeafApp.swift          # App entry point
 ├── ContentView.swift          # Main tab view
 ├── Info.plist                 # App configuration
 ├── Assets.xcassets/           # Images, colors, app icon
@@ -406,10 +406,10 @@ final class JournalEntry {
 }
 ```
 
-**Changes to MoodlingApp.swift:**
+**Changes to Mood LeafApp.swift:**
 ```swift
 @main
-struct MoodlingApp: App {
+struct Mood LeafApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -651,7 +651,7 @@ https://github.com/argmaxinc/WhisperKit
 **Permissions needed in Info.plist:**
 ```xml
 <key>NSMicrophoneUsageDescription</key>
-<string>Moodling uses your microphone for voice journaling. All voice processing happens on your device — nothing is sent to any server.</string>
+<string>Mood Leaf uses your microphone for voice journaling. All voice processing happens on your device — nothing is sent to any server.</string>
 ```
 
 **Deliverable:**
@@ -694,7 +694,7 @@ https://github.com/argmaxinc/WhisperKit
 │  │ Time                   8:00 PM │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  Moodling will gently remind you        │
+│  Mood Leaf will gently remind you        │
 │  to check in. You can always ignore     │
 │  it — no pressure, no streaks.          │
 │                                         │
@@ -760,7 +760,7 @@ UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound
 **Permissions needed in Info.plist:**
 ```xml
 <key>NSCalendarsFullAccessUsageDescription</key>
-<string>Moodling can read your calendar to offer check-ins before and after social events. We never modify your calendar or share this data.</string>
+<string>Mood Leaf can read your calendar to offer check-ins before and after social events. We never modify your calendar or share this data.</string>
 ```
 
 **Settings Addition:**
@@ -771,7 +771,7 @@ UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound
 │  │ Calendar access          [ON]  │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  Moodling can notice social events      │
+│  Mood Leaf can notice social events      │
 │  and offer gentle check-ins before      │
 │  and after. You control everything.     │
 │                                         │
@@ -809,11 +809,11 @@ class CalendarService {
 - Can request calendar permission
 - Shows upcoming social events
 - Events filtered by social keywords
-- User sees what events Moodling detected
+- User sees what events Mood Leaf detected
 
 **Test:**
 1. Create calendar event: "Sarah's birthday party" for tomorrow 8:30 PM
-2. Open Moodling Settings
+2. Open Mood Leaf Settings
 3. Enable Calendar access
 4. Grant permission
 5. See "Sarah's birthday party" appear in upcoming events
@@ -906,7 +906,7 @@ let duringEventPrompts = [
 
 **Test:**
 1. Create event "Dinner with Alex" tomorrow at 7:00 PM
-2. Open Moodling, sync calendar
+2. Open Mood Leaf, sync calendar
 3. See event detected with before/after toggles
 4. Enable "1 hour before" check-in
 5. Simulator: advance time to 6:00 PM tomorrow
@@ -929,7 +929,7 @@ let duringEventPrompts = [
 **Permissions needed in Info.plist:**
 ```xml
 <key>NSHealthShareUsageDescription</key>
-<string>Moodling can read your sleep and activity data to help you notice patterns between rest, movement, and mood. This data never leaves your device.</string>
+<string>Mood Leaf can read your sleep and activity data to help you notice patterns between rest, movement, and mood. This data never leaves your device.</string>
 ```
 
 **HealthKit Service:**
@@ -1061,7 +1061,7 @@ enum MoodCategory: String, Codable {
 │  🌳 Outside     [−] 15m [+]            │
 │  👥 Social      [−] 60m [+]            │
 │                                         │
-│  This helps Moodling notice patterns.   │
+│  This helps Mood Leaf notice patterns.   │
 │  Track what matters to you.             │
 │                                         │
 └─────────────────────────────────────────┘
@@ -1241,7 +1241,7 @@ let observationTemplates = [
 
 **Goal:** Track app usage and gently discourage overuse.
 
-**This is critical to Moodling's ethics.**
+**This is critical to Mood Leaf's ethics.**
 
 **What we're building:**
 - Track session count and duration
@@ -1305,7 +1305,7 @@ class AntiDependencyService {
 │  • Text someone you care about          │
 │  • Just rest                            │
 │                                         │
-│  [Close Moodling]      [Continue anyway]│
+│  [Close Mood Leaf]      [Continue anyway]│
 │                                         │
 └─────────────────────────────────────────┘
 ```
@@ -1321,7 +1321,7 @@ class AntiDependencyService {
 │  │ 🎉 Thursday: You didn't need me │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  The goal is to need Moodling less,    │
+│  The goal is to need Mood Leaf less,    │
 │  not more. You're doing great.          │
 │                                         │
 └─────────────────────────────────────────┘
@@ -1650,7 +1650,7 @@ class ConsentManager {
             title: "Enable Coaching Conversations",
             explanation: """
                 To have deeper conversations about how you're feeling, 
-                Moodling can connect to a secure AI service.
+                Mood Leaf can connect to a secure AI service.
                 
                 What this means:
                 • Your current conversation is sent encrypted
@@ -1658,7 +1658,7 @@ class ConsentManager {
                 • You can disable this anytime
                 • Conversations are not stored on servers
                 
-                This is optional. Moodling works fully offline too.
+                This is optional. Mood Leaf works fully offline too.
                 """,
             privacyLink: URL(string: "https://moodling.app/privacy")!
         )
@@ -1830,7 +1830,7 @@ class AppleLLMService {
 
 **What we're building:**
 - Secure API communication
-- Moodling's therapeutic persona
+- Mood Leaf's therapeutic persona
 - Context window management
 - Cost tracking
 
@@ -1856,7 +1856,7 @@ class ClaudeAPIConfig {
 class ClaudeAPIService {
     
     private let systemPrompt = """
-    You are Moodling, a warm and compassionate companion in a journaling app.
+    You are Mood Leaf, a warm and compassionate companion in a journaling app.
     
     YOUR ROLE:
     - Listen with empathy and without judgment
@@ -2008,7 +2008,7 @@ class CostTracker {
 
 **Deliverable:**
 - Secure Claude API communication
-- Moodling persona in system prompt
+- Mood Leaf persona in system prompt
 - Context includes user's patterns and situation
 - Cost tracking visible to user
 
@@ -2028,7 +2028,7 @@ class CostTracker {
 
 **Goal:** Build a comprehensive context about the user that makes Claude's responses deeply personalized.
 
-**This is what makes Moodling feel like it "knows" the user.**
+**This is what makes Mood Leaf feel like it "knows" the user.**
 
 **What we're building:**
 - Context aggregation from all local data
@@ -2372,9 +2372,9 @@ class TrainingDataConsentManager {
     
     func requestConsent() -> ConsentRequest {
         ConsentRequest(
-            title: "Help Moodling Get Smarter",
+            title: "Help Mood Leaf Get Smarter",
             explanation: """
-                You can help improve Moodling for everyone by sharing 
+                You can help improve Mood Leaf for everyone by sharing 
                 anonymized conversation data.
                 
                 HOW IT WORKS:
@@ -2516,7 +2516,7 @@ CREATE INDEX idx_training_outcome ON training_data(mood_before, mood_after);
 │                                                                 │
 │  [Did you try the suggestion?]  [Yes] [No] [Not yet]           │
 │                                                                 │
-│  This feedback helps Moodling improve.                         │
+│  This feedback helps Mood Leaf improve.                         │
 │  (Only shared if you opted into research)                      │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -2554,7 +2554,7 @@ CREATE INDEX idx_training_outcome ON training_data(mood_before, mood_after);
 **UI Components:**
 ```
 ┌─────────────────────────────────────────┐
-│  Talk with Moodling            [Done]   │
+│  Talk with Mood Leaf            [Done]   │
 ├─────────────────────────────────────────┤
 │                                         │
 │  ┌─────────────────────────────────┐   │
@@ -2687,7 +2687,7 @@ class ConversationManager {
 
 **Goal:** Proactive coaching tied to calendar events.
 
-**The signature Moodling feature: "I'm going to a party at 8:30pm"**
+**The signature Mood Leaf feature: "I'm going to a party at 8:30pm"**
 
 **What we're building:**
 - Event detection from user input
@@ -2883,7 +2883,7 @@ class PracticeSuggestionEngine {
 
 **Test:**
 1. Type "I have a party at 8:30pm tonight"
-2. Moodling detects event, offers support
+2. Mood Leaf detects event, offers support
 3. Accept → See practice suggestions
 4. Reminders scheduled for 2h before, 30min before, next morning
 5. Receive pre-event notification with tip
@@ -3098,7 +3098,7 @@ class LocationPrivacyManager {
         let explained = await showExplanation(
             title: "Location helps find nearby places",
             body: """
-                Moodling can suggest quiet cafes, parks, or classes near you.
+                Mood Leaf can suggest quiet cafes, parks, or classes near you.
                 
                 Your location:
                 • Stays on your device
@@ -3144,7 +3144,7 @@ When starting, do these steps in order:
       - SwiftUI Interface
       - Swift Language
       - Include Tests
-      - Product Name: Moodling
+      - Product Name: Mood Leaf
       - Bundle ID: com.yourname.moodling
       
 □ 2. Set deployment target: iOS 17.0
@@ -3262,7 +3262,7 @@ Access via Settings → shake device (debug builds only).
 
 Say to Claude Code:
 
-> "Let's build Moodling. Start with Unit 0: Project Infrastructure. Create the Xcode project structure and basic tab navigation. Stop when it builds and runs."
+> "Let's build Mood Leaf. Start with Unit 0: Project Infrastructure. Create the Xcode project structure and basic tab navigation. Stop when it builds and runs."
 
 Then after each unit works:
 

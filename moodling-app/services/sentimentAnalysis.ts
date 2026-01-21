@@ -55,16 +55,21 @@ export type MoodCategory =
 
 /**
  * Mood emoji mapping
- * Using subtle emojis that don't feel clinical or judgmental
+ *
+ * MENTAL HEALTH SAFE DESIGN:
+ * - No sad face emojis (😔 😢) - these reinforce negative feelings
+ * - Using weather metaphors for harder times (clouds, rain)
+ * - A depressed user shouldn't see sad faces reflecting back at them
+ * - Weather passes; sadness is not identity
  */
 const MOOD_EMOJIS: Record<MoodCategory, string> = {
-  very_positive: '😊',
-  positive: '🙂',
-  slightly_positive: '🌤️',
-  neutral: '😐',
-  slightly_negative: '🌧️',
-  negative: '😔',
-  very_negative: '😢', // Clearly expresses sadness without being clinical
+  very_positive: '☀️',    // Sunny
+  positive: '🌤️',        // Partly sunny
+  slightly_positive: '⛅',  // Mostly sunny
+  neutral: '🌱',           // Growth (neutral is still showing up)
+  slightly_negative: '☁️', // Cloudy (weather, not judgment)
+  negative: '🌧️',         // Rainy (weather passes)
+  very_negative: '🌧️',    // Rainy (same - no escalation to sad faces)
 };
 
 /**

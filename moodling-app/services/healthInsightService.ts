@@ -112,8 +112,12 @@ export async function recordCorrelationData(
       return entryDate === new Date().toDateString();
     });
 
+    // Use local date to avoid UTC timezone issues
+    const now = new Date();
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     const record: CorrelationRecord = {
-      date: new Date().toISOString().split('T')[0],
+      date: localDate,
       mood,
       moodScore: moodToScore(mood),
       sleepHours: health.lastNightSleep?.totalSleepHours,

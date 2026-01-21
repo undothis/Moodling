@@ -33,10 +33,14 @@ interface UsageLogEntry {
 }
 
 /**
- * Get today's date as YYYY-MM-DD string
+ * Get date as YYYY-MM-DD string in LOCAL timezone
+ * (avoids UTC conversion issues where late evening = tomorrow in UTC)
  */
 function getDateString(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**

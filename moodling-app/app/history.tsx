@@ -84,9 +84,9 @@ export default function HistoryScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.entryHeader}>
-        {item.sentiment && (
-          <Text style={styles.moodEmoji}>{item.sentiment.emoji}</Text>
-        )}
+        {/* Mood emoji removed - Mental health safe design:
+            Showing sad faces next to entries reinforces negative feelings.
+            We let the text speak for itself. */}
         <Text style={[styles.entryDate, { color: colors.textMuted }]}>
           {formatDate(item.createdAt)} · {formatTime(item.createdAt)}
         </Text>

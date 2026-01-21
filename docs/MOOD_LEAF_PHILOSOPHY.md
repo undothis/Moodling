@@ -13,7 +13,7 @@ Mood Leaf is a living tree that grows with you:
 | Element | Function | Old Name |
 |---------|----------|----------|
 | 🍃 **Leaves** | Journal entries - thoughts you release | Journal entries |
-| 🌱 **The Sprout** | AI companion that listens and helps you grow | Chat / Moodling |
+| 🌱 **The Sprout** | AI companion that listens and helps you grow | Chat / AI |
 | 🌳 **The Tree** | Your accumulated context, patterns, growth | Life Context |
 | 🌿 **Branches** | Habits and goals you're building | Quick Logs |
 | 💨 **Wind** | Prompts that move you forward | Oblique Strategies |
@@ -298,7 +298,7 @@ No toxic positivity. We meet you where you are.
 
 ### Naming Changes
 
-| Old (Moodling) | New (Mood Leaf) |
+| Old Name | New (Mood Leaf) |
 |----------------|-----------------|
 | Journal entry | Leaf 🍃 |
 | AI Chat | The Sprout 🌱 |
