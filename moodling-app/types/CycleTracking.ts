@@ -93,7 +93,8 @@ export interface CycleTwigSettings {
 export interface CycleReminders {
   enabled: boolean;
   notificationsEnabled: boolean; // Master on/off for all notifications
-  periodApproaching: boolean; // 1-3 days before predicted period
+  periodApproaching: boolean; // Alert before predicted period
+  daysBeforePeriodAlert: number; // How many days before (1-7)
   pmsStarting: boolean; // Based on user's historical patterns
   logSymptomsReminder: boolean; // Daily during period
   ovulationReminder: boolean; // Fertility window alerts
@@ -169,6 +170,7 @@ export function createDefaultCycleSettings(): CycleSettings {
       enabled: true,
       notificationsEnabled: true,
       periodApproaching: true,
+      daysBeforePeriodAlert: 3, // Default: alert 3 days before
       pmsStarting: true,
       logSymptomsReminder: false,
       ovulationReminder: false,

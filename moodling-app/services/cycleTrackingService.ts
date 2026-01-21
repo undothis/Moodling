@@ -573,12 +573,13 @@ export async function checkReminders(): Promise<{
   const daysUntilPeriod = await getDaysUntilPeriod();
   const phaseInfo = await getCurrentPhase();
 
-  // Period approaching (1-3 days before)
+  // Period approaching (configurable days before)
+  const alertDays = settings.reminders.daysBeforePeriodAlert || 3;
   if (
     settings.reminders.periodApproaching &&
     daysUntilPeriod !== null &&
     daysUntilPeriod > 0 &&
-    daysUntilPeriod <= 3
+    daysUntilPeriod <= alertDays
   ) {
     return {
       type: 'periodApproaching',

@@ -519,6 +519,48 @@ export default function CycleSettingsScreen() {
                         />
                       </View>
 
+                      {settings.reminders.periodApproaching && (
+                        <View style={styles.daysPickerRow}>
+                          <Text style={[styles.settingLabel, { color: colors.warmNeutral.stone }]}>
+                            Alert me
+                          </Text>
+                          <View style={styles.daysPicker}>
+                            {[1, 2, 3, 5, 7].map((days) => (
+                              <Pressable
+                                key={days}
+                                style={[
+                                  styles.daysButton,
+                                  {
+                                    backgroundColor:
+                                      settings.reminders.daysBeforePeriodAlert === days
+                                        ? colors.accent.terracotta
+                                        : colors.warmNeutral.cream,
+                                  },
+                                ]}
+                                onPress={() => updateReminder('daysBeforePeriodAlert', days)}
+                              >
+                                <Text
+                                  style={[
+                                    styles.daysButtonText,
+                                    {
+                                      color:
+                                        settings.reminders.daysBeforePeriodAlert === days
+                                          ? colors.warmNeutral.cream
+                                          : colors.warmNeutral.charcoal,
+                                    },
+                                  ]}
+                                >
+                                  {days}d
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                          <Text style={[styles.settingLabel, { color: colors.warmNeutral.stone }]}>
+                            before
+                          </Text>
+                        </View>
+                      )}
+
                       <View style={styles.settingRow}>
                         <Text style={[styles.settingLabel, { color: colors.warmNeutral.charcoal }]}>
                           PMS Starting
@@ -845,5 +887,27 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 16,
+  },
+  daysPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingLeft: 16,
+  },
+  daysPicker: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  daysButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  daysButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
