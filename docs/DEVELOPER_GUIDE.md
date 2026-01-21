@@ -2444,6 +2444,46 @@ getCurrentPhase(): Promise<CyclePhase | null>
 getCycleContextForClaude(): Promise<string>
 ```
 
+### Settings: Cycle & Period Section
+
+All cycle features are individually toggleable. Not everyone has heavy periods—users customize what's helpful:
+
+```typescript
+interface CycleSettings {
+  // Master toggle
+  enabled: boolean;
+
+  // Feature toggles
+  showQuickSymptomButton: boolean;   // FAB on home screen during period
+  enableSoothingSparks: boolean;     // Gentler Sparks during PMS
+  enableCycleFireflies: boolean;     // Cycle-aware personal insights
+  guideAdaptationLevel: 'none' | 'subtle' | 'full';  // How much guide adjusts
+
+  // Symptom Twigs to show (user picks which ones)
+  enabledTwigs: {
+    periodStartEnd: boolean;
+    flowLevel: boolean;
+    cramps: boolean;
+    bloating: boolean;
+    breastTenderness: boolean;
+    headache: boolean;
+    moodShift: boolean;
+    cravings: boolean;
+    energyLevel: boolean;
+    sleepQuality: boolean;
+  };
+
+  // Wearable sync
+  syncSource: 'manual' | 'healthkit' | 'oura' | 'whoop';
+}
+```
+
+**Settings UI Location**: Settings > Cycle & Period
+
+**Default State**: All features ON when cycle tracking enabled, user can disable any.
+
+**UX Principle**: Respect that everyone's experience is different. Some have light periods with no symptoms. Some have debilitating cramps. Let users build their own tracking experience.
+
 ### Cycle Phases & Adaptation
 
 | Phase | Days | Guide Behavior | Sparks | Fireflies |
@@ -2500,12 +2540,52 @@ const showQuickButton =
 
 **UX Rationale**: When someone is experiencing period symptoms, navigating through menus is extra friction. A prominent, easy-to-tap button removes barriers to tracking.
 
+### Soothing Sparks (PMS-specific)
+
+When `enableSoothingSparks` is ON and user is in luteal/PMS phase, Sparks filter to gentler prompts:
+
+```typescript
+// sparkService.ts additions
+const SOOTHING_SPARK_TAGS = ['gentle', 'rest', 'comfort', 'grounding', 'self-care'];
+
+function getSparkForPhase(phase: CyclePhase, settings: CycleSettings): Spark {
+  if (phase === 'luteal' && settings.enableSoothingSparks) {
+    // Filter to soothing category
+    return getRandomSpark({ tags: SOOTHING_SPARK_TAGS });
+  }
+  return getRandomSpark(); // Normal selection
+}
+
+// Example soothing Sparks:
+// "What would feel like kindness right now?"
+// "Your body is asking for something. What is it?"
+// "Rest is not giving up. Rest is preparation."
+// "What's one small comfort you can give yourself?"
+```
+
+### Cycle Fireflies (Personal Insights)
+
+When `enableCycleFireflies` is ON, Fireflies generate cycle-aware personal wisdom:
+
+```typescript
+// firefliesService.ts additions
+async function generateCycleFirefly(cycleData: CycleData): Promise<string> {
+  const patterns = await getCyclePatterns(); // From history
+
+  // Examples of cycle-aware Fireflies:
+  // "Your anxiety usually peaks around day 23. You're on day 24. It always passes."
+  // "Last month you felt exactly like this on day 25. By day 28 you felt better."
+  // "Cramps tend to start tomorrow for you. Maybe prep your heating pad?"
+  // "You've tracked 6 cycles now. Your average is 29 days, not 28."
+}
+```
+
 ### Integration Points
 
 1. **claudeAPIService.ts** - Add cycle context as 14th data source
-2. **sparkService.ts** - Filter to soothing Sparks during luteal phase
-3. **firefliesService.ts** - Generate cycle-aware personal insights
-4. **coachPersonalityService.ts** - Guide becomes gentler during PMS
+2. **sparkService.ts** - Filter to soothing Sparks during luteal phase (if enabled)
+3. **firefliesService.ts** - Generate cycle-aware personal insights (if enabled)
+4. **coachPersonalityService.ts** - Guide becomes gentler during PMS (based on adaptation level)
 
 ### Context for Claude
 

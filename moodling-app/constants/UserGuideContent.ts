@@ -169,6 +169,11 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'What is the Quick Symptom button?',
     answer: 'When cycle tracking is enabled, a quick-access button appears on your home screen during your period. One tap to log cramps, flow, energy, or other symptoms—no navigating through menus. Toggle this in Settings > Cycle Tracking.',
   },
+  {
+    category: 'features',
+    question: 'Can I customize which cycle features are on?',
+    answer: 'Yes! In Settings > Cycle & Period, you control everything: Quick Symptom button, which Twigs appear, soothing Sparks during PMS, cycle-aware Fireflies, and how much your guide adapts. Not everyone has heavy periods—customize what\'s helpful for you.',
+  },
 
   // Personalization & Onboarding
   {
@@ -396,6 +401,10 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Quick Symptom Button',
         content: 'During your period, a quick-access button appears on your home screen. One tap opens symptom logging—no hunting through menus when you\'re already uncomfortable. Cramps, flow, energy, mood—log and go. Toggle this in Settings > Cycle Tracking.',
+      },
+      {
+        title: 'Customize Everything',
+        content: 'In Settings > Cycle & Period, toggle each feature:\n• Quick Symptom Button - Show/hide home screen button\n• Cycle Twigs - Choose which symptoms to track\n• Soothing Sparks - PMS-specific gentle prompts\n• Cycle Fireflies - Personal insights about your patterns\n• Guide Adaptation - How much gentler during PMS\n\nNot everyone has heavy periods. Make it work for you.',
       },
       {
         title: 'Privacy',
