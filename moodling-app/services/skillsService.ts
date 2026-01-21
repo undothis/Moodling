@@ -41,6 +41,12 @@ export type SkillCategory =
 
 export type SkillTier = 'free' | 'premium';
 
+// D&D-style skill types for gamification
+export type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+
+// Rarity for collectible feel
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+
 export interface Skill {
   id: string;
   name: string;
@@ -52,6 +58,10 @@ export interface Skill {
   maxLevel: number;
   xpPerUse: number;
   xpPerLevel: number;
+  // D&D-style attributes
+  skillType: SkillType;
+  rarity: Rarity;
+  lore?: string; // Flavor text for collection feel
 }
 
 export interface Exercise {
@@ -64,6 +74,10 @@ export interface Exercise {
   type: ExerciseType;
   steps: ExerciseStep[];
   tags: string[];
+  // D&D-style attributes
+  skillType: SkillType;
+  rarity: Rarity;
+  lore?: string; // Flavor text
 }
 
 export type ExerciseType =
@@ -169,6 +183,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'breathing',
     tags: ['calm', 'anxiety', 'quick'],
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'Used by Navy SEALs to stay calm under pressure. Now it\'s yours.',
     steps: [
       { instruction: 'Breathe IN...', duration: 4, visualType: 'circle_expand', audioHint: 'inhale' },
       { instruction: 'HOLD...', duration: 4, visualType: 'circle_expand', audioHint: 'hold' },
@@ -185,6 +202,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'breathing',
     tags: ['sleep', 'deep-calm', 'evening'],
+    skillType: 'restore',
+    rarity: 'common',
+    lore: 'The moon\'s favorite breathing pattern. Best used when stars appear.',
     steps: [
       { instruction: 'Breathe IN...', duration: 4, visualType: 'circle_expand', audioHint: 'inhale' },
       { instruction: 'HOLD...', duration: 7, visualType: 'circle_expand', audioHint: 'hold' },
@@ -200,6 +220,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'premium',
     type: 'breathing',
     tags: ['hrv', 'regulation', 'heart'],
+    skillType: 'calm',
+    rarity: 'uncommon',
+    lore: 'Your heart has a rhythm. This breath matches it perfectly.',
     steps: [
       { instruction: 'Breathe IN...', duration: 5, visualType: 'circle_expand', audioHint: 'inhale' },
       { instruction: 'Breathe OUT...', duration: 5, visualType: 'circle_shrink', audioHint: 'exhale' },
@@ -214,6 +237,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'breathing',
     tags: ['quick', 'instant', 'stress'],
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'The fastest reset button for your nervous system.',
     steps: [
       { instruction: 'Inhale through nose...', duration: 2, visualType: 'circle_expand', audioHint: 'inhale' },
       { instruction: 'Inhale again (top up)...', duration: 1, visualType: 'circle_expand', audioHint: 'inhale' },
@@ -231,6 +257,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'grounding',
     tags: ['anxiety', 'dissociation', 'present'],
+    skillType: 'ground',
+    rarity: 'common',
+    lore: 'Five senses, five anchors. The world is real. So are you.',
     steps: [
       { instruction: 'Name **5 things** you can SEE', visualType: 'text' },
       { instruction: 'Name **4 things** you can TOUCH', visualType: 'text' },
@@ -248,6 +277,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'grounding',
     tags: ['quick', 'subtle', 'anywhere'],
+    skillType: 'ground',
+    rarity: 'common',
+    lore: 'Roots don\'t need to be visible to be strong.',
     steps: [
       { instruction: 'Press your feet firmly into the floor', duration: 5, visualType: 'text' },
       { instruction: 'Notice the pressure, temperature, texture', duration: 10, visualType: 'text' },
@@ -265,6 +297,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'premium',
     type: 'grounding',
     tags: ['intense', 'tipp', 'distress'],
+    skillType: 'ground',
+    rarity: 'uncommon',
+    lore: 'Sometimes we need to feel something strong to remember we can feel.',
     steps: [
       { instruction: 'Hold an ice cube in your hand', visualType: 'text' },
       { instruction: 'Notice the cold intensely', duration: 10, visualType: 'timer' },
@@ -284,6 +319,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'body_scan',
     tags: ['awareness', 'quick', 'check-in'],
+    skillType: 'focus',
+    rarity: 'common',
+    lore: 'Your body holds wisdom. This is how you listen.',
     steps: [
       { instruction: 'Close your eyes if comfortable', duration: 5, visualType: 'text' },
       { instruction: 'Notice your HEAD - any tension?', duration: 15, visualType: 'text' },
@@ -303,6 +341,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'premium',
     type: 'body_scan',
     tags: ['tension', 'sleep', 'full'],
+    skillType: 'restore',
+    rarity: 'rare',
+    lore: 'A technique from 1929 that still works. Some things are timeless.',
     steps: [
       { instruction: 'Start with your feet - TENSE for 5 seconds', duration: 5, visualType: 'timer' },
       { instruction: 'RELEASE. Notice the difference.', duration: 10, visualType: 'text' },
@@ -332,6 +373,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'thought_challenge',
     tags: ['cbt', 'reframe', 'cognitive'],
+    skillType: 'challenge',
+    rarity: 'common',
+    lore: 'Thoughts are not facts. This tool helps you see the difference.',
     steps: [
       { instruction: 'What situation triggered this thought?', visualType: 'text' },
       { instruction: 'What is the thought exactly?', visualType: 'text' },
@@ -352,6 +396,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'premium',
     type: 'thought_challenge',
     tags: ['act', 'defusion', 'distance'],
+    skillType: 'challenge',
+    rarity: 'rare',
+    lore: 'You are the sky. Thoughts are just weather passing through.',
     steps: [
       { instruction: 'Notice the thought you\'re having', duration: 10, visualType: 'text' },
       { instruction: 'Say: "I notice I\'m having the thought that..."', duration: 15, visualType: 'text' },
@@ -371,6 +418,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'free',
     type: 'social_prep',
     tags: ['social', 'anxiety', 'preparation'],
+    skillType: 'connect',
+    rarity: 'common',
+    lore: 'Heroes prepare before battle. You\'re preparing for connection.',
     steps: [
       { instruction: 'Picture yourself arriving at the event', duration: 20, visualType: 'text' },
       { instruction: 'Where will you go first?', visualType: 'text' },
@@ -389,6 +439,9 @@ export const EXERCISES: Exercise[] = [
     tier: 'premium',
     type: 'social_prep',
     tags: ['social', 'practice', 'conversation'],
+    skillType: 'connect',
+    rarity: 'uncommon',
+    lore: 'Every conversation starts with one word. Here are a few good ones.',
     steps: [
       { instruction: 'Universal opener: "How do you know [host]?"', duration: 15, visualType: 'text' },
       { instruction: 'Observation: "This [food/music/venue] is great!"', duration: 15, visualType: 'text' },
@@ -415,6 +468,9 @@ export const SKILLS: Skill[] = [
     maxLevel: 5,
     xpPerUse: 10,
     xpPerLevel: 50,
+    skillType: 'calm',
+    rarity: 'common',
+    lore: 'The most portable tool you own. It goes everywhere with you.',
     exercises: EXERCISES.filter((e) => e.type === 'breathing'),
   },
   {
@@ -427,6 +483,9 @@ export const SKILLS: Skill[] = [
     maxLevel: 5,
     xpPerUse: 10,
     xpPerLevel: 50,
+    skillType: 'ground',
+    rarity: 'common',
+    lore: 'When the world spins, these techniques keep your feet on the earth.',
     exercises: EXERCISES.filter((e) => e.type === 'grounding'),
   },
   {
@@ -439,6 +498,9 @@ export const SKILLS: Skill[] = [
     maxLevel: 5,
     xpPerUse: 15,
     xpPerLevel: 75,
+    skillType: 'focus',
+    rarity: 'uncommon',
+    lore: 'Your body knows things your mind hasn\'t figured out yet.',
     exercises: EXERCISES.filter((e) => e.type === 'body_scan'),
   },
 
@@ -453,6 +515,9 @@ export const SKILLS: Skill[] = [
     maxLevel: 5,
     xpPerUse: 20,
     xpPerLevel: 100,
+    skillType: 'challenge',
+    rarity: 'uncommon',
+    lore: 'The mind is a powerful storyteller. These tools help you edit the script.',
     exercises: EXERCISES.filter((e) => e.type === 'thought_challenge'),
   },
 
@@ -467,6 +532,9 @@ export const SKILLS: Skill[] = [
     maxLevel: 5,
     xpPerUse: 15,
     xpPerLevel: 75,
+    skillType: 'connect',
+    rarity: 'uncommon',
+    lore: 'Connection is a skill, not a talent. And skills can be learned.',
     exercises: EXERCISES.filter((e) => e.type === 'social_prep'),
   },
 ];

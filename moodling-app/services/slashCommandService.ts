@@ -40,6 +40,13 @@ import {
   getProgressPercentage,
   SubjectCategory,
 } from './teachingService';
+import {
+  formatCollectionForChat,
+  getCollectionSummary,
+  getUsageStats,
+  getRarityInfo,
+  getSkillTypeInfo,
+} from './collectionService';
 
 // ============================================
 // STORAGE KEYS
@@ -1241,6 +1248,83 @@ languageShortcuts.forEach(({ name, id, emoji }) => {
       return handleTeachSubject(subject, context);
     },
   });
+});
+
+// ============================================
+// COLLECTION COMMANDS
+// ============================================
+
+registerCommand({
+  name: 'collection',
+  aliases: ['artifacts', 'inventory', 'bag'],
+  description: 'View your collected artifacts, titles, and unlocks',
+  category: 'info',
+  requiresPremium: false,
+  handler: async () => {
+    const collectionText = await formatCollectionForChat();
+    return {
+      type: 'menu',
+      success: true,
+      message: collectionText,
+      menuType: 'skills' as any,
+    };
+  },
+});
+
+registerCommand({
+  name: 'stats',
+  aliases: ['mystats', 'progress'],
+  description: 'View your activity stats and patterns',
+  category: 'info',
+  requiresPremium: false,
+  handler: async () => {
+    const stats = await getUsageStats();
+    const summary = await getCollectionSummary();
+
+    let text = `**📊 YOUR STATS**\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // Activity breakdown
+    text += `**Activities**\n`;
+    text += `  🌬️ Breathing: ${stats.breathingCount} sessions\n`;
+    text += `  🦶 Grounding: ${stats.groundingCount} sessions\n`;
+    text += `  📝 Journaling: ${stats.journalCount} entries\n`;
+    text += `  🔍 Body Scans: ${stats.bodyScansCount} sessions\n`;
+    text += `  🧠 Thought Challenges: ${stats.thoughtChallengeCount} sessions\n`;
+    text += `  🎮 Games Played: ${stats.gamesPlayedCount}\n`;
+    text += `  📚 Lessons: ${stats.lessonsCompletedCount}\n\n`;
+
+    // Overall stats
+    text += `**Overall**\n`;
+    text += `  📅 Days Active: ${stats.uniqueDaysUsed.length}\n`;
+    text += `  🔄 Total Sessions: ${stats.totalSessions}\n`;
+
+    if (stats.favoriteActivity) {
+      text += `  ⭐ Favorite: ${stats.favoriteActivity}\n`;
+    }
+
+    // Time of day patterns
+    text += `\n**When You Practice**\n`;
+    text += `  🌅 Morning: ${stats.morningSessionCount}\n`;
+    text += `  🌆 Evening: ${stats.eveningSessionCount}\n`;
+    text += `  🌙 Night: ${stats.nightSessionCount}\n`;
+
+    // Personas
+    if (stats.personasUsed.length > 0) {
+      text += `\n**Coaches Met:** ${stats.personasUsed.length}/7\n`;
+    }
+
+    // Collection summary
+    text += `\n**Collection:** ${summary.totalDiscovered}/${summary.totalAvailable} discovered\n`;
+
+    text += `\n_Type \`/collection\` to see your artifacts._`;
+
+    return {
+      type: 'message',
+      success: true,
+      message: text,
+    };
+  },
 });
 
 // ============================================
