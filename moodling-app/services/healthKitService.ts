@@ -543,3 +543,259 @@ export async function getHealthContextForClaude(): Promise<string> {
   const snapshot = await fetchHealthSnapshot();
   return formatHealthForPrompt(snapshot);
 }
+
+// ============================================
+// CYCLE TRACKING HEALTHKIT INTEGRATION
+// ============================================
+
+const CYCLE_DATA_KEY = 'moodling_healthkit_cycle_data';
+
+/**
+ * HealthKit category types for cycle tracking
+ * These map to HKCategoryTypeIdentifier values
+ */
+export const CYCLE_HEALTHKIT_TYPES = {
+  read: [
+    'HKCategoryTypeIdentifierMenstrualFlow',
+    'HKCategoryTypeIdentifierIntermenstrualBleeding',
+    'HKCategoryTypeIdentifierOvulationTestResult',
+    'HKCategoryTypeIdentifierCervicalMucusQuality',
+    'HKCategoryTypeIdentifierSexualActivity',
+    'HKQuantityTypeIdentifierBasalBodyTemperature',
+  ],
+  write: [
+    'HKCategoryTypeIdentifierMenstrualFlow',
+    'HKCategoryTypeIdentifierAbdominalCramps',
+    'HKCategoryTypeIdentifierBloating',
+    'HKCategoryTypeIdentifierBreastPain',
+    'HKCategoryTypeIdentifierHeadache',
+    'HKCategoryTypeIdentifierMoodChanges',
+    'HKCategoryTypeIdentifierFatigue',
+    'HKCategoryTypeIdentifierLowerBackPain',
+    'HKCategoryTypeIdentifierAcne',
+    'HKCategoryTypeIdentifierSleepChanges',
+    'HKCategoryTypeIdentifierAppetiteChanges',
+  ],
+};
+
+/**
+ * Menstrual flow data from HealthKit
+ */
+export interface HealthKitMenstrualFlow {
+  startDate: string;
+  endDate: string;
+  value: 'unspecified' | 'light' | 'medium' | 'heavy' | 'none';
+  source?: string;
+}
+
+/**
+ * Cycle symptom record for HealthKit
+ */
+export interface HealthKitCycleSymptom {
+  type: string; // HKCategoryTypeIdentifier
+  startDate: string;
+  value: number; // 0=notPresent, 1=mild, 2=moderate, 3=severe
+  source?: string;
+}
+
+/**
+ * Request cycle tracking permissions from HealthKit
+ * In production, this would call the actual HealthKit API
+ */
+export async function requestCyclePermissions(): Promise<boolean> {
+  if (!isHealthKitAvailable()) {
+    return false;
+  }
+
+  // In production:
+  // import AppleHealthKit from 'react-native-health';
+  // const permissions = {
+  //   permissions: {
+  //     read: CYCLE_HEALTHKIT_TYPES.read,
+  //     write: CYCLE_HEALTHKIT_TYPES.write,
+  //   },
+  // };
+  // return new Promise((resolve) => {
+  //   AppleHealthKit.initHealthKit(permissions, (error) => {
+  //     resolve(!error);
+  //   });
+  // });
+
+  // Mock implementation - always succeeds in development
+  console.log('Requesting cycle HealthKit permissions (mock)');
+  return true;
+}
+
+/**
+ * Import menstrual flow data from HealthKit
+ * Returns period records from the last 6 months
+ */
+export async function importCycleDataFromHealthKit(): Promise<HealthKitMenstrualFlow[]> {
+  const enabled = await isHealthKitEnabled();
+  if (!enabled || !isHealthKitAvailable()) {
+    return [];
+  }
+
+  // In production:
+  // import AppleHealthKit from 'react-native-health';
+  // const options = {
+  //   startDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(), // 6 months
+  // };
+  // return new Promise((resolve) => {
+  //   AppleHealthKit.getMenstrualFlow(options, (error, results) => {
+  //     if (error) {
+  //       console.error('Error fetching menstrual flow:', error);
+  //       resolve([]);
+  //       return;
+  //     }
+  //     resolve(results.map(r => ({
+  //       startDate: r.startDate,
+  //       endDate: r.endDate,
+  //       value: mapHealthKitFlowValue(r.value),
+  //       source: r.sourceName,
+  //     })));
+  //   });
+  // });
+
+  // Mock implementation - return stored data
+  try {
+    const stored = await AsyncStorage.getItem(CYCLE_DATA_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Error loading cycle data from storage:', error);
+  }
+  return [];
+}
+
+/**
+ * Write menstrual flow to HealthKit
+ */
+export async function writeMenstrualFlowToHealthKit(
+  startDate: Date,
+  endDate: Date,
+  flowLevel: 'light' | 'medium' | 'heavy'
+): Promise<boolean> {
+  const enabled = await isHealthKitEnabled();
+  if (!enabled || !isHealthKitAvailable()) {
+    return false;
+  }
+
+  // In production:
+  // import AppleHealthKit from 'react-native-health';
+  // const options = {
+  //   startDate: startDate.toISOString(),
+  //   endDate: endDate.toISOString(),
+  //   value: mapFlowLevelToHealthKit(flowLevel),
+  // };
+  // return new Promise((resolve) => {
+  //   AppleHealthKit.saveMenstrualFlow(options, (error) => {
+  //     resolve(!error);
+  //   });
+  // });
+
+  // Mock implementation
+  console.log('Writing menstrual flow to HealthKit (mock):', { startDate, endDate, flowLevel });
+  return true;
+}
+
+/**
+ * Write cycle symptom to HealthKit
+ */
+export async function writeCycleSymptomToHealthKit(
+  symptomType: string,
+  severity: 1 | 2 | 3,
+  date: Date
+): Promise<boolean> {
+  const enabled = await isHealthKitEnabled();
+  if (!enabled || !isHealthKitAvailable()) {
+    return false;
+  }
+
+  // Map symptom type to HealthKit identifier
+  const healthKitType = mapSymptomToHealthKitType(symptomType);
+  if (!healthKitType) {
+    console.warn('Unknown symptom type for HealthKit:', symptomType);
+    return false;
+  }
+
+  // In production:
+  // import AppleHealthKit from 'react-native-health';
+  // const options = {
+  //   type: healthKitType,
+  //   startDate: date.toISOString(),
+  //   value: severity, // 1=mild, 2=moderate, 3=severe
+  // };
+  // return new Promise((resolve) => {
+  //   AppleHealthKit.saveCategorySample(options, (error) => {
+  //     resolve(!error);
+  //   });
+  // });
+
+  // Mock implementation
+  console.log('Writing symptom to HealthKit (mock):', { symptomType, healthKitType, severity, date });
+  return true;
+}
+
+/**
+ * Sync cycle data bidirectionally with HealthKit
+ * Imports new data from HealthKit and exports pending symptoms
+ */
+export async function syncCycleWithHealthKit(): Promise<{
+  imported: number;
+  exported: number;
+}> {
+  const enabled = await isHealthKitEnabled();
+  if (!enabled || !isHealthKitAvailable()) {
+    return { imported: 0, exported: 0 };
+  }
+
+  // Import from HealthKit
+  const importedRecords = await importCycleDataFromHealthKit();
+
+  // In a full implementation, we would:
+  // 1. Merge imported records with local data
+  // 2. Export any local-only symptoms to HealthKit
+  // 3. Mark exported symptoms as synced
+
+  return {
+    imported: importedRecords.length,
+    exported: 0, // Would count exported symptoms
+  };
+}
+
+/**
+ * Map symptom type to HealthKit category identifier
+ */
+function mapSymptomToHealthKitType(symptomType: string): string | null {
+  const mapping: Record<string, string> = {
+    cramps: 'HKCategoryTypeIdentifierAbdominalCramps',
+    bloating: 'HKCategoryTypeIdentifierBloating',
+    breastTenderness: 'HKCategoryTypeIdentifierBreastPain',
+    headache: 'HKCategoryTypeIdentifierHeadache',
+    moodShift: 'HKCategoryTypeIdentifierMoodChanges',
+    cravings: 'HKCategoryTypeIdentifierAppetiteChanges',
+    fatigue: 'HKCategoryTypeIdentifierFatigue',
+    backPain: 'HKCategoryTypeIdentifierLowerBackPain',
+    acne: 'HKCategoryTypeIdentifierAcne',
+    insomnia: 'HKCategoryTypeIdentifierSleepChanges',
+  };
+  return mapping[symptomType] || null;
+}
+
+/**
+ * Format cycle HealthKit data for AI context
+ * Privacy-focused: only returns phase info, not raw dates
+ */
+export function formatCycleHealthDataForPrompt(
+  menstrualRecords: HealthKitMenstrualFlow[]
+): string {
+  if (menstrualRecords.length === 0) {
+    return '';
+  }
+
+  // Only mention that cycle data is synced with Apple Health
+  // Don't include specific dates in AI context
+  return 'Cycle data synced with Apple Health.';
+}

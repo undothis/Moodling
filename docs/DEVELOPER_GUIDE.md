@@ -25,7 +25,8 @@ Complete technical documentation for the Mood Leaf codebase.
 17. [AI Coach Adaptive System](#ai-coach-adaptive-system)
 18. [AI Data Integration & Learning](#ai-data-integration--learning)
 19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
-20. [Future Enhancements](#future-enhancements)
+20. [Cycle Tracking System](#cycle-tracking-system)
+21. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -2407,6 +2408,554 @@ const report = await generateDiagnosticReport();
 - **Diagnostic reports are generated on-demand** - Not stored automatically
 - **Failure logs stay on device** - Can be cleared at any time
 - **User controls everything** - Toggle on/off, clear data anytime
+
+---
+
+## Cycle Tracking System
+
+### Overview
+
+The Cycle Tracking System enables the entire app to adapt based on menstrual cycle phases. When enabled, the guide becomes gentler during PMS, Sparks shift to soothing prompts, and Fireflies generate cycle-aware personal insights.
+
+### Service: cycleService.ts (Planned)
+
+**Purpose**: Track menstrual cycles and provide cycle-aware context to all app features.
+
+**Key Exports**:
+```typescript
+interface CycleData {
+  periodStartDates: string[];        // ISO dates of period starts
+  periodEndDates: string[];          // ISO dates of period ends
+  averageCycleLength: number;        // Calculated from history
+  averagePeriodLength: number;       // Calculated from history
+  currentPhase: CyclePhase;          // Current phase
+  dayOfCycle: number;                // Current day (1-28+)
+  predictedNextPeriod: string;       // Predicted start date
+  predictedPMSStart: string;         // Predicted PMS start
+}
+
+type CyclePhase = 'menstrual' | 'follicular' | 'ovulation' | 'luteal';
+
+// Main functions
+getCycleData(): Promise<CycleData | null>
+logPeriodStart(): Promise<void>
+logPeriodEnd(): Promise<void>
+getCurrentPhase(): Promise<CyclePhase | null>
+getCycleContextForClaude(): Promise<string>
+```
+
+### Settings: Cycle & Period Section
+
+All cycle features are individually toggleable. Not everyone has heavy periods—users customize what's helpful:
+
+```typescript
+interface CycleSettings {
+  // Master toggle - turns EVERYTHING off
+  enabled: boolean;
+
+  // Life stage - determines tracking mode
+  lifeStage: 'regularCycles' | 'perimenopause' | 'menopause' | 'postMenopause' | 'pregnant' | 'postpartum';
+
+  // Feature toggles
+  showQuickSymptomButton: boolean;   // FAB on home screen during period
+  enableSoothingSparks: boolean;     // Gentler Sparks during PMS
+  enableCycleFireflies: boolean;     // Cycle-aware personal insights
+  guideAdaptationLevel: 'none' | 'subtle' | 'full';  // How much guide adjusts
+
+  // Symptom Twigs to show (user picks which ones)
+  enabledTwigs: {
+    periodStartEnd: boolean;
+    flowLevel: boolean;
+    cramps: boolean;
+    bloating: boolean;
+    breastTenderness: boolean;
+    headache: boolean;
+    moodShift: boolean;
+    cravings: boolean;
+    energyLevel: boolean;
+    sleepQuality: boolean;
+  };
+
+  // Reminders
+  reminders: CycleReminders;
+
+  // Wearable sync
+  syncSource: 'manual' | 'healthkit' | 'oura' | 'whoop';
+
+  // Fertility & Contraception
+  trackFertilityWindow: boolean;
+  contraception: ContraceptionReminder;
+
+  // Perimenopause/Menopause specific
+  trackMenopauseSymptoms: boolean;
+
+  // Pregnancy (when lifeStage === 'pregnant')
+  pregnancy?: PregnancyData;
+}
+```
+
+### Life Stages
+
+Users select their current life stage for personalized tracking:
+
+| Stage | Description | Tracking Mode |
+|-------|-------------|---------------|
+| `regularCycles` | Normal menstrual cycles | Full period/phase tracking |
+| `perimenopause` | Transition phase, irregular cycles | Period tracking + menopause symptoms |
+| `menopause` | No period for 12+ months | Symptom tracking only, no period predictions |
+| `postMenopause` | Post-menopause wellness | Wellness focus, minimal tracking |
+| `pregnant` | Pregnancy mode | Trimester tracking, period paused |
+| `postpartum` | Post-birth recovery | Recovery focus, cycle may be irregular |
+
+```typescript
+// Life stage affects what's shown
+const showPeriodTracking = ['regularCycles', 'perimenopause'].includes(settings.lifeStage);
+const showMenopauseSymptoms = ['perimenopause', 'menopause'].includes(settings.lifeStage);
+const showPregnancyUI = settings.lifeStage === 'pregnant';
+```
+
+### Perimenopause/Menopause Symptoms
+
+Additional symptoms tracked during perimenopause/menopause:
+
+```typescript
+type MenopauseSymptom =
+  | 'hotFlash'           // Frequency & intensity
+  | 'nightSweat'         // Disrupted sleep
+  | 'sleepDisturbance'   // Insomnia, waking
+  | 'brainFog'           // Memory, concentration
+  | 'vaginalDryness'     // Comfort issues
+  | 'jointPain'          // Aches, stiffness
+  | 'heartPalpitations'  // Racing heart
+  | 'anxietySpike'       // Sudden anxiety
+  | 'libidoChange';      // Desire changes
+
+// Guide adaptation for menopause
+const menopauseGuidance = {
+  perimenopause: 'Validates unpredictability, normalizes symptoms, extra patience',
+  menopause: 'No period expectations, focuses on symptom support and wellness',
+  postMenopause: 'Wellness-focused, supports healthy aging',
+};
+```
+
+### Pregnancy Mode
+
+When `lifeStage === 'pregnant'`:
+
+```typescript
+interface PregnancyData {
+  dueDate: string;        // Expected due date
+  conceptionDate?: string;
+  currentWeek: number;    // Calculated from due date
+  trimester: 1 | 2 | 3;   // Auto-calculated
+  notes: string[];
+}
+
+// Trimester-aware guide adaptation
+const trimesterGuidance = {
+  1: 'Acknowledges exhaustion, nausea, validates early pregnancy challenges',
+  2: 'More energy often, still validates physical changes',
+  3: 'Preparation mode, validates discomfort, gentle encouragement',
+};
+
+// Period tracking is automatically paused
+// Quick Symptom Button hidden
+// No period predictions or reminders
+```
+
+### Contraception Reminders
+
+```typescript
+interface ContraceptionReminder {
+  type: 'pill' | 'iud' | 'implant' | 'ring' | 'patch' | 'injection' | 'none';
+  enabled: boolean;
+  reminderTime?: string;   // HH:MM for daily pill
+  nextCheckDate?: string;  // IUD check, implant renewal
+  notes?: string;
+}
+
+// Example reminders:
+// - Pill: Daily at user's preferred time
+// - IUD: "Time for your IUD check" (yearly)
+// - Implant: "Implant renewal coming up" (3 years)
+```
+
+**Settings UI Layout**:
+```
+Settings > Cycle & Period
+├── [Toggle] Cycle Tracking (master on/off)
+│
+├── Life Stage (grid selector)
+│   ├── 🌙 Regular Cycles
+│   ├── 🌅 Perimenopause
+│   ├── 🌸 Menopause
+│   ├── ✨ Post-Menopause
+│   ├── 🤰 Pregnant
+│   └── 👶 Postpartum
+│
+├── Menopause Symptoms (shows for perimenopause/menopause)
+│   ├── [Toggle] Track Symptoms
+│   └── Symptom chips: Hot Flashes, Night Sweats, Sleep Issues,
+│       Brain Fog, Mood Changes, Anxiety, Joint Pain, etc.
+│
+├── Pregnancy Mode (shows for pregnant)
+│   └── Set due date, track trimesters
+│
+├── Quick Actions
+│   ├── [Button] Add All Cycle Twigs  → enables all symptom Twigs
+│   └── [Button] Remove Cycle Twigs   → disables all symptom Twigs
+│
+├── Features
+│   ├── [Toggle] Quick Symptom Button
+│   ├── [Toggle] Soothing Sparks (PMS)
+│   ├── [Toggle] Cycle Fireflies
+│   ├── [Toggle] Track Fertility Window (optional)
+│   └── [Picker] Guide Adaptation: None / Subtle / Full
+│
+├── Symptom Twigs (individual toggles)
+│   ├── Period Start/End
+│   ├── Flow Level
+│   ├── Cramps
+│   ├── Bloating
+│   ├── Breast Tenderness
+│   ├── Headache
+│   ├── Mood Shift
+│   ├── Cravings
+│   ├── Energy Level
+│   └── Sleep Quality
+│
+├── Reminders
+│   ├── [Toggle] Enable Reminders
+│   ├── [Toggle] Notifications (master on/off for all alerts)
+│   ├── [Toggle] Period Approaching
+│   │   └── [Picker] Alert me: 1d / 2d / 3d / 5d / 7d before
+│   ├── [Toggle] PMS Starting (based on user's patterns)
+│   ├── [Toggle] Log Symptoms Reminder
+│   ├── [Toggle] Ovulation Reminder
+│   └── [Picker] Alert Type: Push Notification / Firefly Alert
+│
+├── Contraception
+│   ├── [Picker] Type: None / Pill / IUD / Implant / Ring / Patch / Injection
+│   ├── [Time] Daily reminder time (for pill)
+│   └── [Date] Next check date (for IUD/implant)
+│
+└── Data Source
+    └── [Picker] Manual / HealthKit / Oura / Whoop
+```
+
+**Master Toggle Behavior**:
+- OFF → Hides all cycle features, removes Quick Symptom button, stops cycle context from being sent to Claude
+- Data is preserved (not deleted) so user can re-enable later
+
+**UX Principle**: Respect that everyone's experience is different. Some have light periods with no symptoms. Some have debilitating cramps. Let users build their own tracking experience.
+
+### Cycle Phases & Adaptation
+
+| Phase | Days | Guide Behavior | Sparks | Fireflies |
+|-------|------|----------------|--------|-----------|
+| **Menstrual** | 1-5 | Extra gentle, acknowledges energy dips | Soft, restful prompts | "Rest is productive right now" |
+| **Follicular** | 6-13 | Normal energy, open to challenges | Standard selection | Normal personalization |
+| **Ovulation** | 14-16 | Peak energy, action-oriented | Energetic, creative prompts | Achievement-focused insights |
+| **Luteal/PMS** | 17-28 | Gentler, validates physical symptoms | Soothing, introspective | "Your anxiety peaks now—it passes" |
+
+### Cycle-Specific Twigs
+
+Preset Twigs for cycle tracking:
+
+```typescript
+const CYCLE_TWIGS = [
+  { name: 'Period Start', emoji: '🔴', type: 'symptom' },
+  { name: 'Period End', emoji: '⭕', type: 'symptom' },
+  { name: 'Flow Level', emoji: '💧', type: 'symptom' },
+  { name: 'Cramps', emoji: '😣', type: 'symptom' },
+  { name: 'Bloating', emoji: '🎈', type: 'symptom' },
+  { name: 'Breast Tenderness', emoji: '💔', type: 'symptom' },
+  { name: 'Headache', emoji: '🤕', type: 'symptom' },
+  { name: 'Mood Shift', emoji: '🎭', type: 'symptom' },
+  { name: 'Cravings', emoji: '🍫', type: 'symptom' },
+  { name: 'Energy Level', emoji: '⚡', type: 'symptom' },
+];
+```
+
+### Quick Symptom Button (Home Screen)
+
+During menstrual phase, a floating action button appears on the home screen for quick symptom logging:
+
+```typescript
+// Settings toggle
+interface CycleSettings {
+  enabled: boolean;
+  showQuickSymptomButton: boolean;  // Show FAB during period
+  quickSymptomOptions: string[];     // Which symptoms to show
+}
+
+// Component logic
+const showQuickButton =
+  cycleSettings.enabled &&
+  cycleSettings.showQuickSymptomButton &&
+  currentPhase === 'menstrual';
+
+// Quick symptom modal shows:
+// - Flow level (light/medium/heavy)
+// - Cramps (1-5 scale)
+// - Energy (1-5 scale)
+// - Quick notes
+// - One-tap common symptoms (bloating, headache, mood)
+```
+
+**UX Rationale**: When someone is experiencing period symptoms, navigating through menus is extra friction. A prominent, easy-to-tap button removes barriers to tracking.
+
+### Soothing Sparks (PMS-specific)
+
+When `enableSoothingSparks` is ON and user is in luteal/PMS phase, Sparks filter to gentler prompts:
+
+```typescript
+// sparkService.ts additions
+const SOOTHING_SPARK_TAGS = ['gentle', 'rest', 'comfort', 'grounding', 'self-care'];
+
+function getSparkForPhase(phase: CyclePhase, settings: CycleSettings): Spark {
+  if (phase === 'luteal' && settings.enableSoothingSparks) {
+    // Filter to soothing category
+    return getRandomSpark({ tags: SOOTHING_SPARK_TAGS });
+  }
+  return getRandomSpark(); // Normal selection
+}
+
+// Example soothing Sparks:
+// "What would feel like kindness right now?"
+// "Your body is asking for something. What is it?"
+// "Rest is not giving up. Rest is preparation."
+// "What's one small comfort you can give yourself?"
+```
+
+### Cycle Reminders & Firefly Alerts
+
+Two alert types available:
+
+**Push Notifications**:
+- Standard iOS/Android notifications
+- "Your period is predicted in 2 days"
+- "PMS usually starts around now for you"
+
+**Firefly Alerts** (less intrusive):
+- A Firefly on home screen blinks/pulses to get attention
+- Tap to reveal the cycle insight
+- More gentle, in-app experience
+- Great for users who hate notifications
+
+```typescript
+interface CycleReminders {
+  enabled: boolean;                    // Master toggle for all reminders
+  notificationsEnabled: boolean;       // On/off switch for period notifications
+  periodApproaching: boolean;          // 1-3 days before predicted period
+  pmsStarting: boolean;                // Based on user's historical patterns
+  logSymptomsReminder: boolean;        // Daily during period
+  ovulationReminder: boolean;          // Fertility window alerts
+  alertType: 'push' | 'firefly';       // How to deliver alerts
+}
+
+// Firefly alert implementation
+function triggerFireflyAlert(message: string) {
+  // Set special "alert" firefly that blinks
+  await setAlertFirefly({
+    message,
+    type: 'cycle_reminder',
+    blink: true,
+    expiresIn: '24h',
+  });
+}
+
+// Example alerts:
+// "Your period is predicted in 2 days. Prep time?"
+// "PMS usually hits around now. Be extra gentle with yourself."
+// "Day 3 of your period. How are you feeling?"
+```
+
+### Cycle Fireflies (Personal Insights)
+
+When `enableCycleFireflies` is ON, Fireflies generate cycle-aware personal wisdom:
+
+```typescript
+// firefliesService.ts additions
+async function generateCycleFirefly(cycleData: CycleData): Promise<string> {
+  const patterns = await getCyclePatterns(); // From history
+
+  // Examples of cycle-aware Fireflies:
+  // "Your anxiety usually peaks around day 23. You're on day 24. It always passes."
+  // "Last month you felt exactly like this on day 25. By day 28 you felt better."
+  // "Cramps tend to start tomorrow for you. Maybe prep your heating pad?"
+  // "You've tracked 6 cycles now. Your average is 29 days, not 28."
+}
+```
+
+### Integration Points
+
+1. **claudeAPIService.ts** - Add cycle context as 14th data source
+2. **sparkService.ts** - Filter to soothing Sparks during luteal phase (if enabled)
+3. **firefliesService.ts** - Generate cycle-aware personal insights (if enabled)
+4. **coachPersonalityService.ts** - Guide becomes gentler during PMS (based on adaptation level)
+
+### Context for Claude
+
+```typescript
+// Example output from getCycleContextForClaude()
+`CYCLE CONTEXT:
+  Phase: luteal (PMS)
+  Day of cycle: 24
+  Predicted period: 4 days
+
+  Recent symptoms logged:
+    - Cramps: today, yesterday
+    - Mood shift: 3 times this week
+    - Energy: low (2 days)
+
+  Historical patterns:
+    - Anxiety typically peaks days 22-26
+    - Cramps usually start day 25
+    - Average cycle: 28 days
+
+  Adaptation: Be extra gentle, validate physical discomfort,
+  avoid pushing productivity, remind her this phase always passes.`
+```
+
+### Onboarding Integration
+
+During onboarding, ask:
+
+```typescript
+const PERSONALIZATION_QUESTIONS = [
+  {
+    id: 'first_name',
+    question: "What's your first name?",
+    type: 'text',
+    placeholder: 'So your guide can address you personally',
+  },
+  {
+    id: 'pronouns',
+    question: 'What are your pronouns?',
+    type: 'select',
+    options: ['she/her', 'he/him', 'they/them', 'custom'],
+  },
+  {
+    id: 'experiences_periods',
+    question: 'Do you experience menstrual cycles?',
+    type: 'boolean',
+    description: 'Enables cycle-aware adaptation across the app',
+  },
+];
+```
+
+### HealthKit Integration
+
+Cycle tracking fully integrates with Apple HealthKit for seamless data sync across health apps.
+
+**Required HealthKit Permissions**:
+```typescript
+const CYCLE_HEALTHKIT_TYPES = {
+  read: [
+    HKCategoryTypeIdentifier.menstrualFlow,
+    HKCategoryTypeIdentifier.intermenstrualBleeding,
+    HKCategoryTypeIdentifier.ovulationTestResult,
+    HKCategoryTypeIdentifier.cervicalMucusQuality,
+    HKCategoryTypeIdentifier.sexualActivity,
+    HKQuantityTypeIdentifier.basalBodyTemperature,
+  ],
+  write: [
+    HKCategoryTypeIdentifier.menstrualFlow,
+    HKCategoryTypeIdentifier.abdominalCramps,
+    HKCategoryTypeIdentifier.bloating,
+    HKCategoryTypeIdentifier.breastPain,
+    HKCategoryTypeIdentifier.headache,
+    HKCategoryTypeIdentifier.moodChanges,
+    HKCategoryTypeIdentifier.fatigue,
+  ],
+};
+```
+
+**Sync Implementation**:
+```typescript
+interface HealthKitCycleSync {
+  // Read cycle data from Apple Health
+  async importCycleData(): Promise<CycleData> {
+    const periods = await HealthKit.queryCategory(
+      HKCategoryTypeIdentifier.menstrualFlow,
+      { startDate: sixMonthsAgo }
+    );
+    return processPeriodData(periods);
+  }
+
+  // Write symptoms to Apple Health
+  async exportSymptom(symptom: CycleSymptom): Promise<void> {
+    await HealthKit.saveCategory(symptom.healthKitType, {
+      value: symptom.severity,
+      startDate: symptom.date,
+      metadata: { source: 'MoodLeaf' },
+    });
+  }
+
+  // Bi-directional sync
+  async syncWithHealthKit(): Promise<void> {
+    await this.importCycleData();
+    await this.exportPendingSymptoms();
+  }
+}
+```
+
+**Symptom Mapping**:
+| Mood Leaf Twig | HealthKit Category |
+|----------------|-------------------|
+| Cramps | abdominalCramps |
+| Bloating | bloating |
+| Breast Tenderness | breastPain |
+| Headache | headache |
+| Mood Shift | moodChanges |
+| Fatigue/Energy | fatigue |
+| Period Start/End | menstrualFlow |
+| Flow Level | menstrualFlow (with value) |
+
+**Privacy Notes**:
+- HealthKit data never leaves device
+- Symptoms sync bi-directionally
+- User controls read/write permissions separately
+- Data from other apps (Clue, Flo, Apple Cycle Tracking) becomes available
+
+### Wearable Integrations
+
+Cycle data can be imported from popular wearables:
+
+| Source | API | Data Available |
+|--------|-----|----------------|
+| **Oura Ring** | Oura API v2 | Period prediction, temperature trends, readiness score |
+| **Apple Watch** | HealthKit | Cycle tracking data, heart rate variability, sleep |
+| **Whoop** | Whoop API | Recovery score, strain, sleep performance, cycle data |
+
+**Implementation Notes**:
+```typescript
+// Check available sources
+const sources = await getAvailableCycleSources();
+// Returns: ['manual', 'healthkit', 'oura', 'whoop']
+
+// Sync from preferred source
+await syncCycleFromSource('oura');
+
+// Fallback hierarchy
+const cycleData = await getCycleData();
+// Tries: Oura → Apple Health → Whoop → Manual
+```
+
+**Benefits of wearable integration**:
+- More accurate phase detection via temperature/HRV
+- Automatic period logging (no manual entry)
+- Recovery scores inform energy expectations
+- Sleep data correlates with cycle phases
+
+### Privacy
+
+- Cycle data stored locally only
+- Only current phase shared with AI ("luteal phase, day 24")
+- Raw period dates never sent to API
+- Wearable tokens stored securely in Keychain
+- User can disable cycle tracking anytime
 
 ---
 

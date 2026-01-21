@@ -137,6 +137,117 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'Is my calendar data private?',
     answer: 'Yes. Calendar data stays on your device. Only brief summaries ("interview tomorrow at 2pm") are included in AI context when you chat. You can disable calendar integration anytime in Settings.',
   },
+
+  // Cycle & PMS Tracking
+  {
+    category: 'features',
+    question: 'How does cycle tracking work?',
+    answer: 'Enable cycle tracking in Settings to log your period and symptoms. The entire app adapts to your cycle—your guide becomes gentler, Sparks shift to soothing prompts, Fireflies offer cycle-aware wisdom, and special Twigs help you track symptoms.',
+  },
+  {
+    category: 'features',
+    question: 'How do Sparks change during PMS?',
+    answer: 'During your premenstrual phase, Sparks shift to gentler, more soothing prompts. Less "push yourself" energy, more "be gentle with yourself" wisdom. The creative prompts become softer, more introspective, and acknowledge that this isn\'t the time for big challenges.',
+  },
+  {
+    category: 'features',
+    question: 'What Fireflies appear during my cycle?',
+    answer: 'Fireflies become cycle-aware—offering insights like "Your anxiety often peaks around day 24, and it always passes" or "Last month you felt this way too, and a warm bath helped." Personal wisdom that connects your mood to your body\'s rhythm.',
+  },
+  {
+    category: 'features',
+    question: 'What Twigs are available for cycle tracking?',
+    answer: 'Special cycle Twigs include: Period start/end, Flow level, Cramps, Bloating, Breast tenderness, Headache, Mood shifts, Cravings, Energy level, and Sleep quality. Track what matters to you and see patterns emerge over months.',
+  },
+  {
+    category: 'features',
+    question: 'How do I add cycle Twigs?',
+    answer: 'In Settings > Cycle & Period, tap "Add Cycle Twigs" to enable all period-related tracking buttons at once. Or pick individual symptoms. They\'ll appear in your Twigs section ready to tap.',
+  },
+  {
+    category: 'features',
+    question: 'Does my guide know where I am in my cycle?',
+    answer: 'Yes! Your guide sees your cycle phase and adapts accordingly. During PMS it\'s gentler and validates physical discomfort. During your period it acknowledges energy dips. It learns YOUR patterns—not generic averages—and meets you where you are.',
+  },
+  {
+    category: 'features',
+    question: 'What is the Quick Symptom button?',
+    answer: 'When cycle tracking is enabled, a quick-access button appears on your home screen during your period. One tap to log cramps, flow, energy, or other symptoms—no navigating through menus. Toggle this in Settings > Cycle Tracking.',
+  },
+  {
+    category: 'features',
+    question: 'Can I customize which cycle features are on?',
+    answer: 'Yes! In Settings > Cycle & Period, you control everything: Quick Symptom button, which Twigs appear, soothing Sparks during PMS, cycle-aware Fireflies, and how much your guide adapts. Not everyone has heavy periods—customize what\'s helpful for you.',
+  },
+  {
+    category: 'features',
+    question: 'How do I turn off cycle tracking completely?',
+    answer: 'In Settings > Cycle & Period, toggle off "Cycle Tracking" at the top. This disables everything—Quick Symptom button, cycle Twigs, soothing Sparks, Fireflies, and guide adaptation. Your data is kept in case you re-enable later.',
+  },
+  {
+    category: 'features',
+    question: 'Can I get cycle reminders?',
+    answer: 'Yes! Enable reminders in Settings > Cycle & Period. Get notified when your period is approaching, when PMS typically starts, or gentle reminders to log symptoms. Choose between push notifications or in-app alerts (Firefly blinks to get your attention).',
+  },
+  {
+    category: 'features',
+    question: 'How do I turn off period notifications?',
+    answer: 'In Settings > Cycle Tracking > Notifications, there\'s a master on/off switch for all period-related notifications. One tap turns them all off (or back on). Keep cycle tracking enabled but silence the alerts.',
+  },
+  {
+    category: 'features',
+    question: 'What is a Firefly alert?',
+    answer: 'Instead of a push notification, a Firefly can gently blink on your home screen to alert you. Tap it for cycle-related wisdom like "Your period is predicted in 2 days" or "PMS usually starts around now for you." Less intrusive than notifications.',
+  },
+  {
+    category: 'features',
+    question: 'Does cycle tracking sync with Apple Health?',
+    answer: 'Yes! With HealthKit enabled, Mood Leaf reads your cycle data from Apple Health (synced from apps like Clue, Flo, or Apple\'s Cycle Tracking). It can also write your logs back. One source of truth across all your health apps.',
+  },
+
+  // Life Stages & Menopause
+  {
+    category: 'features',
+    question: 'What life stages does the app support?',
+    answer: 'Mood Leaf adapts to your current life stage: Regular Cycles (standard tracking), Perimenopause (irregular cycles, transition symptoms), Menopause (no periods, symptom focus), Post-Menopause (wellness maintenance), Pregnant (trimester tracking), and Postpartum (recovery support). Switch anytime in Settings.',
+  },
+  {
+    category: 'features',
+    question: 'How do I switch to menopause mode?',
+    answer: 'Go to Settings > Cycle Tracking > Life Stage and select "Menopause" or "Perimenopause". Period tracking adjusts—no more period predictions during menopause, but you can still track symptoms like hot flashes, night sweats, and mood changes.',
+  },
+  {
+    category: 'features',
+    question: 'What symptoms can I track during perimenopause/menopause?',
+    answer: 'Track hot flashes, night sweats, sleep disturbances, brain fog, mood changes, anxiety, joint pain, heart palpitations, and libido changes. Your guide understands this transition and offers extra compassion during difficult symptoms.',
+  },
+  {
+    category: 'features',
+    question: 'Does the app support pregnancy?',
+    answer: 'Yes! Select "Pregnant" as your life stage and set your due date. Period tracking pauses automatically. Your guide becomes trimester-aware—understanding first trimester exhaustion, second trimester energy, and third trimester preparation.',
+  },
+  {
+    category: 'features',
+    question: 'Can I track fertility/ovulation?',
+    answer: 'Yes, optionally. Enable "Track Fertility Window" in Settings > Cycle Tracking. The app highlights your predicted fertile window based on your cycle history. You can also get optional ovulation reminders. All data stays on your device.',
+  },
+  {
+    category: 'features',
+    question: 'Can I set contraception reminders?',
+    answer: 'Yes! Set daily pill reminders, IUD check dates, implant renewal reminders, or ring/patch change alerts in Settings > Cycle Tracking > Contraception. Choose your reminder time and the app will notify you.',
+  },
+
+  // Personalization & Onboarding
+  {
+    category: 'guide',
+    question: 'What personal info does onboarding ask?',
+    answer: 'During setup, we ask your first name (so your guide can address you personally), your preferred pronouns (so responses feel right), and whether you experience menstrual cycles (to enable cycle-aware adaptation). All optional, all changeable later.',
+  },
+  {
+    category: 'guide',
+    question: 'Why does the app ask about pronouns?',
+    answer: 'Your guide uses pronouns when reflecting back to you ("You mentioned you were feeling..."). Getting this right makes conversations feel natural and respectful. You can change this anytime in Settings.',
+  },
 ];
 
 // ============================================
@@ -324,6 +435,98 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Privacy',
         content: 'Only event titles, times, and locations are read. Data stays on your device. We never see or store your calendar. You can disable anytime in Settings.',
+      },
+    ],
+  },
+  {
+    id: 'cycle',
+    emoji: '🌙',
+    title: 'Cycle Tracking',
+    content: 'For those who experience menstrual cycles, the entire app adapts to your rhythm. Your guide becomes gentler during PMS, Sparks shift to soothing prompts, and Fireflies offer cycle-aware personal wisdom.',
+    subsections: [
+      {
+        title: 'How it works',
+        content: 'Log your period start/end dates and the app learns your cycle. It predicts upcoming phases and adapts before you even notice the shift. The longer you track, the more accurate predictions become.',
+      },
+      {
+        title: 'What adapts',
+        content: '• Your Guide - Becomes gentler, validates physical symptoms, avoids pushing productivity\n• Sparks - Shift to soothing, introspective prompts during PMS\n• Fireflies - Generate cycle-aware insights ("Your anxiety usually peaks now—it always passes")\n• Twigs - Special cycle-specific tracking options appear',
+      },
+      {
+        title: 'Cycle phases',
+        content: '• Menstrual (days 1-5) - Acknowledges energy dips, extra gentle\n• Follicular (days 6-13) - Normal energy, open to challenges\n• Ovulation (days 14-16) - Peak energy, action-oriented\n• Luteal/PMS (days 17-28) - Soothing mode, validates discomfort',
+      },
+      {
+        title: 'Cycle Twigs',
+        content: 'Track what matters to you:\n• Period start/end, Flow level\n• Cramps, Bloating, Breast tenderness\n• Headache, Mood shifts, Cravings\n• Energy level, Sleep quality\n\nPatterns emerge over months.',
+      },
+      {
+        title: 'Quick Symptom Button',
+        content: 'During your period, a quick-access button appears on your home screen. One tap opens symptom logging—no hunting through menus when you\'re already uncomfortable. Cramps, flow, energy, mood—log and go. Toggle this in Settings > Cycle Tracking.',
+      },
+      {
+        title: 'Customize Everything',
+        content: 'In Settings > Cycle & Period, toggle each feature:\n• Quick Symptom Button - Show/hide home screen button\n• Cycle Twigs - Choose which symptoms to track\n• Soothing Sparks - PMS-specific gentle prompts\n• Cycle Fireflies - Personal insights about your patterns\n• Guide Adaptation - How much gentler during PMS\n\nNot everyone has heavy periods. Make it work for you.',
+      },
+      {
+        title: 'Reminders',
+        content: 'Get gentle reminders about your cycle:\n• Period approaching (1-3 days before)\n• PMS starting (based on YOUR patterns)\n• Log symptoms reminder\n• Ovulation/fertility window alerts\n\nMaster on/off switch: Settings → Cycle Tracking → Notifications. Turn all period notifications off (or back on) with one tap.',
+      },
+      {
+        title: 'Firefly Alerts',
+        content: 'Don\'t like push notifications? Choose Firefly alerts instead—a gentler, more discreet option.\n\nHow it works:\n• A Firefly on your home screen gently blinks/pulses\n• Tap it to see your cycle reminder\n• Messages like "Your period is predicted in 2 days" or "PMS usually starts around now"\n\nWhy Firefly alerts?\n• Less intrusive than push notifications\n• No buzzing or sounds\n• Check when YOU\'re ready\n• Stays visible until you tap it\n• Perfect for those who hate notifications\n\nSet in Settings → Cycle Tracking → Alert Type.',
+      },
+      {
+        title: 'HealthKit Integration',
+        content: 'With HealthKit enabled, Mood Leaf syncs with Apple Health:\n• Reads cycle data from other apps (Clue, Flo, Apple Cycle Tracking)\n• Writes your symptoms back to Apple Health\n• Heart rate, sleep, and activity data inform cycle insights\n• One source of truth across all your health apps',
+      },
+      {
+        title: 'Life Stages',
+        content: 'Your body changes over time. Mood Leaf adapts to where you are:\n\n• Regular Cycles - Standard period tracking with phase awareness\n• Perimenopause - Validates irregular cycles, tracks transition symptoms\n• Menopause - No period expectations, focuses on symptom management\n• Post-Menopause - Wellness maintenance, healthy aging support\n• Pregnant - Cycle tracking paused, trimester-aware support\n• Postpartum - Recovery focus, validates exhaustion\n\nSwitch your life stage anytime in Settings > Cycle Tracking.',
+      },
+      {
+        title: 'Perimenopause & Menopause',
+        content: 'For those in the menopause transition, track specific symptoms:\n\n• Hot flashes (frequency & intensity)\n• Night sweats\n• Sleep disturbances\n• Brain fog & memory\n• Mood changes & anxiety\n• Joint pain\n• Heart palpitations\n• Libido changes\n\nYour guide understands this transition is significant. It validates unpredictability, doesn\'t expect regular cycles, and offers extra compassion during difficult symptoms.',
+      },
+      {
+        title: 'Pregnancy Mode',
+        content: 'When you select "Pregnant" as your life stage:\n\n• Period tracking automatically pauses\n• Your guide becomes trimester-aware\n• Support adapts to physical changes each trimester\n• No period-related reminders or predictions\n• Gentle, encouraging tone throughout\n\nSet your due date to track weeks and trimesters. Your guide meets you where you are—first trimester exhaustion, second trimester energy, third trimester preparation.',
+      },
+      {
+        title: 'Fertility Window',
+        content: 'Optional fertility tracking for those trying to conceive:\n\n• Highlights predicted ovulation window\n• Based on your cycle history\n• Can send optional ovulation reminders\n• Privacy-first: this data never leaves your device\n\nEnable in Settings > Cycle Tracking > Track Fertility Window. Completely optional—only turn on if helpful for you.',
+      },
+      {
+        title: 'Contraception Reminders',
+        content: 'Optional reminders for birth control:\n\n• Daily pill reminders at your preferred time\n• IUD check date reminders\n• Implant renewal dates\n• Ring/patch change reminders\n\nSet up in Settings > Cycle Tracking > Contraception. All data stays on your device.',
+      },
+      {
+        title: 'Privacy',
+        content: 'Cycle data stays on your device. Only your current phase or life stage is shared with your guide ("luteal phase, day 24" or "perimenopause"). Raw tracking data, dates, and symptoms are never sent to AI. You can disable cycle tracking anytime.',
+      },
+    ],
+  },
+  {
+    id: 'onboarding',
+    emoji: '👋',
+    title: 'Personalization',
+    content: 'During onboarding, we ask a few questions to personalize your experience. Everything is optional and can be changed later in Settings.',
+    subsections: [
+      {
+        title: 'Your name',
+        content: 'Your first name so your guide can address you personally. "Hey Sarah" feels different than "Hey there." Optional—your guide works fine without it.',
+      },
+      {
+        title: 'Your pronouns',
+        content: 'Your guide uses pronouns when reflecting back to you. Options include she/her, he/him, they/them, or custom. This makes conversations feel natural and respectful.',
+      },
+      {
+        title: 'Cycle tracking',
+        content: 'If you experience menstrual cycles, enabling this unlocks cycle-aware adaptation. The whole app shifts based on your phase—gentler during PMS, more energetic during ovulation.',
+      },
+      {
+        title: 'Changing later',
+        content: 'All personalization settings can be updated in Settings > Profile. Your guide adapts immediately to changes.',
       },
     ],
   },
