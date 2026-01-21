@@ -36,7 +36,9 @@ Complete technical documentation for the Mood Leaf codebase.
 28. [Emotion Detection System](#emotion-detection-system)
 29. [Teaching System](#teaching-system)
 30. [Fidget Pad Game](#fidget-pad-game)
-31. [Future Enhancements](#future-enhancements)
+31. [Food Tracking with AI Detection](#food-tracking-with-ai-detection)
+32. [Skills Progression Tab](#skills-progression-tab)
+33. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -4805,6 +4807,139 @@ Based on peer-reviewed research:
 - Cambridge Nutrition Review (food/menstrual symptoms)
 - Nature Scientific Reports 2025 (sleep/PMS)
 - PMC Systematic Reviews (lifestyle/cycle correlations)
+
+---
+
+## Food Tracking with AI Detection
+
+Track meals and calories with automatic detection from journal entries.
+
+### Files
+- `types/FoodTracking.ts` - Food items, settings, AI keywords
+- `services/foodTrackingService.ts` - Logging, detection, calorie tracking
+- `components/food/FoodTracker.tsx` - Full tracking UI
+- `app/food/index.tsx` - Food Tracker screen
+- `app/settings/food.tsx` - Settings page
+
+### Food Database
+80+ common foods with calorie information:
+```typescript
+export const COMMON_FOODS: FoodItem[] = [
+  { id: 'burger', name: 'Hamburger', calories: 540, servingSize: '1 burger', category: 'fast_food' },
+  { id: 'pizza_slice', name: 'Pizza Slice', calories: 285, servingSize: '1 slice', category: 'fast_food' },
+  // ...80+ items
+];
+```
+
+### AI Detection
+Detects food mentions in journal text:
+```typescript
+export const FOOD_KEYWORDS: FoodKeywordMap[] = [
+  {
+    foodId: 'burger',
+    keywords: ['burger', 'hamburger', 'cheeseburger'],
+    portionHints: [{ keyword: 'double', servings: 2 }]
+  },
+  // ...
+];
+
+// Usage in journal save
+const result = await autoLogFromJournal(journalText);
+// Returns: { logged: [entries], totalCalories: number }
+```
+
+### Settings
+- `enabled` - Toggle food tracking on/off
+- `aiDetectionEnabled` - Auto-detect from journals
+- `showCalories` - Display calorie counts
+- `calorieGoal` - Daily target (default 2000)
+
+---
+
+## Skills Progression Tab
+
+Bottom navigation tab with D&D-inspired growth system.
+
+### Files
+- `types/SkillProgression.ts` - Attributes, skills, unlocks
+- `services/skillProgressionService.ts` - Progression logic
+- `app/(tabs)/skills.tsx` - Tab screen with search
+
+### 4 Attributes
+```typescript
+export type AttributeType = 'wisdom' | 'resilience' | 'clarity' | 'compassion';
+```
+
+| Attribute | Emoji | Grows From |
+|-----------|-------|------------|
+| Wisdom | 🦉 | Journaling, reflection |
+| Resilience | 🏔️ | Grounding exercises, coping |
+| Clarity | 💎 | Patterns, triggers, insights |
+| Compassion | 💚 | Self-kindness, affirmations |
+
+### Point Awards
+```typescript
+export const POINT_SOURCES: AttributeSource[] = [
+  { action: 'journal_entry', attribute: 'wisdom', points: 5 },
+  { action: 'grounding_exercise', attribute: 'resilience', points: 8 },
+  { action: 'pattern_identified', attribute: 'clarity', points: 15 },
+  { action: 'self_kindness_practice', attribute: 'compassion', points: 10 },
+  // ...more sources
+];
+```
+
+### Level Thresholds
+```typescript
+export const LEVEL_THRESHOLDS = [0, 25, 75, 150, 300, 500, 750, 1000, 1500, 2000];
+// Level 1: 0-24 points, Level 2: 25-74 points, etc.
+```
+
+### 50+ Skills Across 7 Categories
+- **Grounding** (7): 5-4-3-2-1, Box Breathing, Physiological Sigh, etc.
+- **Anxiety** (7): Worry Time, Thought Challenging, Fact vs Feeling, etc.
+- **Sleep** (9): Wind Down, Sleep Stories, Old Time Radio, Ambient Sounds, etc.
+- **Focus** (7): Pomodoro, Brain Dump, Single-Tasking, etc.
+- **Self-Care** (7): Joy List, Gratitude, Inner Critic Work, etc.
+- **Relationships** (8): I-Statements, Boundary Scripts, Active Listening, etc.
+- **Mindfulness** (10): Body Scan, RAIN, Urge Surfing, Walking Meditation, etc.
+
+### Special Sleep Skills (Public Domain Content)
+- **Sleep Stories**: Pulls from Project Gutenberg, Librivox (free classic books)
+- **Old Time Radio**: Internet Archive (The Shadow, Suspense, X Minus One)
+
+**Resume Functionality Required**: Both skills must track playback position so users can pick up where they left off.
+
+### Coach Unlocks (16 Abilities)
+```typescript
+export const COACH_UNLOCKS: CoachUnlock[] = [
+  // Personality Traits
+  { id: 'humor_mode', type: 'personality_trait', requiredAttribute: 'wisdom', requiredLevel: 2 },
+  { id: 'celebration_mode', type: 'personality_trait', requiredAttribute: 'compassion', requiredLevel: 2 },
+  // Conversation Styles
+  { id: 'deep_questions', type: 'conversation_style', requiredAttribute: 'clarity', requiredLevel: 3 },
+  // Special Abilities
+  { id: 'pattern_insights', type: 'special_ability', requiredAttribute: 'clarity', requiredLevel: 4 },
+  // ...more
+];
+```
+
+### Search Feature
+Skills tab includes intelligent search that filters:
+- Skills by name, description, or category
+- Coach abilities by name or description
+
+### Easter Egg Commands
+```typescript
+export function checkEasterEgg(command: string): { found: boolean; message?: string } {
+  const easterEggs = {
+    '/party': '🎉🎊🥳 Party mode activated! 🥳🎊🎉',
+    '/hug': '🤗 Sending you a warm virtual hug!',
+    '/coffee': '☕ Here\'s a virtual coffee for your journey!',
+    '/42': '🌌 The answer to life, the universe, and everything!',
+    // ...more
+  };
+}
+```
 
 ---
 

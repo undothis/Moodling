@@ -19,6 +19,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,6 +56,7 @@ export default function SkillsScreen() {
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = useCallback(async () => {
     const [attrs, skillsData, unlocks, summaryData] = await Promise.all([
@@ -82,12 +84,35 @@ export default function SkillsScreen() {
     setRefreshing(false);
   };
 
-  const filteredSkills = selectedCategory === 'all'
-    ? skills
-    : skills.filter(s => s.category === selectedCategory);
+  // Filter skills by category and search
+  const filteredSkills = skills.filter(s => {
+    // Category filter
+    if (selectedCategory !== 'all' && s.category !== selectedCategory) {
+      return false;
+    }
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      return (
+        s.name.toLowerCase().includes(query) ||
+        s.description.toLowerCase().includes(query) ||
+        SKILL_CATEGORIES[s.category].name.toLowerCase().includes(query)
+      );
+    }
+    return true;
+  });
+
+  // Filter coach unlocks by search
+  const filteredCoachUnlocks = searchQuery.trim()
+    ? coachUnlocks.filter(u =>
+        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : coachUnlocks;
 
   const unlockedCount = skills.filter(s => s.isUnlocked).length;
   const premiumCount = skills.filter(s => s.isPremium && !s.isUnlocked).length;
+  const isSearching = searchQuery.trim().length > 0;
 
   return (
     <ScrollView
@@ -105,7 +130,27 @@ export default function SkillsScreen() {
         </Text>
       </View>
 
-      {/* Journey Summary */}
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+        <Ionicons name="search" size={20} color={colors.textMuted} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search skills, techniques..."
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Journey Summary - hide when searching */}
+      {!isSearching && summary && (
       {summary && (
         <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
           <View style={styles.summaryRow}>
@@ -139,7 +184,8 @@ export default function SkillsScreen() {
         </View>
       )}
 
-      {/* Attributes Section */}
+      {/* Attributes Section - hide when searching */}
+      {!isSearching && (
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Your Attributes
@@ -179,6 +225,7 @@ export default function SkillsScreen() {
           ))}
         </View>
       </View>
+      )}
 
       {/* Skills Section */}
       <View style={styles.section}>
@@ -297,6 +344,7 @@ export default function SkillsScreen() {
       </View>
 
       {/* Coach Customization Section */}
+      {filteredCoachUnlocks.length > 0 && (
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Coach Abilities
@@ -306,7 +354,7 @@ export default function SkillsScreen() {
         </Text>
 
         <View style={styles.coachUnlocksList}>
-          {coachUnlocks.map((unlock) => (
+          {filteredCoachUnlocks.map((unlock) => (
             <View
               key={unlock.id}
               style={[
@@ -340,9 +388,33 @@ export default function SkillsScreen() {
           ))}
         </View>
       </View>
+      )}
 
-      {/* Premium CTA */}
-      {premiumCount > 0 && (
+      {/* Search Results Info */}
+      {isSearching && (
+        <View style={styles.searchResultsInfo}>
+          <Text style={[styles.searchResultsText, { color: colors.textMuted }]}>
+            Found {filteredSkills.length} skill{filteredSkills.length !== 1 ? 's' : ''}
+            {filteredCoachUnlocks.length > 0 ? ` and ${filteredCoachUnlocks.length} coach abilit${filteredCoachUnlocks.length !== 1 ? 'ies' : 'y'}` : ''}
+          </Text>
+        </View>
+      )}
+
+      {/* No Results */}
+      {isSearching && filteredSkills.length === 0 && filteredCoachUnlocks.length === 0 && (
+        <View style={[styles.noResults, { backgroundColor: colors.card }]}>
+          <Ionicons name="search-outline" size={48} color={colors.textMuted} />
+          <Text style={[styles.noResultsText, { color: colors.textMuted }]}>
+            No skills found for "{searchQuery}"
+          </Text>
+          <Text style={[styles.noResultsHint, { color: colors.textMuted }]}>
+            Try searching for categories like "sleep" or "anxiety"
+          </Text>
+        </View>
+      )}
+
+      {/* Premium CTA - hide when searching */}
+      {!isSearching && premiumCount > 0 && (
         <TouchableOpacity
           style={[styles.premiumCTA, { backgroundColor: colors.card, borderColor: '#FFD700' }]}
           onPress={() => {
@@ -362,7 +434,8 @@ export default function SkillsScreen() {
         </TouchableOpacity>
       )}
 
-      {/* How Points Work */}
+      {/* How Points Work - hide when searching */}
+      {!isSearching && (
       <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
         <Text style={[styles.infoTitle, { color: colors.text }]}>
           How do I earn points?
@@ -373,6 +446,7 @@ export default function SkillsScreen() {
           Self-kindness practices build Compassion. No pressure, no streaks — just grow at your own pace.
         </Text>
       </View>
+      )}
 
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -398,6 +472,42 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     marginTop: 4,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+  },
+  searchResultsInfo: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  searchResultsText: {
+    fontSize: 14,
+  },
+  noResults: {
+    alignItems: 'center',
+    padding: 32,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  noResultsText: {
+    fontSize: 16,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  noResultsHint: {
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
   },
   summaryCard: {
     borderRadius: 16,

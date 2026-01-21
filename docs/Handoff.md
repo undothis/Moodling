@@ -1026,6 +1026,81 @@ Need to decide:
 
 ---
 
+## 22. Food Tracking with AI Detection (Implemented)
+
+### Overview
+General food tracking feature with calorie counting. AI automatically detects food mentions in journal entries and logs them. Integrates with period correlations when cycle tracking is enabled.
+
+### Files Created
+- `types/FoodTracking.ts` - 80+ common foods database, AI detection keywords
+- `services/foodTrackingService.ts` - Food logging, AI detection, calorie tracking
+- `components/food/FoodTracker.tsx` - Full food tracking UI
+- `app/food/index.tsx` - Food Tracker screen
+- `app/settings/food.tsx` - Food settings (enable/disable, calorie goal)
+
+### Key Features
+1. **AI Auto-Detection**: When users save journal entries, food mentions are detected and auto-logged
+2. **Calorie Tracking**: Daily goal with progress visualization
+3. **Food Database**: 80+ common foods with calorie info
+4. **Meal Types**: Breakfast, lunch, dinner, snack (auto-detected by time)
+5. **Settings**: Enable/disable tracking, toggle AI detection, set calorie goals
+
+### How AI Detection Works
+```typescript
+// In journal save flow (index.tsx)
+const foodResult = await autoLogFromJournal(entryText);
+if (foodResult && foodResult.logged.length > 0) {
+  // Show feedback: "Logged: Pizza Slice (285 cal)"
+}
+```
+
+---
+
+## 23. Skills Tab with D&D Progression (Implemented)
+
+### Overview
+A dedicated Skills tab in bottom navigation with D&D-inspired growth system. Non-competitive - users progress naturally through app usage.
+
+### Files Created
+- `types/SkillProgression.ts` - Attributes, skills, coach unlocks, point sources
+- `services/skillProgressionService.ts` - Progression tracking, unlocks, Easter eggs
+- `app/(tabs)/skills.tsx` - Skills tab screen with search
+
+### 4 Attributes (Grow from App Usage)
+| Attribute | Emoji | Grows From |
+|-----------|-------|------------|
+| Wisdom | 🦉 | Journaling, reflection, weekly reviews |
+| Resilience | 🏔️ | Grounding exercises, coping during hard times |
+| Clarity | 💎 | Identifying patterns, logging triggers, viewing insights |
+| Compassion | 💚 | Self-kindness practices, affirmations |
+
+### 50+ Skills Across 7 Categories
+- **Grounding**: 5-4-3-2-1, Box Breathing, Physiological Sigh, Cold Water Reset, etc.
+- **Anxiety**: Worry Time, Thought Challenging, Worst/Best/Likely, Containment
+- **Sleep**: Wind Down, Sleep Stories (free public domain books), Old Time Radio, 4-7-8 Breathing
+- **Focus**: Pomodoro, Brain Dump, Single-Tasking, Environment Design
+- **Self-Care**: Joy List, Gratitude, Inner Critic Work, Values Clarification
+- **Relationships**: I-Statements, Boundary Scripts, Repair Conversations, Active Listening
+- **Mindfulness**: Body Scan, RAIN Technique, Urge Surfing, Walking Meditation
+
+### Special Sleep Skills
+- **Sleep Stories**: Pulls from Project Gutenberg, Librivox - free public domain books
+- **Old Time Radio**: Classic radio dramas from Internet Archive (The Shadow, Suspense, X Minus One)
+
+### Coach Unlocks (16 Abilities)
+- Personality Traits: Light Humor, Celebration Mode, Tough Love, Extra Nurturing
+- Conversation Styles: Deep Questions, Socratic Dialogue, Story & Metaphor, Action-Focused
+- Special Abilities: Pattern Insights, Enhanced Memory, Proactive Check-ins, Crisis Support
+- Voice: Voice Responses, Voice Journaling
+
+### Search Feature
+Intelligent search filters skills and coach abilities by name, description, or category.
+
+### Easter Egg Slash Commands
+`/party` `/hug` `/coffee` `/wisdom` `/42` `/credits` `/debug`
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
@@ -1043,7 +1118,7 @@ Need to decide:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 50+ techniques and D&D progression.** All processing local/on-device."
 
 ---
 
@@ -1071,6 +1146,8 @@ Need to decide:
 | `voiceChatService.ts` | Voice input | `startListening()`, `stopListening()` |
 | `emotionDetectionService.ts` | Facial analysis | `detectEmotion()`, `getEmotionHint()` |
 | `textToSpeechService.ts` | **NEW** Google Cloud TTS | `speakCoachResponse()`, `stopSpeaking()` |
+| `foodTrackingService.ts` | **NEW** Food & calorie tracking | `logFood()`, `autoLogFromJournal()`, `getTodayCalorieProgress()` |
+| `skillProgressionService.ts` | **NEW** D&D progression system | `awardPoints()`, `getSkillsWithStatus()`, `checkEasterEgg()` |
 
 ---
 
