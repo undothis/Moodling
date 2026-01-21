@@ -1177,6 +1177,53 @@ export async function generateChallengeByCategory(
   };
 }
 
+/**
+ * Get verification context - real user data to check AI response against
+ * This is used by the UI to verify if AI responses correctly reference user data
+ */
+export async function getVerificationContext(): Promise<{
+  todayJournalCount: number;
+  todayJournalPreviews: string[];
+  todayTwigCount: number;
+  todayTwigs: string[];
+  recentJournals: { date: string; preview: string; mood: string }[];
+  recentTwigs: { date: string; name: string; emoji: string }[];
+  lifeContextKeywords: string[];
+  totalJournals: number;
+  totalTwigs: number;
+}> {
+  const context = await gatherDataContext();
+
+  // Extract keywords from life context (important names, events, places)
+  const lifeContextKeywords: string[] = [];
+  if (context.lifeContext) {
+    // Extract key people
+    const peopleMatch = context.lifeContext.match(/Key people: (.+?)(?:\n|$)/i);
+    if (peopleMatch) {
+      lifeContextKeywords.push(...peopleMatch[1].split(',').map(s => s.trim()).filter(Boolean));
+    }
+    // Extract milestones
+    const milestonesMatch = context.lifeContext.match(/milestones?:(.+?)(?:\n\n|$)/is);
+    if (milestonesMatch) {
+      // Extract words that might be important (longer than 4 chars, capitalized, or emotional)
+      const words = milestonesMatch[1].match(/\b[A-Z][a-z]{3,}|\b(?:breakup|job|move|marriage|baby|death|illness|promotion|fired|quit|graduated)\b/gi);
+      if (words) lifeContextKeywords.push(...words);
+    }
+  }
+
+  return {
+    todayJournalCount: context.todayJournals.length,
+    todayJournalPreviews: context.todayJournals,
+    todayTwigCount: context.todayTwigs.length,
+    todayTwigs: context.todayTwigs,
+    recentJournals: context.recentJournals,
+    recentTwigs: context.recentTwigs,
+    lifeContextKeywords: [...new Set(lifeContextKeywords)], // Dedupe
+    totalJournals: context.journalCount,
+    totalTwigs: context.twigCount,
+  };
+}
+
 export default {
   isSimulatorEnabled,
   setSimulatorEnabled,
@@ -1193,4 +1240,5 @@ export default {
   generateChallengeForChat,
   getChallengeCategories,
   generateChallengeByCategory,
+  getVerificationContext,
 };
