@@ -15,7 +15,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllEntries } from './journalStorage';
-import { getAllLogs } from './quickLogsService';
+import { getAllQuickLogs } from './quickLogsService';
 import { getLifeContextForClaude } from './lifeContextService';
 import { psychAnalysisService } from './psychAnalysisService';
 import { getRecentSummaries } from './patternService';
@@ -242,7 +242,7 @@ async function gatherDataContext(): Promise<DataContext> {
 
   // Get all data sources
   const [allLogs, allJournals, lifeContext, weekSummaries] = await Promise.all([
-    getAllLogs(),
+    getAllQuickLogs(),
     getAllEntries(),
     getLifeContextForClaude(),
     getRecentSummaries(7),
