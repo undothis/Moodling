@@ -28,7 +28,15 @@ import {
   getCoachDisplayName,
   getCoachEmoji,
   CoachSettings,
+  CoachPersona,
+  PERSONAS,
 } from '@/services/coachPersonalityService';
+import {
+  isSlashCommand,
+  executeCommand,
+  CommandContext,
+  CommandResult,
+} from '@/services/slashCommandService';
 
 /**
  * Coaching Conversation Screen
@@ -42,7 +50,7 @@ import {
  * Unit 19: Coaching Conversation UI
  */
 
-type MessageSource = 'user' | 'claudeAPI' | 'fallback' | 'crisis' | 'system';
+type MessageSource = 'user' | 'claudeAPI' | 'fallback' | 'crisis' | 'system' | 'command';
 
 interface DisplayMessage {
   id: string;
@@ -60,7 +68,7 @@ const QUICK_ACTIONS = [
   },
   {
     label: 'Breathing',
-    prompt: 'Guide me through a quick breathing exercise.',
+    prompt: '/breathe',
     icon: 'leaf-outline',
   },
   {
@@ -72,6 +80,16 @@ const QUICK_ACTIONS = [
     label: 'Check in',
     prompt: "I'm not sure how I'm feeling right now.",
     icon: 'heart-outline',
+  },
+  {
+    label: 'Skills',
+    prompt: '/skills',
+    icon: 'sparkles-outline',
+  },
+  {
+    label: 'Commands',
+    prompt: '/help',
+    icon: 'terminal-outline',
   },
 ];
 
@@ -152,6 +170,8 @@ export default function CoachScreen() {
         return '💙';
       case 'system':
         return '🌿';
+      case 'command':
+        return '⚡';
       default:
         return '';
     }
@@ -167,8 +187,113 @@ export default function CoachScreen() {
         return 'Crisis resources';
       case 'system':
         return 'App message';
+      case 'command':
+        return 'Command response';
       default:
         return '';
+    }
+  };
+
+  // Handle slash command results
+  const handleCommandResult = async (result: CommandResult) => {
+    switch (result.type) {
+      case 'persona_switch':
+        // Update coach display if persona changed
+        if (result.newPersona) {
+          const newPersonaDef = PERSONAS[result.newPersona];
+          setCoachEmoji(newPersonaDef.emoji);
+          setCoachName(newPersonaDef.name);
+          // Reload settings
+          const updatedSettings = await getCoachSettings();
+          setCoachSettings(updatedSettings);
+        }
+        // Add response message
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `command-${Date.now()}`,
+            text: result.message || 'Persona switched!',
+            source: 'command',
+            timestamp: new Date(),
+          },
+        ]);
+        break;
+
+      case 'message':
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `command-${Date.now()}`,
+            text: result.message || '',
+            source: 'command',
+            timestamp: new Date(),
+          },
+        ]);
+        break;
+
+      case 'error':
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `command-error-${Date.now()}`,
+            text: result.message || 'Something went wrong.',
+            source: 'system',
+            timestamp: new Date(),
+          },
+        ]);
+        break;
+
+      case 'navigation':
+        if (result.navigateTo) {
+          router.push(result.navigateTo as any);
+        }
+        break;
+
+      case 'action':
+        if (result.data?.action === 'clear_conversation') {
+          setMessages([getWelcomeMessage()]);
+          setTurnCount(0);
+        }
+        if (result.message) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `command-${Date.now()}`,
+              text: result.message,
+              source: 'command',
+              timestamp: new Date(),
+            },
+          ]);
+        }
+        break;
+
+      case 'menu':
+        // For now, just show a message - we'll add bubble menu in Unit 5
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `command-${Date.now()}`,
+            text: result.message || 'Menu opened',
+            source: 'command',
+            timestamp: new Date(),
+          },
+        ]);
+        // TODO: Trigger skills bubble menu display
+        break;
+
+      case 'exercise':
+        // For now, just show message - we'll add exercise player in Unit 6
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `command-${Date.now()}`,
+            text: result.message || 'Starting exercise...',
+            source: 'command',
+            timestamp: new Date(),
+          },
+        ]);
+        // TODO: Trigger exercise player
+        break;
     }
   };
 
@@ -176,6 +301,33 @@ export default function CoachScreen() {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
 
+    // Check if this is a slash command
+    if (isSlashCommand(messageText)) {
+      // Add user message showing the command
+      const userMessage: DisplayMessage = {
+        id: `user-${Date.now()}`,
+        text: messageText,
+        source: 'user',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setInputText('');
+
+      // Build command context
+      const commandContext: CommandContext = {
+        currentPersona: coachSettings?.selectedPersona || 'clover',
+        isPremium: false, // TODO: Get from subscription service
+      };
+
+      // Execute the command
+      const result = await executeCommand(messageText, commandContext);
+
+      // Handle the result
+      await handleCommandResult(result);
+      return;
+    }
+
+    // Regular message flow
     // Add user message
     const userMessage: DisplayMessage = {
       id: `user-${Date.now()}`,

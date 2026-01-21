@@ -2959,6 +2959,397 @@ const cycleData = await getCycleData();
 
 ---
 
+## Slash Commands System
+
+The slash command system allows users to interact with Mood Leaf through text commands starting with `/`. This provides power-user access to features, quick persona switching, and guided exercises.
+
+### Architecture
+
+**Files:**
+- `services/slashCommandService.ts` - Command parsing, registry, and handlers
+- `services/skillsService.ts` - Skill definitions, progress tracking
+- `services/subscriptionService.ts` - Premium features and payments
+- `components/skills/SkillsBubbleMenu.tsx` - UI for skill browsing
+- `components/skills/ExercisePlayer.tsx` - Guided exercise UI
+
+### Command Categories
+
+| Category | Examples | Description |
+|----------|----------|-------------|
+| `persona` | `/flint`, `/luna`, `/random` | Switch coach personality |
+| `skill` | `/skills`, `/games` | Browse skills and activities |
+| `exercise` | `/breathe`, `/ground`, `/calm` | Start guided exercises |
+| `power` | `/clear`, `/settings` | Utility commands |
+| `info` | `/help`, `/status` | Information commands |
+| `secret` | `/love`, `/hug`, `/wisdom` | Easter eggs |
+
+### Command Flow
+
+```
+User types "/breathe"
+         ↓
+isSlashCommand() returns true
+         ↓
+parseCommand() extracts:
+  - commandName: "breathe"
+  - args: []
+         ↓
+getCommand("breathe") finds handler
+         ↓
+handler() executes, returns CommandResult
+         ↓
+handleCommandResult() in chat UI
+  - Shows message
+  - Updates persona (if switch)
+  - Opens exercise player (if exercise)
+```
+
+### Adding a New Command
+
+```typescript
+// In slashCommandService.ts
+registerCommand({
+  name: 'mycommand',
+  aliases: ['mc', 'alias'],
+  description: 'What it does',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async (args, context) => {
+    // context.currentPersona - current coach
+    // context.isPremium - subscription status
+    // args - additional arguments
+
+    return {
+      type: 'message', // or 'exercise', 'menu', 'navigation', etc.
+      success: true,
+      message: 'Response to show user',
+    };
+  },
+});
+```
+
+### Persona Commands
+
+All 7 coach personas have slash commands:
+
+| Command | Persona | Style |
+|---------|---------|-------|
+| `/flint` | Flint 🔥 | Direct, honest, no-fluff |
+| `/luna` | Luna 🌙 | Mindful, grounding |
+| `/willow` | Willow 🌿 | Wise, reflective |
+| `/spark` | Spark ✨ | Energetic, motivating |
+| `/clover` | Clover 🍀 | Friendly, casual |
+| `/ridge` | Ridge ⛰️ | Action-oriented |
+| `/fern` | Fern 🌱 | Gentle, nurturing |
+| `/random` | Random | Surprise persona |
+
+Supports temporary switch with `--temp` flag: `/flint --temp`
+
+---
+
+## Skills System
+
+Skills are upgradeable capabilities that enhance how the coach interacts with users. Built for real-world skill transfer, not app dependency.
+
+### Skill Categories
+
+| Category | Emoji | Description |
+|----------|-------|-------------|
+| `mindfulness` | 🧘 | Breathing, grounding, body awareness |
+| `coping` | 💪 | Thought challenging, emotion regulation |
+| `growth` | 🌱 | Values, goals, habits |
+| `social` | 🎭 | Event prep, conversation skills |
+| `advanced` | 🔮 | IFS, shadow work (premium) |
+
+### Skill Progress
+
+```typescript
+interface SkillProgress {
+  skillId: string;
+  level: number;      // 1-5
+  currentXP: number;
+  totalXP: number;
+  timesUsed: number;
+  lastUsed?: string;
+  firstUsed?: string;
+}
+
+// XP awarded per use (partial for incomplete)
+const xpEarned = completed ? skill.xpPerUse : skill.xpPerUse * 0.5;
+```
+
+**Anti-Streak Design:** Progress is tracked without streaks or punishment for gaps. Celebrates milestones (10 uses, 25 uses) rather than consecutive days.
+
+### Exercise Library
+
+Located in `skillsService.ts`, exercises are defined with:
+
+```typescript
+interface Exercise {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  duration: number;        // seconds
+  tier: 'free' | 'premium';
+  type: ExerciseType;
+  steps: ExerciseStep[];
+  tags: string[];          // ['quick', 'anxiety', 'sleep']
+}
+
+interface ExerciseStep {
+  instruction: string;
+  duration?: number;       // null = wait for tap
+  visualType: 'circle_expand' | 'circle_shrink' | 'text' | 'timer';
+  audioHint?: string;      // 'inhale', 'exhale', 'hold'
+}
+```
+
+**Included Exercises:**
+- Box Breathing (4-4-4-4)
+- 4-7-8 Breathing (sleep)
+- Coherent Breathing (HRV)
+- Physiological Sigh (quick calm)
+- 5-4-3-2-1 Grounding
+- Feet on Floor
+- Ice Cube Grounding
+- Quick Body Scan
+- Progressive Muscle Relaxation
+- Thought Record (CBT)
+- Thought Defusion (ACT)
+- Event Preparation
+- Conversation Starters
+
+---
+
+## Games System
+
+Mindful games designed to calm, ground, and build skills — not to addict.
+
+### Game Categories
+
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| `grounding` | Anchor to present | I Spy AI, Color Finder |
+| `calming` | Reduce anxiety | Zen Blocks, Color Sort |
+| `skill_building` | Build capabilities | Emotion Match, Gratitude Wheel |
+| `fidget` | Quick relief | Bubble Wrap, Spinner |
+
+### AR/Camera Games (Premium)
+
+Using ML Vision frameworks:
+
+```typescript
+// I Spy AI - ML analyzes room, creates grounding game
+{
+  id: 'i_spy_ai',
+  name: 'I Spy (AI Camera)',
+  description: 'Point camera around — AI spots objects for you to find',
+  purpose: 'Uses ML to create real grounding scavenger hunts',
+  tier: 'premium',
+  category: 'grounding',
+}
+```
+
+**Camera-based Games:**
+- **I Spy AI** - ML identifies objects for scavenger hunt
+- **Color Finder** - Find 5 blue things, 4 red things...
+- **Texture Hunt** - Find smooth, rough, soft textures
+- **Nature Spotter** - Identifies plants and animals
+- **Cloud Shapes** - AI suggests cloud interpretations
+- **Gratitude Lens** - Photo gratitude journal
+
+### Classic Games (Mindful Versions)
+
+Slow, pressure-free versions of classics:
+
+```typescript
+{
+  id: 'zen_tetris',
+  name: 'Zen Blocks',
+  description: 'Tetris with no pressure — blocks fall slowly, no game over',
+  purpose: 'Satisfying pattern completion without stress',
+}
+```
+
+**Available:**
+- Mindful Snake (slow, calming music)
+- Zen Blocks (no game over Tetris)
+- Calm Sudoku (hints, no timer)
+- Gentle Pong (slow motion)
+- Memory Garden (match to grow flowers)
+
+---
+
+## Subscription System
+
+Premium features are managed through the subscription service, supporting iOS, Android, and web payments.
+
+### Tiers
+
+| Tier | Price | Features |
+|------|-------|----------|
+| `free` | $0 | 7 personas, basic exercises, journaling |
+| `skills_plus` | $4.99/mo | All exercises, skill tracking |
+| `pro` | $9.99/mo | Advanced skills, custom Fireflies |
+| `lifetime` | $79.99 | Everything forever |
+
+### Platform Detection
+
+```typescript
+function getPaymentPlatform(): 'ios' | 'android' | 'web' {
+  if (Platform.OS === 'ios') return 'ios';
+  if (Platform.OS === 'android') return 'android';
+  return 'web';
+}
+```
+
+### Payment Routing
+
+```typescript
+// Platform-specific product IDs
+const PRODUCT_IDS = {
+  ios: { skills_plus_monthly: 'com.moodleaf.skillsplus.monthly' },
+  android: { skills_plus_monthly: 'skills_plus_monthly' },
+  web: { skills_plus_monthly: 'price_skillsplus_monthly' },
+};
+```
+
+**Integration Points:**
+- iOS: react-native-iap (App Store)
+- Android: react-native-iap (Google Play)
+- Web: Stripe Checkout
+
+### Feature Gating
+
+```typescript
+// Check if user can access a feature
+const canAccess = await hasFeatureAccess('all_breathing');
+
+// Check premium status
+const premium = await isPremium();
+
+// In commands
+if (exercise.tier === 'premium' && !context.isPremium) {
+  return {
+    type: 'error',
+    message: 'This exercise requires premium. Type /skills to upgrade.',
+  };
+}
+```
+
+### Promo Codes
+
+```typescript
+const result = await redeemPromoCode('MOODLEAF2024');
+// Returns { success: true, message: '...', state: SubscriptionState }
+```
+
+---
+
+## Chat Integration
+
+### Slash Command Detection
+
+In `app/coach/index.tsx`:
+
+```typescript
+const handleSend = async (text) => {
+  // Check for slash command FIRST
+  if (isSlashCommand(text)) {
+    const context: CommandContext = {
+      currentPersona: coachSettings?.selectedPersona || 'clover',
+      isPremium: false, // from subscription service
+    };
+
+    const result = await executeCommand(text, context);
+    await handleCommandResult(result);
+    return;
+  }
+
+  // Normal message flow...
+};
+```
+
+### Command Result Handling
+
+```typescript
+const handleCommandResult = async (result: CommandResult) => {
+  switch (result.type) {
+    case 'persona_switch':
+      // Update coach display
+      setCoachEmoji(PERSONAS[result.newPersona].emoji);
+      setCoachName(PERSONAS[result.newPersona].name);
+      break;
+
+    case 'exercise':
+      // Open exercise player
+      setExerciseConfig(result.exerciseConfig);
+      setShowExercisePlayer(true);
+      break;
+
+    case 'menu':
+      // Show skills/games menu
+      if (result.menuType === 'skills') {
+        setShowSkillsMenu(true);
+      }
+      break;
+
+    case 'navigation':
+      router.push(result.navigateTo);
+      break;
+  }
+};
+```
+
+### Quick Actions
+
+Quick action buttons can trigger slash commands:
+
+```typescript
+const QUICK_ACTIONS = [
+  { label: 'Breathing', prompt: '/breathe', icon: 'leaf-outline' },
+  { label: 'Skills', prompt: '/skills', icon: 'sparkles-outline' },
+  { label: 'Commands', prompt: '/help', icon: 'terminal-outline' },
+];
+```
+
+---
+
+## Testing Slash Commands
+
+### Developer Testing
+
+```typescript
+// In debug mode, test commands manually
+const result = await executeCommand('/breathe box', {
+  currentPersona: 'clover',
+  isPremium: true,
+});
+console.log(result);
+```
+
+### Test Scenarios
+
+1. **Persona Switch**: Type `/flint`, verify coach emoji/name changes
+2. **Exercise Start**: Type `/breathe`, verify exercise player opens
+3. **Premium Gate**: With free account, type `/breathe coherent`, verify premium prompt
+4. **Invalid Command**: Type `/asdf`, verify helpful suggestions
+5. **Help Display**: Type `/help`, verify all commands listed
+6. **Skill Progress**: Complete exercise, verify XP awarded
+
+### Promo Code Testing
+
+```typescript
+// Activate premium for testing
+await activateSubscription('skills_plus', 7); // 7 days
+
+// Deactivate
+await deactivateSubscription();
+```
+
+---
+
 ## Future Enhancements
 
 ### Planned Features

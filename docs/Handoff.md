@@ -228,3 +228,84 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 ## QUICK STATUS SNAPSHOT
 
 "All 12 AI context sources verified and documented. Coach personality system with 7 personas and adaptive mode confirmed working. UTC timezone bug fixed. The AI has access to: life context, psych profile, chronotype, calendar events, health data, correlations, twigs (with exact times), lifestyle factors, exposure progress, journals, and user preferences."
+
+---
+
+## 11. SLASH COMMANDS & SKILLS SYSTEM (NEW)
+
+### What Was Built
+
+A comprehensive slash command system allowing users to type `/` commands in chat for quick actions.
+
+### New Services
+
+| Service | Purpose |
+|---------|---------|
+| `services/slashCommandService.ts` | Command parsing, registry, and 30+ handlers |
+| `services/skillsService.ts` | Skill definitions, exercises, progress tracking |
+| `services/subscriptionService.ts` | Premium features, payment routing |
+
+### New Components
+
+| Component | Purpose |
+|-----------|---------|
+| `components/skills/SkillsBubbleMenu.tsx` | UI for browsing skills |
+| `components/skills/ExercisePlayer.tsx` | Guided exercise interface |
+
+### Command Categories
+
+- **Persona:** `/flint`, `/luna`, `/willow`, `/spark`, `/clover`, `/ridge`, `/fern`, `/random`
+- **Exercise:** `/breathe`, `/ground`, `/body`, `/calm`, `/prep`
+- **Browse:** `/skills`, `/games`, `/help`
+- **Power:** `/clear`, `/settings`, `/status`
+- **Easter Eggs:** `/love`, `/hug`, `/wisdom`
+
+### Exercise Library (15+)
+
+- Box Breathing, 4-7-8 Breathing, Coherent Breathing, Physiological Sigh
+- 5-4-3-2-1 Grounding, Feet on Floor, Ice Cube Grounding
+- Quick Body Scan, Progressive Muscle Relaxation
+- Thought Record, Thought Defusion
+- Event Preparation, Conversation Starters
+
+### Games System (25+)
+
+- **Grounding:** I Spy AI (camera), Color Finder, Texture Hunt, Nature Spotter
+- **Calming:** Color Sort, Zen Blocks, Calm Sudoku, Gentle Pong, Flow Drawing
+- **Skill Building:** Emotion Match, Gratitude Wheel, Word Garden, Thought Catcher
+- **Fidget:** Bubble Wrap, Spinner, Fidget Pad
+
+### Subscription Tiers
+
+| Tier | Price | Unlocks |
+|------|-------|---------|
+| Free | $0 | Basic exercises, all personas |
+| Skills+ | $4.99/mo | All exercises, skill tracking |
+| Pro | $9.99/mo | Advanced skills, custom Fireflies |
+| Lifetime | $79.99 | Everything forever |
+
+### Integration Points
+
+- Chat input checks `isSlashCommand()` before normal message flow
+- `handleCommandResult()` processes persona switches, exercises, menus
+- Quick action buttons can trigger slash commands directly
+- Premium gating via `context.isPremium` in handlers
+
+### Key Files Modified
+
+- `app/coach/index.tsx` - Added slash command detection and result handling
+- Added new MessageSource type: `'command'`
+- Added quick actions for `/skills`, `/help`
+
+### Documentation Updated
+
+- `DEVELOPER_GUIDE.md` - Full technical documentation
+- `USER_MANUAL.md` - User-facing guide
+- `Handoff.md` - This section
+
+### Next Steps for Skills System
+
+1. **Implement Exercise Player UI** - Connect to actual guided experiences
+2. **Build Skills Bubble Menu** - Interactive category browsing
+3. **Camera Games** - ML Vision for I Spy AI
+4. **Payment Integration** - Connect to App Store/Google Play/Stripe
