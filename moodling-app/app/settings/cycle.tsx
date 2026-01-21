@@ -38,9 +38,35 @@ import {
   CycleSettings,
   CycleTwigSettings,
   GuideAdaptationLevel,
+  LifeStage,
   createDefaultCycleSettings,
+  getLifeStageDescription,
+  getMenopauseSymptoms,
 } from '@/types/CycleTracking';
 import { syncCycleWithHealthKit, isHealthKitAvailable } from '@/services/healthKitService';
+
+// Life stage options
+const LIFE_STAGE_OPTIONS: { value: LifeStage; label: string; emoji: string; description: string }[] = [
+  { value: 'regularCycles', label: 'Regular Cycles', emoji: '🌙', description: 'Normal menstrual cycles' },
+  { value: 'perimenopause', label: 'Perimenopause', emoji: '🌅', description: 'Transition phase, irregular cycles' },
+  { value: 'menopause', label: 'Menopause', emoji: '🌸', description: 'No period 12+ months' },
+  { value: 'postMenopause', label: 'Post-Menopause', emoji: '✨', description: 'Wellness focus' },
+  { value: 'pregnant', label: 'Pregnant', emoji: '🤰', description: 'Cycle tracking paused' },
+  { value: 'postpartum', label: 'Postpartum', emoji: '👶', description: 'Recovery period' },
+];
+
+// Menopause symptom toggles
+const MENOPAUSE_SYMPTOM_TOGGLES = [
+  { type: 'hotFlash', label: 'Hot Flashes', emoji: '🔥' },
+  { type: 'nightSweat', label: 'Night Sweats', emoji: '💦' },
+  { type: 'sleepDisturbance', label: 'Sleep Issues', emoji: '😴' },
+  { type: 'brainFog', label: 'Brain Fog', emoji: '🌫️' },
+  { type: 'moodShift', label: 'Mood Changes', emoji: '😢' },
+  { type: 'anxietySpike', label: 'Anxiety', emoji: '😰' },
+  { type: 'jointPain', label: 'Joint Pain', emoji: '🦴' },
+  { type: 'heartPalpitations', label: 'Heart Palpitations', emoji: '💓' },
+  { type: 'libidoChange', label: 'Libido Changes', emoji: '💕' },
+];
 
 // Guide adaptation level options
 const ADAPTATION_OPTIONS: { value: GuideAdaptationLevel; label: string; description: string }[] = [
@@ -283,8 +309,107 @@ export default function CycleSettingsScreen() {
 
         {settings.enabled && (
           <>
-            {/* Current Status */}
-            {cycleInfo.currentPhase && (
+            {/* Life Stage Selection */}
+            <View style={[styles.section, { backgroundColor: colors.warmNeutral.sand }]}>
+              <Text style={[styles.sectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                Life Stage
+              </Text>
+              <Text style={[styles.sectionDescription, { color: colors.warmNeutral.stone }]}>
+                Select your current stage for personalized tracking
+              </Text>
+              <View style={styles.lifeStageGrid}>
+                {LIFE_STAGE_OPTIONS.map((option) => (
+                  <Pressable
+                    key={option.value}
+                    style={[
+                      styles.lifeStageOption,
+                      {
+                        backgroundColor:
+                          settings.lifeStage === option.value
+                            ? colors.accent.terracotta
+                            : colors.warmNeutral.cream,
+                        borderColor:
+                          settings.lifeStage === option.value
+                            ? colors.accent.terracotta
+                            : colors.warmNeutral.stone + '50',
+                      },
+                    ]}
+                    onPress={() => updateSetting('lifeStage', option.value)}
+                  >
+                    <Text style={styles.lifeStageEmoji}>{option.emoji}</Text>
+                    <Text
+                      style={[
+                        styles.lifeStageLabel,
+                        {
+                          color:
+                            settings.lifeStage === option.value
+                              ? colors.warmNeutral.cream
+                              : colors.warmNeutral.charcoal,
+                        },
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* Menopause Symptoms - Show for perimenopause/menopause */}
+            {(settings.lifeStage === 'perimenopause' || settings.lifeStage === 'menopause') && (
+              <View style={[styles.section, { backgroundColor: colors.accent.lavender + '20' }]}>
+                <Text style={[styles.sectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  {settings.lifeStage === 'perimenopause' ? 'Perimenopause' : 'Menopause'} Symptoms
+                </Text>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingInfo}>
+                    <Text style={[styles.settingLabel, { color: colors.warmNeutral.charcoal }]}>
+                      Track Symptoms
+                    </Text>
+                    <Text style={[styles.settingDescription, { color: colors.warmNeutral.stone }]}>
+                      Log hot flashes, night sweats, mood changes, etc.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={settings.trackMenopauseSymptoms}
+                    onValueChange={(value) => updateSetting('trackMenopauseSymptoms', value)}
+                    trackColor={{ false: colors.warmNeutral.stone, true: colors.accent.terracotta }}
+                  />
+                </View>
+                {settings.trackMenopauseSymptoms && (
+                  <View style={styles.symptomGrid}>
+                    {MENOPAUSE_SYMPTOM_TOGGLES.map((symptom) => (
+                      <View key={symptom.type} style={styles.symptomChip}>
+                        <Text style={styles.symptomEmoji}>{symptom.emoji}</Text>
+                        <Text style={[styles.symptomLabel, { color: colors.warmNeutral.charcoal }]}>
+                          {symptom.label}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Pregnancy Mode */}
+            {settings.lifeStage === 'pregnant' && (
+              <View style={[styles.section, { backgroundColor: colors.accent.sage + '20' }]}>
+                <Text style={[styles.sectionTitle, { color: colors.warmNeutral.charcoal }]}>
+                  Pregnancy Mode
+                </Text>
+                <Text style={[styles.sectionDescription, { color: colors.warmNeutral.stone }]}>
+                  Period tracking is paused. Your guide adapts to your trimester.
+                </Text>
+                <View style={styles.pregnancyInfo}>
+                  <Text style={[styles.pregnancyText, { color: colors.warmNeutral.charcoal }]}>
+                    Set due date in app to track trimesters and get trimester-appropriate support.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Current Status - Only for regular cycles/perimenopause */}
+            {(settings.lifeStage === 'regularCycles' || settings.lifeStage === 'perimenopause') && cycleInfo.currentPhase && (
               <View style={[styles.section, { backgroundColor: colors.accent.lavender + '30' }]}>
                 <Text style={[styles.sectionTitle, { color: colors.warmNeutral.charcoal }]}>
                   Current Status
@@ -909,5 +1034,58 @@ const styles = StyleSheet.create({
   daysButtonText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  lifeStageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  lifeStageOption: {
+    width: '31%',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  lifeStageEmoji: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  lifeStageLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  symptomGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  symptomChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    gap: 4,
+  },
+  symptomEmoji: {
+    fontSize: 14,
+  },
+  symptomLabel: {
+    fontSize: 12,
+  },
+  pregnancyInfo: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    marginTop: 8,
+  },
+  pregnancyText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

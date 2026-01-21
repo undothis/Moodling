@@ -205,6 +205,38 @@ export const FAQ_CONTENT: FAQItem[] = [
     answer: 'Yes! With HealthKit enabled, Mood Leaf reads your cycle data from Apple Health (synced from apps like Clue, Flo, or Apple\'s Cycle Tracking). It can also write your logs back. One source of truth across all your health apps.',
   },
 
+  // Life Stages & Menopause
+  {
+    category: 'features',
+    question: 'What life stages does the app support?',
+    answer: 'Mood Leaf adapts to your current life stage: Regular Cycles (standard tracking), Perimenopause (irregular cycles, transition symptoms), Menopause (no periods, symptom focus), Post-Menopause (wellness maintenance), Pregnant (trimester tracking), and Postpartum (recovery support). Switch anytime in Settings.',
+  },
+  {
+    category: 'features',
+    question: 'How do I switch to menopause mode?',
+    answer: 'Go to Settings > Cycle Tracking > Life Stage and select "Menopause" or "Perimenopause". Period tracking adjusts—no more period predictions during menopause, but you can still track symptoms like hot flashes, night sweats, and mood changes.',
+  },
+  {
+    category: 'features',
+    question: 'What symptoms can I track during perimenopause/menopause?',
+    answer: 'Track hot flashes, night sweats, sleep disturbances, brain fog, mood changes, anxiety, joint pain, heart palpitations, and libido changes. Your guide understands this transition and offers extra compassion during difficult symptoms.',
+  },
+  {
+    category: 'features',
+    question: 'Does the app support pregnancy?',
+    answer: 'Yes! Select "Pregnant" as your life stage and set your due date. Period tracking pauses automatically. Your guide becomes trimester-aware—understanding first trimester exhaustion, second trimester energy, and third trimester preparation.',
+  },
+  {
+    category: 'features',
+    question: 'Can I track fertility/ovulation?',
+    answer: 'Yes, optionally. Enable "Track Fertility Window" in Settings > Cycle Tracking. The app highlights your predicted fertile window based on your cycle history. You can also get optional ovulation reminders. All data stays on your device.',
+  },
+  {
+    category: 'features',
+    question: 'Can I set contraception reminders?',
+    answer: 'Yes! Set daily pill reminders, IUD check dates, implant renewal reminders, or ring/patch change alerts in Settings > Cycle Tracking > Contraception. Choose your reminder time and the app will notify you.',
+  },
+
   // Personalization & Onboarding
   {
     category: 'guide',
@@ -449,8 +481,28 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
         content: 'With HealthKit enabled, Mood Leaf syncs with Apple Health:\n• Reads cycle data from other apps (Clue, Flo, Apple Cycle Tracking)\n• Writes your symptoms back to Apple Health\n• Heart rate, sleep, and activity data inform cycle insights\n• One source of truth across all your health apps',
       },
       {
+        title: 'Life Stages',
+        content: 'Your body changes over time. Mood Leaf adapts to where you are:\n\n• Regular Cycles - Standard period tracking with phase awareness\n• Perimenopause - Validates irregular cycles, tracks transition symptoms\n• Menopause - No period expectations, focuses on symptom management\n• Post-Menopause - Wellness maintenance, healthy aging support\n• Pregnant - Cycle tracking paused, trimester-aware support\n• Postpartum - Recovery focus, validates exhaustion\n\nSwitch your life stage anytime in Settings > Cycle Tracking.',
+      },
+      {
+        title: 'Perimenopause & Menopause',
+        content: 'For those in the menopause transition, track specific symptoms:\n\n• Hot flashes (frequency & intensity)\n• Night sweats\n• Sleep disturbances\n• Brain fog & memory\n• Mood changes & anxiety\n• Joint pain\n• Heart palpitations\n• Libido changes\n\nYour guide understands this transition is significant. It validates unpredictability, doesn\'t expect regular cycles, and offers extra compassion during difficult symptoms.',
+      },
+      {
+        title: 'Pregnancy Mode',
+        content: 'When you select "Pregnant" as your life stage:\n\n• Period tracking automatically pauses\n• Your guide becomes trimester-aware\n• Support adapts to physical changes each trimester\n• No period-related reminders or predictions\n• Gentle, encouraging tone throughout\n\nSet your due date to track weeks and trimesters. Your guide meets you where you are—first trimester exhaustion, second trimester energy, third trimester preparation.',
+      },
+      {
+        title: 'Fertility Window',
+        content: 'Optional fertility tracking for those trying to conceive:\n\n• Highlights predicted ovulation window\n• Based on your cycle history\n• Can send optional ovulation reminders\n• Privacy-first: this data never leaves your device\n\nEnable in Settings > Cycle Tracking > Track Fertility Window. Completely optional—only turn on if helpful for you.',
+      },
+      {
+        title: 'Contraception Reminders',
+        content: 'Optional reminders for birth control:\n\n• Daily pill reminders at your preferred time\n• IUD check date reminders\n• Implant renewal dates\n• Ring/patch change reminders\n\nSet up in Settings > Cycle Tracking > Contraception. All data stays on your device.',
+      },
+      {
         title: 'Privacy',
-        content: 'Cycle data stays on your device. Only your current phase is shared with your guide ("luteal phase, day 24"). Raw tracking data is never sent. You can disable cycle tracking anytime.',
+        content: 'Cycle data stays on your device. Only your current phase or life stage is shared with your guide ("luteal phase, day 24" or "perimenopause"). Raw tracking data, dates, and symptoms are never sent to AI. You can disable cycle tracking anytime.',
       },
     ],
   },

@@ -49,7 +49,70 @@ export type CycleSymptomType =
   | 'fatigue'
   | 'backPain'
   | 'acne'
-  | 'insomnia';
+  | 'insomnia'
+  // Perimenopause/Menopause symptoms
+  | 'hotFlash'
+  | 'nightSweat'
+  | 'sleepDisturbance'
+  | 'brainFog'
+  | 'vaginalDryness'
+  | 'jointPain'
+  | 'heartPalpitations'
+  | 'anxietySpike'
+  | 'libidoChange';
+
+// ============================================
+// LIFE STAGES
+// ============================================
+
+export type LifeStage =
+  | 'regularCycles'    // Normal menstrual cycles
+  | 'perimenopause'    // Transition phase, irregular cycles
+  | 'menopause'        // No period for 12+ months
+  | 'postMenopause'    // Post-menopause wellness
+  | 'pregnant'         // Pregnancy mode
+  | 'postpartum';      // Post-birth recovery
+
+export interface LifeStageInfo {
+  stage: LifeStage;
+  startDate?: string; // When user entered this stage
+  expectedDueDate?: string; // For pregnancy
+  trimester?: 1 | 2 | 3; // For pregnancy
+  weeksPostpartum?: number; // For postpartum
+}
+
+// ============================================
+// PREGNANCY TRACKING
+// ============================================
+
+export interface PregnancyData {
+  dueDate: string; // ISO date string
+  conceptionDate?: string;
+  currentWeek: number;
+  trimester: 1 | 2 | 3;
+  notes: string[];
+}
+
+// ============================================
+// CONTRACEPTION
+// ============================================
+
+export type ContraceptionType =
+  | 'pill'
+  | 'iud'
+  | 'implant'
+  | 'ring'
+  | 'patch'
+  | 'injection'
+  | 'none';
+
+export interface ContraceptionReminder {
+  type: ContraceptionType;
+  enabled: boolean;
+  reminderTime?: string; // HH:MM format for daily pill
+  nextCheckDate?: string; // For IUD check, implant renewal
+  notes?: string;
+}
 
 export interface CycleSymptom {
   id: string;
@@ -105,6 +168,7 @@ export type GuideAdaptationLevel = 'none' | 'subtle' | 'full';
 
 export interface CycleSettings {
   enabled: boolean; // Master toggle for all cycle features
+  lifeStage: LifeStage; // Current life stage
   showQuickSymptomButton: boolean;
   enableSoothingSparks: boolean;
   enableCycleFireflies: boolean;
@@ -112,6 +176,13 @@ export interface CycleSettings {
   enabledTwigs: CycleTwigSettings;
   reminders: CycleReminders;
   syncSource: 'manual' | 'healthkit' | 'oura' | 'whoop';
+  // Fertility & Contraception
+  trackFertilityWindow: boolean;
+  contraception: ContraceptionReminder;
+  // Pregnancy (when lifeStage === 'pregnant')
+  pregnancy?: PregnancyData;
+  // Perimenopause/Menopause specific
+  trackMenopauseSymptoms: boolean;
 }
 
 // ============================================
@@ -136,9 +207,12 @@ export interface HealthKitCycleData {
 // ============================================
 
 export interface CycleContextForAI {
-  phase: CyclePhase;
-  dayOfCycle: number;
-  isPMS: boolean;
+  lifeStage: LifeStage;
+  phase?: CyclePhase; // Not applicable for menopause/pregnancy
+  dayOfCycle?: number;
+  isPMS?: boolean;
+  trimester?: 1 | 2 | 3; // For pregnancy
+  weeksPregnant?: number;
   recentSymptoms: string[]; // Just symptom names, no details
   // Note: Raw dates and detailed data are NEVER sent to AI
 }
@@ -150,6 +224,7 @@ export interface CycleContextForAI {
 export function createDefaultCycleSettings(): CycleSettings {
   return {
     enabled: false,
+    lifeStage: 'regularCycles',
     showQuickSymptomButton: true,
     enableSoothingSparks: true,
     enableCycleFireflies: true,
@@ -170,13 +245,19 @@ export function createDefaultCycleSettings(): CycleSettings {
       enabled: true,
       notificationsEnabled: true,
       periodApproaching: true,
-      daysBeforePeriodAlert: 3, // Default: alert 3 days before
+      daysBeforePeriodAlert: 3,
       pmsStarting: true,
       logSymptomsReminder: false,
       ovulationReminder: false,
       alertType: 'firefly',
     },
     syncSource: 'manual',
+    trackFertilityWindow: false,
+    contraception: {
+      type: 'none',
+      enabled: false,
+    },
+    trackMenopauseSymptoms: false,
   };
 }
 
@@ -202,7 +283,7 @@ export function getPhaseDescription(phase: CyclePhase): string {
 }
 
 export function symptomTypeToHealthKit(type: CycleSymptomType): string {
-  const mapping: Record<CycleSymptomType, string> = {
+  const mapping: Record<string, string> = {
     cramps: 'HKCategoryTypeIdentifierAbdominalCramps',
     bloating: 'HKCategoryTypeIdentifierBloating',
     breastTenderness: 'HKCategoryTypeIdentifierBreastPain',
@@ -213,6 +294,49 @@ export function symptomTypeToHealthKit(type: CycleSymptomType): string {
     backPain: 'HKCategoryTypeIdentifierLowerBackPain',
     acne: 'HKCategoryTypeIdentifierAcne',
     insomnia: 'HKCategoryTypeIdentifierSleepChanges',
+    hotFlash: 'HKCategoryTypeIdentifierHotFlashes',
+    nightSweat: 'HKCategoryTypeIdentifierNightSweats',
+    vaginalDryness: 'HKCategoryTypeIdentifierVaginalDryness',
   };
-  return mapping[type];
+  return mapping[type] || '';
+}
+
+export function getLifeStageDescription(stage: LifeStage): string {
+  const descriptions: Record<LifeStage, string> = {
+    regularCycles: 'Regular menstrual cycles',
+    perimenopause: 'Perimenopause - cycles may be irregular, symptoms emerging',
+    menopause: 'Menopause - no period for 12+ months, symptom management focus',
+    postMenopause: 'Post-menopause - wellness maintenance',
+    pregnant: 'Pregnancy - cycle tracking paused, trimester focus',
+    postpartum: 'Postpartum - recovery and adjustment period',
+  };
+  return descriptions[stage];
+}
+
+export function getLifeStageGuideAdaptation(stage: LifeStage): string {
+  const adaptations: Record<LifeStage, string> = {
+    regularCycles: 'Adapts to cycle phases, gentler during PMS/period',
+    perimenopause: 'Validates unpredictability, normalizes symptoms, extra patience',
+    menopause: 'No period expectations, focuses on symptom support and wellness',
+    postMenopause: 'Wellness-focused, supports healthy aging',
+    pregnant: 'Trimester-aware, validates physical changes, gentle encouragement',
+    postpartum: 'Acknowledges exhaustion, validates adjustment, no pressure',
+  };
+  return adaptations[stage];
+}
+
+export function getMenopauseSymptoms(): CycleSymptomType[] {
+  return [
+    'hotFlash',
+    'nightSweat',
+    'sleepDisturbance',
+    'brainFog',
+    'vaginalDryness',
+    'jointPain',
+    'heartPalpitations',
+    'anxietySpike',
+    'moodShift',
+    'fatigue',
+    'libidoChange',
+  ];
 }
