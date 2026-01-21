@@ -1621,6 +1621,21 @@ export function initializeSlashCommands(): void {
   // This function exists to ensure the module is imported and initialized
   const commandCount = commandRegistry.size;
   console.log(`[SlashCommands] Initialized with ${commandCount} commands`);
+
+  // Verify critical commands are registered
+  const criticalCommands = ['skills', 'help', 'breathe', 'ground', 'games', 'collection'];
+  for (const cmd of criticalCommands) {
+    if (!commandRegistry.has(cmd)) {
+      console.error(`[SlashCommands] CRITICAL: Command '${cmd}' not registered!`);
+    }
+  }
+}
+
+/**
+ * Get a debug summary of all registered commands
+ */
+export function getRegisteredCommandsDebug(): string[] {
+  return Array.from(commandRegistry.keys()).sort();
 }
 
 // Auto-initialize when module is imported
