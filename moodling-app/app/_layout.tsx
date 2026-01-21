@@ -103,6 +103,22 @@ export default function RootLayout() {
             gestureEnabled: false,
           }}
         />
+        <Stack.Screen
+          name="food/index"
+          options={{
+            title: 'Food Tracker',
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="settings/food"
+          options={{
+            title: 'Food Settings',
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
       </Stack>
     </>
   );

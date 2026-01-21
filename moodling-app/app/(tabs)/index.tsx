@@ -31,6 +31,7 @@ import {
   getCoachDisplayName,
   getCoachEmoji,
 } from '@/services/coachPersonalityService';
+import { autoLogFromJournal } from '@/services/foodTrackingService';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -84,6 +85,9 @@ export default function JournalScreen() {
   // Coach persona state
   const [coachName, setCoachName] = useState('Your Guide');
   const [coachEmoji, setCoachEmoji] = useState('🌿');
+
+  // Food detection feedback state
+  const [detectedFood, setDetectedFood] = useState<string | null>(null);
 
   // Load coach persona on mount
   useEffect(() => {
@@ -152,6 +156,18 @@ export default function JournalScreen() {
 
       // Record entry for usage tracking (Unit 13)
       await recordEntry();
+
+      // AI Food Detection - auto-log food from journal text
+      try {
+        const foodResult = await autoLogFromJournal(entryText);
+        if (foodResult && foodResult.logged.length > 0) {
+          const foodNames = foodResult.logged.map(e => e.foodItem.name).join(', ');
+          setDetectedFood(`Logged: ${foodNames} (${foodResult.totalCalories} cal)`);
+          setTimeout(() => setDetectedFood(null), 5000);
+        }
+      } catch (foodError) {
+        console.log('Food detection skipped:', foodError);
+      }
 
       // Update local state
       setEntries((prev) => [newEntry, ...prev]);
@@ -386,6 +402,15 @@ export default function JournalScreen() {
           </View>
         )}
 
+        {/* Food detection feedback */}
+        {detectedFood && (
+          <View style={[styles.foodDetectedCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.foodDetectedText, { color: colors.tint }]}>
+              🍽️ {detectedFood}
+            </Text>
+          </View>
+        )}
+
         {/* Loading indicator */}
         {isLoading && (
           <View style={styles.loadingContainer}>
@@ -462,6 +487,24 @@ export default function JournalScreen() {
             </Text>
             <Text style={[styles.coachButtonSubtitle, { color: colors.textMuted }]}>
               Get support preparing for challenges
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        {/* Food Tracker Button */}
+        <TouchableOpacity
+          style={[styles.coachButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push('/food')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.coachButtonEmoji}>🍽️</Text>
+          <View style={styles.coachButtonText}>
+            <Text style={[styles.coachButtonTitle, { color: colors.text }]}>
+              Food Tracker
+            </Text>
+            <Text style={[styles.coachButtonSubtitle, { color: colors.textMuted }]}>
+              Log meals and track calories
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
@@ -676,6 +719,20 @@ const styles = StyleSheet.create({
   affirmationText: {
     fontSize: 14,
     fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  // Food detection feedback styles
+  foodDetectedCard: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderLeftColor: '#8b7cf7',
+  },
+  foodDetectedText: {
+    fontSize: 13,
+    fontWeight: '500',
     textAlign: 'center',
   },
   // Unit 19: Coach button styles

@@ -868,6 +868,164 @@ The APIs are new (Apple Foundation Models just launched at WWDC 2025). Recommend
 
 ---
 
+## 20. Period Lifestyle Correlations (Implemented)
+
+### Overview
+
+Tracks lifestyle factors (food, sleep, activity) and correlates them with menstrual cycle symptoms to provide personalized insights.
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `types/PeriodCorrelation.ts` | Types, food tags, symptom options |
+| `services/periodCorrelationService.ts` | Logging, correlation analysis, insights |
+| `components/cycle/QuickLogPanel.tsx` | Quick-tap daily logging UI |
+| `components/cycle/CycleInsights.tsx` | Display personalized insights |
+
+### Quick-Tap Food Logging
+
+Users tap food categories instead of typing:
+
+```
+May worsen symptoms:
+🍔 Fast Food  🍕 Processed  🍬 Sugar  🍷 Alcohol
+
+Varies by person:
+☕ Caffeine  🥛 Dairy  🍫 Chocolate
+
+May help symptoms:
+🥗 Fresh/Whole  🐟 Fish  🥬 Leafy Greens
+
+Supplements:
+💊 Iron  ☀️ Vitamin D  🦴 Calcium  ✨ Magnesium
+```
+
+### Symptom Tracking with Intensity
+
+0 = None, 1 = Mild, 2 = Moderate, 3 = Severe
+
+Tracks: Cramps, Bloating, Headache, Mood Dip, Fatigue, Cravings, Anxiety, Irritability, etc.
+
+### Correlation Analysis
+
+After 2+ cycles, system compares symptom severity when factors are present vs absent:
+- "When you eat fast food, your cramps tend to be worse"
+- "Good sleep (7+ hrs) correlates with 40% less severe cramps"
+
+### Still Needed
+
+- [ ] Integration into app navigation (when does panel appear?)
+- [ ] Settings toggle to enable/disable
+- [ ] Pre-period reminder prompts (5-7 days before)
+- [ ] Make food tracking a GENERAL feature (not period-specific)
+
+### Research Sources
+
+Based on peer-reviewed research from Cambridge Nutrition Review, Nature Scientific Reports 2025, PMC Systematic Reviews.
+
+---
+
+## 21. Granular Monetization Architecture (Planning)
+
+### Philosophy
+
+Features should be modular and paywalled - users get core value free, then pay to unlock specific features they want. **Don't give users features they won't use.**
+
+### Suggested Feature Tiers
+
+#### Free Tier (Core)
+- Basic journaling
+- 1 coach (Clover)
+- Basic Sparks
+- Limited chat history
+
+#### Premium Modules (À la carte)
+
+| Module | What It Unlocks | Price Idea |
+|--------|-----------------|------------|
+| **All Coaches** | Spark, Willow, Luna, Ridge, Flint, Fern | $2.99/mo |
+| **Food Tracking** | Daily food logging, basic patterns | $1.99/mo |
+| **Cycle Tracking** | Period tracking, phase awareness | $2.99/mo |
+| **Health Insights** | Correlations (food+sleep+cycle+mood) | $3.99/mo |
+| **Voice (TTS)** | Coaches speak responses | $1.99/mo |
+| **Teaching** | Spanish, CBT, meditation courses | $2.99/mo |
+| **MoodPrint Pro** | Deep psychological insights | $3.99/mo |
+| **Unlimited** | Everything | $9.99/mo |
+
+### Feature Adaptation Pattern
+
+Food Tracking should be GENERAL, then ADAPT when other features are enabled:
+
+```
+Food Tracking alone:
+→ Log meals, see basic patterns
+→ "You eat more sugar on stressed days"
+
+Food + Cycle Tracking:
+→ Same UI, but adds cycle-aware insights
+→ "Your cramps are worse after fast food"
+→ Pre-period suggestions appear
+
+Food + Cycle + Health Insights:
+→ Full correlation analysis
+→ Sleep + food + mood + cycle combined
+→ Personalized predictions
+```
+
+### Entitlements Architecture
+
+```typescript
+interface UserEntitlements {
+  tier: 'free' | 'premium';
+  modules: {
+    allCoaches: boolean;
+    foodTracking: boolean;
+    cycleTracking: boolean;
+    healthInsights: boolean;  // Requires food + cycle
+    voiceTTS: boolean;
+    teaching: boolean;
+    moodPrintPro: boolean;
+  };
+}
+```
+
+### Key Principle: Don't Break the App
+
+```
+Feature disabled = Hidden, NOT broken
+
+❌ Don't: Show greyed-out buttons
+❌ Don't: Error messages about premium
+✅ Do: Simply don't show the feature
+✅ Do: Show upsell at natural moments
+```
+
+### Natural Upsell Moments
+
+1. **After 7 days journaling** → "Want to see what your coach learned? Unlock MoodPrint Pro"
+2. **User mentions food** → "Track what you eat to see patterns. Unlock Food Tracking"
+3. **User mentions period** → "Track your cycle for personalized support. Unlock Cycle Tracking"
+4. **User tries different coach** → "Meet all 7 coaches. Unlock All Coaches"
+
+### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `services/entitlementService.ts` | Check feature access, manage subscriptions |
+| `components/UpsellCard.tsx` | Contextual upgrade prompts |
+| `app/settings/subscription.tsx` | Manage subscription screen |
+
+### Status: Planning Phase
+
+Need to decide:
+- [ ] Which features are free vs paid
+- [ ] À la carte vs bundles vs single premium
+- [ ] Price points
+- [ ] Integration with App Store / Google Play
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
@@ -897,6 +1055,7 @@ The APIs are new (Apple Foundation Models just launched at WWDC 2025). Recommend
 | `coachPersonalityService.ts` | Persona management | `getCoachSettings()`, `getChronotypeContextForClaude()` |
 | `collectionService.ts` | **NEW** D&D gamification | `recordActivity()`, `checkForUnlocks()`, `getCollection()` |
 | `cycleTrackingService.ts` | Cycle logic | `startPeriod()`, `endPeriod()`, `getCurrentPhase()`, `logSymptom()` |
+| `periodCorrelationService.ts` | **NEW** Food/sleep correlations | `logFoodTags()`, `logSleep()`, `analyzeCorrelations()`, `generateInsights()` |
 | `healthKitService.ts` | Apple Health sync | `importCycleDataFromHealthKit()`, `writeMenstrualFlowToHealthKit()` |
 | `journalStorage.ts` | Journal persistence | `saveJournal()`, `getRecentJournalContextForClaude()` |
 | `lifeContextService.ts` | Long-term memory | `updateLifeContext()`, `getLifeContextForClaude()` |

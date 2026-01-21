@@ -4634,6 +4634,75 @@ See `docs/Handoff.md` Section 18 for full roadmap.
 
 ---
 
+## Food Tracking with Calorie Counting
+
+### Overview
+
+Comprehensive food tracking with AI detection from journaling and manual entry.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `types/FoodTracking.ts` | Types, common foods database (80+), AI detection keywords |
+| `services/foodTrackingService.ts` | Logging, search, calorie tracking, AI detection |
+| `components/food/FoodTracker.tsx` | Full food tracking UI with calorie progress |
+
+### Features
+
+1. **Manual Logging** - Search 80+ common foods with calories
+2. **AI Detection** - Auto-detects food from journal entries
+3. **Calorie Counting** - Daily totals, goals, progress bar
+4. **Meal Types** - Breakfast, lunch, dinner, snack
+5. **Recent Foods** - Quick access to frequently logged items
+6. **Custom Foods** - Users can add their own foods
+
+### AI Detection from Journaling
+
+```typescript
+// User journals: "Had a rough day, ate a whole pizza and drank 3 coffees"
+// System detects: pizza_slice (x8), coffee (x3)
+// Auto-logs: 2295 calories
+
+import { autoLogFromJournal } from '../services/foodTrackingService';
+const result = await autoLogFromJournal(userMessage);
+// { logged: [entries], totalCalories: 2295 }
+```
+
+### Common Foods Database
+
+80+ foods with calories, serving sizes, and correlation tags:
+
+| Category | Examples |
+|----------|----------|
+| Fast Food | Burger (540), Pizza slice (285), Fries (365) |
+| Protein | Chicken breast (165), Salmon (208), Eggs (155) |
+| Drinks | Coffee (5), Latte (190), Soda (140) |
+| Sweets | Chocolate (210), Cookie (160), Ice cream (273) |
+
+### Usage
+
+```typescript
+import {
+  logFood,
+  getTodayCalorieProgress,
+  searchFoods,
+} from '../services/foodTrackingService';
+
+// Manual log
+await logFood(pizzaItem, 2, 'dinner');
+
+// Get today's progress
+const progress = await getTodayCalorieProgress();
+// { consumed: 1450, goal: 2000, remaining: 550, percentage: 72 }
+```
+
+### Integration
+
+Food tracking automatically logs correlation tags to period correlation service when cycle tracking is enabled.
+
+---
+
 ## Period Lifestyle Correlations
 
 ### Overview

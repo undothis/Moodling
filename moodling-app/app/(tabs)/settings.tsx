@@ -845,6 +845,35 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Food Tracking Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Food Tracking
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/settings/food')}
+        >
+          <Text style={styles.faqEmoji}>🍽️</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Food Settings
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Calorie goals, AI detection, tracking
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.coachNote, { color: colors.textMuted }]}>
+          Track meals and calories. AI auto-detects food from journal entries.
+        </Text>
+      </View>
+
       {/* Personalization Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
