@@ -52,6 +52,10 @@ export const Colors = {
     error: '#C75D5D',
     warning: accent.terracotta,
     success: accent.sage,
+
+    // Raw palette access (for components that need specific colors)
+    warmNeutral,
+    accent,
   },
   dark: {
     // Backgrounds
@@ -83,6 +87,10 @@ export const Colors = {
     error: '#E07070',
     warning: accent.terracotta,
     success: accent.sage,
+
+    // Raw palette access (for components that need specific colors)
+    warmNeutral,
+    accent,
   },
 };
 

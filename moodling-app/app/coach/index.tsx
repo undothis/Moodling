@@ -36,7 +36,11 @@ import {
   executeCommand,
   CommandContext,
   CommandResult,
+  initializeSlashCommands,
 } from '@/services/slashCommandService';
+
+// Initialize slash commands on module load
+initializeSlashCommands();
 
 /**
  * Coaching Conversation Screen

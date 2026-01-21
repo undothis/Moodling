@@ -1559,6 +1559,27 @@ export async function getCommandHistory(): Promise<CommandHistoryEntry[]> {
 }
 
 // ============================================
+// INITIALIZATION
+// ============================================
+
+/**
+ * Initialize the slash command service
+ * This ensures all commands are registered and ready to use
+ */
+export function initializeSlashCommands(): void {
+  // Commands are registered at module load time via registerCommand calls above
+  // This function exists to ensure the module is imported and initialized
+  const commandCount = commandRegistry.size;
+  console.log(`[SlashCommands] Initialized with ${commandCount} commands`);
+}
+
+// Auto-initialize when module is imported
+const commandCount = commandRegistry.size;
+if (commandCount > 0) {
+  console.log(`[SlashCommands] ${commandCount} commands registered`);
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 
