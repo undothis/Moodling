@@ -816,6 +816,35 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
+      {/* Cycle Tracking Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Cycle Tracking
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/settings/cycle')}
+        >
+          <Text style={styles.faqEmoji}>🌙</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Cycle Settings
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Period tracking, life stages, reminders
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.coachNote, { color: colors.textMuted }]}>
+          Optional cycle-aware features. Track periods, symptoms, and get phase-adapted support.
+        </Text>
+      </View>
+
       {/* Personalization Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
