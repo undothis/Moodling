@@ -29,10 +29,11 @@ Mood Leaf is a mental health journaling app with an AI companion that truly reme
 8. [Life Context (The Tree)](#life-context-the-tree)
 9. [Health Integration (Weather)](#health-integration-weather)
 10. [Patterns & Insights](#patterns--insights)
-11. [Oblique Strategies (Wind)](#oblique-strategies-wind)
-12. [Privacy & Your Data](#privacy--your-data)
-13. [Complete Feature List](#complete-feature-list)
-14. [FAQ](#faq)
+11. [Sparks (Creative Prompts)](#sparks-creative-prompts)
+12. [Fireflies (Personalized Wisdom)](#fireflies-personalized-wisdom)
+13. [Privacy & Your Data](#privacy--your-data)
+14. [Complete Feature List](#complete-feature-list)
+15. [FAQ](#faq)
 
 ---
 
@@ -284,9 +285,9 @@ Go to **Settings** > **Coach Settings** for:
 
 ## How Your Guide Adapts
 
-### Adaptive Mode
+### Adaptive Mode (Always On)
 
-When Adaptive Mode is on, your guide automatically adjusts:
+Your guide continuously adapts to you. This isn't a setting you toggle—**Adaptive Mode is always on**, constantly learning and adjusting:
 
 #### Mood-to-Persona Switches
 - **Feeling anxious?** → Becomes more like Luna (calm, grounding)
@@ -321,6 +322,21 @@ After travel, your guide:
 - Adjusts expectations
 - Offers tips for readjusting
 - Doesn't pressure you when exhausted
+
+### The Whole App Adapts
+
+It's not just your guide that adapts—**every part of Mood Leaf evolves with you**:
+
+| Feature | How It Adapts |
+|---------|---------------|
+| **Your Guide** | Personality shifts based on mood, time, and what's helped before |
+| **Sparks** | Mood-matched prompts based on what you're feeling right now |
+| **Fireflies** | AI regenerates wisdom using your latest journal patterns, health data, and life context |
+| **Life Context** | Grows automatically as you journal, building richer understanding |
+| **Psych Profile** | Updates based on new patterns in your thinking and coping |
+| **Health Insights** | Correlations improve with more data (90-day rolling analysis) |
+
+**The longer you use Mood Leaf, the more it knows you.** But this isn't surveillance—it's support. Your context is compressed, not hoarded. Patterns are remembered, not raw data.
 
 ---
 
@@ -455,21 +471,23 @@ Your guide uses these patterns to:
 
 ---
 
-## Oblique Strategies (Wind)
+## Sparks (Creative Prompts)
 
-### What Are Oblique Strategies?
+### What Are Sparks?
 
-Inspired by Brian Eno and Peter Schmidt's famous creative cards, Mood Leaf includes unexpected prompts to shift your thinking when you're stuck.
+Sparks are creative prompts designed to shift your thinking when you're stuck. Inspired by Brian Eno and Peter Schmidt's Oblique Strategies cards, these unexpected nudges jar you loose and create movement.
 
-### Categories
+**Spark = Creativity & Play** — short, punchy prompts that reframe your situation.
+
+### Categories (210+ Prompts)
 
 | Category | Description |
 |----------|-------------|
 | **Depression** | Gentle nudges when everything feels heavy |
 | **Anxiety** | Grounding prompts when your mind is racing |
 | **Walking** | Contemplations for when you're in motion |
-| **For Artists** | Creative unblocking |
-| **For Musicians** | Sonic exploration prompts |
+| **For Artists** | Creative unblocking for visual creators |
+| **For Musicians** | Prompts for sonic exploration |
 | **Funny** | Absurdist humor to break the spell |
 | **Strange** | Weird perspectives to jar you loose |
 | **Random** | Pull from any category |
@@ -478,22 +496,104 @@ Inspired by Brian Eno and Peter Schmidt's famous creative cards, Mood Leaf inclu
 
 **Depression:**
 > "What would you do if you felt 10% better? Do that thing anyway."
+> "Your brain is lying to you. It's very convincing, but it's still lying."
 
 **Anxiety:**
 > "Name five things you can see. You're here, not there."
+> "Your nervous system is trying to protect you. Thank it, then correct it."
 
 **Walking:**
 > "Walk as if you're not trying to get anywhere."
+> "Find something beautiful that no one else has noticed today."
 
 **Funny:**
 > "Have you tried being a completely different person?"
+> "What would a golden retriever do? Honestly, try that."
+
+### Features
+
+- **Favorites** - Save sparks that resonate with you
+- **History** - Track what you've viewed
+- **Mood-Based Selection** - Sparks adapt to your current emotional state
+- **Search** - Find specific sparks by keyword
+
+### How Sparks Adapt
+
+When your journal reveals a mood, Sparks respond:
+- **Feeling depressed or low?** → Depression category sparks surface
+- **Anxious or worried?** → Anxiety grounding prompts appear
+- **Feeling stuck creatively?** → Artist prompts emerge
+- **Neutral or unknown?** → Funny or strange prompts to shift perspective
+
+Your favorites and history also inform what appears—the system learns what resonates with you.
 
 ### How to Use
 
-1. Go to **Strategies** in the app
+1. Go to **Sparks** in the app
 2. Choose a category or tap **Random**
 3. Sit with it—don't dismiss too quickly
-4. Tap for another if needed
+4. Save to favorites if it resonates
+
+---
+
+## Fireflies (Personalized Wisdom)
+
+### What Are Fireflies?
+
+Fireflies are AI-generated wisdom cards personalized to YOU. Unlike Sparks (which are pre-written), Fireflies are created by AI using your full context—journal entries, moods, psychological patterns, life context, and health data.
+
+**Fireflies = Wisdom & Support** — deeper, more personal prompts that know your story.
+
+### Preset Categories
+
+| Category | What It Offers |
+|----------|----------------|
+| **Anxiety** | Personalized grounding techniques |
+| **Movement** | Motivations tailored to your patterns |
+| **Creativity** | Unblocking based on your creative interests |
+| **Music** | Prompts for your musical practice |
+| **Breath** | Breathing exercises matched to your needs |
+| **Connection** | Relationship-aware social encouragement |
+| **Perspective** | Reframes based on your thinking patterns |
+| **Sleep** | Rest prompts informed by your health data |
+
+### Custom Categories
+
+You can create your own Firefly categories:
+1. Name the category (e.g., "Work Stress", "Parenting")
+2. Add an emoji
+3. AI generates 10 personalized wisdoms using your full context
+4. Regenerate anytime for fresh content
+
+### How Fireflies Know You (And Evolve With You)
+
+Fireflies aren't static—**they regenerate based on your evolving story**. When generating wisdom, they draw from:
+
+- **Journal patterns** - Themes, topics, and moods from your entries
+- **Life context** - People, events, relationships you've mentioned
+- **Psychological profile** - Your thinking patterns and coping styles
+- **Health data** - Sleep quality, activity levels, heart rate patterns
+- **Chronotype** - Your natural rhythm and time of day
+- **Tracking habits** - What you're monitoring with twigs
+- **Time context** - Morning vs. evening wisdom differs
+
+**As your life changes, Fireflies change with you.** Started a new job? Fireflies will acknowledge it. Going through a breakup? Fireflies will offer relevant support. The AI doesn't just remember—it adapts.
+
+### Examples
+
+**For someone who journals about work stress and has poor sleep:**
+> "You mentioned the project deadline. When you got through the last one, you took small breaks. What's a small break look like today?"
+
+**For someone with high anxiety and a morning chronotype:**
+> "The morning is when you have the most capacity. Is there one anxious thought you could examine while you have the energy?"
+
+### How to Use
+
+1. Go to **Fireflies** in the app
+2. Enable the categories that matter to you
+3. Create custom categories for specific needs
+4. Tap a category to see your personalized wisdoms
+5. Regenerate when you want fresh perspective
 
 ---
 
@@ -558,9 +658,22 @@ You can always:
 | **Life Context** | Automatic extraction of people, events, patterns |
 | **Psych Profile** | Cognitive patterns, attachment, values (no diagnosis) |
 | **7 Personas** | Nature-themed AI personalities |
-| **Adaptive Mode** | Real-time persona switching based on mood |
+| **Adaptive Mode** | Always-on persona switching based on mood, time, and context |
 | **Chronotype** | Sleep schedule awareness |
 | **Crisis Detection** | Immediate resources for self-harm language |
+
+### Creative & Wisdom Features
+
+| Feature | Description |
+|---------|-------------|
+| **Sparks** | 210+ creative prompts across 7 categories |
+| **Spark Categories** | Depression, Anxiety, Walking, Artists, Musicians, Funny, Strange |
+| **Mood-Based Sparks** | Prompts matched to your current emotional state |
+| **Spark Favorites** | Save prompts that resonate with you |
+| **Fireflies** | AI-generated personalized wisdom cards |
+| **Firefly Presets** | Anxiety, Movement, Creativity, Music, Breath, Connection, Perspective, Sleep |
+| **Custom Fireflies** | Create your own categories with AI-generated wisdom |
+| **Evolving Wisdom** | Fireflies regenerate based on your changing context |
 
 ### Health Integration
 
