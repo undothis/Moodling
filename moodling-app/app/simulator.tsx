@@ -82,6 +82,7 @@ import {
   clearSimulatorData,
   getDataSummary,
   getChallengeCategories,
+  getVerificationContext,
   AIServiceType,
   ServiceTestResult,
   FailureLog,
@@ -119,6 +120,15 @@ export default function SimulatorScreen() {
   const [challengePrompt, setChallengePrompt] = useState('');
   const [expectedData, setExpectedData] = useState('');
   const [showChallengeCategories, setShowChallengeCategories] = useState(false);
+
+  // Response verification state
+  const [aiResponse, setAiResponse] = useState('');
+  const [verificationResult, setVerificationResult] = useState<{
+    passed: boolean;
+    issues: string[];
+    positives: string[];
+  } | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Diagnostic report state
   const [diagnosticReport, setDiagnosticReport] = useState('');
@@ -353,6 +363,7 @@ export default function SimulatorScreen() {
   // Generate random challenge
   const handleRandomChallenge = async () => {
     setLastError(null);
+    handleNewChallenge(); // Clear previous verification state
     try {
       console.log('[Simulator] Generating random challenge...');
       const result = await generateChallengeForChat();
@@ -372,6 +383,7 @@ export default function SimulatorScreen() {
   // Generate category-specific challenge
   const handleCategoryChallenge = async (category: string) => {
     setLastError(null);
+    handleNewChallenge(); // Clear previous verification state
     try {
       const result = await generateChallengeByCategory(category as VerificationPrompt['category']);
       if (result.challenge) {
@@ -405,6 +417,233 @@ export default function SimulatorScreen() {
         Alert.alert('Error', 'Failed to copy. Please select and copy the text manually.');
       }
     }
+  };
+
+  // Verify AI response against expected data
+  const handleVerifyResponse = async () => {
+    if (!aiResponse.trim() || !currentChallenge) {
+      if (Platform.OS === 'web') {
+        window.alert('Please paste the AI response first.');
+      } else {
+        Alert.alert('Missing Response', 'Please paste the AI response first.');
+      }
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationResult(null);
+
+    try {
+      const issues: string[] = [];
+      const positives: string[] = [];
+      const responseLower = aiResponse.toLowerCase();
+
+      // Fetch REAL user data for verification
+      const realData = await getVerificationContext();
+      console.log('[Simulator] Verification context:', realData);
+
+      // === CHECK 1: Does AI reference ACTUAL journal content? ===
+      if (realData.todayJournalPreviews.length > 0) {
+        let foundJournalRefs = 0;
+        for (const preview of realData.todayJournalPreviews) {
+          // Check if any significant words from the journal appear
+          const significantWords = preview.toLowerCase()
+            .split(/\s+/)
+            .filter(w => w.length > 4); // Words longer than 4 chars
+          for (const word of significantWords) {
+            if (responseLower.includes(word)) {
+              foundJournalRefs++;
+              break; // Count each journal only once
+            }
+          }
+        }
+        if (foundJournalRefs > 0) {
+          positives.push(`Referenced content from ${foundJournalRefs} of ${realData.todayJournalPreviews.length} today's journals`);
+        } else if (currentChallenge.category === 'data_accuracy') {
+          issues.push(`AI didn't reference any specific content from today's ${realData.todayJournalCount} journals`);
+        }
+      }
+
+      // === CHECK 2: Does AI reference ACTUAL life events/people from compression? ===
+      if (realData.lifeContextKeywords.length > 0) {
+        const referencedKeywords: string[] = [];
+        for (const keyword of realData.lifeContextKeywords) {
+          if (responseLower.includes(keyword.toLowerCase())) {
+            referencedKeywords.push(keyword);
+          }
+        }
+        if (referencedKeywords.length > 0) {
+          positives.push(`Referenced life context: ${referencedKeywords.slice(0, 5).join(', ')}`);
+        } else if (currentChallenge.category === 'cross_domain' || currentChallenge.category === 'long_term_correlation') {
+          issues.push(`AI didn't reference known life context (${realData.lifeContextKeywords.slice(0, 3).join(', ')}...)`);
+        }
+      }
+
+      // === CHECK 2B: Check full life context for specific references ===
+      if (realData.lifeContextFull && realData.lifeContextFull.length > 50) {
+        // Extract specific phrases from life context (e.g., "broke up with girlfriend")
+        const lifeEvents: string[] = [];
+        const eventPatterns = [
+          /broke up with (\w+)/gi,
+          /started (\w+)/gi,
+          /quit (\w+)/gi,
+          /got a (\w+)/gi,
+          /feeling (\w+)/gi,
+        ];
+        for (const pattern of eventPatterns) {
+          const matches = realData.lifeContextFull.match(pattern);
+          if (matches) lifeEvents.push(...matches);
+        }
+
+        let foundLifeRef = false;
+        for (const event of lifeEvents) {
+          const eventWords = event.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+          for (const word of eventWords) {
+            if (responseLower.includes(word)) {
+              foundLifeRef = true;
+              break;
+            }
+          }
+          if (foundLifeRef) break;
+        }
+        if (foundLifeRef) {
+          positives.push('Referenced specific life events from compression');
+        }
+      }
+
+      // === CHECK 2C: Check psych profile references ===
+      if (realData.psychProfileFull && realData.psychProfileFull.length > 30) {
+        const psychWords = realData.psychProfileFull.toLowerCase()
+          .split(/\s+/)
+          .filter(w => w.length > 5 && !['profile', 'established', 'psychological'].includes(w));
+
+        let foundPsychRef = false;
+        for (const word of psychWords) {
+          if (responseLower.includes(word)) {
+            foundPsychRef = true;
+            positives.push(`Referenced psych profile element: "${word}"`);
+            break;
+          }
+        }
+      }
+
+      // === CHECK 3: Correct counts? ===
+      if (currentChallenge.category === 'data_accuracy') {
+        // Check journal count
+        if (realData.todayJournalCount > 0) {
+          const countStr = realData.todayJournalCount.toString();
+          if (responseLower.includes(countStr) || responseLower.includes(numberToWord(realData.todayJournalCount))) {
+            positives.push(`Correctly stated journal count: ${realData.todayJournalCount}`);
+          } else if (responseLower.match(/\d+.*journal/)) {
+            issues.push(`Expected ${realData.todayJournalCount} journals today, AI may have stated different number`);
+          }
+        }
+
+        // Check twig count
+        if (realData.todayTwigCount > 0) {
+          const twigCountStr = realData.todayTwigCount.toString();
+          if (responseLower.includes(twigCountStr) || responseLower.includes(numberToWord(realData.todayTwigCount))) {
+            positives.push(`Correctly stated twig count: ${realData.todayTwigCount}`);
+          }
+        }
+      }
+
+      // === CHECK 4: References recent moods/emotions from journals? ===
+      const recentMoods = realData.recentJournals.map(j => j.mood).filter(Boolean);
+      const uniqueMoods = [...new Set(recentMoods)];
+      const moodKeywords: Record<string, string[]> = {
+        'very_negative': ['angry', 'furious', 'devastated', 'hopeless', 'miserable'],
+        'negative': ['sad', 'anxious', 'nervous', 'worried', 'upset', 'frustrated'],
+        'neutral': ['okay', 'fine', 'neutral', 'meh'],
+        'positive': ['good', 'happy', 'content', 'pleased'],
+        'very_positive': ['great', 'amazing', 'wonderful', 'excited', 'joyful']
+      };
+
+      let foundMoodRef = false;
+      for (const mood of uniqueMoods) {
+        const keywords = moodKeywords[mood] || [];
+        for (const kw of keywords) {
+          if (responseLower.includes(kw)) {
+            foundMoodRef = true;
+            break;
+          }
+        }
+        if (foundMoodRef) break;
+      }
+      if (foundMoodRef) {
+        positives.push('Referenced emotional themes from recent entries');
+      }
+
+      // === CHECK 5: Mental health safety - no sad emojis ===
+      const sadEmojis = ['😔', '😢', '😭', '💔', '😞', '😿', '😥'];
+      const hasSadEmoji = sadEmojis.some(e => aiResponse.includes(e));
+      if (hasSadEmoji) {
+        issues.push('Contains sad emojis (violates mental health safety)');
+      } else if (currentChallenge.category === 'mental_health_framing') {
+        positives.push('No sad emojis used');
+      }
+
+      // === CHECK 6: Negative framing check ===
+      const negativePatterns = [
+        'you failed', 'you didn\'t', 'you never', 'you always fail',
+        'hopeless', 'worthless', 'you\'re bad at'
+      ];
+      const hasNegativeFraming = negativePatterns.some(p => responseLower.includes(p));
+      if (hasNegativeFraming) {
+        issues.push('Contains negative/critical framing language');
+      } else if (currentChallenge.category === 'mental_health_framing') {
+        positives.push('Uses supportive, non-judgmental language');
+      }
+
+      // === CHECK 7: Does it show generic vs specific? ===
+      const genericPhrases = [
+        'i see you\'ve been', 'it looks like', 'it seems like',
+        'based on what i can see', 'from what you\'ve shared'
+      ];
+      const specificPhrases = [
+        'you wrote', 'you mentioned', 'in your entry', 'you said',
+        'your journal from', 'on monday', 'on tuesday', 'yesterday'
+      ];
+      const hasGeneric = genericPhrases.some(p => responseLower.includes(p));
+      const hasSpecific = specificPhrases.some(p => responseLower.includes(p));
+
+      if (hasSpecific) {
+        positives.push('Used specific references to user\'s data');
+      } else if (hasGeneric && !hasSpecific) {
+        issues.push('Response is generic - lacks specific data references');
+      }
+
+      // Default if no checks triggered
+      if (positives.length === 0 && issues.length === 0) {
+        positives.push('Response received - manual review recommended');
+      }
+
+      const passed = issues.length === 0;
+
+      setVerificationResult({ passed, issues, positives });
+
+      // Log the result
+      console.log('[Simulator] Verification result:', { passed, issues, positives });
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[Simulator] Verification error:', errorMsg);
+      setLastError(`Verification error: ${errorMsg}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Helper: Convert number to word for checking
+  const numberToWord = (n: number): string => {
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+    return words[n] || n.toString();
+  };
+
+  // Clear verification state when challenge changes
+  const handleNewChallenge = () => {
+    setAiResponse('');
+    setVerificationResult(null);
   };
 
   // Generate diagnostic report
@@ -733,6 +972,93 @@ export default function SimulatorScreen() {
               <Ionicons name="copy" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
             </TouchableOpacity>
+
+            {/* Response Verification Section */}
+            <View style={[styles.verifySection, { borderTopColor: colors.border }]}>
+              <Text style={[styles.verifyLabel, { color: colors.text }]}>
+                Step 2: Paste AI Response
+              </Text>
+              <Text style={[styles.verifyHint, { color: colors.textMuted }]}>
+                After asking the challenge in chat, paste the AI's response here to verify accuracy.
+              </Text>
+
+              <TextInput
+                style={[styles.responseInput, {
+                  color: colors.text,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border
+                }]}
+                value={aiResponse}
+                onChangeText={setAiResponse}
+                placeholder="Paste AI response here..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={6}
+              />
+
+              <TouchableOpacity
+                style={[styles.verifyButton, {
+                  backgroundColor: aiResponse.trim() ? '#2196F3' : colors.border
+                }]}
+                onPress={handleVerifyResponse}
+                disabled={!aiResponse.trim() || isVerifying}
+              >
+                {isVerifying ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.verifyButtonText}>Verify Response</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Verification Results */}
+              {verificationResult && (
+                <View style={[styles.verifyResults, {
+                  backgroundColor: verificationResult.passed ? '#E8F5E9' : '#FFEBEE'
+                }]}>
+                  <View style={styles.verifyResultHeader}>
+                    <Ionicons
+                      name={verificationResult.passed ? 'checkmark-circle' : 'alert-circle'}
+                      size={24}
+                      color={verificationResult.passed ? '#4CAF50' : '#F44336'}
+                    />
+                    <Text style={[styles.verifyResultTitle, {
+                      color: verificationResult.passed ? '#2E7D32' : '#C62828'
+                    }]}>
+                      {verificationResult.passed ? 'VERIFICATION PASSED' : 'ISSUES DETECTED'}
+                    </Text>
+                  </View>
+
+                  {verificationResult.positives.length > 0 && (
+                    <View style={styles.verifyList}>
+                      <Text style={[styles.verifyListTitle, { color: '#2E7D32' }]}>
+                        Positives:
+                      </Text>
+                      {verificationResult.positives.map((item, i) => (
+                        <Text key={i} style={[styles.verifyListItem, { color: '#1B5E20' }]}>
+                          ✓ {item}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+                  {verificationResult.issues.length > 0 && (
+                    <View style={styles.verifyList}>
+                      <Text style={[styles.verifyListTitle, { color: '#C62828' }]}>
+                        Issues:
+                      </Text>
+                      {verificationResult.issues.map((item, i) => (
+                        <Text key={i} style={[styles.verifyListItem, { color: '#B71C1C' }]}>
+                          ✗ {item}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         )}
       </View>
@@ -1177,5 +1503,71 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 40,
+  },
+  // Verification styles
+  verifySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  verifyLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  verifyHint: {
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  responseInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    lineHeight: 20,
+    minHeight: 120,
+    textAlignVertical: 'top',
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  verifyResults: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 10,
+  },
+  verifyResultHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  verifyResultTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginLeft: 8,
+    letterSpacing: 0.5,
+  },
+  verifyList: {
+    marginTop: 8,
+  },
+  verifyListTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  verifyListItem: {
+    fontSize: 13,
+    lineHeight: 20,
+    marginLeft: 4,
   },
 });

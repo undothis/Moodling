@@ -1177,6 +1177,65 @@ export async function generateChallengeByCategory(
   };
 }
 
+/**
+ * Get verification context - real user data to check AI response against
+ * This is used by the UI to verify if AI responses correctly reference user data
+ */
+export async function getVerificationContext(): Promise<{
+  todayJournalCount: number;
+  todayJournalPreviews: string[];
+  todayTwigCount: number;
+  todayTwigs: string[];
+  recentJournals: { date: string; preview: string; mood: string }[];
+  recentTwigs: { date: string; name: string; emoji: string }[];
+  lifeContextKeywords: string[];
+  lifeContextFull: string;
+  psychProfileFull: string;
+  totalJournals: number;
+  totalTwigs: number;
+}> {
+  const context = await gatherDataContext();
+
+  // Extract keywords from life context (important names, events, places)
+  const lifeContextKeywords: string[] = [];
+  if (context.lifeContext) {
+    // Extract key people
+    const peopleMatch = context.lifeContext.match(/Key people: (.+?)(?:\n|$)/i);
+    if (peopleMatch) {
+      lifeContextKeywords.push(...peopleMatch[1].split(',').map(s => s.trim()).filter(Boolean));
+    }
+    // Extract milestones - look for significant words
+    const milestonesMatch = context.lifeContext.match(/milestones?:(.+?)(?:\n\n|$)/is);
+    if (milestonesMatch) {
+      const words = milestonesMatch[1].match(/\b[A-Z][a-z]{3,}|\b(?:breakup|broke up|job|move|marriage|baby|death|illness|promotion|fired|quit|graduated|girlfriend|boyfriend|wife|husband|school|work|college)\b/gi);
+      if (words) lifeContextKeywords.push(...words);
+    }
+    // Also extract any significant nouns from the whole context
+    const allSignificantWords = context.lifeContext.match(/\b(?:girlfriend|boyfriend|wife|husband|partner|friend|family|job|school|college|university|work|breakup|broke up|moving|moved|sick|illness|anxiety|depression|therapy|therapist|doctor|hospital)\b/gi);
+    if (allSignificantWords) lifeContextKeywords.push(...allSignificantWords);
+  }
+
+  // Extract keywords from psych profile
+  if (context.psychProfile) {
+    const psychWords = context.psychProfile.match(/\b(?:introvert|extrovert|anxious|social|sensitive|creative|analytical|emotional|resilient|optimistic|pessimistic|perfectionist|avoidant|attachment|stress|coping|pattern)\b/gi);
+    if (psychWords) lifeContextKeywords.push(...psychWords);
+  }
+
+  return {
+    todayJournalCount: context.todayJournals.length,
+    todayJournalPreviews: context.todayJournals,
+    todayTwigCount: context.todayTwigs.length,
+    todayTwigs: context.todayTwigs,
+    recentJournals: context.recentJournals,
+    recentTwigs: context.recentTwigs,
+    lifeContextKeywords: [...new Set(lifeContextKeywords)], // Dedupe
+    lifeContextFull: context.lifeContext,
+    psychProfileFull: context.psychProfile,
+    totalJournals: context.journalCount,
+    totalTwigs: context.twigCount,
+  };
+}
+
 export default {
   isSimulatorEnabled,
   setSimulatorEnabled,
@@ -1193,4 +1252,5 @@ export default {
   generateChallengeForChat,
   getChallengeCategories,
   generateChallengeByCategory,
+  getVerificationContext,
 };
