@@ -33,7 +33,8 @@ export type SkillCategory =
   | 'focus'
   | 'self_care'
   | 'relationships'
-  | 'mindfulness';
+  | 'mindfulness'
+  | 'games';
 
 export interface Skill {
   id: string;
@@ -726,6 +727,73 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isPremium: false,
     isUnlocked: true,
   },
+
+  // ==================== MINDFUL GAMES ====================
+  {
+    id: 'asteroids',
+    name: 'Mindful Asteroids',
+    description: 'Classic space shooter - focus and flow in the void',
+    category: 'games',
+    emoji: '🚀',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'retro_snake',
+    name: 'Retro Snake',
+    description: 'Nokia-style Snake with vintage aesthetics',
+    category: 'games',
+    emoji: '🐍',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'retro_pong',
+    name: 'Classic Pong',
+    description: 'CRT-style Pong with phosphor green glow',
+    category: 'games',
+    emoji: '🏓',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'fidget_pad',
+    name: 'Fidget Pad',
+    description: 'Digital fidget toys - bubbles, sliders, and spinners',
+    category: 'games',
+    emoji: '🔘',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'bubble_wrap',
+    name: 'Bubble Wrap',
+    description: 'Endless satisfying pops with haptic feedback',
+    category: 'games',
+    emoji: '🫧',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'zen_blocks',
+    name: 'Zen Blocks',
+    description: 'Tetris-like stacking without game over pressure',
+    category: 'games',
+    emoji: '🧱',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'clarity',
+    requiredLevel: 2,
+  },
+  {
+    id: 'color_sort',
+    name: 'Color Sort',
+    description: 'Satisfying color sorting puzzle',
+    category: 'games',
+    emoji: '🎨',
+    isPremium: false,
+    isUnlocked: true,
+  },
 ];
 
 // Coach unlocks - abilities and customizations for your guide
@@ -898,4 +966,5 @@ export const SKILL_CATEGORIES: Record<SkillCategory, { name: string; emoji: stri
   self_care: { name: 'Self Care', emoji: '💚', color: '#88B04B' },
   relationships: { name: 'Relationships', emoji: '🤝', color: '#F7CAC9' },
   mindfulness: { name: 'Mindfulness', emoji: '🧘', color: '#92A8D1' },
+  games: { name: 'Mindful Games', emoji: '🎮', color: '#6366F1' },
 };

@@ -4930,15 +4930,137 @@ Skills tab includes intelligent search that filters:
 
 ### Easter Egg Commands
 ```typescript
-export function checkEasterEgg(command: string): { found: boolean; message?: string } {
+export function checkEasterEgg(command: string): { found: boolean; message?: string; action?: string } {
   const easterEggs = {
-    '/party': '🎉🎊🥳 Party mode activated! 🥳🎊🎉',
-    '/hug': '🤗 Sending you a warm virtual hug!',
-    '/coffee': '☕ Here\'s a virtual coffee for your journey!',
-    '/42': '🌌 The answer to life, the universe, and everything!',
-    // ...more
+    '/party': { message: '🎉🎊🥳 Party mode activated!', action: 'confetti' },
+    '/hug': { message: '🤗 Sending you a warm virtual hug!' },
+    '/coffee': { message: '☕ Here\'s a virtual coffee for your journey!' },
+    '/wisdom': { message: '🦉 "The only true wisdom..." - Socrates' },
+    '/42': { message: '🌌 The answer to life, the universe, and everything!' },
+    '/tree': { message: '🌳 Your tree appreciates you! 🌳' },
+    '/credits': { message: 'Made with 💚 by the Mood Leaf team', action: 'show_credits' },
+    '/debug': { message: 'Debug mode toggled', action: 'toggle_debug' },
+    '/snake': { message: '🐍 Loading retro Snake...', action: 'game_snake' },
+    '/pong': { message: '🏓 Loading classic Pong...', action: 'game_pong' },
   };
 }
+```
+
+**Note:** Easter eggs are documented for developers but intentionally kept mysterious for users.
+
+---
+
+## Retro Games
+
+Classic games with vintage aesthetics, available as Easter eggs and skills.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `components/games/RetroSnake.tsx` | Nokia-style Snake game |
+| `components/games/RetroPong.tsx` | CRT-style Pong game |
+| `components/games/RetroAsteroids.tsx` | Vector graphics Asteroids |
+| `app/games/snake.tsx` | Snake route |
+| `app/games/pong.tsx` | Pong route |
+| `app/games/asteroids.tsx` | Asteroids route |
+
+### RetroSnake (Nokia Style)
+
+```typescript
+const COLORS = {
+  screenBg: '#9BBC0F',    // Classic Nokia green
+  screenDark: '#0F380F',  // Dark green
+  casing: '#2C2C2C',      // Phone casing
+};
+```
+
+Features: D-pad controls, Nokia phone casing visual, speaker holes aesthetic.
+
+### RetroPong (CRT Style)
+
+```typescript
+const COLORS = {
+  background: '#000000',
+  foreground: '#33FF33',  // Phosphor green
+  scanline: 'rgba(0, 0, 0, 0.15)',
+  glow: 'rgba(51, 255, 51, 0.3)',
+};
+```
+
+Features: Scanline effect, phosphor glow, AI opponent.
+
+### RetroAsteroids (Vector Style)
+
+```typescript
+const COLORS = {
+  background: '#000000',
+  vector: '#FFFFFF',
+  highlight: '#00FF00',
+};
+```
+
+Features: Vector graphics aesthetic, thrust/rotate controls, level progression.
+
+### Games Category in Skills
+
+```typescript
+export type SkillCategory = '...' | 'games';
+
+export const SKILL_CATEGORIES = {
+  games: { name: 'Mindful Games', emoji: '🎮', color: '#6366F1' },
+};
+```
+
+---
+
+## Playback Resume Service
+
+Tracks playback position for audio content (Sleep Stories, Old Time Radio).
+
+### File
+
+`services/playbackResumeService.ts`
+
+### Key Types
+
+```typescript
+export type ContentType = 'sleep_story' | 'old_time_radio';
+
+export interface PlaybackPosition {
+  contentId: string;
+  contentType: ContentType;
+  title: string;
+  positionSeconds: number;
+  durationSeconds: number;
+  lastPlayedAt: string;
+  completedAt?: string;
+}
+
+export interface ResumeInfo {
+  hasPosition: boolean;
+  positionSeconds: number;
+  percentComplete: number;
+  lastPlayedAt: string | null;
+}
+```
+
+### Key Functions
+
+```typescript
+// Save current position
+await savePlaybackPosition('sleep_story', 'Alice in Wonderland', 1234, 10800, { author: 'Lewis Carroll' });
+
+// Get position for resume
+const info = await getPlaybackPosition('sleep_story', 'Alice in Wonderland');
+// { hasPosition: true, positionSeconds: 1234, percentComplete: 11 }
+
+// Get continue listening list
+const { stories, radio } = await getContinueListening();
+
+// Format for display
+const message = formatResumeMessage(info);
+// "Resume from 20:34 (11%)"
 ```
 
 ---

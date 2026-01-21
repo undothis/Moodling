@@ -22,8 +22,10 @@ A complete guide to all features and functionality in Mood Leaf.
 14. [Skills & Exercises](#skills--exercises)
 15. [Mindful Games](#mindful-games)
 16. [Collection System](#collection-system)
-17. [Premium Features](#premium-features)
-18. [Troubleshooting](#troubleshooting)
+17. [Food Tracking](#food-tracking)
+18. [Skills Tab](#skills-tab)
+19. [Premium Features](#premium-features)
+20. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -776,12 +778,22 @@ Type commands starting with `/` in the chat to access quick features and switch 
 | `/clear` | `/cls`, `/reset` | Clear conversation history |
 | `/settings` | `/config`, `/preferences` | Open coach settings |
 
-#### Secret Commands
-| Command | What It Does |
-|---------|--------------|
-| `/love` | A little reminder that you matter |
-| `/hug` | Virtual hug |
-| `/wisdom` | Random wisdom quote |
+#### Easter Eggs
+
+Mood Leaf contains hidden Easter eggs - secret commands that unlock surprises. We won't tell you what they all are (that would spoil the fun!), but here are a few hints to get you started:
+
+- `/hug` - A warm virtual embrace
+- `/wisdom` - Words to ponder
+
+**What are Easter eggs?**
+
+Easter eggs are hidden features in software - a tradition dating back to 1979 when Atari programmer Warren Robinett secretly hid his name in the video game *Adventure* because Atari didn't credit developers at the time. When players found a hidden room containing "Created by Warren Robinett," the term "Easter egg" was born - named after the tradition of hiding eggs for children to find.
+
+Since then, Easter eggs have become a beloved tradition in software. Google famously hides them in Search (try googling "do a barrel roll"). Video games, operating systems, and apps all contain hidden surprises for curious users to discover.
+
+In Mood Leaf, we've hidden several Easter eggs as rewards for the curious. Some are silly, some are games, and some are just... nice. Try different `/` commands and see what you find. The geeky among us will appreciate the hunt.
+
+*Hint: Numbers can be meaningful. Classics never die. Sometimes you just need to play.*
 
 ### Switching Coaches
 
@@ -1152,6 +1164,203 @@ This collection system is intentionally different from typical gamification:
 - **Celebrates presence** — Every session counts equally
 
 The goal is to make self-care feel rewarding, not obligatory.
+
+---
+
+## Food Tracking
+
+Mood Leaf includes an optional food tracking feature with AI auto-detection.
+
+### Enabling Food Tracking
+
+1. Go to **Settings** > **Food Tracking**
+2. Toggle **Enable Food Tracking** on
+3. Optionally enable **AI Auto-Detection**
+4. Set your **Daily Calorie Goal** (default: 2000)
+
+### Manual Food Logging
+
+1. Tap the **Food Tracker** button on the home screen (below the Coach button)
+2. Search for foods or browse the database
+3. Tap a food to log it
+4. Adjust portion size if needed
+
+### AI Auto-Detection
+
+When enabled, Mood Leaf automatically detects food mentions in your journal entries:
+
+- "Had pizza for lunch" → Logs pizza slice (~285 cal)
+- "Coffee and a bagel this morning" → Logs both items
+- "Skipped breakfast again" → Notes the pattern (no calories logged)
+
+After saving a journal entry, you'll see a brief notification showing what was logged.
+
+### Food Database
+
+Mood Leaf includes 80+ common foods with estimated calories:
+
+| Category | Examples |
+|----------|----------|
+| **Breakfast** | Eggs, toast, pancakes, cereal, bagels |
+| **Lunch** | Sandwiches, salads, soup, wraps |
+| **Dinner** | Pasta, rice, chicken, steak, fish |
+| **Snacks** | Chips, fruit, nuts, yogurt, cookies |
+| **Drinks** | Coffee, tea, soda, juice, smoothies |
+| **Fast Food** | Pizza, burgers, tacos, burritos |
+
+### Viewing Progress
+
+The Food Tracker screen shows:
+- Today's logged foods with calories
+- Progress toward daily goal (visual bar)
+- Meal breakdown (breakfast, lunch, dinner, snacks)
+
+### Settings Options
+
+| Setting | Description |
+|---------|-------------|
+| **Enable Food Tracking** | Master toggle for the feature |
+| **AI Auto-Detection** | Auto-log food from journal entries |
+| **Daily Calorie Goal** | Your target (default 2000) |
+| **Clear All Food Data** | Delete all logged food history |
+
+### Integration with Cycle Tracking
+
+If both Food Tracking and Cycle Tracking are enabled, Mood Leaf can show correlations:
+- "Your cramps tend to be worse after fast food"
+- "Good hydration correlates with fewer headaches"
+- "Caffeine intake is higher during your luteal phase"
+
+These insights appear in your Cycle Insights panel after 2+ cycles of data.
+
+---
+
+## Skills Tab
+
+The Skills tab (sparkles icon in bottom navigation) is your growth toolkit with a D&D-inspired progression system.
+
+### Accessing Skills Tab
+
+Tap the **Skills** (sparkles) icon in the bottom navigation bar. You'll see:
+
+1. **Your Attributes** - Four growth areas with progress bars
+2. **Skills by Category** - 50+ techniques across 7 categories
+3. **Coach Unlocks** - Personality customizations
+4. **Search** - Filter skills by name or description
+
+### The Four Attributes
+
+| Attribute | Emoji | What It Represents | How to Grow |
+|-----------|-------|-------------------|-------------|
+| **Wisdom** | 🦉 | Self-knowledge, insight | Journaling, reflection, weekly reviews |
+| **Resilience** | 🏔️ | Coping ability, strength | Grounding exercises, practicing during hard times |
+| **Clarity** | 💎 | Mental focus, understanding | Pattern identification, viewing insights |
+| **Compassion** | 💚 | Self-kindness, empathy | Self-compassion practices, affirmations |
+
+### Level Progression
+
+Points are earned naturally through app usage. Levels require increasing points:
+
+| Level | Points Needed |
+|-------|---------------|
+| 1 | 0 |
+| 2 | 25 |
+| 3 | 75 |
+| 4 | 150 |
+| 5 | 300 |
+| 6 | 500 |
+| 7 | 750 |
+| 8 | 1000 |
+| 9 | 1500 |
+| 10 | 2000 |
+
+**No grinding required** - just use the app naturally and you'll progress.
+
+### Skill Categories
+
+#### Grounding (9 skills)
+5-4-3-2-1, Box Breathing, Physiological Sigh, Cold Water Reset, Safe Place Visualization, Butterfly Hug, and more.
+
+#### Anxiety (8 skills)
+Worry Time, Thought Challenging, Worst/Best/Likely, Containment, Anxiety Ladder, and more.
+
+#### Sleep (6 skills)
+Wind Down Routine, Sleep Stories (public domain audiobooks), Old Time Radio (classic dramas), 4-7-8 Breathing, Body Scan for Sleep, Sleep Hygiene Checklist.
+
+#### Focus (7 skills)
+Pomodoro Timer, Brain Dump, Single-Tasking, Environment Design, Digital Sunset, and more.
+
+#### Self-Care (7 skills)
+Joy List, Gratitude Practice, Inner Critic Work, Values Clarification, Self-Compassion Break, and more.
+
+#### Relationships (6 skills)
+I-Statements, Boundary Scripts, Repair Conversations, Active Listening, Conflict De-escalation, and more.
+
+#### Mindfulness (7 skills)
+Body Scan, RAIN Technique, Urge Surfing, Walking Meditation, Loving-Kindness, and more.
+
+### Sleep Stories
+
+Pull from free public domain sources:
+- **Project Gutenberg** - Classic literature (Alice in Wonderland, Sherlock Holmes)
+- **Librivox** - Free audiobooks read by volunteers
+
+Perfect for winding down at bedtime with calm narration.
+
+### Old Time Radio
+
+Classic radio dramas from the Internet Archive:
+- **The Shadow** - Mystery and suspense
+- **Suspense** - Thriller anthology
+- **X Minus One** - Science fiction
+- **Dimension X** - More sci-fi classics
+
+Great for relaxing while falling asleep.
+
+### Coach Unlocks
+
+As your attributes grow, you unlock coach customizations:
+
+**Personality Traits (Level 2+)**
+- Light Humor - Coach adds appropriate humor
+- Celebration Mode - Extra enthusiasm for wins
+- Tough Love - More direct feedback
+- Extra Nurturing - Softer, more gentle
+
+**Conversation Styles (Level 3+)**
+- Deep Questions - More profound inquiries
+- Socratic Dialogue - Questions that lead to insight
+- Story & Metaphor - Uses narratives to explain
+- Action-Focused - Emphasizes concrete steps
+
+**Special Abilities (Level 4+)**
+- Pattern Insights - Points out trends you missed
+- Enhanced Memory - References older conversations
+- Proactive Check-ins - Reaches out during hard times
+- Crisis Support - Extra gentle during crises
+
+**Voice Features (Level 5+ / Premium)**
+- Voice Responses - Coach speaks to you
+- Voice Journaling - Speak your entries
+
+### Search Feature
+
+The search bar filters:
+- Skills by name ("breathing", "grounding")
+- Skills by description ("anxiety", "sleep")
+- Coach unlocks by name
+
+### Hidden Easter Eggs
+
+Mood Leaf contains secret Easter egg commands scattered throughout. We won't spoil them all, but the curious will be rewarded. Try typing different `/` commands and see what happens.
+
+A few hints:
+- Some give you warm feelings
+- Some are nostalgic throwbacks to classic gaming
+- Some reference pop culture
+- The answer might be out there... somewhere
+
+Finding Easter eggs is part of the fun. Happy hunting!
 
 ---
 

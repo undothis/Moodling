@@ -1097,7 +1097,71 @@ A dedicated Skills tab in bottom navigation with D&D-inspired growth system. Non
 Intelligent search filters skills and coach abilities by name, description, or category.
 
 ### Easter Egg Slash Commands
-`/party` `/hug` `/coffee` `/wisdom` `/42` `/credits` `/debug`
+`/party` `/hug` `/coffee` `/wisdom` `/42` `/credits` `/debug` `/snake` `/pong`
+
+---
+
+## 24. Retro Games and Playback Resume (Implemented)
+
+### Overview
+
+Added classic retro games as Easter eggs and skills, plus a playback resume service for audio content (Sleep Stories, Old Time Radio).
+
+### Retro Games Created
+
+| Game | Access | Style | Category |
+|------|--------|-------|----------|
+| **Snake** | `/snake` Easter egg | Nokia green/black LCD | Easter Egg |
+| **Pong** | `/pong` Easter egg | CRT phosphor green glow | Easter Egg |
+| **Asteroids** | Skills > Games | Vector graphics arcade | Skill |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `components/games/RetroSnake.tsx` | Nokia-style Snake with D-pad controls |
+| `components/games/RetroPong.tsx` | Classic Pong with CRT scanlines |
+| `components/games/RetroAsteroids.tsx` | Vector graphics Asteroids |
+| `app/games/snake.tsx` | Snake game screen route |
+| `app/games/pong.tsx` | Pong game screen route |
+| `app/games/asteroids.tsx` | Asteroids game screen route |
+| `services/playbackResumeService.ts` | Track audio playback position |
+
+### Playback Resume Service
+
+Tracks where users left off in Sleep Stories and Old Time Radio content.
+
+**Key Features:**
+- Saves position for each content item
+- Continues from last position on resume
+- Tracks listening history
+- Calculates total listening time
+- Marks content as completed when finished
+
+**Key Functions:**
+```typescript
+savePlaybackPosition(type, title, positionSeconds, durationSeconds, options)
+getPlaybackPosition(type, title, episode?)
+getContinueListening() // Returns in-progress items
+getPlaybackHistory(limit?)
+getTotalListeningTime()
+formatResumeMessage(info) // "Resume from 12:34 (45%)"
+```
+
+### Games Category Added to Skills
+
+Added `games` category to SkillProgression types with these skills:
+- Mindful Asteroids
+- Retro Snake
+- Classic Pong
+- Fidget Pad
+- Bubble Wrap
+- Zen Blocks
+- Color Sort
+
+### Easter Egg Commands Updated
+
+`/snake` and `/pong` now launch their respective games via the `game_snake` and `game_pong` actions in `checkEasterEgg()`.
 
 ---
 
@@ -1118,7 +1182,7 @@ Intelligent search filters skills and coach abilities by name, description, or c
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 50+ techniques and D&D progression.** All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 50+ techniques and D&D progression. NEW: Retro Games (Snake, Pong, Asteroids) with vintage aesthetics. NEW: Playback Resume for Sleep Stories and Old Time Radio.** All processing local/on-device."
 
 ---
 
@@ -1148,6 +1212,7 @@ Intelligent search filters skills and coach abilities by name, description, or c
 | `textToSpeechService.ts` | **NEW** Google Cloud TTS | `speakCoachResponse()`, `stopSpeaking()` |
 | `foodTrackingService.ts` | **NEW** Food & calorie tracking | `logFood()`, `autoLogFromJournal()`, `getTodayCalorieProgress()` |
 | `skillProgressionService.ts` | **NEW** D&D progression system | `awardPoints()`, `getSkillsWithStatus()`, `checkEasterEgg()` |
+| `playbackResumeService.ts` | **NEW** Audio playback tracking | `savePlaybackPosition()`, `getPlaybackPosition()`, `getContinueListening()` |
 
 ---
 

@@ -313,6 +313,8 @@ export function checkEasterEgg(command: string): { found: boolean; message?: str
     '/hug': { message: '🤗 Sending you a warm virtual hug!' },
     '/wisdom': { message: '🦉 "The only true wisdom is knowing you know nothing." - Socrates' },
     '/42': { message: '🌌 The answer to life, the universe, and everything!' },
+    '/snake': { message: '🐍 Loading retro Snake...', action: 'game_snake' },
+    '/pong': { message: '🏓 Loading classic Pong...', action: 'game_pong' },
   };
 
   const lower = command.toLowerCase().trim();
