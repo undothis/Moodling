@@ -4634,6 +4634,111 @@ See `docs/Handoff.md` Section 18 for full roadmap.
 
 ---
 
+## Period Lifestyle Correlations
+
+### Overview
+
+Tracks lifestyle factors (food, sleep, activity) alongside menstrual cycle data to surface personalized insights like:
+- "Your cramps tend to be worse when you've had less than 6 hours of sleep"
+- "Heavy flow days often follow weeks with more processed food"
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `types/PeriodCorrelation.ts` | Type definitions, food tags, symptom options |
+| `services/periodCorrelationService.ts` | Logging, correlation analysis, insights |
+| `components/cycle/QuickLogPanel.tsx` | Quick-tap UI for daily logging |
+| `components/cycle/CycleInsights.tsx` | Display personalized insights |
+
+### Quick-Tap Food Logging
+
+Users tap food categories instead of typing:
+
+```typescript
+import { FOOD_TAGS } from '../types/PeriodCorrelation';
+
+// Categories: negative, positive, neutral, supplement
+// Examples:
+// 🍔 Fast Food (negative) - correlates with cramps, bloating
+// 🥗 Fresh/Whole (positive) - correlates with reduced cramps
+// ☕ Caffeine (neutral) - varies by person
+// 💊 Magnesium (supplement) - correlates with reduced cramps
+```
+
+### Correlation Service Usage
+
+```typescript
+import {
+  logFoodTags,
+  logSleep,
+  logSymptoms,
+  getCurrentInsights,
+  getCycleSuggestions,
+} from '../services/periodCorrelationService';
+
+// Log food (auto-saves)
+await logFoodTags(['fast_food', 'caffeine']);
+
+// Log sleep
+await logSleep({
+  hours: 6,
+  quality: 'okay',
+  issues: ['woke_multiple_times'],
+  source: 'manual',
+});
+
+// Log symptoms with intensity (0-3)
+await logSymptoms({
+  cramps: 2,      // moderate
+  fatigue: 1,     // mild
+  moodDip: 3,     // severe
+});
+
+// Get insights (after 2+ cycles)
+const { insights, canShowInsights, nextMilestone } = await getCurrentInsights();
+
+// Get cycle-specific suggestions
+const suggestions = await getCycleSuggestions(daysUntilPeriod, currentPhase);
+```
+
+### Insight Generation
+
+Correlations are calculated by comparing symptom severity when a factor is present vs absent:
+
+```typescript
+// Example: Fast food correlation with cramps
+// - Days with fast food: avg cramp intensity 2.4
+// - Days without fast food: avg cramp intensity 1.2
+// - Correlation: +0.67 (moderate positive = increases symptoms)
+// - Insight: "Fast food tends to worsen your cramps"
+```
+
+### Data Requirements
+
+| Insight Type | Min Cycles | Confidence Threshold |
+|--------------|------------|----------------------|
+| Basic patterns | 2 | 0.6 |
+| Food correlations | 3 | 0.7 |
+| Sleep correlations | 3 | 0.7 |
+| Personalized suggestions | 4 | 0.75 |
+
+### Privacy
+
+- All data stored locally (AsyncStorage)
+- Only aggregated insights used in MoodPrint
+- Raw logs never sent to API
+- User can delete all data anytime
+
+### Research Sources
+
+Based on peer-reviewed research:
+- Cambridge Nutrition Review (food/menstrual symptoms)
+- Nature Scientific Reports 2025 (sleep/PMS)
+- PMC Systematic Reviews (lifestyle/cycle correlations)
+
+---
+
 ## Future Enhancements
 
 ### Planned Features
