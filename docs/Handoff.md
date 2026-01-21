@@ -37,15 +37,16 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 - **Verification System:** Checks AI responses against actual user data (journals, life context, psych profile)
 - **Mental Health Safety:** No sad emojis, positive framing, crisis detection
 - **Explicit Data Referencing Instructions:** Added to AI coach prompt to ensure specific, not generic responses
+- **Exact Twig Timestamps:** AI now receives exact times for today's/yesterday's twig entries (e.g., "5:11 PM")
 
 ---
 
 ## 4. WHAT IS NOT WORKING / OPEN ISSUES (FAILURES)
 
 - **Strange characters in chat responses:** User reported odd characters at start of some responses (e.g., "\nd I'm so sorry"). May be clipboard/encoding issue or API response artifact. Needs investigation.
-- **`[H]` placeholder appeared in chat:** Claude was inserting `[H]` as a name placeholder. Fixed by adding explicit instructions to never use bracket placeholders.
-- **Verification edge cases:** The generic detection (CHECK 7) was flagging responses as generic even when actual data references were found. Fixed but may need more tuning.
-- **AI response quality:** Need to verify the AI consistently references specific user data, not just generic empathy
+- **`[H]` placeholder appeared in chat:** Claude was inserting `[H]` as a name placeholder. FIXED - added explicit instructions to never use bracket placeholders.
+- **Verification edge cases:** The generic detection (CHECK 7) was flagging responses as generic even when actual data references were found. FIXED but may need more tuning.
+- **Twig time tracking:** AI couldn't answer "what did I log at 5:11 PM?" FIXED - now includes exact timestamps for today's and yesterday's entries.
 
 ---
 
