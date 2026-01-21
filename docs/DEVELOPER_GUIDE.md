@@ -3199,6 +3199,30 @@ Supports temporary switch with `--temp` flag: `/flint --temp`
 
 Skills are upgradeable capabilities that enhance how the coach interacts with users. Built for real-world skill transfer, not app dependency.
 
+### Architecture
+
+**Files:**
+- `services/skillsService.ts` - Skill definitions, progress tracking, menu data
+- `services/slashCommandService.ts` - Slash command handlers for exercises
+- `components/skills/SkillsBubbleMenu.tsx` - UI for browsing skills
+- `components/skills/ExercisePlayer.tsx` - Guided exercise interface
+
+### Skill Types (D&D Attributes)
+
+```typescript
+export type SkillType = 'calm' | 'ground' | 'focus' | 'challenge' | 'connect' | 'restore';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+```
+
+| SkillType | Icon | Purpose |
+|-----------|------|---------|
+| `calm` | 🌊 | Breathing, relaxation, settling nervous system |
+| `ground` | 🦶 | Anchoring to present, sensory awareness |
+| `focus` | 🎯 | Attention, concentration, mental clarity |
+| `challenge` | 💪 | Thought work, CBT techniques, reframing |
+| `connect` | 🤝 | Social skills, relationships |
+| `restore` | ✨ | Recovery, self-compassion, healing |
+
 ### Skill Categories
 
 | Category | Emoji | Description |
@@ -3224,9 +3248,44 @@ interface SkillProgress {
 
 // XP awarded per use (partial for incomplete)
 const xpEarned = completed ? skill.xpPerUse : skill.xpPerUse * 0.5;
+
+// Level display format
+const progressBar = '■'.repeat(level) + '□'.repeat(5 - level);
+// Example: ■■■□□ = Level 3
 ```
 
 **Anti-Streak Design:** Progress is tracked without streaks or punishment for gaps. Celebrates milestones (10 uses, 25 uses) rather than consecutive days.
+
+### Slash Command Mappings
+
+**Breathing Commands:**
+```typescript
+const BREATHING_ALIASES: Record<string, string> = {
+  'box': 'box_breathing',
+  '4444': 'box_breathing',
+  '478': '478_breathing',
+  '4-7-8': '478_breathing',
+  'sleep': '478_breathing',
+  'coherent': 'coherent_breathing',
+  'hrv': 'coherent_breathing',
+  'sigh': 'physiological_sigh',
+  'quick': 'physiological_sigh',
+};
+// Usage: /breathe box, /breathe 478, /breathe sigh
+```
+
+**Grounding Commands:**
+```typescript
+const GROUNDING_ALIASES: Record<string, string> = {
+  '54321': 'grounding_54321',
+  'senses': 'grounding_54321',
+  'feet': 'feet_on_floor',
+  'floor': 'feet_on_floor',
+  'ice': 'ice_cube_grounding',
+  'cold': 'ice_cube_grounding',
+};
+// Usage: /ground, /ground feet, /ground ice
+```
 
 ### Exercise Library
 
@@ -3258,20 +3317,78 @@ interface ExerciseStep {
 }
 ```
 
-**Included Exercises:**
-- Box Breathing (4-4-4-4)
-- 4-7-8 Breathing (sleep)
-- Coherent Breathing (HRV)
-- Physiological Sigh (quick calm)
-- 5-4-3-2-1 Grounding
-- Feet on Floor
-- Ice Cube Grounding
-- Quick Body Scan
-- Progressive Muscle Relaxation
-- Thought Record (CBT)
-- Thought Defusion (ACT)
-- Event Preparation
-- Conversation Starters
+### Complete Exercise Reference
+
+**Breathing Exercises:**
+
+| ID | Name | Command | SkillType | Rarity | Pattern |
+|----|------|---------|-----------|--------|---------|
+| `box_breathing` | Box Breathing | `/breathe` | calm | common | 4-4-4-4 |
+| `478_breathing` | 4-7-8 Breathing | `/breathe 478` | calm | common | 4-7-8 |
+| `coherent_breathing` | Coherent Breathing | `/breathe coherent` | calm | uncommon | 5-5 (6/min) |
+| `physiological_sigh` | Physiological Sigh | `/breathe sigh` | calm | common | double inhale, long exhale |
+
+**Grounding Exercises:**
+
+| ID | Name | Command | SkillType | Rarity | Method |
+|----|------|---------|-----------|--------|--------|
+| `grounding_54321` | 5-4-3-2-1 | `/ground` | ground | common | Sensory anchoring |
+| `feet_on_floor` | Feet on Floor | `/ground feet` | ground | common | Physical anchoring |
+| `ice_cube_grounding` | Ice Cube | `/ground ice` | ground | uncommon | Intense sensation |
+
+**Body Awareness:**
+
+| ID | Name | Command | SkillType | Rarity | Duration |
+|----|------|---------|-----------|--------|----------|
+| `quick_body_scan` | Quick Body Scan | `/body` | ground | common | 2 min |
+| `progressive_relaxation` | PMR | `/body pmr` | restore | uncommon | 10 min |
+
+**Thought Work:**
+
+| ID | Name | Command | SkillType | Rarity | Technique |
+|----|------|---------|-----------|--------|-----------|
+| `thought_record` | Thought Record | `/thought` | challenge | common | CBT |
+| `thought_defusion` | Thought Defusion | `/defuse` | challenge | uncommon | ACT |
+
+**Social Skills:**
+
+| ID | Name | Command | SkillType | Rarity | Focus |
+|----|------|---------|-----------|--------|-------|
+| `event_preparation` | Event Prep | `/prep` | connect | common | Mental rehearsal |
+| `conversation_starters` | Conversation | `/convo` | connect | common | Social practice |
+
+### Adding New Exercises
+
+1. Define in `EXERCISES` array in `skillsService.ts`:
+```typescript
+{
+  id: 'new_exercise',
+  name: 'New Exercise',
+  emoji: '🆕',
+  description: 'What this exercise does',
+  duration: 120,  // 2 minutes
+  tier: 'free',
+  type: 'breathing',
+  skillType: 'calm',
+  rarity: 'common',
+  lore: 'The story behind this technique...',
+  tags: ['quick', 'anxiety'],
+  steps: [
+    { instruction: 'Step 1', duration: 4, visualType: 'circle_expand', audioHint: 'inhale' },
+    { instruction: 'Step 2', duration: 4, visualType: 'circle_shrink', audioHint: 'exhale' },
+  ],
+}
+```
+
+2. Add command alias in `slashCommandService.ts` if needed:
+```typescript
+const BREATHING_ALIASES: Record<string, string> = {
+  // ... existing
+  'new': 'new_exercise',
+};
+```
+
+3. Register with collection system in `collectionService.ts` for unlock tracking
 
 ---
 

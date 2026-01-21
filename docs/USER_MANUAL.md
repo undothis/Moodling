@@ -703,56 +703,201 @@ Start exercises directly from chat:
 
 Skills are capabilities you can develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a **type** (Calm, Ground, Focus, Challenge, Connect, Restore) and **rarity** (Common → Legendary), giving the experience a collectible card game feel.
 
+### Quick Start Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `/skills` | Open the full skills menu |
+| `/breathe` | Start box breathing (default) |
+| `/breathe 478` | Start 4-7-8 sleep breathing |
+| `/breathe sigh` | Quick physiological sigh |
+| `/ground` | Start 5-4-3-2-1 grounding |
+| `/body` | Start a quick body scan |
+| `/calm` | Let AI pick the best technique for you |
+
 ### Skill Categories
 
-| Category | What's Included |
-|----------|-----------------|
-| 🧘 **Mindfulness** | Breathing, grounding, body awareness |
-| 💪 **Coping** | Thought challenging, emotion regulation |
-| 🌱 **Growth** | Values, goals, habit building |
-| 🎭 **Social** | Event prep, conversation skills |
-| 🔮 **Advanced** | Deeper psychological work (Premium) |
+| Category | What's Included | Skill Type |
+|----------|-----------------|------------|
+| 🧘 **Mindfulness** | Breathing, grounding, body awareness | Calm, Ground |
+| 💪 **Coping** | Thought challenging, emotion regulation | Challenge, Focus |
+| 🌱 **Growth** | Values, goals, habit building | Focus, Restore |
+| 🎭 **Social** | Event prep, conversation skills | Connect |
+| 🔮 **Advanced** | Deeper psychological work (Premium) | All types |
 
 ### Accessing Skills
 
-1. Type `/skills` in chat
-2. Or tap the **Skills** quick action button
-3. Browse categories and exercises
-4. Tap any exercise to start
+**Method 1: Slash Commands (Fastest)**
+- Type `/skills` in chat to browse all skills
+- Use `/breathe`, `/ground`, `/calm` for instant exercises
 
-### Skill Progress
+**Method 2: Skills Menu**
+1. Tap the **Skills** quick action button below the chat
+2. Browse categories and exercises
+3. Tap any exercise to see a preview card
+4. Tap "Start" to begin the guided exercise
 
-Each skill has levels (1-5) based on usage:
-- **Level 1**: Just starting out
-- **Level 3**: Building a real practice
-- **Level 5**: Mastery achieved
+**Method 3: Ask Your Coach**
+- Say "I need a breathing exercise" or "Help me ground"
+- Your coach will suggest appropriate skills
 
-Progress is tracked without pressure. Miss a day? No problem. Come back when you're ready.
+### Skill Progress & Levels
 
-### Exercise Library
+Each skill has 5 levels based on usage:
 
-**Breathing Exercises:**
-- 📦 Box Breathing - 4-4-4-4 for calm
-- 🌙 4-7-8 Breathing - For sleep
-- 💗 Coherent Breathing - HRV optimization
-- 😮‍💨 Physiological Sigh - Instant calm
+| Level | Status | What It Means |
+|-------|--------|---------------|
+| ■□□□□ | **Beginner** | Just discovered this skill |
+| ■■□□□ | **Learning** | You've tried it a few times |
+| ■■■□□ | **Practicing** | Building a real habit |
+| ■■■■□ | **Skilled** | This is part of your toolkit |
+| ■■■■■ | **Mastery** | You've made this skill your own |
 
-**Grounding Exercises:**
-- 🦶 5-4-3-2-1 - Use your senses
-- 👣 Feet on Floor - Simple anchoring
-- 🧊 Ice Cube - Intense grounding
+**No Pressure Design:**
+- Progress never decreases
+- No streaks to maintain
+- Miss a day? Come back whenever
+- Every attempt counts equally
 
-**Body Awareness:**
-- 🔍 Quick Body Scan - 2-minute check-in
-- 💆 Progressive Relaxation - Tense and release
+### Skill Types (D&D Style)
 
-**Thought Work:**
-- 🧠 Thought Record - CBT technique
-- 🎈 Thought Defusion - Create distance from thoughts
+Skills are categorized by their purpose:
 
-**Social Skills:**
-- 🎉 Event Preparation - Pre-event mental prep
-- 💬 Conversation Starters - Practice openers
+| Type | Icon | Focus |
+|------|------|-------|
+| **Calm** | 🌊 | Breathing, relaxation, settling the nervous system |
+| **Ground** | 🦶 | Anchoring to the present, sensory awareness |
+| **Focus** | 🎯 | Attention, concentration, mental clarity |
+| **Challenge** | 💪 | Thought work, CBT techniques, reframing |
+| **Connect** | 🤝 | Social skills, relationships, communication |
+| **Restore** | ✨ | Recovery, self-compassion, healing |
+
+### Rarity System
+
+Skills have rarity levels that unlock as you use the app:
+
+| Rarity | Color | Description |
+|--------|-------|-------------|
+| **Common** | ⚪ White | Core skills everyone starts with |
+| **Uncommon** | 🟢 Green | Specialized techniques |
+| **Rare** | 🔵 Blue | Advanced or unique approaches |
+| **Legendary** | 🟣 Purple | Secret unlocks and mastery-level skills |
+
+---
+
+### Complete Exercise Library
+
+#### 🌬️ Breathing Exercises
+
+**📦 Box Breathing** (Common, Calm)
+- **Pattern:** Inhale 4s → Hold 4s → Exhale 4s → Hold 4s
+- **Best for:** Anxiety, stress, focus before tasks
+- **Command:** `/breathe` or `/breathe box`
+- **Lore:** *Used by Navy SEALs to stay calm under pressure*
+
+**🌙 4-7-8 Breathing** (Common, Calm)
+- **Pattern:** Inhale 4s → Hold 7s → Exhale 8s
+- **Best for:** Sleep, deep relaxation, winding down
+- **Command:** `/breathe 478` or `/breathe sleep`
+- **Lore:** *Dr. Andrew Weil's natural tranquilizer for the nervous system*
+
+**💗 Coherent Breathing** (Uncommon, Calm)
+- **Pattern:** Inhale 5s → Exhale 5s (6 breaths/minute)
+- **Best for:** Heart rate variability, long-term stress resilience
+- **Command:** `/breathe coherent` or `/breathe hrv`
+- **Lore:** *The rhythm that synchronizes heart and brain*
+
+**😮‍💨 Physiological Sigh** (Common, Calm)
+- **Pattern:** Double inhale (nose) → Long exhale (mouth)
+- **Best for:** Instant calm, panic moments, quick reset
+- **Command:** `/breathe sigh` or `/breathe quick`
+- **Lore:** *Your body's natural reset button, discovered by Stanford researchers*
+
+#### 🦶 Grounding Exercises
+
+**🖐️ 5-4-3-2-1 Grounding** (Common, Ground)
+- **Method:** Name 5 things you see, 4 you hear, 3 you touch, 2 you smell, 1 you taste
+- **Best for:** Dissociation, anxiety spirals, feeling unreal
+- **Command:** `/ground`
+- **Lore:** *The classic sensory anchor that brings you back to now*
+
+**👣 Feet on Floor** (Common, Ground)
+- **Method:** Feel your feet pressing into the ground, notice the sensation
+- **Best for:** Quick grounding, meetings, public spaces
+- **Command:** `/ground feet`
+- **Lore:** *So simple it seems too easy — until you try it*
+
+**🧊 Ice Cube Grounding** (Uncommon, Ground)
+- **Method:** Hold ice, focus on the intense cold sensation
+- **Best for:** Strong dissociation, overwhelming emotions, crisis moments
+- **Command:** `/ground ice`
+- **Lore:** *When gentle grounding isn't enough, go intense*
+
+#### 🔍 Body Awareness
+
+**🔍 Quick Body Scan** (Common, Ground)
+- **Method:** 2-minute scan from head to toe, noticing sensations
+- **Best for:** Checking in, noticing tension, reconnecting with body
+- **Command:** `/body` or `/body quick`
+- **Lore:** *The map of your inner landscape*
+
+**💆 Progressive Muscle Relaxation** (Uncommon, Restore)
+- **Method:** Tense and release muscle groups systematically
+- **Best for:** Physical tension, insomnia, chronic stress
+- **Command:** `/body pmr` or `/relax`
+- **Lore:** *Discovered in 1908, still unmatched for physical release*
+
+#### 🧠 Thought Work
+
+**🧠 Thought Record** (Common, Challenge)
+- **Method:** CBT technique - capture thought, evidence for/against, reframe
+- **Best for:** Negative thinking, cognitive distortions, rumination
+- **Command:** `/thought` or `/cbt`
+- **Lore:** *The foundation of cognitive behavioral therapy*
+
+**🎈 Thought Defusion** (Uncommon, Challenge)
+- **Method:** ACT technique - observe thoughts without attachment
+- **Best for:** Intrusive thoughts, perfectionism, anxiety
+- **Command:** `/defuse`
+- **Lore:** *You are not your thoughts — learn to watch them float by*
+
+#### 🎭 Social Skills
+
+**🎉 Event Preparation** (Common, Connect)
+- **Method:** Mental rehearsal, conversation prep, anxiety management
+- **Best for:** Parties, meetings, dates, interviews
+- **Command:** `/prep`
+- **Lore:** *Visualize success before you walk through the door*
+
+**💬 Conversation Starters** (Common, Connect)
+- **Method:** Practice openers, question techniques, active listening
+- **Best for:** Social anxiety, networking, making friends
+- **Command:** `/convo`
+- **Lore:** *Small talk is a skill that can be learned*
+
+---
+
+### Tips for Building Skills
+
+**Start Small**
+- One skill at a time
+- 2 minutes is enough to start
+- Consistency beats intensity
+
+**Use Your Coach**
+- Ask "What skill should I try?"
+- Say "Guide me through box breathing"
+- Request "Help me with grounding"
+
+**Track Your Favorites**
+- Notice which skills work best for you
+- The app learns your preferences
+- Unlocks related artifacts as you practice
+
+**No Perfect Practice**
+- A distracted session still counts
+- Interrupted? That's okay
+- Every attempt builds the skill
 
 ---
 

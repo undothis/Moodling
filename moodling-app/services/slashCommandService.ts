@@ -460,31 +460,35 @@ registerCommand({
     const allProgress = await getAllSkillProgress();
 
     // Build a text-based menu for now (UI component comes in Unit 5)
-    let menuText = `**✨ Skills & Exercises**\n\n`;
+    let menuText = `✨ Skills & Exercises\n`;
+    menuText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     for (const category of menuData.categories) {
       const skills = menuData.skillsByCategory[category.id];
       if (skills.length === 0) continue;
 
-      menuText += `**${category.emoji} ${category.name}**\n`;
+      menuText += `${category.emoji} ${category.name.toUpperCase()}\n`;
 
       for (const item of skills) {
-        const progressDots = '●'.repeat(item.progress.level) + '○'.repeat(item.skill.maxLevel - item.progress.level);
-        const lockIcon = item.isLocked ? '🔒' : '';
-        menuText += `  ${item.skill.emoji} ${item.skill.name} ${lockIcon}\n`;
-        menuText += `     Level: ${progressDots}\n`;
+        const filledDots = item.progress.level;
+        const emptyDots = item.skill.maxLevel - item.progress.level;
+        const progressBar = '■'.repeat(filledDots) + '□'.repeat(emptyDots);
+        const lockIcon = item.isLocked ? ' 🔒' : '';
+        menuText += `   ${item.skill.emoji} ${item.skill.name}${lockIcon}  [${progressBar}]\n`;
       }
       menuText += '\n';
     }
 
-    menuText += `**Quick Exercises:**\n`;
-    menuText += `  \`/breathe\` — Start breathing exercise\n`;
-    menuText += `  \`/ground\` — 5-4-3-2-1 grounding\n`;
-    menuText += `  \`/calm\` — Auto-pick calming technique\n`;
+    menuText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    menuText += `⚡ Quick Start\n`;
+    menuText += `   /breathe — Breathing exercise\n`;
+    menuText += `   /ground — 5-4-3-2-1 grounding\n`;
+    menuText += `   /calm — Auto-pick technique\n`;
 
     if (!context.isPremium) {
-      menuText += `\n**⭐ Unlock All Skills**\n`;
-      menuText += `Upgrade to Premium for all exercises and advanced skills.\n`;
+      menuText += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      menuText += `⭐ Unlock All Skills\n`;
+      menuText += `   Upgrade to Premium for all exercises.\n`;
     }
 
     return {
