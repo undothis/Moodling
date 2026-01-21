@@ -6,11 +6,12 @@ import { Colors } from '@/constants/Colors';
 /**
  * Mood Leaf Tab Navigation
  *
- * Four tabs following the tree metaphor:
+ * Five tabs following the tree metaphor:
  * 1. Tree - Visual home with interactive tree (primary)
  * 2. Journal - Write entries (leaves)
- * 3. Insights - See patterns (weather/health)
- * 4. Settings - Configure app (garden settings)
+ * 3. Skills - Growth toolkit and progression
+ * 4. Insights - See patterns (weather/health)
+ * 5. Settings - Configure app (garden settings)
  *
  * No badges, no notification dots, no engagement tricks.
  */
@@ -30,7 +31,7 @@ export default function TabLayout() {
           height: Platform.OS === 'ios' ? 88 : 60,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '500',
         },
         headerStyle: {
@@ -62,6 +63,19 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'book' : 'book-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="skills"
+        options={{
+          title: 'Skills',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'sparkles' : 'sparkles-outline'}
               size={24}
               color={color}
             />
