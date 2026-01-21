@@ -33,8 +33,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Storage key for tracking activation time
+// Storage keys
 const SIMULATOR_ACTIVATED_AT_KEY = '@moodling/simulator_activated_at';
+const SIMULATOR_CHALLENGE_KEY = '@moodling/simulator_challenge';
+const SIMULATOR_AI_RESPONSE_KEY = '@moodling/simulator_ai_response';
 
 // Cross-platform clipboard helper (no external dependency required)
 const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -195,6 +197,25 @@ export default function SimulatorScreen() {
         setActivatedAt(new Date(storedActivatedAt));
       } else if (!isEnabled) {
         setActivatedAt(null);
+      }
+
+      // Load persisted challenge state
+      const storedChallenge = await AsyncStorage.getItem(SIMULATOR_CHALLENGE_KEY);
+      if (storedChallenge) {
+        try {
+          const parsed = JSON.parse(storedChallenge);
+          if (parsed.challenge) setCurrentChallenge(parsed.challenge);
+          if (parsed.prompt) setChallengePrompt(parsed.prompt);
+          if (parsed.expectedData) setExpectedData(parsed.expectedData);
+        } catch (e) {
+          console.error('[Simulator] Failed to parse challenge state:', e);
+        }
+      }
+
+      // Load persisted AI response
+      const storedResponse = await AsyncStorage.getItem(SIMULATOR_AI_RESPONSE_KEY);
+      if (storedResponse) {
+        setAiResponse(storedResponse);
       }
 
       // Load state from service
@@ -373,6 +394,13 @@ export default function SimulatorScreen() {
       setChallengePrompt(result.prefilledPrompt);
       setExpectedData(result.expectedData);
       setShowChallengeCategories(false);
+
+      // Persist challenge state
+      await AsyncStorage.setItem(SIMULATOR_CHALLENGE_KEY, JSON.stringify({
+        challenge: result.challenge,
+        prompt: result.prefilledPrompt,
+        expectedData: result.expectedData,
+      }));
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       console.error('[Simulator] Failed to generate challenge:', errorMsg);
@@ -390,6 +418,13 @@ export default function SimulatorScreen() {
         setCurrentChallenge(result.challenge);
         setChallengePrompt(result.prefilledPrompt);
         setExpectedData(result.expectedData);
+
+        // Persist challenge state
+        await AsyncStorage.setItem(SIMULATOR_CHALLENGE_KEY, JSON.stringify({
+          challenge: result.challenge,
+          prompt: result.prefilledPrompt,
+          expectedData: result.expectedData,
+        }));
       }
       setShowChallengeCategories(false);
     } catch (error) {
@@ -596,6 +631,16 @@ export default function SimulatorScreen() {
       }
 
       // === CHECK 7: Does it show generic vs specific? ===
+      // First, check if we already found actual data references in positives
+      const hasActualDataRefs = positives.some(p =>
+        p.includes('Referenced content from') ||
+        p.includes('Referenced life context') ||
+        p.includes('Referenced specific life events') ||
+        p.includes('Referenced psych profile') ||
+        p.includes('Referenced emotional themes') ||
+        p.includes('Correctly stated')
+      );
+
       const genericPhrases = [
         'i see you\'ve been', 'it looks like', 'it seems like',
         'based on what i can see', 'from what you\'ve shared'
@@ -609,7 +654,8 @@ export default function SimulatorScreen() {
 
       if (hasSpecific) {
         positives.push('Used specific references to user\'s data');
-      } else if (hasGeneric && !hasSpecific) {
+      } else if (hasGeneric && !hasSpecific && !hasActualDataRefs) {
+        // Only flag as generic if we haven't found actual data references
         issues.push('Response is generic - lacks specific data references');
       }
 
@@ -641,9 +687,22 @@ export default function SimulatorScreen() {
   };
 
   // Clear verification state when challenge changes
-  const handleNewChallenge = () => {
+  const handleNewChallenge = async () => {
     setAiResponse('');
     setVerificationResult(null);
+    // Clear persisted AI response
+    await AsyncStorage.removeItem(SIMULATOR_AI_RESPONSE_KEY);
+  };
+
+  // Save AI response as it changes
+  const handleAiResponseChange = async (text: string) => {
+    setAiResponse(text);
+    // Persist AI response (debounce could be added here for optimization)
+    if (text.trim()) {
+      await AsyncStorage.setItem(SIMULATOR_AI_RESPONSE_KEY, text);
+    } else {
+      await AsyncStorage.removeItem(SIMULATOR_AI_RESPONSE_KEY);
+    }
   };
 
   // Generate diagnostic report
@@ -989,7 +1048,7 @@ export default function SimulatorScreen() {
                   borderColor: colors.border
                 }]}
                 value={aiResponse}
-                onChangeText={setAiResponse}
+                onChangeText={handleAiResponseChange}
                 placeholder="Paste AI response here..."
                 placeholderTextColor={colors.textMuted}
                 multiline
