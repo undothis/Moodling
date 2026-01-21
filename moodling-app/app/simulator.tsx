@@ -14,7 +14,7 @@
  * - Failure logs viewer
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -28,7 +28,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 
@@ -114,12 +114,8 @@ export default function SimulatorScreen() {
   const [showReport, setShowReport] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-  // Load initial state
-  useEffect(() => {
-    loadState();
-  }, []);
-
-  const loadState = async () => {
+  // Load state when screen is focused (including when navigating back)
+  const loadState = useCallback(async () => {
     try {
       setIsLoading(true);
       const [state, logs, summary] = await Promise.all([
@@ -138,12 +134,33 @@ export default function SimulatorScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Toggle enabled state
+  // Reload state every time the screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadState();
+    }, [loadState])
+  );
+
+  // Toggle enabled state with error handling
   const handleToggle = async (value: boolean) => {
-    setEnabled(value);
-    await setSimulatorEnabled(value);
+    const previousValue = enabled;
+    setEnabled(value); // Optimistic update
+
+    try {
+      await setSimulatorEnabled(value);
+      console.log('[Simulator] Mode set to:', value);
+    } catch (error) {
+      console.error('[Simulator] Failed to save enabled state:', error);
+      setEnabled(previousValue); // Revert on failure
+
+      if (Platform.OS === 'web') {
+        window.alert('Failed to save setting. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to save setting. Please try again.');
+      }
+    }
   };
 
   // Run global test
