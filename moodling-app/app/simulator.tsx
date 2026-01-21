@@ -31,7 +31,40 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import * as Clipboard from 'expo-clipboard';
+
+// Cross-platform clipboard helper (no external dependency required)
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (Platform.OS === 'web') {
+      // Web: use navigator.clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    } else {
+      // React Native: use the Clipboard from react-native (deprecated but still works)
+      const { Clipboard } = require('react-native');
+      if (Clipboard && Clipboard.setString) {
+        Clipboard.setString(text);
+        return true;
+      }
+      return false;
+    }
+  } catch (error) {
+    console.error('Failed to copy to clipboard:', error);
+    return false;
+  }
+};
 import {
   isSimulatorEnabled,
   setSimulatorEnabled,
@@ -188,12 +221,20 @@ export default function SimulatorScreen() {
   // Copy challenge to clipboard
   const handleCopyChallenge = async () => {
     if (!challengePrompt) return;
-    await Clipboard.setStringAsync(challengePrompt);
+    const success = await copyToClipboard(challengePrompt);
 
-    if (Platform.OS === 'web') {
-      window.alert('Challenge copied to clipboard! Paste it in the chat.');
+    if (success) {
+      if (Platform.OS === 'web') {
+        window.alert('Challenge copied to clipboard! Paste it in the chat.');
+      } else {
+        Alert.alert('Copied', 'Challenge copied to clipboard! Paste it in the chat.');
+      }
     } else {
-      Alert.alert('Copied', 'Challenge copied to clipboard! Paste it in the chat.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to copy. Please select and copy the text manually.');
+      } else {
+        Alert.alert('Error', 'Failed to copy. Please select and copy the text manually.');
+      }
     }
   };
 
@@ -213,12 +254,20 @@ export default function SimulatorScreen() {
 
   // Copy report to clipboard
   const handleCopyReport = async () => {
-    await Clipboard.setStringAsync(diagnosticReport);
+    const success = await copyToClipboard(diagnosticReport);
 
-    if (Platform.OS === 'web') {
-      window.alert('Report copied! Paste it to Claude for troubleshooting.');
+    if (success) {
+      if (Platform.OS === 'web') {
+        window.alert('Report copied! Paste it to Claude for troubleshooting.');
+      } else {
+        Alert.alert('Copied', 'Report copied! Paste it to Claude for troubleshooting.');
+      }
     } else {
-      Alert.alert('Copied', 'Report copied! Paste it to Claude for troubleshooting.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to copy. Please select and copy the text manually.');
+      } else {
+        Alert.alert('Error', 'Failed to copy. Please select and copy the text manually.');
+      }
     }
   };
 

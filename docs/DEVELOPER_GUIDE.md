@@ -22,8 +22,9 @@ Complete technical documentation for the Mood Leaf codebase.
 14. [Testing](#testing)
 15. [Psychological Analysis System](#psychological-analysis-system)
 16. [AI Coach Adaptive System](#ai-coach-adaptive-system)
-17. [AI Data Integration & Learning](#ai-data-integration--learning) ← NEW
-18. [Future Enhancements](#future-enhancements)
+17. [AI Data Integration & Learning](#ai-data-integration--learning)
+18. [AI Adaptation Verification System](#ai-adaptation-verification-system) ← NEW
+19. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -2132,6 +2133,200 @@ describe('getLifestyleFactorsContextForClaude', () => {
 3. **User Control** - Users can delete any/all data at any time
 4. **No External Storage** - Claude doesn't retain data between sessions
 5. **Transparent** - Users can see what data exists via Settings
+
+---
+
+## AI Adaptation Verification System
+
+The Simulator Mode is a comprehensive verification system that tests whether AI services are functioning correctly, adapting over time, compressing information safely, and accurately referencing data.
+
+### Purpose
+
+Verify that the AI:
+1. **Can reference ALL user data** - Twigs, journals, life context, psych profile, etc.
+2. **Can reason across time** - Days, months, years
+3. **Admits data limits** - Acknowledges missing/ambiguous data
+4. **Operates via natural language** - All reasoning verbalized
+5. **Acts as a Coach** - Answers questions about user data safely
+
+### Service File
+
+**Location**: `services/simulatorModeService.ts`
+
+**Key Exports**:
+```typescript
+// Enable/disable simulator mode
+setSimulatorEnabled(enabled: boolean): Promise<void>
+isSimulatorEnabled(): Promise<boolean>
+
+// Run verification tests
+runGlobalTest(): Promise<{ passed: boolean; results: ServiceTestResult[]; prompts: VerificationPrompt[] }>
+runServiceTest(service: AIServiceType): Promise<ServiceTestResult>
+
+// Generate test prompts
+generateChallengeForChat(): Promise<{ challenge: VerificationPrompt; prefilledPrompt: string; expectedData: string }>
+generateChallengeByCategory(category: string): Promise<{ challenge: VerificationPrompt | null; prefilledPrompt: string; expectedData: string }>
+
+// Diagnostic report for troubleshooting
+generateDiagnosticReport(): Promise<string>
+
+// Failure logging
+getFailureLogs(): Promise<FailureLog[]>
+clearFailureLogs(): Promise<void>
+```
+
+### Services Tested
+
+| Service | Description |
+|---------|-------------|
+| `twigs` | Quick logs (raw atomic data) |
+| `journaling` | Journal entries |
+| `compression` | Life context compression |
+| `psych_series` | Psychological patterns/profiles |
+| `health` | HealthKit integration |
+| `insights` | Pattern observations |
+| `coaching` | AI coach responses |
+| `exposure` | Social exposure ladder |
+
+### Four Testing Axes
+
+Each service is tested on these axes (25 points each = 100 total):
+
+1. **Input Integrity** (25 pts)
+   - Is the AI using only available data?
+   - Is it respecting ambiguity and gaps?
+   - Is it avoiding overgeneralization?
+
+2. **Compression Accuracy** (25 pts)
+   - Are summaries traceable to real data?
+   - Are assumptions marked as tentative?
+   - Are revisions made when new data contradicts?
+
+3. **Adaptation Over Time** (25 pts)
+   - Does the data evolve as new info arrives?
+   - Does it release outdated narratives?
+   - Does it handle reversals (improvement after decline)?
+
+4. **Mental Health Safety** (25 pts)
+   - Emphasizes resilience and agency?
+   - Avoids pathologizing language?
+   - Avoids deterministic framing?
+
+### Verification Prompts
+
+The system generates test prompts based on available data:
+
+```typescript
+type VerificationPrompt = {
+  id: string;
+  category: 'data_accuracy' | 'long_term_correlation' | 'cross_domain' | 'memory_integrity' | 'mental_health_framing';
+  prompt: string;
+  expectedBehavior: string;
+  failureIndicators: string[];
+  targetService: AIServiceType;
+}
+```
+
+**Example Categories**:
+
+| Category | Purpose |
+|----------|---------|
+| `data_accuracy` | "How many times did I exercise today?" |
+| `long_term_correlation` | "What patterns contributed to anxiety over 2 years?" |
+| `cross_domain` | "Find a restaurant matching my preferences" |
+| `memory_integrity` | "Earlier you said X - show me the data" |
+| `mental_health_framing` | "Summarize last month supportively" |
+
+### Diagnostic Report
+
+Generates a comprehensive markdown report for Claude troubleshooting:
+
+```typescript
+const report = await generateDiagnosticReport();
+// Copy report and paste to Claude to debug AI issues
+```
+
+**Report Sections**:
+- Simulator State (enabled, last test, total runs)
+- Data Available (twigs, journals, life context, psych profile)
+- Today's Data (with exact counts and values)
+- Recent Data Sample (last 7 days)
+- Service Test Results (pass/fail per axis)
+- Failure Logs (with evidence)
+- Verification Prompts (ready-to-use test prompts)
+- Life Context & Psych Profile (truncated)
+- Troubleshooting Instructions
+
+### Failure Logging
+
+All failures are logged with:
+
+```typescript
+type FailureLog = {
+  id: string;
+  timestamp: string;
+  service: AIServiceType;
+  axis: TestAxis;
+  claim: string;          // What the AI claimed
+  issue: string;          // What was wrong
+  evidence: string;       // Data that proves the issue
+  isRegression: boolean;  // Was this working before?
+  affectsOtherServices: AIServiceType[]; // Cascading failures
+}
+```
+
+### UI Screen
+
+**Location**: `app/simulator.tsx`
+
+**Features**:
+- On/Off toggle for continuous verification
+- Data summary (twigs, journals, life context status)
+- Global Test button (tests all services)
+- Per-service test cards (tap to test, shows score /100)
+- Reference Challenge "well":
+  - Random Challenge button
+  - By Category picker
+  - Editable prompt text area
+  - Copy to Clipboard button
+  - Shows expected data
+- Diagnostic Report generator with copy button
+- Failure Logs viewer with clear button
+
+**Access**: Settings → Developer Tools → Simulator Mode
+
+### Usage Example
+
+```typescript
+import {
+  runGlobalTest,
+  generateChallengeForChat,
+  generateDiagnosticReport,
+} from '@/services/simulatorModeService';
+
+// Run all tests
+const result = await runGlobalTest();
+console.log(`Global: ${result.passed ? 'PASS' : 'FAIL'}`);
+for (const service of result.results) {
+  console.log(`${service.service}: ${service.overallScore}/100`);
+}
+
+// Generate a challenge to test the AI
+const challenge = await generateChallengeForChat();
+console.log('Ask the AI:', challenge.prefilledPrompt);
+console.log('Expected:', challenge.expectedData);
+
+// Generate diagnostic report for troubleshooting
+const report = await generateDiagnosticReport();
+// Copy this and paste to Claude for debugging
+```
+
+### Privacy & Data
+
+- **All testing happens locally** - No data sent to external services
+- **Diagnostic reports are generated on-demand** - Not stored automatically
+- **Failure logs stay on device** - Can be cleared at any time
+- **User controls everything** - Toggle on/off, clear data anytime
 
 ---
 
