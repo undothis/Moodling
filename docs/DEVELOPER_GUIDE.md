@@ -2453,6 +2453,9 @@ interface CycleSettings {
   // Master toggle - turns EVERYTHING off
   enabled: boolean;
 
+  // Life stage - determines tracking mode
+  lifeStage: 'regularCycles' | 'perimenopause' | 'menopause' | 'postMenopause' | 'pregnant' | 'postpartum';
+
   // Feature toggles
   showQuickSymptomButton: boolean;   // FAB on home screen during period
   enableSoothingSparks: boolean;     // Gentler Sparks during PMS
@@ -2473,15 +2476,130 @@ interface CycleSettings {
     sleepQuality: boolean;
   };
 
+  // Reminders
+  reminders: CycleReminders;
+
   // Wearable sync
   syncSource: 'manual' | 'healthkit' | 'oura' | 'whoop';
+
+  // Fertility & Contraception
+  trackFertilityWindow: boolean;
+  contraception: ContraceptionReminder;
+
+  // Perimenopause/Menopause specific
+  trackMenopauseSymptoms: boolean;
+
+  // Pregnancy (when lifeStage === 'pregnant')
+  pregnancy?: PregnancyData;
 }
+```
+
+### Life Stages
+
+Users select their current life stage for personalized tracking:
+
+| Stage | Description | Tracking Mode |
+|-------|-------------|---------------|
+| `regularCycles` | Normal menstrual cycles | Full period/phase tracking |
+| `perimenopause` | Transition phase, irregular cycles | Period tracking + menopause symptoms |
+| `menopause` | No period for 12+ months | Symptom tracking only, no period predictions |
+| `postMenopause` | Post-menopause wellness | Wellness focus, minimal tracking |
+| `pregnant` | Pregnancy mode | Trimester tracking, period paused |
+| `postpartum` | Post-birth recovery | Recovery focus, cycle may be irregular |
+
+```typescript
+// Life stage affects what's shown
+const showPeriodTracking = ['regularCycles', 'perimenopause'].includes(settings.lifeStage);
+const showMenopauseSymptoms = ['perimenopause', 'menopause'].includes(settings.lifeStage);
+const showPregnancyUI = settings.lifeStage === 'pregnant';
+```
+
+### Perimenopause/Menopause Symptoms
+
+Additional symptoms tracked during perimenopause/menopause:
+
+```typescript
+type MenopauseSymptom =
+  | 'hotFlash'           // Frequency & intensity
+  | 'nightSweat'         // Disrupted sleep
+  | 'sleepDisturbance'   // Insomnia, waking
+  | 'brainFog'           // Memory, concentration
+  | 'vaginalDryness'     // Comfort issues
+  | 'jointPain'          // Aches, stiffness
+  | 'heartPalpitations'  // Racing heart
+  | 'anxietySpike'       // Sudden anxiety
+  | 'libidoChange';      // Desire changes
+
+// Guide adaptation for menopause
+const menopauseGuidance = {
+  perimenopause: 'Validates unpredictability, normalizes symptoms, extra patience',
+  menopause: 'No period expectations, focuses on symptom support and wellness',
+  postMenopause: 'Wellness-focused, supports healthy aging',
+};
+```
+
+### Pregnancy Mode
+
+When `lifeStage === 'pregnant'`:
+
+```typescript
+interface PregnancyData {
+  dueDate: string;        // Expected due date
+  conceptionDate?: string;
+  currentWeek: number;    // Calculated from due date
+  trimester: 1 | 2 | 3;   // Auto-calculated
+  notes: string[];
+}
+
+// Trimester-aware guide adaptation
+const trimesterGuidance = {
+  1: 'Acknowledges exhaustion, nausea, validates early pregnancy challenges',
+  2: 'More energy often, still validates physical changes',
+  3: 'Preparation mode, validates discomfort, gentle encouragement',
+};
+
+// Period tracking is automatically paused
+// Quick Symptom Button hidden
+// No period predictions or reminders
+```
+
+### Contraception Reminders
+
+```typescript
+interface ContraceptionReminder {
+  type: 'pill' | 'iud' | 'implant' | 'ring' | 'patch' | 'injection' | 'none';
+  enabled: boolean;
+  reminderTime?: string;   // HH:MM for daily pill
+  nextCheckDate?: string;  // IUD check, implant renewal
+  notes?: string;
+}
+
+// Example reminders:
+// - Pill: Daily at user's preferred time
+// - IUD: "Time for your IUD check" (yearly)
+// - Implant: "Implant renewal coming up" (3 years)
 ```
 
 **Settings UI Layout**:
 ```
 Settings > Cycle & Period
 ├── [Toggle] Cycle Tracking (master on/off)
+│
+├── Life Stage (grid selector)
+│   ├── 🌙 Regular Cycles
+│   ├── 🌅 Perimenopause
+│   ├── 🌸 Menopause
+│   ├── ✨ Post-Menopause
+│   ├── 🤰 Pregnant
+│   └── 👶 Postpartum
+│
+├── Menopause Symptoms (shows for perimenopause/menopause)
+│   ├── [Toggle] Track Symptoms
+│   └── Symptom chips: Hot Flashes, Night Sweats, Sleep Issues,
+│       Brain Fog, Mood Changes, Anxiety, Joint Pain, etc.
+│
+├── Pregnancy Mode (shows for pregnant)
+│   └── Set due date, track trimesters
 │
 ├── Quick Actions
 │   ├── [Button] Add All Cycle Twigs  → enables all symptom Twigs
@@ -2491,6 +2609,7 @@ Settings > Cycle & Period
 │   ├── [Toggle] Quick Symptom Button
 │   ├── [Toggle] Soothing Sparks (PMS)
 │   ├── [Toggle] Cycle Fireflies
+│   ├── [Toggle] Track Fertility Window (optional)
 │   └── [Picker] Guide Adaptation: None / Subtle / Full
 │
 ├── Symptom Twigs (individual toggles)
@@ -2507,10 +2626,18 @@ Settings > Cycle & Period
 │
 ├── Reminders
 │   ├── [Toggle] Enable Reminders
-│   ├── [Toggle] Period Approaching (1-3 days before)
+│   ├── [Toggle] Notifications (master on/off for all alerts)
+│   ├── [Toggle] Period Approaching
+│   │   └── [Picker] Alert me: 1d / 2d / 3d / 5d / 7d before
 │   ├── [Toggle] PMS Starting (based on user's patterns)
 │   ├── [Toggle] Log Symptoms Reminder
+│   ├── [Toggle] Ovulation Reminder
 │   └── [Picker] Alert Type: Push Notification / Firefly Alert
+│
+├── Contraception
+│   ├── [Picker] Type: None / Pill / IUD / Implant / Ring / Patch / Injection
+│   ├── [Time] Daily reminder time (for pill)
+│   └── [Date] Next check date (for IUD/implant)
 │
 └── Data Source
     └── [Picker] Manual / HealthKit / Oura / Whoop
