@@ -18,7 +18,12 @@ A complete guide to all features and functionality in Mood Leaf.
 10. [Notifications](#notifications)
 11. [Settings & Personalization](#settings--personalization)
 12. [Privacy & Security](#privacy--security)
-13. [Troubleshooting](#troubleshooting)
+13. [Slash Commands](#slash-commands)
+14. [Skills & Exercises](#skills--exercises)
+15. [Mindful Games](#mindful-games)
+16. [Collection System](#collection-system)
+17. [Premium Features](#premium-features)
+18. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -393,6 +398,19 @@ The context will update based on new information.
 ---
 
 ## HealthKit Integration
+
+Connect Mood Leaf with Apple Health to get deeper insights about how your body and mind interact.
+
+### Setup
+
+1. Go to **Settings** > **HealthKit**
+2. Tap **Enable HealthKit**
+3. Select which data to share:
+   - ✅ Heart Rate (recommended)
+   - ✅ Sleep Analysis (recommended)
+   - ✅ Steps & Activity
+   - ✅ Menstrual Cycle (optional)
+4. Tap **Allow** when iOS prompts for permissions
 
 ### Available Health Data
 
