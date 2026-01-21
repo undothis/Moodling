@@ -455,11 +455,60 @@ registerCommand({
   description: 'Open the skills menu',
   category: 'skill',
   requiresPremium: false,
+  usage: '/skills [info]',
+  examples: ['/skills', '/skills info'],
   handler: async (args, context) => {
     const menuData = await getSkillsMenuData(context.isPremium);
     const allProgress = await getAllSkillProgress();
 
-    // Build a text-based menu for now (UI component comes in Unit 5)
+    // Check if user wants the info/management view
+    const subCommand = args[0]?.toLowerCase();
+
+    if (subCommand === 'info' || subCommand === 'manage' || subCommand === 'list') {
+      // Show detailed skill info with status
+      let infoText = `📋 Your Skills\n`;
+      infoText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      let totalSkills = 0;
+      let activeSkills = 0;
+
+      for (const category of menuData.categories) {
+        const skills = menuData.skillsByCategory[category.id];
+        if (skills.length === 0) continue;
+
+        infoText += `${category.emoji} ${category.name}\n`;
+
+        for (const item of skills) {
+          totalSkills++;
+          const isActive = item.progress.timesUsed > 0;
+          if (isActive) activeSkills++;
+
+          const statusIcon = isActive ? '✅' : '○';
+          const timesUsed = item.progress.timesUsed;
+          const lastUsed = item.progress.lastUsed
+            ? new Date(item.progress.lastUsed).toLocaleDateString()
+            : 'Never';
+
+          infoText += `   ${statusIcon} ${item.skill.emoji} ${item.skill.name}\n`;
+          infoText += `      Used: ${timesUsed}x  |  Last: ${lastUsed}\n`;
+        }
+        infoText += '\n';
+      }
+
+      infoText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      infoText += `📊 Summary: ${activeSkills}/${totalSkills} skills practiced\n`;
+      infoText += `\nTip: Type /skills to browse and start exercises`;
+
+      return {
+        type: 'menu',
+        success: true,
+        message: infoText,
+        menuType: 'skills',
+        data: menuData,
+      };
+    }
+
+    // Default: Show browse menu
     let menuText = `✨ Skills & Exercises\n`;
     menuText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
@@ -484,9 +533,10 @@ registerCommand({
     menuText += `   /breathe — Breathing exercise\n`;
     menuText += `   /ground — 5-4-3-2-1 grounding\n`;
     menuText += `   /calm — Auto-pick technique\n`;
+    menuText += `\n💡 Tip: Type /skills info to see your activity`;
 
     if (!context.isPremium) {
-      menuText += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      menuText += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
       menuText += `⭐ Unlock All Skills\n`;
       menuText += `   Upgrade to Premium for all exercises.\n`;
     }
