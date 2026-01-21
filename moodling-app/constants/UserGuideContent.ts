@@ -530,6 +530,158 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
     ],
   },
+  {
+    id: 'slash-commands',
+    emoji: '⚡',
+    title: 'Slash Commands',
+    content: 'Type commands starting with / in the chat to access quick features. Slash commands give you instant access to exercises, persona switches, and more.',
+    subsections: [
+      {
+        title: 'Quick Reference',
+        content: '/skills — Browse all skills and exercises\n/breathe — Start breathing exercise\n/ground — 5-4-3-2-1 grounding\n/calm — Let AI pick best technique\n/games — Browse mindful games\n/collection — View your artifacts\n/stats — See your activity patterns\n/help — Show all commands',
+      },
+      {
+        title: 'Switching Coaches',
+        content: 'Instantly change your guide\'s personality:\n/flint — Direct, honest, no-fluff\n/luna — Mindful, grounding, calm\n/willow — Wise, reflective\n/spark — Energetic, motivating\n/clover — Friendly, casual\n/ridge — Action-oriented\n/fern — Gentle, nurturing\n/random — Surprise!',
+      },
+      {
+        title: 'Guided Exercises',
+        content: '/breathe — Box breathing (4-4-4-4)\n/breathe 478 — 4-7-8 sleep breathing\n/breathe sigh — Quick physiological sigh\n/ground — 5-4-3-2-1 grounding\n/body — Quick body scan\n/prep — Event preparation',
+      },
+    ],
+  },
+  {
+    id: 'skills',
+    emoji: '🎯',
+    title: 'Skills & Exercises',
+    content: 'Skills are capabilities you develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a type and rarity, giving a collectible card game feel.',
+    subsections: [
+      {
+        title: 'Skill Types',
+        content: '🌊 Calm — Breathing, relaxation\n🦶 Ground — Anchoring, presence\n🎯 Focus — Attention, concentration\n💪 Challenge — Thought work, CBT\n🤝 Connect — Social skills\n✨ Restore — Recovery, healing',
+      },
+      {
+        title: 'Rarity System',
+        content: '⚪ Common — Core skills everyone starts with\n🟢 Uncommon — Specialized techniques\n🔵 Rare — Advanced approaches\n🟣 Legendary — Secret unlocks and mastery',
+      },
+      {
+        title: 'Breathing Exercises',
+        content: '📦 Box Breathing — 4-4-4-4 for calm (/breathe)\n🌙 4-7-8 Breathing — For sleep (/breathe 478)\n💗 Coherent Breathing — HRV optimization\n😮‍💨 Physiological Sigh — Instant calm (/breathe sigh)',
+      },
+      {
+        title: 'Grounding Exercises',
+        content: '🖐️ 5-4-3-2-1 — Name things you see, hear, touch, smell, taste (/ground)\n👣 Feet on Floor — Simple physical anchoring\n🧊 Ice Cube — Intense grounding for strong emotions',
+      },
+      {
+        title: 'Body & Thought Work',
+        content: '🔍 Quick Body Scan — 2-minute check-in (/body)\n💆 Progressive Relaxation — Tense and release muscles\n🧠 Thought Record — CBT technique for negative thinking\n🎈 Thought Defusion — Create distance from thoughts',
+      },
+      {
+        title: 'Social Skills',
+        content: '🎉 Event Preparation — Mental rehearsal before events (/prep)\n💬 Conversation Starters — Practice social openers',
+      },
+      {
+        title: 'Skill Progress',
+        content: 'Each skill has 5 levels:\n■□□□□ Beginner — Just starting\n■■■□□ Practicing — Building habit\n■■■■■ Mastery — Made it your own\n\nProgress never decreases. No streaks to maintain. Every attempt counts.',
+      },
+    ],
+  },
+  {
+    id: 'games',
+    emoji: '🎮',
+    title: 'Mindful Games',
+    content: 'Games designed to calm, ground, and build skills—not to addict. Type /games to browse.',
+    subsections: [
+      {
+        title: 'Grounding Games',
+        content: '🫧 Breathing Bubble — Pop bubbles by breathing\n🔍 Grounding Quest — Find items around you\n📷 I Spy AI — Camera finds objects for scavenger hunt (Premium)\n🎯 Color Finder — Find 5 blue things, 4 red...',
+      },
+      {
+        title: 'Calming Games',
+        content: '🎨 Color Sort — Sort objects by color\n🧩 Calm Puzzles — Jigsaw with nature images\n🖍️ Mood Coloring — Color mandalas\n✨ Flow Drawing — Draw with flowing particles',
+      },
+      {
+        title: 'Classic Games (Mindful Versions)',
+        content: '🐍 Mindful Snake — Slow, with calming music\n🧱 Zen Blocks — Tetris with no game over\n🔢 Calm Sudoku — Hints and no timer\n🏓 Gentle Pong — Slow motion',
+      },
+      {
+        title: 'Fidget Tools',
+        content: '🔘 Fidget Pad — Sliders, switches, dials (/fidget)\n🔵 Bubble Wrap — Endless popping\n🌀 Fidget Spinner — Watch it spin',
+      },
+    ],
+  },
+  {
+    id: 'collection',
+    emoji: '🏆',
+    title: 'Collection System',
+    content: 'As you use Mood Leaf, you unlock collectibles—artifacts, titles, and card backs. This D&D-inspired system celebrates your journey without any pressure.',
+    subsections: [
+      {
+        title: 'How It Works',
+        content: 'Every time you practice a skill, play a game, or explore the app, you\'re building toward unlocks. The system quietly tracks your patterns and rewards consistency, curiosity, and presence.',
+      },
+      {
+        title: 'Artifacts',
+        content: 'Symbolic items earned through milestones:\n🪨 Calm Stone — First breathing session\n🪶 Breath Feather — 10 breathing exercises\n✨ Starlight Vial — Practice at 3am\n🌈 Rainbow Prism — Try all skill types',
+      },
+      {
+        title: 'Titles',
+        content: 'Names that reflect your journey:\n• Breath Wanderer — Practice breathing 5 times\n• Grounding Guardian — Master grounding\n• Night Owl — Practice after midnight\n• Dawn Keeper — Practice before 6am',
+      },
+      {
+        title: 'Card Backs',
+        content: 'Customize your skill cards:\n🌫️ Mist (Common) — Starter\n🌲 Forest (Uncommon) — Try 3 skills\n🌅 Sunset (Rare) — 50 total activities\n🌌 Aurora (Legendary) — 10 artifacts',
+      },
+      {
+        title: 'Zero Pressure Design',
+        content: '• Progress bars never decrease\n• No streaks to maintain\n• Nothing expires or disappears\n• Surprise rewards add joy\n• Every session counts equally',
+      },
+      {
+        title: 'View Your Collection',
+        content: 'Type /collection (or /artifacts, /inventory, /bag) to see your unlocked items and progress.',
+      },
+    ],
+  },
+  {
+    id: 'healthkit',
+    emoji: '❤️',
+    title: 'HealthKit Integration',
+    content: 'Connect Mood Leaf with Apple Health to get deeper insights about how your body and mind interact.',
+    subsections: [
+      {
+        title: 'Setup',
+        content: '1. Go to Settings > HealthKit\n2. Tap Enable HealthKit\n3. Select data to share:\n   • Heart Rate (recommended)\n   • Sleep Analysis (recommended)\n   • Steps & Activity\n   • Menstrual Cycle (optional)\n4. Tap Allow when iOS prompts',
+      },
+      {
+        title: 'Heart Rate Data',
+        content: '• Current heart rate\n• Resting heart rate (baseline)\n• Heart rate variability (HRV)\n• Recent heart rate trends',
+      },
+      {
+        title: 'Sleep Data',
+        content: '• Total sleep duration\n• Sleep quality indicators\n• Awakenings during night\n• Sleep trends over time',
+      },
+      {
+        title: 'Activity Data',
+        content: '• Daily steps\n• Exercise minutes\n• Active calories\n• Activity trends',
+      },
+      {
+        title: 'Heart Rate Spike Detection',
+        content: 'Mood Leaf monitors for significant spikes:\n1. Baseline tracking — Learns your normal resting HR\n2. Spike detection — Notices when HR goes 30%+ above baseline\n3. Smart notifications — Sends a check-in (max 1 per 30 min)\n4. Journaling prompt — Asks if you want to share what\'s happening',
+      },
+      {
+        title: 'Sleep Impact',
+        content: 'When you chat, your guide considers your sleep:\n• Acknowledges poor sleep\n• Notes it might affect how you\'re feeling\n• Doesn\'t assume, just observes',
+      },
+      {
+        title: 'Activity Correlation',
+        content: 'Your guide tracks how activity relates to mood:\n• Notes if you\'ve been more/less active than usual\n• May gently suggest movement as self-care\n• Points out patterns on active days',
+      },
+      {
+        title: 'Privacy',
+        content: 'Health data stays on your device. Only compressed summaries are shared with AI ("slept 5 hours, elevated HR"). Raw data is never sent. You can disable HealthKit anytime in Settings.',
+      },
+    ],
+  },
 ];
 
 // ============================================
