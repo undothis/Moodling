@@ -156,6 +156,13 @@ Currently refining the Simulator Mode to properly validate AI behavior.
     - Recent mood, upcoming events
     - Last 6 messages (3 turns)
 
+12. **Calendar Events** (`calendarService.ts` → `getCalendarContextForClaude()`) - *if Calendar enabled*
+    - Today's upcoming events with times
+    - Week's schedule and busyness level
+    - Travel detection (flights, trips, timezone changes)
+    - Important event flags (interviews, appointments, deadlines)
+    - Jet lag awareness integration
+
 ### Coach Personality System
 
 **7 Personas** (`coachPersonalityService.ts`):
@@ -220,4 +227,4 @@ Currently refining the Simulator Mode to properly validate AI behavior.
 
 ## QUICK STATUS SNAPSHOT
 
-"All 11 AI context sources verified and documented. Coach personality system with 7 personas and adaptive mode confirmed working. UTC timezone bug fixed. The AI has access to: life context, psych profile, chronotype, health data, correlations, twigs (with exact times), lifestyle factors, exposure progress, journals, and user preferences."
+"All 12 AI context sources verified and documented. Coach personality system with 7 personas and adaptive mode confirmed working. UTC timezone bug fixed. The AI has access to: life context, psych profile, chronotype, calendar events, health data, correlations, twigs (with exact times), lifestyle factors, exposure progress, journals, and user preferences."

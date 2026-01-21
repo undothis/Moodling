@@ -28,6 +28,7 @@ import {
 } from './coachPersonalityService';
 import { getLifestyleFactorsContextForClaude } from './patternService';
 import { getExposureContextForClaude } from './exposureLadderService';
+import { getCalendarContextForClaude, isCalendarEnabled } from './calendarService';
 import { getRecentJournalContextForClaude } from './journalStorage';
 
 // Storage keys
@@ -723,14 +724,25 @@ export async function sendMessage(
     console.log('Could not load journal context:', error);
   }
 
+  // Get calendar context if enabled (upcoming events, travel, meetings)
+  let calendarContext = '';
+  try {
+    if (await isCalendarEnabled()) {
+      calendarContext = await getCalendarContextForClaude();
+    }
+  } catch (error) {
+    console.log('Could not load calendar context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: lifetime overview, psych profile, chronotype/travel, health + correlations,
+  // Order: lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
   // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
   // user preferences, then current conversation
   const contextParts = [
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
     chronotypeContext,   // Chronotype and travel awareness
+    calendarContext,     // Calendar events (upcoming meetings, travel, deadlines)
     healthContext,       // HealthKit data (heart rate, sleep, activity)
     correlationContext,  // Health-mood correlations
     logsContext,         // DETAILED tracking data (exact counts for exercises, habits, meds)
