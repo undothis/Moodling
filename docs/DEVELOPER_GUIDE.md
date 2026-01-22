@@ -4894,14 +4894,16 @@ export const LEVEL_THRESHOLDS = [0, 25, 75, 150, 300, 500, 750, 1000, 1500, 2000
 // Level 1: 0-24 points, Level 2: 25-74 points, etc.
 ```
 
-### 50+ Skills Across 7 Categories
+### 80+ Skills Across 9 Categories
 - **Grounding** (7): 5-4-3-2-1, Box Breathing, Physiological Sigh, etc.
 - **Anxiety** (7): Worry Time, Thought Challenging, Fact vs Feeling, etc.
 - **Sleep** (9): Wind Down, Sleep Stories, Old Time Radio, Ambient Sounds, etc.
 - **Focus** (7): Pomodoro, Brain Dump, Single-Tasking, etc.
 - **Self-Care** (7): Joy List, Gratitude, Inner Critic Work, etc.
-- **Relationships** (8): I-Statements, Boundary Scripts, Active Listening, etc.
+- **Relationships** (8): I-Statements, Boundary Scripts, DEAR MAN Script, etc.
 - **Mindfulness** (10): Body Scan, RAIN, Urge Surfing, Walking Meditation, etc.
+- **Crisis Tools** (6): Safety Plan Builder, Grounding Ladder, TIPP Skills, Window of Tolerance, etc.
+- **Body-Based** (5): Vagal Tone Exercises, Somatic Tracking, Shake It Out, etc.
 
 ### Special Sleep Skills (Public Domain Content)
 - **Sleep Stories**: Pulls from Project Gutenberg, Librivox (free classic books)
@@ -5062,6 +5064,159 @@ const { stories, radio } = await getContinueListening();
 const message = formatResumeMessage(info);
 // "Resume from 20:34 (11%)"
 ```
+
+---
+
+## Clinical Skills Components
+
+Evidence-based therapeutic skill components. These are presented as educational tools following Mood Leaf's philosophy - options to explore, not prescriptions to follow.
+
+### Files
+
+| Component | Route | Purpose |
+|-----------|-------|---------|
+| `components/skills/SafetyPlanBuilder.tsx` | `app/skills/safety-plan.tsx` | 8-step crisis safety plan |
+| `components/skills/GroundingLadder.tsx` | `app/skills/grounding-ladder.tsx` | 4-level escalating grounding |
+| `components/skills/TIPPSkills.tsx` | `app/skills/tipp.tsx` | DBT distress tolerance protocol |
+| `components/skills/WindowOfTolerance.tsx` | `app/skills/window-of-tolerance.tsx` | Arousal zone tracking |
+| `components/skills/VagalToneExercises.tsx` | `app/skills/vagal-tone.tsx` | 8 vagus nerve exercises |
+| `components/skills/ThoughtRecord.tsx` | `app/skills/thought-record.tsx` | CBT thought examination |
+| `components/skills/DEARMANScript.tsx` | `app/skills/dear-man.tsx` | Interpersonal effectiveness builder |
+| `components/skills/OppositeAction.tsx` | `app/skills/opposite-action.tsx` | DBT emotion regulation |
+| `components/skills/RadicalAcceptance.tsx` | `app/skills/radical-acceptance.tsx` | Accepting painful realities |
+
+### New Skill Categories
+
+```typescript
+export type SkillCategory =
+  | 'grounding' | 'anxiety' | 'sleep' | 'focus'
+  | 'self_care' | 'relationships' | 'mindfulness' | 'games'
+  | 'crisis'   // NEW - Crisis Tools
+  | 'body';    // NEW - Body-Based
+
+export const SKILL_CATEGORIES = {
+  // ... existing categories ...
+  crisis: { name: 'Crisis Tools', emoji: '🆘', color: '#EF4444' },
+  body: { name: 'Body-Based', emoji: '🫀', color: '#EC4899' },
+};
+```
+
+### SafetyPlanBuilder Component
+
+8-section crisis safety plan based on Stanley-Brown Safety Planning:
+
+```typescript
+interface SafetyPlanSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  placeholder: string;
+  multiline: boolean;
+  icon: string;
+}
+
+const SECTIONS: SafetyPlanSection[] = [
+  { id: 'warning_signs', title: 'Warning Signs', ... },
+  { id: 'coping_strategies', title: 'Internal Coping Strategies', ... },
+  { id: 'distractions', title: 'People & Places for Distraction', ... },
+  { id: 'support_people', title: 'People I Can Ask for Help', ... },
+  { id: 'professionals', title: 'Professionals I Can Contact', ... },
+  { id: 'emergency_contacts', title: 'Emergency Contacts', ... },
+  { id: 'safe_environment', title: 'Making My Environment Safe', ... },
+  { id: 'reasons_to_live', title: 'My Reasons for Living', ... },
+];
+```
+
+**Storage Key:** `mood_leaf_safety_plan`
+
+### TIPPSkills Component
+
+DBT distress tolerance protocol:
+- **T** = Temperature (cold water, ice)
+- **I** = Intense Exercise
+- **P** = Paced Breathing
+- **P** = Paired Muscle Relaxation
+
+Each step is presented with clear instructions and a timer option.
+
+### WindowOfTolerance Component
+
+Based on Dan Siegel's model - tracks three zones:
+- **Hyperarousal** (fight/flight): Anxiety, panic, hypervigilance
+- **Window** (optimal): Grounded, present, able to think clearly
+- **Hypoarousal** (freeze/shutdown): Numbness, dissociation, collapse
+
+**Storage Key:** `mood_leaf_window_log`
+
+Logs zone check-ins with timestamps for pattern recognition.
+
+### ThoughtRecord Component
+
+6-step CBT thought examination:
+1. **Situation** - What happened?
+2. **Automatic Thought** - What went through your mind?
+3. **Emotions** - How did you feel? (with intensity 1-10)
+4. **Evidence For** - Facts supporting the thought
+5. **Evidence Against** - Facts contradicting the thought
+6. **Balanced Thought** - More realistic perspective
+
+**Storage Key:** `mood_leaf_thought_records`
+
+Saves history for reviewing patterns over time.
+
+### DEARMANScript Component
+
+DBT interpersonal effectiveness script builder:
+- **D**escribe the situation factually
+- **E**xpress your feelings using "I" statements
+- **A**ssert what you want clearly
+- **R**einforce why it benefits them too
+- **M**indful - stay focused on your goal
+- **A**ppear confident
+- **N**egotiate if needed
+
+Includes share functionality for completed scripts.
+
+### OppositeAction Component
+
+DBT emotion regulation for when emotions aren't fitting the facts:
+
+```typescript
+interface EmotionData {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  urges: string[];           // What the emotion pushes you to do
+  oppositeActions: string[]; // What to try instead
+  whenToUse: string;         // When opposite action is appropriate
+}
+```
+
+Covers: Fear/Anxiety, Sadness/Depression, Anger, Shame/Guilt, Self-Disgust.
+
+### RadicalAcceptance Component
+
+Three-tab interface:
+1. **What It Is** - Pain + Non-Acceptance = Suffering formula
+2. **How To** - 5-step practice guide
+3. **Practice** - Interactive reflection questions
+
+Emphasizes that acceptance doesn't mean approval.
+
+### VagalToneExercises Component
+
+8 exercises for vagus nerve stimulation:
+1. Cold Water Face Dive
+2. Humming/Chanting
+3. Gargling
+4. Physiological Sigh
+5. Ear Massage
+6. Extended Exhale
+7. Voo Breath
+8. Eye Movements
+
+Filterable by difficulty (easy/medium).
 
 ---
 

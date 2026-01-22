@@ -850,6 +850,8 @@ Skills are capabilities you can develop through practice. Unlike streaks that pu
 | 💪 **Coping** | Thought challenging, emotion regulation | Challenge, Focus |
 | 🌱 **Growth** | Values, goals, habit building | Focus, Restore |
 | 🎭 **Social** | Event prep, conversation skills | Connect |
+| 🆘 **Crisis Tools** | Safety planning, TIPP, distress tolerance | Ground, Restore |
+| 🫀 **Body-Based** | Vagal tone, somatic tracking, body work | Ground, Restore |
 | 🔮 **Advanced** | Deeper psychological work (Premium) | All types |
 
 ### Accessing Skills
@@ -1294,10 +1296,52 @@ Pomodoro Timer, Brain Dump, Single-Tasking, Environment Design, Digital Sunset, 
 Joy List, Gratitude Practice, Inner Critic Work, Values Clarification, Self-Compassion Break, and more.
 
 #### Relationships (6 skills)
-I-Statements, Boundary Scripts, Repair Conversations, Active Listening, Conflict De-escalation, and more.
+I-Statements, Boundary Scripts, Repair Conversations, Active Listening, Conflict De-escalation, DEAR MAN Script Builder, and more.
 
 #### Mindfulness (7 skills)
 Body Scan, RAIN Technique, Urge Surfing, Walking Meditation, Loving-Kindness, and more.
+
+#### Crisis Tools (6 skills)
+Safety Plan Builder (8-step crisis safety plan), Grounding Ladder (4-level escalating grounding), TIPP Skills (DBT distress tolerance), Window of Tolerance (arousal zone tracking), and more.
+
+#### Body-Based (5 skills)
+Vagal Tone Exercises (8 vagus nerve exercises), Somatic Tracking, Shake It Out, and more.
+
+### Clinical Skills (DBT, CBT, Trauma-Informed)
+
+Mood Leaf includes evidence-based therapeutic techniques presented as educational tools - options to explore, not prescriptions to follow.
+
+#### DBT Skills
+
+| Skill | What It Does |
+|-------|--------------|
+| **TIPP Skills** | T=Temperature, I=Intense Exercise, P=Paced Breathing, P=Paired Muscle Relaxation |
+| **Opposite Action** | When emotions aren't fitting facts, do the opposite of the urge |
+| **Radical Acceptance** | Accept painful realities to reduce suffering (Pain + Non-Acceptance = Suffering) |
+| **DEAR MAN** | Script builder for interpersonal effectiveness (Describe, Express, Assert, Reinforce, Mindful, Appear confident, Negotiate) |
+| **Window of Tolerance** | Track your arousal zone (hyperarousal, optimal window, hypoarousal) |
+
+#### CBT Skills
+
+| Skill | What It Does |
+|-------|--------------|
+| **Thought Record** | 6-step thought examination: Situation → Automatic Thought → Emotions → Evidence For → Evidence Against → Balanced Thought |
+| **Cognitive Distortions** | Identify thinking patterns like catastrophizing, black-and-white thinking, mind reading |
+
+#### Crisis & Safety Tools
+
+| Skill | What It Does |
+|-------|--------------|
+| **Safety Plan Builder** | 8-section crisis safety plan based on Stanley-Brown model |
+| **Grounding Ladder** | 4-level escalating grounding techniques (Gentle → Moderate → Strong → Emergency) |
+
+#### Body-Based Tools
+
+| Skill | What It Does |
+|-------|--------------|
+| **Vagal Tone Exercises** | 8 exercises: Cold Water, Humming, Gargling, Physiological Sigh, Ear Massage, Extended Exhale, Voo Breath, Eye Movements |
+| **Somatic Tracking** | Notice body sensations without judgment |
+| **Shake It Out** | Release stored tension through movement |
 
 ### Sleep Stories
 
