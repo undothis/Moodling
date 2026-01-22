@@ -110,6 +110,32 @@ export interface BiometricAlert {
 }
 
 /**
+ * UI-friendly emergency contact (simpler interface for settings)
+ */
+export interface EmergencyContactUI {
+  name: string;
+  phone: string;
+  email?: string;
+  relationship: string;
+  notificationPreference: 'sms' | 'call' | 'email' | 'all';
+}
+
+/**
+ * UI-friendly biometric settings (simpler interface for settings screen)
+ */
+export interface BiometricSettingsUI {
+  speechAnalysisEnabled: boolean;
+  facialAnalysisEnabled: boolean;
+  continuousMonitoring: boolean;
+  alertUserFirst: boolean;
+  notifyEmergencyContact: boolean;
+  emergencyContactDelay: number;
+  bypassDelayForUrgent: boolean;
+  emergencyContact: EmergencyContactUI | null;
+  shareAnonymousDataForTraining: boolean;
+}
+
+/**
  * Combined biometric assessment
  */
 export interface BiometricAssessment {
@@ -154,14 +180,69 @@ const DEFAULT_BIOMETRIC_SETTINGS: BiometricSettings = {
   allowAnonymousData: false,
 };
 
+/**
+ * Get default biometric settings (for UI initialization)
+ */
+export function getDefaultBiometricSettings(): BiometricSettingsUI {
+  return {
+    speechAnalysisEnabled: false,
+    facialAnalysisEnabled: false,
+    continuousMonitoring: false,
+    alertUserFirst: true,
+    notifyEmergencyContact: false,
+    emergencyContactDelay: 5,
+    bypassDelayForUrgent: true,
+    emergencyContact: null,
+    shareAnonymousDataForTraining: false,
+  };
+}
+
+/**
+ * Save biometric settings (UI version)
+ */
+export async function saveBiometricSettings(settings: BiometricSettingsUI): Promise<void> {
+  // Map UI settings to internal settings
+  const internalSettings: Partial<BiometricSettings> = {
+    enabled: settings.speechAnalysisEnabled || settings.facialAnalysisEnabled,
+    useSpeechAnalysis: settings.speechAnalysisEnabled,
+    useFaceRecognition: settings.facialAnalysisEnabled,
+    continuousMonitoring: settings.continuousMonitoring,
+    alertUserFirst: settings.alertUserFirst,
+    notifyEmergencyContact: settings.notifyEmergencyContact,
+    emergencyContactDelay: settings.emergencyContactDelay,
+    bypassDelayForUrgent: settings.bypassDelayForUrgent,
+    allowAnonymousData: settings.shareAnonymousDataForTraining,
+  };
+
+  await updateBiometricSettings(internalSettings);
+
+  // Handle emergency contact separately
+  if (settings.emergencyContact) {
+    const contact: EmergencyContact = {
+      id: 'primary',
+      name: settings.emergencyContact.name,
+      relationship: settings.emergencyContact.relationship,
+      phone: settings.emergencyContact.phone,
+      email: settings.emergencyContact.email,
+      preferredMethod: settings.emergencyContact.notificationPreference === 'all' ? 'both' :
+                       settings.emergencyContact.notificationPreference === 'call' ? 'phone' :
+                       settings.emergencyContact.notificationPreference === 'email' ? 'email' : 'phone',
+      enabled: true,
+    };
+    await setEmergencyContact(contact);
+  } else {
+    await removeEmergencyContact();
+  }
+}
+
 // ============================================
 // SETTINGS MANAGEMENT
 // ============================================
 
 /**
- * Get biometric monitoring settings
+ * Get biometric monitoring settings (internal)
  */
-export async function getBiometricSettings(): Promise<BiometricSettings> {
+export async function getBiometricSettingsInternal(): Promise<BiometricSettings> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEYS.BIOMETRIC_SETTINGS);
     if (stored) {
@@ -171,6 +252,34 @@ export async function getBiometricSettings(): Promise<BiometricSettings> {
     console.error('Failed to load biometric settings:', error);
   }
   return DEFAULT_BIOMETRIC_SETTINGS;
+}
+
+/**
+ * Get biometric monitoring settings (UI-friendly version)
+ */
+export async function getBiometricSettings(): Promise<BiometricSettingsUI> {
+  const internal = await getBiometricSettingsInternal();
+  const contact = await getEmergencyContact();
+
+  return {
+    speechAnalysisEnabled: internal.useSpeechAnalysis && internal.enabled,
+    facialAnalysisEnabled: internal.useFaceRecognition && internal.enabled,
+    continuousMonitoring: internal.continuousMonitoring,
+    alertUserFirst: internal.alertUserFirst,
+    notifyEmergencyContact: internal.notifyEmergencyContact,
+    emergencyContactDelay: internal.emergencyContactDelay,
+    bypassDelayForUrgent: internal.bypassDelayForUrgent,
+    emergencyContact: contact ? {
+      name: contact.name,
+      phone: contact.phone || '',
+      email: contact.email,
+      relationship: contact.relationship,
+      notificationPreference: contact.preferredMethod === 'both' ? 'all' :
+                              contact.preferredMethod === 'phone' ? 'call' :
+                              contact.preferredMethod === 'email' ? 'email' : 'sms',
+    } : null,
+    shareAnonymousDataForTraining: internal.allowAnonymousData,
+  };
 }
 
 /**

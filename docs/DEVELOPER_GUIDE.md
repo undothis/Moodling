@@ -5460,6 +5460,513 @@ Filterable by difficulty (easy/medium).
 
 ---
 
+## Biometric Monitoring System
+
+### Overview
+
+The biometric monitoring system provides advanced safety features through speech and facial analysis. It detects concerning patterns that may indicate distress, substance use, or medical emergencies—then responds with a privacy-first triage approach.
+
+**Philosophy:** Alert the user first, give them time to respond, only escalate to emergency contacts if needed.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Biometric Monitoring                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────┐      ┌─────────────────┐              │
+│  │ Speech Analysis │      │ Face Analysis   │              │
+│  │ Service         │      │ Service         │              │
+│  ├─────────────────┤      ├─────────────────┤              │
+│  │ • Voice Print   │      │ • Face Print    │              │
+│  │ • Slurring      │      │ • Emotion       │              │
+│  │ • Stuttering    │      │ • Fatigue       │              │
+│  │ • Pace Changes  │      │ • Stress        │              │
+│  └────────┬────────┘      └────────┬────────┘              │
+│           │                        │                        │
+│           └──────────┬─────────────┘                        │
+│                      │                                      │
+│           ┌──────────▼──────────┐                          │
+│           │ Combined Assessment │                          │
+│           │ biometricMonitoring │                          │
+│           │     Service.ts      │                          │
+│           └──────────┬──────────┘                          │
+│                      │                                      │
+│           ┌──────────▼──────────┐                          │
+│           │   Triage System     │                          │
+│           │ ┌─────────────────┐ │                          │
+│           │ │ 1. Alert User   │ │                          │
+│           │ │ 2. Wait Period  │ │                          │
+│           │ │ 3. Notify       │ │                          │
+│           │ │    Emergency    │ │                          │
+│           │ │    Contact      │ │                          │
+│           │ └─────────────────┘ │                          │
+│           └─────────────────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Service Files
+
+| File | Purpose |
+|------|---------|
+| `speechAnalysisService.ts` | Voice identity verification, speech pattern detection |
+| `facialRecognitionService.ts` | Face identity verification, emotion/fatigue detection |
+| `biometricMonitoringService.ts` | Combines both, implements triage system |
+
+### Speech Analysis Service
+
+**Location:** `moodling-app/services/speechAnalysisService.ts`
+
+#### Voice Print Enrollment
+
+```typescript
+interface VoicePrint {
+  userId: string;
+  enrolledAt: string;
+  characteristics: VoiceCharacteristics;
+  baselineMetrics: SpeechBaseline;
+  isEnrolled: boolean;
+}
+
+// Enroll user's voice
+await enrollVoicePrint(audioSample: ArrayBuffer): Promise<VoicePrint>
+
+// Verify speaker identity
+await verifyIdentity(audioSample: ArrayBuffer): Promise<IdentityVerification>
+```
+
+#### Speech Pattern Detection
+
+```typescript
+interface SpeechAnalysisResult {
+  // Identity
+  isVerifiedUser: boolean;
+  identityConfidence: number;
+
+  // Pattern detection
+  slurringDetected: boolean;
+  slurringConfidence: number;
+  stutteringDetected: boolean;
+  stutteringFrequency: number;
+  paceDeviation: number;  // vs baseline
+
+  // Combined assessment
+  concernLevel: 'none' | 'mild' | 'moderate' | 'severe';
+  flags: SpeechFlag[];
+
+  // Context for AI
+  llmContext: string;
+}
+```
+
+#### What It Detects
+
+| Pattern | Indication | Response |
+|---------|------------|----------|
+| Slurring | Intoxication, stroke, fatigue | Alert if significant |
+| Stuttering (new) | Stress, anxiety, distress | Note pattern change |
+| Pace changes | Mania, depression, medication | Track over time |
+| Voice tremor | Anxiety, fear, distress | Combine with other signals |
+| Identity mismatch | Someone else using app | Privacy protection |
+
+### Facial Recognition Service
+
+**Location:** `moodling-app/services/facialRecognitionService.ts`
+
+#### Face Print Enrollment
+
+```typescript
+interface FacePrint {
+  userId: string;
+  enrolledAt: string;
+  faceDescriptor: number[];  // 128-dim vector
+  baselineExpressions: ExpressionBaseline;
+  isEnrolled: boolean;
+}
+
+// Enroll user's face
+await enrollFacePrint(imageData: ImageData): Promise<FacePrint>
+
+// Verify face identity
+await verifyFaceIdentity(imageData: ImageData): Promise<FaceVerification>
+```
+
+#### Emotion & State Detection
+
+```typescript
+interface FaceAnalysisResult {
+  // Identity
+  isVerifiedUser: boolean;
+  identityConfidence: number;
+
+  // Emotion detection
+  detectedEmotions: DetectedEmotion[];
+  dominantEmotion: EmotionType;
+  emotionConfidence: number;
+
+  // State detection
+  fatigueLevel: number;           // 0-1
+  stressIndicators: StressSign[];
+  microExpressions: MicroExpression[];
+
+  // Combined assessment
+  concernLevel: 'none' | 'mild' | 'moderate' | 'severe';
+  flags: FaceFlag[];
+}
+
+type EmotionType =
+  | 'neutral' | 'happy' | 'sad' | 'angry'
+  | 'fearful' | 'disgusted' | 'surprised';
+```
+
+#### What It Detects
+
+| Signal | Indication | Response |
+|--------|------------|----------|
+| Fatigue (drooping eyes) | Sleep deprivation, depression | Gentle check-in |
+| Stress indicators | Tension, jaw clenching | Offer calming resources |
+| Emotion mismatch | Saying "fine" while sad | Gentle inquiry |
+| Identity mismatch | Different person | Privacy protection |
+| Concerning expressions | Distress, fear, panic | Triage activation |
+
+### Biometric Monitoring Service
+
+**Location:** `moodling-app/services/biometricMonitoringService.ts`
+
+#### Combined Assessment
+
+```typescript
+interface BiometricAssessment {
+  // Individual analyses
+  speechAnalysis: SpeechAnalysisResult | null;
+  faceAnalysis: FaceAnalysisResult | null;
+
+  // Combined assessment
+  overallConcernLevel: 'none' | 'mild' | 'moderate' | 'severe' | 'urgent';
+  alertType: 'none' | 'check_in' | 'concern' | 'urgent';
+
+  // Flags from both sources
+  combinedFlags: BiometricFlag[];
+
+  // For AI context
+  llmContext: string;
+}
+```
+
+#### Triage Flow
+
+```
+User detected with concerning patterns
+         │
+         ▼
+┌─────────────────────────────────────┐
+│ STEP 1: Alert User                  │
+│ "I noticed something. Are you okay?"│
+│ Options: I'm fine / Need help / Skip│
+└──────────────┬──────────────────────┘
+               │
+    User responds "I'm fine"
+               │
+               ▼
+    ┌─────────────────────┐
+    │ Log & Continue      │
+    │ No escalation       │
+    └─────────────────────┘
+
+    User doesn't respond (timeout)
+               │
+               ▼
+┌─────────────────────────────────────┐
+│ STEP 2: Wait Period                 │
+│ Configurable delay (default: 5 min)│
+│ For urgent: can be bypassed         │
+└──────────────┬──────────────────────┘
+               │
+    Still no response
+               │
+               ▼
+┌─────────────────────────────────────┐
+│ STEP 3: Notify Emergency Contact    │
+│ (If configured and enabled)         │
+│ Send: concern type, time, location  │
+└─────────────────────────────────────┘
+```
+
+#### Settings Configuration
+
+```typescript
+interface BiometricSettings {
+  // Feature toggles
+  speechAnalysisEnabled: boolean;
+  facialAnalysisEnabled: boolean;
+  continuousMonitoring: boolean;
+
+  // Triage configuration
+  alertUserFirst: boolean;           // Always true by default
+  notifyEmergencyContact: boolean;   // User configurable
+  emergencyContactDelay: number;     // Minutes before escalation
+  bypassDelayForUrgent: boolean;     // Immediate escalation for severe
+
+  // Emergency contact
+  emergencyContact: EmergencyContact | null;
+
+  // Privacy
+  shareAnonymousDataForTraining: boolean;  // Default: false
+}
+
+interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+  email?: string;
+  notificationPreference: 'sms' | 'call' | 'email' | 'all';
+}
+```
+
+#### Anonymous Training Data
+
+When enabled (`shareAnonymousDataForTraining: true`), the system can send:
+
+- **What IS sent:** Aggregated, anonymized patterns (no personal identifiers)
+- **What is NOT sent:** Voice recordings, face images, identity data, content
+- **Purpose:** Improve detection accuracy across diverse populations
+- **User control:** Off by default, fully opt-in
+
+```typescript
+interface AnonymousTrainingData {
+  // Aggregated metrics only
+  speechPatternMetrics: {
+    paceVariance: number;
+    articulationScore: number;
+    // No voice fingerprint
+  };
+
+  faceMetrics: {
+    emotionConfidences: number[];
+    fatigueLevel: number;
+    // No face descriptor
+  };
+
+  // For model improvement
+  concernLevelLabel: string;
+  falsePositiveReport?: boolean;
+}
+```
+
+### Context for LLM
+
+The biometric services provide compressed context for Claude:
+
+```typescript
+// From speechAnalysisService.ts
+function getSpeechContextForLLM(): string {
+  // Returns: "Speech: normal" or
+  // "Speech: slurring detected (moderate), pace 20% slower than baseline"
+}
+
+// From facialRecognitionService.ts
+function getFaceContextForLLM(): string {
+  // Returns: "Expression: neutral, fatigue: low" or
+  // "Expression: sad (high confidence), fatigue: high, stress indicators present"
+}
+
+// From biometricMonitoringService.ts
+function getBiometricContextForLLM(): string {
+  // Combined context for the AI
+}
+```
+
+### Settings UI Integration
+
+In Settings > Safety & Monitoring:
+
+```
+┌─────────────────────────────────────────────┐
+│ Safety & Monitoring                         │
+├─────────────────────────────────────────────┤
+│                                             │
+│ Speech Analysis                    [ON/OFF] │
+│ Detects speech patterns that may indicate   │
+│ distress or intoxication                    │
+│                                             │
+│ Facial Analysis                    [ON/OFF] │
+│ Detects emotional state and fatigue         │
+│                                             │
+│ Continuous Monitoring              [ON/OFF] │
+│ Monitor during conversations                │
+│                                             │
+│ ─────────────────────────────────────────── │
+│                                             │
+│ Emergency Contact                           │
+│ ┌─────────────────────────────────────────┐ │
+│ │ Name: ________________________          │ │
+│ │ Phone: _______________________          │ │
+│ │ Relationship: ________________          │ │
+│ │ Notify via: [SMS] [Call] [Email]        │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ Wait before notifying contact    [5 min ▼]  │
+│ Bypass delay for urgent alerts   [ON/OFF]   │
+│                                             │
+│ ─────────────────────────────────────────── │
+│                                             │
+│ Help Improve Detection             [OFF ▼]  │
+│ Share anonymous patterns to improve         │
+│ accuracy (no personal data shared)          │
+│                                             │
+└─────────────────────────────────────────────┘
+```
+
+### Privacy Guarantees
+
+1. **All biometric data stays on device** - No raw audio or images ever sent
+2. **Identity data is local only** - Voice/face prints stored locally, encrypted
+3. **Training data is opt-in** - Anonymous patterns only, if user enables
+4. **User controls escalation** - Can disable emergency contact feature entirely
+5. **Alert user first** - Always notifies user before any external contact
+
+### Technical Implementation Notes
+
+**Speech Analysis** requires:
+- Audio recording permission
+- On-device speech processing (no cloud transcription)
+- Baseline enrollment session (~30 seconds of natural speech)
+
+**Facial Analysis** requires:
+- Camera permission
+- On-device face processing (no cloud)
+- Face-api.js or similar on-device library
+- Baseline enrollment (~5 seconds, multiple angles)
+
+**Future enhancements:**
+- Apple Watch integration for continuous monitoring
+- HealthKit heart rate correlation
+- Time-of-day pattern baselines
+
+---
+
+## Guided Tour System
+
+### Overview
+
+The guided tour provides an automated walkthrough of the app that navigates through screens, uses TTS to narrate, and helps new users understand key features.
+
+**Location:** `moodling-app/services/guidedTourService.ts`
+
+### Architecture
+
+```typescript
+interface TourStep {
+  id: string;
+  title: string;
+  narration: string;      // What TTS says
+  displayText: string;    // What shows on screen
+  route?: string;         // Screen to navigate to
+  highlight?: string;     // Element to highlight
+  duration: number;       // ms before auto-advance
+  action?: () => Promise<void>;  // Custom action
+}
+
+interface TourState {
+  isActive: boolean;
+  currentStep: number;
+  isPaused: boolean;
+}
+```
+
+### Tour Steps
+
+The tour covers 10 key areas:
+
+1. **Welcome** - Introduction to the app
+2. **Tree** - The visual heart of the app
+3. **Twigs** - Quick-log functionality
+4. **Fireflies** - Personal AI wisdom
+5. **Sparks** - Creative prompts
+6. **Journal** - Writing entries
+7. **Skills** - Growth toolkit
+8. **Insights** - Pattern visualization
+9. **Settings** - Customization
+10. **Coach** - AI conversation
+
+### Key Functions
+
+```typescript
+// Start the tour
+startTour(onStepChange?, onEnd?): Promise<void>
+
+// Navigation
+nextStep(): Promise<void>
+previousStep(): Promise<void>
+pauseTour(): void
+resumeTour(): Promise<void>
+skipTour(): Promise<void>
+endTour(): Promise<void>
+
+// State queries
+isTourActive(): boolean
+getTourState(): TourState
+getCurrentStep(): TourStep | null
+getTourProgress(): number  // 0-100
+getTotalSteps(): number
+
+// Persistence
+hasTourBeenCompleted(): Promise<boolean>
+markTourCompleted(): Promise<void>
+resetTour(): Promise<void>
+```
+
+### TTS Integration
+
+Tour uses the text-to-speech service for narration:
+
+```typescript
+// In executeStep()
+const ttsAvailable = await isTTSAvailable();
+if (ttsAvailable) {
+  await speakText(step.narration);
+}
+```
+
+### Auto-Navigation
+
+The tour automatically navigates to each screen:
+
+```typescript
+if (step.route) {
+  router.replace(step.route);
+}
+```
+
+### Duration & Auto-Advance
+
+Each step has a duration after which it auto-advances:
+
+```typescript
+tourTimeoutId = setTimeout(async () => {
+  if (tourState.isActive && !tourState.isPaused) {
+    const nextIndex = stepIndex + 1;
+    if (nextIndex >= TOUR_STEPS.length) {
+      await endTour();
+    } else {
+      await executeStep(nextIndex);
+    }
+  }
+}, step.duration);
+```
+
+### Storage Keys
+
+```typescript
+const STORAGE_KEYS = {
+  TOUR_COMPLETED: 'moodleaf_guided_tour_completed',
+  TOUR_STEP: 'moodleaf_guided_tour_step',
+};
+```
+
+---
+
 ## Future Enhancements
 
 ### Planned Features
