@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
 import { TreeScene } from '@/components/tree';
@@ -6,6 +6,10 @@ import { QuickLogsOverlay } from '@/components/QuickLogsOverlay';
 import { WisdomOverlay } from '@/components/WisdomOverlay';
 import { SparkOverlay } from '@/components/SparkOverlay';
 import { Colors } from '@/constants/Colors';
+import {
+  registerSpotlightTarget,
+  unregisterSpotlightTarget,
+} from '@/components/TourSpotlight';
 
 /**
  * Tree Tab - Mood Leaf Visual Home
@@ -34,6 +38,47 @@ export default function TreeScreen() {
   const [showWisdom, setShowWisdom] = useState(false);
   const [showSpark, setShowSpark] = useState(false);
 
+  // Refs for tour spotlight targets
+  const twigsButtonRef = useRef<View>(null);
+  const firefliesButtonRef = useRef<View>(null);
+  const sparkButtonRef = useRef<View>(null);
+
+  // Register spotlight targets for guided tour
+  useEffect(() => {
+    const measureAndRegister = () => {
+      // Measure Twigs button
+      twigsButtonRef.current?.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          registerSpotlightTarget('twigs-button', { x, y, width, height });
+        }
+      });
+
+      // Measure Fireflies button
+      firefliesButtonRef.current?.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          registerSpotlightTarget('fireflies-button', { x, y, width, height });
+        }
+      });
+
+      // Measure Spark button
+      sparkButtonRef.current?.measureInWindow((x, y, width, height) => {
+        if (width > 0 && height > 0) {
+          registerSpotlightTarget('spark-button', { x, y, width, height });
+        }
+      });
+    };
+
+    // Delay measurement to ensure layout is complete
+    const timeout = setTimeout(measureAndRegister, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      unregisterSpotlightTarget('twigs-button');
+      unregisterSpotlightTarget('fireflies-button');
+      unregisterSpotlightTarget('spark-button');
+    };
+  }, []);
+
   // Navigation handlers - delayed response happens in TreeScene
   const handleLeafPress = useCallback(() => {
     router.push('/(tabs)'); // Journal
@@ -60,6 +105,7 @@ export default function TreeScreen() {
       <View style={styles.floatingButtons} pointerEvents="box-none">
         {/* Fireflies Button - Left */}
         <TouchableOpacity
+          ref={firefliesButtonRef}
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowWisdom(true)}
           activeOpacity={0.8}
@@ -70,6 +116,7 @@ export default function TreeScreen() {
 
         {/* Spark Button - Center (creativity/play) */}
         <TouchableOpacity
+          ref={sparkButtonRef}
           style={[styles.fabCenter, { backgroundColor: colors.tint }]}
           onPress={() => setShowSpark(true)}
           activeOpacity={0.8}
@@ -80,6 +127,7 @@ export default function TreeScreen() {
 
         {/* Twigs Button - Right */}
         <TouchableOpacity
+          ref={twigsButtonRef}
           style={[styles.fab, { backgroundColor: colors.card }]}
           onPress={() => setShowQuickLogs(true)}
           activeOpacity={0.8}

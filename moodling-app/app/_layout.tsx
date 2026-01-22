@@ -5,24 +5,22 @@ import {
   useColorScheme,
   View,
   ActivityIndicator,
-  Modal,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { isOnboardingComplete } from '@/services/coachPersonalityService';
 import {
-  isTourActive,
-  getCurrentStep,
   nextStep,
   skipTour,
   getTotalSteps,
-  getTourState,
   subscribeTourState,
   TourStep,
 } from '@/services/guidedTourService';
+import {
+  TourSpotlight,
+  getSpotlightTarget,
+  subscribeToTargets,
+  SpotlightTarget,
+} from '@/components/TourSpotlight';
 
 /**
  * Mood Leaf Root Layout
@@ -43,6 +41,7 @@ export default function RootLayout() {
   const [tourActive, setTourActive] = useState(false);
   const [currentTourStep, setCurrentTourStep] = useState<TourStep | null>(null);
   const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [spotlightTarget, setSpotlightTarget] = useState<SpotlightTarget | null>(null);
 
   useEffect(() => {
     checkOnboarding();
@@ -55,10 +54,30 @@ export default function RootLayout() {
       setTourActive(state.isActive);
       setCurrentTourStep(step);
       setTourStepIndex(state.currentStep);
+
+      // Look up spotlight target for this step
+      if (step?.highlight) {
+        const target = getSpotlightTarget(step.highlight);
+        setSpotlightTarget(target || null);
+      } else {
+        setSpotlightTarget(null);
+      }
     });
 
     return unsubscribe;
   }, []);
+
+  // Subscribe to spotlight target updates (elements may register after navigation)
+  useEffect(() => {
+    const unsubscribe = subscribeToTargets(() => {
+      if (currentTourStep?.highlight) {
+        const target = getSpotlightTarget(currentTourStep.highlight);
+        setSpotlightTarget(target || null);
+      }
+    });
+
+    return unsubscribe;
+  }, [currentTourStep]);
 
   const handleTourNext = useCallback(async () => {
     await nextStep();
@@ -188,111 +207,17 @@ export default function RootLayout() {
         />
       </Stack>
 
-      {/* Guided Tour Overlay - at root level so it persists across navigation */}
-      {tourActive && currentTourStep && (
-        <Modal
-          visible={tourActive}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={handleSkipTour}
-        >
-          <View style={styles.tourOverlay}>
-            <View style={[styles.tourCard, { backgroundColor: colors.background }]}>
-              <Text style={[styles.tourTitle, { color: colors.text }]}>
-                {currentTourStep.title}
-              </Text>
-              <Text style={[styles.tourText, { color: colors.textSecondary }]}>
-                {currentTourStep.displayText}
-              </Text>
-              <View style={styles.tourProgress}>
-                <Text style={[styles.tourProgressText, { color: colors.textMuted }]}>
-                  {tourStepIndex + 1} of {getTotalSteps()}
-                </Text>
-              </View>
-              <View style={styles.tourButtons}>
-                <TouchableOpacity
-                  style={styles.tourSkipButton}
-                  onPress={handleSkipTour}
-                >
-                  <Text style={[styles.tourSkipText, { color: colors.textMuted }]}>
-                    Skip Tour
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tourNextButton, { backgroundColor: colors.tint }]}
-                  onPress={handleTourNext}
-                >
-                  <Text style={styles.tourNextText}>
-                    {tourStepIndex === getTotalSteps() - 1 ? 'Finish' : 'Next'}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      {/* Guided Tour Spotlight - at root level so it persists across navigation */}
+      <TourSpotlight
+        visible={tourActive && currentTourStep !== null}
+        target={spotlightTarget}
+        title={currentTourStep?.title || ''}
+        description={currentTourStep?.displayText || ''}
+        stepIndex={tourStepIndex}
+        totalSteps={getTotalSteps()}
+        onNext={handleTourNext}
+        onSkip={handleSkipTour}
+      />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  tourOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  tourCard: {
-    width: '100%',
-    borderRadius: 20,
-    padding: 24,
-    maxWidth: 360,
-  },
-  tourTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  tourText: {
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  tourProgress: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  tourProgressText: {
-    fontSize: 13,
-  },
-  tourButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  tourSkipButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  tourSkipText: {
-    fontSize: 15,
-  },
-  tourNextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    gap: 8,
-  },
-  tourNextText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
