@@ -20,6 +20,7 @@ import {
   skipTour,
   getTotalSteps,
   getTourState,
+  subscribeTourState,
   TourStep,
 } from '@/services/guidedTourService';
 
@@ -47,26 +48,16 @@ export default function RootLayout() {
     checkOnboarding();
   }, []);
 
-  // Poll tour state to keep UI in sync
+  // Subscribe to tour state changes (event-based, not polling)
   useEffect(() => {
-    const pollTourState = () => {
-      const active = isTourActive();
-      setTourActive(active);
-      if (active) {
-        const step = getCurrentStep();
-        const state = getTourState();
-        setCurrentTourStep(step);
-        setTourStepIndex(state.currentStep);
-      } else {
-        setCurrentTourStep(null);
-      }
-    };
+    const unsubscribe = subscribeTourState((state, step) => {
+      console.log('[Layout] Tour state changed:', state.isActive, step?.id);
+      setTourActive(state.isActive);
+      setCurrentTourStep(step);
+      setTourStepIndex(state.currentStep);
+    });
 
-    // Poll every 100ms when tour might be active
-    const interval = setInterval(pollTourState, 100);
-    pollTourState(); // Initial check
-
-    return () => clearInterval(interval);
+    return unsubscribe;
   }, []);
 
   const handleTourNext = useCallback(async () => {

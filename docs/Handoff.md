@@ -1314,6 +1314,62 @@ All skills follow Mood Leaf philosophy:
 
 ---
 
+## 26. SESSION UPDATE: Guided Tour Overlay (January 22, 2026)
+
+### Overview
+
+Fixed the guided tour overlay feature that wasn't working after onboarding. The tour now properly navigates through all app screens while maintaining an overlay that persists across navigation.
+
+### Problem
+
+The tour overlay was initially in the coach screen, but when the tour navigated to different screens (tree, skills, insights, etc.), the overlay would disappear because the coach screen unmounted. Moving it to `_layout.tsx` (root layout) with polling-based state sync was unreliable.
+
+### Solution
+
+Implemented an **event-based subscription system** for tour state changes:
+
+1. **`subscribeTourState()`** - Components subscribe to tour state changes and receive immediate updates
+2. **`notifyStateChange()`** - Called whenever tour state changes, updates all subscribed components
+3. **Removed polling** - No more 100ms/200ms intervals that could miss state changes
+4. **Navigation timing fix** - Small delay before navigation ensures overlay appears first
+
+### Key Files Modified
+
+| File | Changes |
+|------|---------|
+| `services/guidedTourService.ts` | Added subscription system, state notifications, console logging for debugging |
+| `app/_layout.tsx` | Uses `subscribeTourState()` instead of polling |
+| `app/coach/index.tsx` | Uses subscription for tour active state, handles `/tour` command |
+| `services/slashCommandService.ts` | Added `/tour` and `/tour reset` commands |
+
+### New Slash Commands
+
+| Command | Description |
+|---------|-------------|
+| `/tour` | Start the guided tour from anywhere in the app |
+| `/tour reset` | Reset tour completion so it can be taken again |
+| `/walkthrough`, `/guide`, `/show-around` | Aliases for `/tour` |
+
+### How It Works Now
+
+1. User clicks "Take the Guided Tour" button OR types `/tour`
+2. `startTour()` sets `tourState.isActive = true` and calls `notifyStateChange()`
+3. All subscribed components (root layout, coach screen) receive the state update immediately
+4. Root layout renders the tour overlay Modal
+5. Tour navigates through screens: tree → twigs → fireflies → sparks → journal → skills → insights → settings → coach
+6. Each step auto-advances after its duration (4-7 seconds) or user clicks "Next"
+7. Overlay persists across all navigation because it's at the root level
+
+### Testing
+
+To test the tour:
+1. Type `/tour reset` to clear any previous completion
+2. Type `/tour` to start the tour
+3. Watch the overlay as it navigates through different screens
+4. Click "Next" to manually advance or "Skip Tour" to exit
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
@@ -1331,7 +1387,7 @@ All skills follow Mood Leaf philosophy:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 80+ techniques and D&D progression. NEW: 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). NEW: Playback Resume for Sleep Stories and Old Time Radio. NEW: High-Value Clinical Skills (Safety Plan Builder, Grounding Ladder, TIPP, Window of Tolerance, Vagal Tone, Thought Record, Opposite Action, Radical Acceptance, DEAR MAN Script).** All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. Food Tracking with AI detection. Skills Tab with 80+ techniques and D&D progression. 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). Playback Resume for Sleep Stories and Old Time Radio. High-Value Clinical Skills (Safety Plan Builder, Grounding Ladder, TIPP, Window of Tolerance, Vagal Tone, Thought Record, Opposite Action, Radical Acceptance, DEAR MAN Script). **NEW: Guided Tour Overlay with event-based state management - navigates through all screens while maintaining overlay persistence. `/tour` and `/tour reset` slash commands for testing.** All processing local/on-device."
 
 ---
 
@@ -1362,6 +1418,7 @@ All skills follow Mood Leaf philosophy:
 | `foodTrackingService.ts` | **NEW** Food & calorie tracking | `logFood()`, `autoLogFromJournal()`, `getTodayCalorieProgress()` |
 | `skillProgressionService.ts` | **NEW** D&D progression system | `awardPoints()`, `getSkillsWithStatus()`, `checkEasterEgg()` |
 | `playbackResumeService.ts` | **NEW** Audio playback tracking | `savePlaybackPosition()`, `getPlaybackPosition()`, `getContinueListening()` |
+| `guidedTourService.ts` | **NEW** App tour/walkthrough | `startTour()`, `nextStep()`, `skipTour()`, `subscribeTourState()` |
 
 ---
 

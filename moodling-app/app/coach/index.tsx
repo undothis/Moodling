@@ -68,7 +68,7 @@ import {
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateProfileReveal } from '@/services/cognitiveProfileService';
-import { startTour, isTourActive } from '@/services/guidedTourService';
+import { startTour, isTourActive, subscribeTourState, resetTour } from '@/services/guidedTourService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -176,14 +176,12 @@ export default function CoachScreen() {
   // Guided tour state - just track if active for hiding prompt
   const [tourActive, setTourActive] = useState(false);
 
-  // Sync tour active state with service
+  // Subscribe to tour state changes (for hiding prompt during tour)
   useEffect(() => {
-    const syncTourState = () => {
-      setTourActive(isTourActive());
-    };
-    const interval = setInterval(syncTourState, 200);
-    syncTourState();
-    return () => clearInterval(interval);
+    const unsubscribe = subscribeTourState((state) => {
+      setTourActive(state.isActive);
+    });
+    return unsubscribe;
   }, []);
 
   // Map mode IDs to breathing patterns
@@ -465,6 +463,14 @@ export default function CoachScreen() {
         }
         if (result.data?.action === 'show_modes_picker') {
           setShowModesSheet(true);
+        }
+        if (result.data?.action === 'start_tour') {
+          // Start the guided tour via slash command
+          handleStartTour();
+        }
+        if (result.data?.action === 'reset_tour') {
+          // Reset tour so it can be taken again
+          resetTour();
         }
         if (result.message) {
           setMessages((prev) => [

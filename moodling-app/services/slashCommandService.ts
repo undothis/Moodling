@@ -1513,6 +1513,32 @@ registerCommand({
   },
 });
 
+registerCommand({
+  name: 'tour',
+  aliases: ['walkthrough', 'guide', 'show-around'],
+  description: 'Start the guided tour of the app',
+  category: 'power',
+  requiresPremium: false,
+  usage: '/tour [reset]',
+  examples: ['/tour', '/tour reset'],
+  handler: async (args) => {
+    if (args[0] === 'reset') {
+      return {
+        type: 'action',
+        success: true,
+        message: '🔄 Tour reset! You can now take it again.',
+        data: { action: 'reset_tour' },
+      };
+    }
+    return {
+      type: 'action',
+      success: true,
+      message: '🗺️ Starting guided tour...\n\nI\'ll walk you through all the features!',
+      data: { action: 'start_tour' },
+    };
+  },
+});
+
 // ============================================
 // SECRET COMMANDS (Easter Eggs)
 // ============================================
