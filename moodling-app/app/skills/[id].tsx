@@ -5,7 +5,7 @@
  * Shows skill info and placeholder content.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,21 @@ import {
   useColorScheme,
   SafeAreaView,
   Alert,
+  Switch,
 } from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { AVAILABLE_SKILLS, SKILL_CATEGORIES, Skill } from '@/types/SkillProgression';
+import {
+  isCoachModeSkill,
+  getCoachModeConfig,
+  isModeActive,
+  isPersistentMode,
+  activateSessionMode,
+  deactivateSessionMode,
+  togglePersistentMode,
+} from '@/services/coachModeService';
 
 // Skill-specific content and instructions
 const SKILL_CONTENT: Record<string, {
@@ -588,9 +598,71 @@ export default function SkillDetailScreen() {
   const colors = Colors[colorScheme ?? 'light'];
   const router = useRouter();
 
+  // Coach mode state
+  const [isCoachMode, setIsCoachMode] = useState(false);
+  const [modeActive, setModeActive] = useState(false);
+  const [isPersistent, setIsPersistent] = useState(false);
+  const coachModeConfig = id ? getCoachModeConfig(id) : null;
+
   const skill = AVAILABLE_SKILLS.find(s => s.id === id);
   const content = id ? SKILL_CONTENT[id] : null;
   const category = skill?.category ? SKILL_CATEGORIES[skill.category] : null;
+
+  // Load coach mode state
+  useFocusEffect(
+    useCallback(() => {
+      const loadCoachModeState = async () => {
+        if (id && isCoachModeSkill(id)) {
+          setIsCoachMode(true);
+          const [active, persistent] = await Promise.all([
+            isModeActive(id),
+            isPersistentMode(id),
+          ]);
+          setModeActive(active);
+          setIsPersistent(persistent);
+        } else {
+          setIsCoachMode(false);
+        }
+      };
+      loadCoachModeState();
+    }, [id])
+  );
+
+  // Toggle coach mode activation
+  const handleToggleCoachMode = async (value: boolean) => {
+    if (!id) return;
+
+    setModeActive(value);
+    if (value) {
+      await activateSessionMode(id);
+      Alert.alert(
+        'Coach Mode Activated',
+        `${skill?.name} is now active. Your coach will use this approach in conversations.`,
+        [{ text: 'Got it' }]
+      );
+    } else {
+      await deactivateSessionMode(id);
+      // Also turn off persistent if deactivating
+      if (isPersistent) {
+        setIsPersistent(false);
+        await togglePersistentMode(id, false);
+      }
+    }
+  };
+
+  // Toggle persistent mode
+  const handleTogglePersistent = async (value: boolean) => {
+    if (!id) return;
+
+    setIsPersistent(value);
+    await togglePersistentMode(id, value);
+
+    // If enabling persistent, make sure mode is active
+    if (value && !modeActive) {
+      setModeActive(true);
+      await activateSessionMode(id);
+    }
+  };
 
   if (!skill) {
     return (
@@ -646,6 +718,65 @@ export default function SkillDetailScreen() {
             </Text>
           )}
         </View>
+
+        {/* Coach Mode Toggle */}
+        {isCoachMode && coachModeConfig && (
+          <View style={[styles.coachModeSection, { backgroundColor: colors.card }]}>
+            <View style={styles.coachModeHeader}>
+              <Text style={[styles.coachModeTitle, { color: colors.text }]}>
+                🎯 Coach Mode
+              </Text>
+              <Switch
+                value={modeActive}
+                onValueChange={handleToggleCoachMode}
+                trackColor={{ false: '#767577', true: colors.tint + '80' }}
+                thumbColor={modeActive ? colors.tint : '#f4f3f4'}
+              />
+            </View>
+            <Text style={[styles.coachModeDescription, { color: colors.textSecondary }]}>
+              When active, your coach will use this approach in conversations.
+            </Text>
+
+            {modeActive && (
+              <View style={styles.persistentToggle}>
+                <View style={styles.persistentInfo}>
+                  <Ionicons name="bookmark" size={18} color={colors.tint} />
+                  <Text style={[styles.persistentLabel, { color: colors.text }]}>
+                    Keep on across sessions
+                  </Text>
+                </View>
+                <Switch
+                  value={isPersistent}
+                  onValueChange={handleTogglePersistent}
+                  trackColor={{ false: '#767577', true: colors.tint + '80' }}
+                  thumbColor={isPersistent ? colors.tint : '#f4f3f4'}
+                />
+              </View>
+            )}
+
+            {modeActive && coachModeConfig.usesBreathingBall && (
+              <View style={[styles.breathingBallNote, { backgroundColor: colors.tint + '20' }]}>
+                <Ionicons name="ellipse" size={16} color={colors.tint} />
+                <Text style={[styles.breathingBallText, { color: colors.tint }]}>
+                  Breathing ball visual will appear in chat
+                </Text>
+              </View>
+            )}
+
+            {coachModeConfig.suggestedQuestions && coachModeConfig.suggestedQuestions.length > 0 && (
+              <View style={styles.suggestedQuestions}>
+                <Text style={[styles.suggestedLabel, { color: colors.textMuted }]}>
+                  Your coach might ask:
+                </Text>
+                {coachModeConfig.suggestedQuestions.map((q, i) => (
+                  <Text key={i} style={[styles.suggestedQuestion, { color: colors.textSecondary }]}>
+                    "{q}"
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Instructions */}
         {content?.instructions && (
@@ -868,5 +999,68 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Coach Mode Styles
+  coachModeSection: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+  },
+  coachModeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  coachModeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  coachModeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  persistentToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  persistentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  persistentLabel: {
+    fontSize: 14,
+  },
+  breathingBallNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+  },
+  breathingBallText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  suggestedQuestions: {
+    marginTop: 16,
+  },
+  suggestedLabel: {
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  suggestedQuestion: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginBottom: 4,
   },
 });

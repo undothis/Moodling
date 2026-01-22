@@ -26,6 +26,7 @@ import {
   getChronotypeContextForClaude,
   PERSONAS,
 } from './coachPersonalityService';
+import { getCoachModeSystemPrompt } from './coachModeService';
 import { getLifestyleFactorsContextForClaude } from './patternService';
 import { getExposureContextForClaude } from './exposureLadderService';
 import { getCalendarContextForClaude, isCalendarEnabled } from './calendarService';
@@ -753,7 +754,21 @@ export async function sendMessage(
     conversationContext  // Current conversation context
   ].filter(Boolean);
   const fullContext = contextParts.join('\n\n');
-  const systemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+
+  // Get active coach mode additions (skill-based coach modifications)
+  let coachModeAdditions = '';
+  try {
+    coachModeAdditions = await getCoachModeSystemPrompt();
+  } catch (error) {
+    console.log('Could not load coach mode additions:', error);
+  }
+
+  // Build system prompt with coach personality and skill modes
+  const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+  const systemPrompt = coachModeAdditions
+    ? `${baseSystemPrompt}${coachModeAdditions}`
+    : baseSystemPrompt;
+
   const messages = buildMessages(message, context.recentMessages);
 
   const request: ClaudeRequest = {
