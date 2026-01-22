@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -78,39 +78,6 @@ interface DisplayMessage {
   timestamp: Date;
   isTyping?: boolean;
 }
-
-const QUICK_ACTIONS = [
-  {
-    label: 'Prepare for event',
-    prompt: "I have an event coming up and I'd like help preparing mentally.",
-    icon: 'calendar-outline',
-  },
-  {
-    label: 'Breathing',
-    prompt: '/breathe',
-    icon: 'leaf-outline',
-  },
-  {
-    label: 'Just vent',
-    prompt: 'I need to get something off my chest.',
-    icon: 'chatbubble-outline',
-  },
-  {
-    label: 'Check in',
-    prompt: "I'm not sure how I'm feeling right now.",
-    icon: 'heart-outline',
-  },
-  {
-    label: 'Skills',
-    prompt: '/skills',
-    icon: 'sparkles-outline',
-  },
-  {
-    label: 'Commands',
-    prompt: '/help',
-    icon: 'terminal-outline',
-  },
-];
 
 const WELCOME_MESSAGE: DisplayMessage = {
   id: 'welcome',
@@ -581,10 +548,6 @@ export default function CoachScreen() {
     sendHandlerRef.current = handleSend;
   });
 
-  const handleQuickAction = useCallback((prompt: string) => {
-    handleSend(prompt);
-  }, [handleSend]);
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -671,33 +634,6 @@ export default function CoachScreen() {
             </View>
           ))}
         </ScrollView>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsContent}
-          >
-            {QUICK_ACTIONS.map((action) => (
-              <TouchableOpacity
-                key={action.label}
-                style={[styles.quickAction, { backgroundColor: colors.card }]}
-                onPress={() => handleQuickAction(action.prompt)}
-                disabled={isLoading}
-              >
-                <Ionicons
-                  name={action.icon as any}
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.quickActionText, { color: colors.text }]}>
-                  {action.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
         {/* Voice Transcript Display */}
         {voiceState === 'listening' && voiceTranscript && (
@@ -892,26 +828,6 @@ const styles = StyleSheet.create({
   typingText: {
     fontSize: 13,
     fontStyle: 'italic',
-  },
-  quickActionsContainer: {
-    paddingVertical: 8,
-    borderTopWidth: 0,
-  },
-  quickActionsContent: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  quickAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  quickActionText: {
-    fontSize: 13,
-    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
