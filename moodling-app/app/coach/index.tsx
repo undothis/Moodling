@@ -730,6 +730,14 @@ export default function CoachScreen() {
     }]);
   };
 
+  // Strip markdown formatting for display (React Native doesn't render markdown)
+  const stripMarkdown = (text: string): string => {
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** -> bold
+      .replace(/\*([^*]+)\*/g, '$1')     // *italic* -> italic
+      .replace(/---/g, '—');              // --- -> em dash
+  };
+
   // Handle walkthrough choice - user wants profile explanation
   const handleShowProfile = async () => {
     setShowWalkthroughChoice(false);
@@ -744,10 +752,11 @@ export default function CoachScreen() {
       const profileReveal = await generateProfileReveal();
       const summary = await getMoodPrintSummary();
 
-      // Add the profile explanation message
+      // Strip markdown and add the profile explanation message
+      const cleanReveal = stripMarkdown(profileReveal);
       setMessages(prev => [...prev, {
         id: 'profile-reveal',
-        text: `🌿 **Your MoodPrint**\n\n${profileReveal}\n\n---\n\nThis understanding grows as we talk. Feel free to chat about anything, or explore the app!`,
+        text: `🌿 Your MoodPrint\n\n${cleanReveal}\n\n—\n\nThis understanding grows as we talk. Feel free to chat about anything, or explore the app!`,
         source: 'system' as MessageSource,
         timestamp: new Date(),
       }]);
@@ -801,7 +810,7 @@ export default function CoachScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/(tabs)/tree')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -810,7 +819,7 @@ export default function CoachScreen() {
             {coachName}
           </Text>
         </View>
-        <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.doneButton} onPress={() => router.replace('/(tabs)/tree')}>
           <Text style={[styles.doneButtonText, { color: colors.tint }]}>Done</Text>
         </TouchableOpacity>
       </View>
