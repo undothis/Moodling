@@ -39,6 +39,47 @@ import {
   getUnlockRequirements,
 } from '@/services/skillProgressionService';
 
+// Map skill IDs to their actual routes
+const SKILL_ROUTES: Record<string, string> = {
+  // Games -> /games/
+  asteroids: '/games/asteroids',
+  retro_snake: '/games/snake',
+  retro_pong: '/games/pong',
+  fidget_pad: '/games/fidget',
+  bubble_wrap: '/games/bubble-wrap',
+  zen_blocks: '/games/zen-blocks',
+  color_sort: '/games/color-sort',
+  breathing_orb: '/games/breathing-orb',
+  breakout: '/games/breakout',
+  game_2048: '/games/2048',
+  memory_match: '/games/memory-match',
+  water_ripples: '/games/water-ripples',
+  sand_flow: '/games/sand-flow',
+  space_invaders: '/games/space-invaders',
+  frogger: '/games/frogger',
+  kinetic_sand: '/games/kinetic-sand',
+  rain_on_window: '/games/rain-on-window',
+  kaleidoscope: '/games/kaleidoscope',
+  maze_walker: '/games/maze-walker',
+  untangle: '/games/untangle',
+  // Clinical skills with hyphenated routes
+  safety_plan: '/skills/safety-plan',
+  grounding_ladder: '/skills/grounding-ladder',
+  tipp_skills: '/skills/tipp',
+  window_tolerance: '/skills/window-of-tolerance',
+  vagal_tone: '/skills/vagal-tone',
+  thought_record: '/skills/thought-record',
+  dear_man: '/skills/dear-man',
+  opposite_action: '/skills/opposite-action',
+  radical_acceptance: '/skills/radical-acceptance',
+  human_design: '/skills/human-design',
+  astrology_basics: '/skills/astrology',
+};
+
+function getSkillRoute(skillId: string): string {
+  return SKILL_ROUTES[skillId] || `/skills/${skillId.replace(/_/g, '-')}`;
+}
+
 export default function SkillsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -303,7 +344,7 @@ export default function SkillsScreen() {
               ]}
               onPress={() => {
                 if (skill.isUnlocked) {
-                  router.push(`/skills/${skill.id}` as any);
+                  router.push(getSkillRoute(skill.id) as any);
                 }
               }}
               disabled={!skill.isUnlocked}
