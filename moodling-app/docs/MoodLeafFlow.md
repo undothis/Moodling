@@ -4,18 +4,340 @@ Visual guide to how all services connect, how data flows, and how the system lea
 
 ---
 
+## Introduction: What Makes Mood Leaf Unique
+
+### The Problem with Current Coaching Apps
+
+Most mental wellness apps treat everyone the same:
+- Generic advice that doesn't fit how YOU think
+- One-size-fits-all techniques (visualization for everyone, even those who can't visualize)
+- Engagement-focused design that creates dependency
+- No understanding of neurological differences
+- Replacements for human connection instead of bridges to it
+
+### What Mood Leaf Does Differently
+
+**Mood Leaf is an adaptive coaching companion that learns how YOUR mind works and shapes itself around you.**
+
+```
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                           WHY MOOD LEAF IS DIFFERENT                             ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                  ║
+║   MOST APPS                          │  MOOD LEAF                                ║
+║   ─────────────────────────────────  │  ───────────────────────────────────────  ║
+║                                      │                                           ║
+║   "Picture yourself on a beach..."   │  Knows you have aphantasia, suggests     ║
+║                                      │  body-based grounding instead             ║
+║                                      │                                           ║
+║   Same tone for everyone             │  Adapts to your cognitive style -         ║
+║                                      │  systems thinkers get the "why" first     ║
+║                                      │                                           ║
+║   Engagement streaks and badges      │  Celebrates when you DON'T need the app   ║
+║                                      │  Pushes you toward real human connection  ║
+║                                      │                                           ║
+║   "How are you feeling?"             │  Knows you process emotions physically,   ║
+║                                      │  asks "What's happening in your body?"    ║
+║                                      │                                           ║
+║   Static responses                   │  Learns from every conversation,          ║
+║                                      │  gets better at understanding humans      ║
+║                                      │                                           ║
+║   Replaces therapy                   │  Knows its limits, actively refers to     ║
+║                                      │  therapists, friends, community           ║
+║                                      │                                           ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
+
+### The Core Philosophy
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           MOOD LEAF'S BELIEFS                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   "Every mind works differently"                                                │
+│   └── Visual thinkers, verbal processors, systems minds, emotional feelers      │
+│                                                                                  │
+│   "Low phases are integration, not failure"                                     │
+│   └── Cyclical minds need rest periods normalized, not pathologized            │
+│                                                                                  │
+│   "You are the expert on your own life"                                         │
+│   └── We guide and reflect, never prescribe or diagnose                        │
+│                                                                                  │
+│   "No app can replace human connection"                                         │
+│   └── We actively push users toward friends, family, therapy, community        │
+│                                                                                  │
+│   "The goal is for you to need us less"                                         │
+│   └── Our success is measured by your independence, not engagement             │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## The Systems That Power Mood Leaf
+
+Mood Leaf is built from interconnected systems that work together to understand and adapt to each user:
+
+```
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                           THE EIGHT CORE SYSTEMS                                 ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                  ║
+║   1. CORE PRINCIPLE KERNEL                    "The Constitution"                 ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ The ethical backbone. Hardcoded beliefs and constraints that NEVER           ║
+║   │ change. Ensures every response aligns with our values.                       ║
+║   │                                                                              ║
+║   │ Contains:                                                                    ║
+║   │ • 17 Core Beliefs (what we believe about humans)                            ║
+║   │ • 12 Hard Constraints (things we NEVER do)                                  ║
+║   │ • 9 Soft Principles (things we strongly prefer)                             ║
+║   │                                                                              ║
+║   │ Example: "NEVER suggest visualization to users with aphantasia"             ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   2. COGNITIVE PROFILE SERVICE                "How You Think"                    ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Discovers how each user's mind processes information.                        ║
+║   │                                                                              ║
+║   │ Detects:                                                                     ║
+║   │ • Cognitive Mode: conceptual_systems, emotional_relational,                 ║
+║   │                   creative_intuitive, analytical_practical                  ║
+║   │ • Processing Style: visual, verbal, kinesthetic                             ║
+║   │ • Communication Needs: validation-first vs solution-first                   ║
+║   │                                                                              ║
+║   │ Example: Systems thinkers get explanations before suggestions               ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   3. COGNITIVE RHYTHM SERVICE                 "Your Energy Patterns"             ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Tracks and predicts energy cycles over time.                                 ║
+║   │                                                                              ║
+║   │ Detects:                                                                     ║
+║   │ • Rhythm Type: cyclical_pronounced, cyclical_mild, steady, variable         ║
+║   │ • Cycle Length: How long between peaks                                      ║
+║   │ • Current Phase: Peak, recovery, baseline                                   ║
+║   │ • Time-of-day patterns: Morning person? Night owl?                          ║
+║   │                                                                              ║
+║   │ Example: Gentler responses during predicted low phases                      ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   4. NEUROLOGICAL DIFFERENCES SERVICE         "How Your Brain Is Wired"          ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Detects and respects neurological variations that affect experience.         ║
+║   │                                                                              ║
+║   │ Detects:                                                                     ║
+║   │ • Aphantasia: Can't visualize? We'll never say "picture this..."           ║
+║   │ • Inner Monologue: Thinks in words, images, or feelings?                    ║
+║   │ • ADHD Traits: Interest-based motivation, time blindness                    ║
+║   │ • Sensory Processing: Over/under-responsive patterns                        ║
+║   │                                                                              ║
+║   │ Example: For aphantasia, suggest body-based exercises, not imagery          ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   5. SOCIAL CONNECTION HEALTH SERVICE         "Your Human Network"               ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Monitors isolation and encourages human connection.                          ║
+║   │                                                                              ║
+║   │ Tracks:                                                                      ║
+║   │ • Isolation Level: none → mild → moderate → severe                          ║
+║   │ • Last mentioned friends/family                                             ║
+║   │ • App dependency signals (is this their only support?)                      ║
+║   │ • External support presence (therapist, groups)                             ║
+║   │                                                                              ║
+║   │ Example: If isolation detected, gently nudge toward reaching out            ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   6. MEMORY TIER SERVICE                      "Your Story Over Time"             ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Three-tiered memory system that remembers context.                           ║
+║   │                                                                              ║
+║   │ Tiers:                                                                       ║
+║   │ • Short-term: This session's topics, emotions, threads                      ║
+║   │ • Mid-term: This week's patterns, unresolved issues                         ║
+║   │ • Long-term: Core identity, triggers, growth patterns                       ║
+║   │                                                                              ║
+║   │ Example: "Last week you mentioned work stress - how's that going?"          ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   7. HUMAN SCORE SERVICE                      "Response Quality Check"           ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Scores every response for human-ness across 7 dimensions.                    ║
+║   │                                                                              ║
+║   │ Scores (out of 100):                                                        ║
+║   │ • Natural Language (15): Sounds human, not robotic                          ║
+║   │ • Emotional Timing (20): Validates before advising                          ║
+║   │ • Brevity Control (15): Right length for user's energy                      ║
+║   │ • Memory Use (15): References past context appropriately                    ║
+║   │ • Imperfection (10): Not too polished, has personality                      ║
+║   │ • Personality Consistency (15): Same voice across sessions                  ║
+║   │ • Avoided AI Ticks (10): No "As an AI...", no over-enthusiasm              ║
+║   │                                                                              ║
+║   │ Example: Score of 84 = good human-ness, saved as training data              ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+║   8. TRAINING DATA SERVICE                    "Learning From Every Chat"         ║
+║   ───────────────────────────────────────────────────────────────────────────   ║
+║   │ Collects data to eventually train a local LLM that "gets" humans.            ║
+║   │                                                                              ║
+║   │ Collects:                                                                    ║
+║   │ • Scored Conversations: What good responses look like                       ║
+║   │ • Interview Insights: Learnings about how humans work                       ║
+║   │ • Coach Corrections: Bad → good response pairs                              ║
+║   │                                                                              ║
+║   │ Example: 2000+ examples → fine-tune Mistral 7B → local LLM                  ║
+║   └──────────────────────────────────────────────────────────────────────────   ║
+║                                                                                  ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Creating the MoodPrint: Your Unique Profile
+
+A **MoodPrint** is the complete picture of how YOUR mind works. It's built from all eight systems combining their understanding of you.
+
+```
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                           HOW A MOODPRINT IS CREATED                             ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                  ║
+║   USER JOINS APP                                                                 ║
+║         │                                                                        ║
+║         ▼                                                                        ║
+║   ┌───────────────────────────────────────────────────────────────────────────┐ ║
+║   │                        ONBOARDING QUESTIONS                                │ ║
+║   │                                                                            │ ║
+║   │   "When you're learning something new, do you prefer to..."               │ ║
+║   │   • See diagrams and visuals                                              │ ║
+║   │   • Read explanations                                                     │ ║
+║   │   • Try it hands-on                                                       │ ║
+║   │                                                                            │ ║
+║   │   "Can you easily picture a red apple in your mind?"                      │ ║
+║   │   • Yes, vividly → Normal visualization                                   │ ║
+║   │   • Somewhat → Mild aphantasia                                            │ ║
+║   │   • Not at all → Aphantasia detected                                      │ ║
+║   │                                                                            │ ║
+║   │   "When you think, do you hear words in your head?"                       │ ║
+║   │   • Yes, like a narrator → Strong inner monologue                         │ ║
+║   │   • Sometimes → Partial                                                   │ ║
+║   │   • No, I think in feelings/images → Non-verbal thinking                  │ ║
+║   │                                                                            │ ║
+║   └───────────────────────────────────────────────────────────────────────────┘ ║
+║         │                                                                        ║
+║         ▼                                                                        ║
+║   ┌───────────────────────────────────────────────────────────────────────────┐ ║
+║   │                     CONVERSATION ANALYSIS                                  │ ║
+║   │                                                                            │ ║
+║   │   Every message you send teaches us more:                                 │ ║
+║   │                                                                            │ ║
+║   │   "I've been feeling off but I can't explain it"                          │ ║
+║   │   └── Delayed emotional recognition detected                              │ ║
+║   │   └── May process emotions somatically (body-first)                       │ ║
+║   │                                                                            │ ║
+║   │   "Why should I try that? What's the logic?"                              │ ║
+║   │   └── Systems thinker confirmed                                           │ ║
+║   │   └── Needs "why" before "what"                                           │ ║
+║   │                                                                            │ ║
+║   │   "Last week was great but now I can't do anything"                       │ ║
+║   │   └── Cyclical rhythm pattern detected                                    │ ║
+║   │   └── May have burst/crash cycles                                         │ ║
+║   │                                                                            │ ║
+║   └───────────────────────────────────────────────────────────────────────────┘ ║
+║         │                                                                        ║
+║         ▼                                                                        ║
+║   ┌───────────────────────────────────────────────────────────────────────────┐ ║
+║   │                      MOODPRINT ASSEMBLED                                   │ ║
+║   │                                                                            │ ║
+║   │   ┌───────────────────────────────────────────────────────────────────┐   │ ║
+║   │   │                    YOUR UNIQUE MOODPRINT                          │   │ ║
+║   │   ├───────────────────────────────────────────────────────────────────┤   │ ║
+║   │   │                                                                   │   │ ║
+║   │   │   COGNITIVE PROFILE                                               │   │ ║
+║   │   │   • Mode: Conceptual Systems Thinker                              │   │ ║
+║   │   │   • Processing: Verbal + Analytical                               │   │ ║
+║   │   │   • Needs: Explanations before suggestions                        │   │ ║
+║   │   │                                                                   │   │ ║
+║   │   │   NEUROLOGICAL PROFILE                                            │   │ ║
+║   │   │   • Visualization: Mild aphantasia                                │   │ ║
+║   │   │   • Inner Monologue: Strong (verbal thinker)                      │   │ ║
+║   │   │   • ADHD Traits: Interest-based motivation                        │   │ ║
+║   │   │                                                                   │   │ ║
+║   │   │   RHYTHM PROFILE                                                  │   │ ║
+║   │   │   • Type: Burst/Recovery cycles                                   │   │ ║
+║   │   │   • Cycle: ~7-10 days                                            │   │ ║
+║   │   │   • Time: More energy in evenings                                 │   │ ║
+║   │   │                                                                   │   │ ║
+║   │   │   COMMUNICATION PREFERENCES                                       │   │ ║
+║   │   │   • Style: Validation-first, then logic                           │   │ ║
+║   │   │   • Length: Brief when low energy                                 │   │ ║
+║   │   │   • Tone: Warm but direct                                         │   │ ║
+║   │   │                                                                   │   │ ║
+║   │   │   CONNECTION HEALTH                                               │   │ ║
+║   │   │   • Isolation: Mild                                               │   │ ║
+║   │   │   • External Support: Has therapist                               │   │ ║
+║   │   │   • Social Frequency: Occasional                                  │   │ ║
+║   │   │                                                                   │   │ ║
+║   │   └───────────────────────────────────────────────────────────────────┘   │ ║
+║   │                                                                            │ ║
+║   └───────────────────────────────────────────────────────────────────────────┘ ║
+║         │                                                                        ║
+║         ▼                                                                        ║
+║   ┌───────────────────────────────────────────────────────────────────────────┐ ║
+║   │                  MOODPRINT SHAPES EVERY RESPONSE                           │ ║
+║   │                                                                            │ ║
+║   │   User: "I can't focus today"                                             │ ║
+║   │                                                                            │ ║
+║   │   WITHOUT MoodPrint:                                                      │ ║
+║   │   "Try visualizing yourself completing the task. Picture the              │ ║
+║   │    satisfaction you'll feel when it's done!"                              │ ║
+║   │                                                                            │ ║
+║   │   WITH MoodPrint:                                                         │ ║
+║   │   "Focus is hard to force. Your energy patterns suggest this might        │ ║
+║   │    be a recovery day - which is part of your rhythm, not a failure.       │ ║
+║   │    What's the smallest thing you could do that matters?"                  │ ║
+║   │                                                                            │ ║
+║   │   Why the difference:                                                     │ ║
+║   │   ✓ No visualization (aphantasia)                                         │ ║
+║   │   ✓ Normalized low phase (cyclical rhythm)                                │ ║
+║   │   ✓ Explained the "why" (systems thinker)                                 │ ║
+║   │   ✓ Brief response (low energy detected)                                  │ ║
+║   │   ✓ Ended with small action (ADHD-friendly)                               │ ║
+║   │                                                                            │ ║
+║   └───────────────────────────────────────────────────────────────────────────┘ ║
+║                                                                                  ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
+
+### MoodPrint Components Summary
+
+| Component | Source | Updates | Used For |
+|-----------|--------|---------|----------|
+| **Cognitive Mode** | Onboarding + conversation analysis | Refined over time | Response style, explanations |
+| **Neurological Profile** | Specific questions + detection | Rarely changes | Technique filtering |
+| **Rhythm Pattern** | Long-term observation | Weekly updates | Timing, tone, expectations |
+| **Communication Prefs** | Feedback + implicit signals | Continuous | Response length, style |
+| **Connection Health** | Message analysis | Each session | Nudges, referrals |
+| **Memory Context** | All conversations | Tiered updates | Continuity, references |
+
+---
+
 ## Table of Contents
-1. [System Overview](#system-overview)
-2. [Current State (NOW)](#current-state-now)
-3. [Future State (GOAL)](#future-state-goal)
-4. [Roadmap: How We Get There](#roadmap-how-we-get-there)
-5. [Service Interconnections](#service-interconnections)
-6. [User Message Flow](#user-message-flow)
-7. [Learning & Adaptation Flow](#learning--adaptation-flow)
-8. [LLM Input/Output](#llm-inputoutput)
-9. [Data Flow Diagram](#data-flow-diagram)
-10. [Training Pipeline](#training-pipeline)
-11. [What Training Data Trains](#what-training-data-trains)
+1. [Introduction: What Makes Mood Leaf Unique](#introduction-what-makes-mood-leaf-unique)
+2. [The Systems That Power Mood Leaf](#the-systems-that-power-mood-leaf)
+3. [Creating the MoodPrint](#creating-the-moodprint-your-unique-profile)
+4. [System Overview](#system-overview)
+5. [Current State (NOW)](#current-state-now)
+6. [Future State (GOAL)](#future-state-goal)
+7. [Roadmap: How We Get There](#roadmap-how-we-get-there)
+8. [Service Interconnections](#service-interconnections)
+9. [User Message Flow](#user-message-flow)
+10. [Learning & Adaptation Flow](#learning--adaptation-flow)
+11. [LLM Input/Output](#llm-inputoutput)
+12. [Data Flow Diagram](#data-flow-diagram)
+13. [Training Pipeline](#training-pipeline)
+14. [What Training Data Trains](#what-training-data-trains)
 
 ---
 
