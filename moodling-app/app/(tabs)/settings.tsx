@@ -1407,6 +1407,39 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      {/* Safety & Monitoring Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Safety & Monitoring
+          </Text>
+        </View>
+
+        <Text style={[styles.apiDescription, { color: colors.textSecondary }]}>
+          Optional biometric monitoring detects concerning patterns in voice and facial expressions. Privacy-first: all data stays on device.
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/settings/biometrics')}
+        >
+          <Text style={styles.faqEmoji}>🔬</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Biometric Settings
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Voice analysis, facial detection, emergency contacts
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.coachNote, { color: colors.textMuted }]}>
+          Configure safety features that can detect distress and optionally alert your emergency contact.
+        </Text>
+      </View>
+
       {/* Privacy Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>

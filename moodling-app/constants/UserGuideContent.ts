@@ -507,6 +507,54 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
     ],
   },
   {
+    id: 'moodprint',
+    emoji: '🧠',
+    title: 'Your MoodPrint',
+    content: 'MoodPrint is your unique cognitive fingerprint—a deep understanding of how YOUR mind works. Not personality labels. Not IQ. Just how you actually think, feel, and process the world.',
+    subsections: [
+      {
+        title: 'Why it matters',
+        content: 'Most apps treat everyone the same. Generic advice. One-size-fits-all. But minds work differently—not better or worse, just differently. MoodPrint captures YOUR way of thinking so your guide can actually help you, not give you advice that works for someone else.',
+      },
+      {
+        title: 'How it\'s built',
+        content: 'During onboarding, we ask questions about how you learn, how you feel, how insights arrive for you. There are no "right" answers—each response reveals something about how your unique mind operates. The more you share, the more personalized your experience becomes.',
+      },
+      {
+        title: 'The 10 Cognitive Modes',
+        content: 'Your mind has a primary way of operating. Most people have 1-2 dominant modes:\n\n• Procedural-Sequential — "Show me the steps." Linear, rule-based, process-oriented\n• Analytical-Symbolic — "Let me analyze this." Logical, precise, comfortable with abstraction\n• Conceptual-Systems — "I see how this fits together." Patterns, frameworks, big picture\n• Narrative-Meaning — "What\'s the story?" Identity-aware, meaning-seeking, story-driven\n• Embodied-Somatic — "I know it in my body." Learns by doing, sensation-focused\n• Associative-Divergent — "Everything connects." Rapid connections, creative leaps, nonlinear\n• Emotional-Relational — "How does this affect people?" Attuned to others, interpersonal\n• Visual-Spatial — "I see it." Thinks in images and spatial models\n• Temporal-Foresight — "Where does this lead?" Timelines, consequences, long arcs\n• Integrative-Meta — "How do these interact?" Meta-cognition, holds contradictions',
+      },
+      {
+        title: 'How your guide adapts',
+        content: 'Once your MoodPrint is built, everything changes:\n\n• Systems Thinkers get framing first, not steps\n• Procedural Thinkers get clear, logical sequences\n• Emotional Processors get validation before solutions\n• Visual Thinkers get spatial metaphors and imagery\n• Embodied Learners get action-oriented, grounded prompts\n\nYour guide speaks YOUR cognitive language.',
+      },
+      {
+        title: 'Neurological differences',
+        content: 'MoodPrint also detects important neurological differences:\n\n• Aphantasia — If you can\'t visualize (mind\'s eye is "blind"), we NEVER ask you to "picture" anything\n• Internal monologue — If you don\'t think in words, we use feelings/sensations instead of "self-talk"\n• Audio imagination — If you can\'t "hear" music in your head, no audio-based techniques\n\nMany coaching techniques assume abilities not everyone has. MoodPrint ensures we only use techniques that work for YOUR brain.',
+      },
+      {
+        title: 'Cognitive rhythms',
+        content: 'Your energy and clarity fluctuate. MoodPrint tracks your pattern:\n\n• Steady State — Consistent day to day\n• Cyclical Mild — Some waves, manageable\n• Cyclical Pronounced — Clear high/low phases\n• Burst-Recovery — Intense sprints then crashes\n\nCritical insight: Low phases are NOT failure—they\'re integration and recovery. Your guide adapts to wherever you are in your rhythm.',
+      },
+      {
+        title: 'Daily energy patterns',
+        content: 'When is your mind sharpest?\n\n• Morning Person — Peak early, fades by evening\n• Night Owl — Slow start, comes alive late\n• Afternoon Peak — Midday is best\n• Unpredictable — No clear pattern\n\nYour guide suggests hard tasks during YOUR peak time and respects your natural rhythm.',
+      },
+      {
+        title: 'Discovered strengths',
+        content: 'As you answer questions, MoodPrint identifies your unique strengths:\n\n• Pattern recognition\n• Deep intuition\n• Systems thinking\n• Rapid connections\n• Burst productivity\n• Non-verbal thinking\n• High emotional intelligence\n\nThese aren\'t labels—they\'re real capabilities your mind has that traditional systems might not have recognized.',
+      },
+      {
+        title: 'Traditional education',
+        content: 'If school didn\'t work for you, that says NOTHING about your intelligence. Traditional education rewards one type of mind. MoodPrint recognizes that your mind might work differently—and that\'s actually valuable, not a deficiency.',
+      },
+      {
+        title: 'Privacy',
+        content: 'Your MoodPrint stays on your device. Only compressed summaries (like "systems thinker, needs validation first") are shared with your AI guide during chats. Raw profile data never leaves your phone.',
+      },
+    ],
+  },
+  {
     id: 'onboarding',
     emoji: '👋',
     title: 'Personalization',
@@ -519,6 +567,10 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'Your pronouns',
         content: 'Your guide uses pronouns when reflecting back to you. Options include she/her, he/him, they/them, or custom. This makes conversations feel natural and respectful.',
+      },
+      {
+        title: 'Cognitive questions',
+        content: 'The onboarding questions aren\'t personality tests. They\'re discovering how YOUR mind actually works—how you learn, process emotions, relate to others, and think through problems. Your answers build your MoodPrint.',
       },
       {
         title: 'Cycle tracking',
@@ -639,6 +691,78 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       {
         title: 'View Your Collection',
         content: 'Type /collection (or /artifacts, /inventory, /bag) to see your unlocked items and progress.',
+      },
+    ],
+  },
+  {
+    id: 'biometrics',
+    emoji: '🔬',
+    title: 'Biometric Safety Features',
+    content: 'Optional biometric monitoring can detect concerning patterns in your voice and facial expressions, providing an extra safety net. Everything is privacy-first—your biometric data never leaves your device.',
+    subsections: [
+      {
+        title: 'How it helps',
+        content: 'The biometric system learns YOUR normal patterns. When it detects something unusual—like speech changes or signs of distress—it can check in with you. Think of it as a caring friend who notices when you\'re not yourself.',
+      },
+      {
+        title: 'Voice analysis',
+        content: 'Your voice carries information about your state. The system can detect:\n\n• Speech pace changes — Unusually slow or fast\n• Articulation changes — Slurring or difficulty speaking\n• Stuttering patterns — New or increased stuttering\n• Voice tremor — Signs of stress or distress\n\nThese might indicate fatigue, intoxication, medication effects, or distress—all situations where a check-in might help.',
+      },
+      {
+        title: 'Facial analysis',
+        content: 'Your face tells a story too. The system can detect:\n\n• Emotion mismatches — Saying "I\'m fine" while looking sad\n• Fatigue signs — Drooping eyes, exhaustion\n• Stress indicators — Tension, jaw clenching\n• Distress signals — Signs that something is wrong\n\nThis isn\'t surveillance—it\'s care. The system only looks when you\'re actively using the app.',
+      },
+      {
+        title: 'Identity verification',
+        content: 'The system creates a "voice print" and "face print" unique to you. This protects your privacy—if someone else tries to use your app, the system knows it\'s not you and won\'t share your personal content.',
+      },
+      {
+        title: 'Triage approach',
+        content: 'If something concerning is detected, the system follows a careful process:\n\n1. Alert YOU first — "I noticed something. Are you okay?"\n2. Give you time to respond — You can say "I\'m fine" and continue\n3. Wait period — If you don\'t respond, it waits (configurable)\n4. Emergency contact — Only if enabled AND you don\'t respond\n\nYou\'re always in control. The system never contacts anyone without giving you a chance to respond first.',
+      },
+      {
+        title: 'Emergency contact',
+        content: 'You can optionally set up an emergency contact—someone who can be notified if concerning patterns are detected AND you don\'t respond to check-ins. Configure:\n\n• Contact name and relationship\n• Phone number for SMS/calls\n• Email address (optional)\n• Wait time before contacting (5-30 minutes)\n\nThis is completely optional. Many people use the app without any emergency contact configured.',
+      },
+      {
+        title: 'Enabling features',
+        content: 'In Settings > Safety & Monitoring, you control everything:\n\n• Voice Analysis — On/Off\n• Facial Analysis — On/Off\n• Continuous Monitoring — Whether to monitor during conversations\n• Emergency Contact — Add, edit, or remove\n• Wait Time — How long before escalation\n\nAll features are off by default. Only enable what feels comfortable.',
+      },
+      {
+        title: 'Privacy guarantees',
+        content: '• All biometric data stays on your device\n• Voice recordings are processed locally, then deleted\n• Face images are never stored—only processed in real-time\n• Voice/face prints are encrypted on your device\n• No biometric data is ever sent to any server\n• Anonymous training data is opt-in only',
+      },
+      {
+        title: 'Anonymous training',
+        content: 'You can optionally help improve the system by sharing anonymous pattern data. This sends ONLY aggregated metrics (like "speech pace variance")—never actual recordings, images, or anything identifiable. Off by default. If you enable it, you\'re helping improve safety features for everyone.',
+      },
+    ],
+  },
+  {
+    id: 'voice',
+    emoji: '🎙️',
+    title: 'Voice Features',
+    content: 'Mood Leaf supports voice in multiple ways—your guide can speak to you, and you can speak to record entries. All voice processing happens on your device.',
+    subsections: [
+      {
+        title: 'Guide voice',
+        content: 'Your AI guide can speak responses aloud using text-to-speech. Each persona has a different voice that matches their personality—Clover sounds warm and friendly, Luna sounds calm and soothing, Flint sounds direct and clear.',
+      },
+      {
+        title: 'Voice recording',
+        content: 'Instead of typing journal entries, you can speak them. Tap the microphone icon to record. Your speech is transcribed on-device, so your voice recording never leaves your phone.',
+      },
+      {
+        title: 'Guided tour narration',
+        content: 'The app\'s guided tour uses voice to walk you through features. Your guide literally shows you around while explaining each part of the app. This can be skipped or paused at any time.',
+      },
+      {
+        title: 'Voice settings',
+        content: 'In Settings > Voice & Sound, you can control:\n\n• Guide speaks responses — On/Off\n• Voice speed — Slower or faster\n• Voice pitch — Higher or lower\n• Volume — Independent of system volume',
+      },
+      {
+        title: 'Privacy',
+        content: 'All voice processing happens on your device:\n• Speech-to-text uses on-device processing\n• Text-to-speech uses on-device synthesis\n• No voice recordings are ever sent to any server\n• Voice print data (for identity) stays encrypted on device',
       },
     ],
   },

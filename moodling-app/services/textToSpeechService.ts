@@ -659,6 +659,45 @@ export async function testTTS(
 }
 
 // ============================================
+// SIMPLE TEXT SPEECH
+// ============================================
+
+/**
+ * Check if TTS is available and configured
+ */
+export async function isTTSAvailable(): Promise<boolean> {
+  const settings = await getTTSSettings();
+  if (!settings.enabled) return false;
+  const hasKey = await hasTTSAPIKey();
+  return hasKey;
+}
+
+/**
+ * Simple text-to-speech function
+ * Uses neutral voice for general narration
+ */
+export async function speakText(text: string): Promise<void> {
+  const available = await isTTSAvailable();
+  if (!available) {
+    console.log('[TTS] Not available for speakText');
+    return;
+  }
+
+  try {
+    const audioUri = await synthesizeSpeech(text, {
+      voice: 'nova', // Neutral voice for narration
+      speed: 1.0,
+    });
+
+    if (audioUri) {
+      await playAudio(audioUri);
+    }
+  } catch (error) {
+    console.error('[TTS] speakText error:', error);
+  }
+}
+
+// ============================================
 // INITIALIZATION
 // ============================================
 

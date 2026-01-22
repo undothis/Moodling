@@ -67,11 +67,7 @@ import {
 } from '@/services/coachModeService';
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  generateProfileReveal,
-  getCognitiveProfile,
-} from '@/services/cognitiveProfileService';
-import { getMoodPrintSummary } from '@/services/moodPrintService';
+import { generateProfileReveal } from '@/services/cognitiveProfileService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -150,8 +146,6 @@ export default function CoachScreen() {
 
   // First-time onboarding flow state
   const [isFirstTime, setIsFirstTime] = useState(false);
-  const [showWalkthroughChoice, setShowWalkthroughChoice] = useState(false);
-  const [walkthroughStep, setWalkthroughStep] = useState(0);
 
   // Voice chat state
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
@@ -230,10 +224,9 @@ export default function CoachScreen() {
       // Check if this is the first time after completing onboarding
       const firstTimeComplete = await AsyncStorage.getItem(FIRST_TIME_COACH_KEY);
       if (!firstTimeComplete && !entryContext) {
-        // First time in coach after onboarding!
+        // First time in coach after onboarding - show welcome + profile automatically
         setIsFirstTime(true);
-        setShowWalkthroughChoice(true);
-        setMessages([FIRST_TIME_WELCOME]);
+        await showFirstTimeContent();
       }
 
       // Initialize TTS
@@ -669,105 +662,56 @@ export default function CoachScreen() {
     setModesPersistent(prev => ({ ...prev, [modeId]: !isPersistent }));
   };
 
-  // WALKTHROUGH STEPS for first-time users
-  const WALKTHROUGH_MESSAGES = [
-    {
-      text: "🌳 **Your Tree** is the heart of the app. It's on the Tree tab - it grows as you journal and reflects your emotional journey.",
-      highlight: 'Tree tab',
-    },
-    {
-      text: "📝 **Journal** is where you write entries. Each entry becomes a leaf on your tree. You can also talk to me here anytime!",
-      highlight: 'Journal tab',
-    },
-    {
-      text: "🪵 **Twigs** (on the Tree screen) let you quickly log habits, mood, or medications with just a tap.",
-      highlight: 'Twigs button',
-    },
-    {
-      text: "✨ **Fireflies** float around your tree and offer personalized wisdom based on your patterns.",
-      highlight: 'Fireflies button',
-    },
-    {
-      text: "💡 **Sparks** are creative prompts to help you reflect in new ways. Each one adapts to your style!",
-      highlight: 'Spark button',
-    },
-    {
-      text: "That's the basics! The app learns about you over time. Everything stays on your device. 🔒\n\nNow, want me to tell you about your unique MoodPrint?",
-      isFinal: true,
-    },
-  ];
-
-  // Handle walkthrough choice - user wants the tour
-  const handleStartWalkthrough = async () => {
-    setShowWalkthroughChoice(false);
-    setWalkthroughStep(0);
-
-    // Add first walkthrough message
-    setMessages(prev => [...prev, {
-      id: 'walkthrough-0',
-      text: WALKTHROUGH_MESSAGES[0].text,
-      source: 'system' as MessageSource,
-      timestamp: new Date(),
-    }]);
+  // Strip markdown formatting for display (React Native doesn't render markdown)
+  const stripMarkdown = (text: string): string => {
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** -> bold
+      .replace(/\*([^*]+)\*/g, '$1')     // *italic* -> italic
+      .replace(/---/g, '—');              // --- -> em dash
   };
 
-  // Continue to next walkthrough step
-  const handleNextWalkthroughStep = async () => {
-    const nextStep = walkthroughStep + 1;
-
-    if (nextStep >= WALKTHROUGH_MESSAGES.length) {
-      // Walkthrough complete - show profile
-      await handleShowProfile();
-      return;
-    }
-
-    setWalkthroughStep(nextStep);
-    setMessages(prev => [...prev, {
-      id: `walkthrough-${nextStep}`,
-      text: WALKTHROUGH_MESSAGES[nextStep].text,
-      source: 'system' as MessageSource,
-      timestamp: new Date(),
-    }]);
-  };
-
-  // Handle walkthrough choice - user wants profile explanation
-  const handleShowProfile = async () => {
-    setShowWalkthroughChoice(false);
-    setWalkthroughStep(-1); // Mark walkthrough as complete
-
-    // Mark first time as complete
+  // Show first-time content automatically (no buttons needed)
+  const showFirstTimeContent = async () => {
+    // Mark as complete immediately
     await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
-    setIsFirstTime(false);
 
-    // Generate the profile reveal
+    // Quick app overview in one message
+    const appOverview = `Welcome! 🌿 Here's a quick overview:
+
+🌳 Tree — Your emotional home. It grows as you journal.
+📝 Journal — Write entries that become leaves on your tree.
+🪵 Twigs — Quick-log habits, mood, or meds with one tap.
+✨ Fireflies — Personal wisdom based on your patterns.
+💡 Sparks — Creative prompts to help you reflect.
+
+Everything stays on your device. 🔒`;
+
+    // Get their profile
+    let profileText = "I'm still learning about you! As we chat more, I'll understand how you think and adapt my responses.";
     try {
       const profileReveal = await generateProfileReveal();
-      const summary = await getMoodPrintSummary();
+      profileText = stripMarkdown(profileReveal);
+    } catch (error) {
+      console.log('Could not generate profile:', error);
+    }
 
-      // Add the profile explanation message
-      setMessages(prev => [...prev, {
-        id: 'profile-reveal',
-        text: `🌿 **Your MoodPrint**\n\n${profileReveal}\n\n---\n\nThis understanding grows as we talk. Feel free to chat about anything, or explore the app!`,
+    // Show both messages
+    setMessages([
+      {
+        id: 'app-overview',
+        text: appOverview,
         source: 'system' as MessageSource,
         timestamp: new Date(),
-      }]);
-    } catch (error) {
-      console.error('Failed to generate profile:', error);
-      setMessages(prev => [...prev, {
-        id: 'profile-fallback',
-        text: "I'm still learning about you! As we chat more, I'll understand how you think and adapt my responses. Feel free to tell me what's on your mind.",
-        source: 'fallback' as MessageSource,
-        timestamp: new Date(),
-      }]);
-    }
-  };
+      },
+      {
+        id: 'profile-reveal',
+        text: `🌿 Your MoodPrint\n\n${profileText}\n\n—\n\nFeel free to chat about anything! If you need help with the app, just ask.`,
+        source: 'system' as MessageSource,
+        timestamp: new Date(Date.now() + 1), // Slightly later timestamp for ordering
+      },
+    ]);
 
-  // Skip walkthrough entirely
-  const handleSkipWalkthrough = async () => {
-    await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
-    setShowWalkthroughChoice(false);
     setIsFirstTime(false);
-    setMessages([getWelcomeMessage()]);
   };
 
   // Group modes by category for display
@@ -801,7 +745,7 @@ export default function CoachScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/(tabs)/tree')}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -810,7 +754,7 @@ export default function CoachScreen() {
             {coachName}
           </Text>
         </View>
-        <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.doneButton} onPress={() => router.replace('/(tabs)/tree')}>
           <Text style={[styles.doneButtonText, { color: colors.tint }]}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -895,53 +839,6 @@ export default function CoachScreen() {
             </View>
           ))}
 
-          {/* First-time walkthrough choice buttons */}
-          {showWalkthroughChoice && (
-            <View style={styles.walkthroughChoiceContainer}>
-              <TouchableOpacity
-                style={[styles.walkthroughButton, { backgroundColor: colors.tint }]}
-                onPress={handleStartWalkthrough}
-              >
-                <Ionicons name="map-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.walkthroughButtonText}>Show me around</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.walkthroughButton, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}
-                onPress={handleShowProfile}
-              >
-                <Ionicons name="person-outline" size={18} color={colors.text} />
-                <Text style={[styles.walkthroughButtonTextSecondary, { color: colors.text }]}>Tell me about my MoodPrint</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.skipButton}
-                onPress={handleSkipWalkthrough}
-              >
-                <Text style={[styles.skipButtonText, { color: colors.textMuted }]}>Skip for now</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Walkthrough "Next" button during tour */}
-          {isFirstTime && !showWalkthroughChoice && walkthroughStep >= 0 && walkthroughStep < WALKTHROUGH_MESSAGES.length && (
-            <View style={styles.walkthroughNextContainer}>
-              <TouchableOpacity
-                style={[styles.walkthroughNextButton, { backgroundColor: colors.tint }]}
-                onPress={handleNextWalkthroughStep}
-              >
-                <Text style={styles.walkthroughNextButtonText}>
-                  {WALKTHROUGH_MESSAGES[walkthroughStep]?.isFinal ? 'Tell me about my MoodPrint' : 'Next →'}
-                </Text>
-              </TouchableOpacity>
-              {!WALKTHROUGH_MESSAGES[walkthroughStep]?.isFinal && (
-                <TouchableOpacity
-                  style={styles.skipWalkthroughButton}
-                  onPress={handleShowProfile}
-                >
-                  <Text style={[styles.skipButtonText, { color: colors.textMuted }]}>Skip to my MoodPrint</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </ScrollView>
 
         {/* Voice Transcript Display */}
