@@ -65,6 +65,7 @@ import {
   isPersistentMode,
   togglePersistentMode,
 } from '@/services/coachModeService';
+import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -154,6 +155,24 @@ export default function CoachScreen() {
   const [activeModes, setActiveModes] = useState<string[]>([]);
   const [modesPersistent, setModesPersistent] = useState<Record<string, boolean>>({});
 
+  // Breathing ball state
+  const [showBreathingBall, setShowBreathingBall] = useState(false);
+  const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
+
+  // Map mode IDs to breathing patterns
+  const getBreathingPatternForMode = (modeId: string): BreathingPattern | null => {
+    switch (modeId) {
+      case 'box_breathing':
+        return 'box';
+      case '478_breathing':
+        return '478';
+      case 'physiological_sigh':
+        return 'sigh';
+      default:
+        return null;
+    }
+  };
+
   // Load active coach modes
   const loadActiveModes = useCallback(async () => {
     const modes = await getActiveCoachModes();
@@ -165,6 +184,22 @@ export default function CoachScreen() {
       persistentStatus[modeId] = await isPersistentMode(modeId);
     }
     setModesPersistent(persistentStatus);
+
+    // Check if any active mode uses breathing ball
+    const breathingMode = modes.find(modeId => {
+      const config = COACH_MODE_SKILLS[modeId];
+      return config?.usesBreathingBall;
+    });
+
+    if (breathingMode) {
+      const pattern = getBreathingPatternForMode(breathingMode);
+      if (pattern) {
+        setBreathingPattern(pattern);
+        setShowBreathingBall(true);
+      }
+    } else {
+      setShowBreathingBall(false);
+    }
   }, []);
 
   // Load coach settings and API key on mount
@@ -673,6 +708,18 @@ export default function CoachScreen() {
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Breathing Ball - shown when breathing modes are active */}
+          {showBreathingBall && (
+            <View style={[styles.breathingBallContainer, { backgroundColor: colors.card }]}>
+              <BreathingBall
+                pattern={breathingPattern}
+                size={100}
+                autoStart={true}
+                onClose={() => setShowBreathingBall(false)}
+              />
+            </View>
+          )}
+
           {messages.map((message) => (
             <View
               key={message.id}
@@ -1011,6 +1058,12 @@ const styles = StyleSheet.create({
   messagesContent: {
     padding: 16,
     paddingBottom: 8,
+  },
+  breathingBallContainer: {
+    marginBottom: 16,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
   messageBubble: {
     maxWidth: '85%',
