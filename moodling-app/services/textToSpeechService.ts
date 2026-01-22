@@ -339,6 +339,11 @@ export function getVoiceForCoach(
   return config[gender];
 }
 
+export interface SynthesisResult {
+  audioUri?: string;
+  error?: string;
+}
+
 /**
  * Synthesize speech using Google Cloud TTS
  */
@@ -346,11 +351,11 @@ export async function synthesizeSpeech(
   text: string,
   persona: CoachPersona,
   options?: Partial<TTSSettings>
-): Promise<string | null> {
+): Promise<SynthesisResult> {
   const apiKey = await getTTSAPIKey();
   if (!apiKey) {
     console.warn('[TTS] No API key configured');
-    return null;
+    return { error: 'No API key configured. Add your Google TTS API key in Settings.' };
   }
 
   const settings = await getTTSSettings();
@@ -398,31 +403,57 @@ export async function synthesizeSpeech(
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[TTS] API error:', response.status, errorText);
-      return null;
+
+      // Parse Google API error for user-friendly message
+      try {
+        const errorData = JSON.parse(errorText);
+        const message = errorData?.error?.message || errorText;
+        const status = errorData?.error?.status || response.status;
+
+        if (status === 403 || message.includes('API key')) {
+          return { error: `API key error: ${message}. Check that your key is valid and Text-to-Speech API is enabled.` };
+        }
+        if (status === 401) {
+          return { error: 'Invalid API key. Please check your Google TTS API key.' };
+        }
+        if (message.includes('billing')) {
+          return { error: 'Billing not enabled. Enable billing in Google Cloud Console.' };
+        }
+        if (message.includes('quota')) {
+          return { error: 'API quota exceeded. Wait or increase your quota.' };
+        }
+        return { error: `Google API error: ${message}` };
+      } catch {
+        return { error: `API error (${response.status}): ${errorText.substring(0, 100)}` };
+      }
     }
 
     const data = await response.json();
 
     if (!data.audioContent) {
       console.error('[TTS] No audio content in response');
-      return null;
+      return { error: 'No audio returned from Google. Try again.' };
     }
 
     // Save audio to temp file
     const fs = await loadFileSystemModule();
     if (!fs) {
       console.warn('[TTS] FileSystem not available');
-      return null;
+      return { error: 'File system not available. Cannot save audio.' };
     }
     const audioUri = `${fs.cacheDirectory}tts_${Date.now()}.mp3`;
     await fs.writeAsStringAsync(audioUri, data.audioContent, {
       encoding: fs.EncodingType.Base64,
     });
 
-    return audioUri;
+    return { audioUri };
   } catch (error) {
     console.error('[TTS] Synthesis failed:', error);
-    return null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (message.includes('aborted')) {
+      return { error: 'Request timed out. Check your internet connection.' };
+    }
+    return { error: `Synthesis failed: ${message}` };
   }
 }
 
@@ -579,13 +610,13 @@ export async function speakCoachResponse(
   }
 
   try {
-    const audioUri = await synthesizeSpeech(text, persona);
+    const result = await synthesizeSpeech(text, persona);
 
-    if (!audioUri) {
-      return { success: false, error: 'Failed to synthesize speech' };
+    if (result.error || !result.audioUri) {
+      return { success: false, error: result.error || 'Failed to synthesize speech' };
     }
 
-    await playAudio(audioUri);
+    await playAudio(result.audioUri);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -613,13 +644,13 @@ export async function testTTS(
   const text = testMessages[persona];
 
   try {
-    const audioUri = await synthesizeSpeech(text, persona, { voiceGender: gender });
+    const result = await synthesizeSpeech(text, persona, { voiceGender: gender });
 
-    if (!audioUri) {
-      return { success: false, error: 'Failed to synthesize speech' };
+    if (result.error || !result.audioUri) {
+      return { success: false, error: result.error || 'Failed to synthesize speech' };
     }
 
-    await playAudio(audioUri);
+    await playAudio(result.audioUri);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
