@@ -226,41 +226,529 @@ Interview Insights
 
 ---
 
-## Path to Local LLM
+## Path to Local LLM - Comprehensive Guide
 
-### Phase 1: Data Collection (Current)
-- [x] Human-ness scoring system
-- [x] Conversation storage
-- [ ] Interview import system
-- [ ] Coach correction tracking
-- **Goal:** 500+ Claude-scored examples
+### Current Claude Dependencies (What Must Be Replaced)
 
-### Phase 2: Local Scorer
-- Train small model to score human-ness
-- Runs on device, no API needed
-- Claude only for validation
-- **Goal:** Local scoring matches Claude 85%+
+Right now, Claude handles multiple functions:
 
-### Phase 3: Response Ranking
-- Generate multiple response candidates
-- Local scorer ranks them
-- Best response chosen without Claude
-- **Goal:** 80% of responses use local ranking
+| Function | Service | Claude Role | Local Replacement |
+|----------|---------|-------------|-------------------|
+| **Conversation** | `claudeAPIService.ts` | Generate all coach responses | Fine-tuned local LLM |
+| **Scoring** | `humanScoreService.ts` | Evaluate response quality | Trained classifier |
+| **Memory Compression** | `memoryTierService.ts` | Weekly session summaries | Local summarization |
+| **Insight Extraction** | (future) | Extract interview insights | Local extraction model |
+| **Safety Monitoring** | `inputAnalysisService.ts` | Detect crisis/threats | Local safety model |
 
-### Phase 4: Fine-tuned Local LLM
-- Fine-tune open model (Llama, Mistral, etc.) on our data
-- Trained on: scored conversations, interview insights, corrections
-- Runs locally or on private server
-- **Goal:** Local LLM handles 90%+ of conversations
+Each must be replaced step-by-step, with Claude as fallback.
+
+---
+
+### Phase 1: Data Collection (Current) ✓ IN PROGRESS
+
+**Status:** Active - collecting data now
+
+**What's Happening:**
+```
+Every Conversation
+      │
+      ├──▶ Store in memory tiers (local)
+      │
+      ├──▶ Score with local heuristics (immediate)
+      │
+      └──▶ Score with Claude (background)
+           │
+           └──▶ Save {input, output, score, context}
+```
+
+**Data Being Collected:**
+
+1. **Scored Conversations**
+   ```typescript
+   {
+     userMessage: "I can't focus today...",
+     coachResponse: "Those days happen. What's pulling at your attention?",
+     profile: {
+       cognitiveMode: "conceptual_systems",
+       rhythm: "burst_recovery",
+       neurodivergence: ["adhd_traits"]
+     },
+     context: {
+       energy: "low",
+       mood: "frustrated",
+       hour: 14,
+       messageNumber: 5
+     },
+     scores: {
+       local: 75,
+       claude: {
+         total: 82,
+         breakdown: {
+           naturalLanguage: 14,
+           emotionalTiming: 18,
+           brevityControl: 12,
+           memoryUse: 13,
+           imperfection: 8,
+           personalityConsistency: 12,
+           avoidedAITicks: 5
+         },
+         issues: ["Started with 'Those' - slightly generic opening"],
+         suggestions: ["Try a more specific acknowledgment"]
+       }
+     }
+   }
+   ```
+
+2. **Cognitive Profile Data**
+   - Every user's cognitive profile (how they think)
+   - Neurological differences (aphantasia, inner monologue, etc.)
+   - Communication preferences
+   - Rhythm patterns
+
+3. **Interview Insights** (to add)
+   - Patterns from user research
+   - What works for different mind types
+   - Anti-patterns to avoid
+
+4. **User Feedback Signals**
+   - Explicit: "Yes, exactly!", "That's not helpful"
+   - Implicit: Topic changes, engagement patterns, session length
+
+**Milestones:**
+- [ ] 500 Claude-scored examples ← Ready for Phase 2
+- [ ] 1,000 Claude-scored examples ← Local scorer reliable
+- [ ] 50 interview insights imported ← Knowledge foundation
+- [ ] 100 user corrections captured ← RLHF signal
+
+---
+
+### Phase 2: Local Scorer Training
+
+**Goal:** Train a small model to score responses WITHOUT Claude.
+
+**Why Local Scorer First:**
+- Small model (can run on device)
+- Clear supervised learning task
+- Validation is easy (compare to Claude scores)
+- Builds foundation for larger training
+
+**Training Data Format:**
+```json
+{
+  "input": {
+    "user_message": "I've been anxious all week",
+    "coach_response": "That sounds exhausting. What's the anxiety about?",
+    "profile": {"cognitiveMode": "emotional_relational", "rhythm": "cyclical_mild"},
+    "context": {"energy": "low", "mood": "anxious", "hour": 22}
+  },
+  "output": {
+    "score": 85,
+    "naturalLanguage": 14,
+    "emotionalTiming": 19,
+    "brevityControl": 14,
+    "memoryUse": 12,
+    "imperfection": 9,
+    "personalityConsistency": 11,
+    "avoidedAITicks": 6,
+    "issues": [],
+    "suggestions": []
+  }
+}
+```
+
+**Model Options for Local Scorer:**
+
+| Model | Size | Runs On | Pros | Cons |
+|-------|------|---------|------|------|
+| TinyBERT | 15M params | Phone | Fast, tiny | Less accurate |
+| DistilBERT | 66M params | Phone | Good balance | Moderate accuracy |
+| Custom LSTM | 5M params | Phone | Super fast | Training from scratch |
+| Phi-2 | 2.7B params | Server | Very accurate | Can't run on phone |
+
+**Training Pipeline:**
+```
+Claude-scored examples (500+)
+          │
+          ▼
+┌─────────────────────────┐
+│   Data Preprocessing    │
+│   - Normalize scores    │
+│   - Encode profiles     │
+│   - Tokenize text       │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│   Model Training        │
+│   - Regression for score│
+│   - Multi-head for cats │
+│   - Cross-validation    │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│   Validation            │
+│   - Compare to Claude   │
+│   - Target: 85%+ corr   │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│   Export to CoreML/ONNX │
+│   - Runs on device      │
+│   - No API needed       │
+└─────────────────────────┘
+```
+
+**Success Criteria:**
+- Correlation with Claude scores ≥ 0.85
+- Latency < 100ms on device
+- Identifies same "issues" as Claude 80%+ of time
+
+---
+
+### Phase 3: Response Ranking (Local Selection)
+
+**Goal:** Generate multiple response candidates, rank them locally.
+
+**Architecture:**
+```
+User Message + Context
+          │
+          ▼
+┌─────────────────────────┐
+│  Claude API (or Local)  │
+│  Generate 3-5 candidates│
+└───────────┬─────────────┘
+            │
+            ▼
+     Response Candidates
+     [R1, R2, R3, R4, R5]
+            │
+            ▼
+┌─────────────────────────┐
+│  Local Scorer (Phase 2) │
+│  Score each candidate   │
+└───────────┬─────────────┘
+            │
+            ▼
+      Ranked Responses
+      [R3: 89, R1: 84, R5: 78, R2: 72, R4: 65]
+            │
+            ▼
+      Select best (R3)
+```
+
+**Why This Matters:**
+- Claude generates options, but WE choose
+- Enforces our principles (Core Principle Kernel)
+- Catches Claude's "AI ticks" before user sees them
+- Builds toward full local generation
+
+**Integration with Core Principle Kernel:**
+```typescript
+async function selectBestResponse(candidates: string[]): Promise<string> {
+  const profile = await getCognitiveProfile();
+  const neuro = await getNeurologicalProfile();
+  const connectionHealth = await getConnectionHealthForKernel();
+
+  const scored = await Promise.all(candidates.map(async (response) => {
+    // Score for human-ness
+    const humannessScore = await localScorer.score(response);
+
+    // Check against kernel constraints
+    const kernelCheck = checkHardConstraints({
+      action: 'coach_response',
+      coachResponse: response,
+      cognitiveProfile: profile,
+      neurologicalProfile: neuro,
+      connectionHealth
+    });
+
+    // Reject if violates hard constraints
+    if (!kernelCheck.allowed) {
+      return { response, score: 0, blocked: true };
+    }
+
+    return { response, score: humannessScore.total, blocked: false };
+  }));
+
+  // Select highest-scoring non-blocked response
+  const best = scored
+    .filter(s => !s.blocked)
+    .sort((a, b) => b.score - a.score)[0];
+
+  return best.response;
+}
+```
+
+---
+
+### Phase 4: Fine-Tuned Local LLM (The Big Step)
+
+**Goal:** Train our own LLM that understands humans the way Mood Leaf does.
+
+**What We're Training:**
+
+The model needs to learn:
+
+1. **Response Generation** - Generate human-like coaching responses
+2. **Profile Awareness** - Adapt to cognitive profiles
+3. **Principle Alignment** - Follow Core Principle Kernel
+4. **Interview Insights** - Knowledge about how humans work
+
+**Training Data Composition:**
+
+```
+Total Training Dataset
+├── Scored Conversations (60%)
+│   └── High-scoring (80+) Claude responses + context
+├── Interview Insights (15%)
+│   └── Formatted as "given this insight, respond like this"
+├── Principle Examples (15%)
+│   └── "DO this" and "DON'T do this" paired examples
+└── Corrections (10%)
+    └── Bad response → Better response pairs
+```
+
+**Model Selection:**
+
+| Model | Size | Requirements | Best For |
+|-------|------|--------------|----------|
+| **Mistral 7B** | 7B | 16GB VRAM | Best quality/size ratio |
+| **Llama 3 8B** | 8B | 16GB VRAM | Strong instruction following |
+| **Phi-3 Mini** | 3.8B | 8GB VRAM | Efficient, mobile-possible |
+| **Gemma 2B** | 2B | 4GB VRAM | Can run on high-end phones |
+
+**Recommended: Mistral 7B** - Best balance of quality and practicality.
+
+**Fine-Tuning Approach:**
+
+```
+Base Model (Mistral 7B)
+          │
+          ▼
+┌─────────────────────────────────────────────┐
+│         Supervised Fine-Tuning (SFT)        │
+│                                             │
+│  Input: User message + profile + context    │
+│  Output: High-scoring coach response        │
+│                                             │
+│  Training: 1,000+ scored conversations      │
+│  Method: QLoRA (memory efficient)           │
+│  Epochs: 3-5                                │
+└─────────────────────┬───────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│      Direct Preference Optimization (DPO)   │
+│                                             │
+│  Input: User message + profile + context    │
+│  Chosen: High-scoring response              │
+│  Rejected: Low-scoring response             │
+│                                             │
+│  Training: Pairs of good/bad responses      │
+│  Method: Reinforcement from human prefs     │
+└─────────────────────┬───────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────┐
+│        Principle Alignment Layer            │
+│                                             │
+│  Inject Core Principle Kernel as system     │
+│  prompt during inference                    │
+│                                             │
+│  Hard constraints enforced via:             │
+│  - Training examples that avoid violations  │
+│  - Post-generation filtering (Phase 3)     │
+└─────────────────────────────────────────────┘
+```
+
+**Interview Insights Integration:**
+
+Turn insights into training examples:
+
+```json
+// Raw insight
+{
+  "insight": "Cyclical minds often interpret low phases as personal failure",
+  "coachingImplication": "Proactively normalize the experience during low phases"
+}
+
+// Becomes training example
+{
+  "input": "[Profile: cyclical_pronounced] [Energy: low] User: I can't do anything right. I was productive last week, what happened to me?",
+  "output": "Low phases are part of how your mind works - not a sign something's wrong. Last week wasn't a fluke; this week isn't the 'real' you. Both are you. What feels heaviest right now?"
+}
+
+// And negative example
+{
+  "input": "[Profile: cyclical_pronounced] [Energy: low] User: I can't do anything right.",
+  "rejected_output": "You were so productive last week! Try to remember that feeling.",
+  "reason": "Highlights the gap, implies low phase is a choice"
+}
+```
+
+**Deployment Options:**
+
+| Option | Where | Latency | Cost | Privacy |
+|--------|-------|---------|------|---------|
+| **On-device** | User's phone | ~2s/response | $0 | Maximum |
+| **Private server** | Your infrastructure | ~0.5s | $$/month | High |
+| **Hybrid** | Try local, fallback cloud | Varies | $ | High |
+
+**Recommended: Private Server + On-Device Fallback**
+- Server for best quality
+- Device for offline/fast responses
+- Claude for edge cases
+
+---
 
 ### Phase 5: Claude as Specialist
-- Local handles routine conversations
-- Claude called for:
-  - Complex emotional situations
-  - Novel profile combinations
-  - Edge cases
-  - Training data generation
-- **Goal:** Claude costs reduced 80%+
+
+**Goal:** Claude becomes a specialist tool, not the default.
+
+**When to Call Claude:**
+
+```typescript
+async function shouldUseClaude(
+  userMessage: string,
+  profile: CognitiveProfile,
+  conversationHistory: Message[]
+): Promise<boolean> {
+
+  // 1. Crisis detection - always use Claude for safety
+  if (await detectCrisisSignals(userMessage)) {
+    return true; // Claude has better safety training
+  }
+
+  // 2. Novel situation - profile combination we haven't seen
+  if (await isNovelProfileCombination(profile)) {
+    return true; // Local model may not generalize well
+  }
+
+  // 3. Complex multi-turn - conversation exceeds local context
+  if (conversationHistory.length > 20) {
+    return true; // Local model context limits
+  }
+
+  // 4. User requested depth - explicitly wants thorough response
+  if (await userRequestedDeepDive(userMessage)) {
+    return true; // Claude excels at long-form
+  }
+
+  // 5. Local model uncertainty - confidence is low
+  const localConfidence = await localModel.getConfidence(userMessage, profile);
+  if (localConfidence < 0.7) {
+    return true; // Better to use Claude than bad response
+  }
+
+  return false; // Local model handles it
+}
+```
+
+**Architecture at Phase 5:**
+
+```
+User Message
+      │
+      ▼
+┌─────────────────┐
+│ Should use      │
+│ Claude?         │───Yes──▶ Claude API ──▶ Response
+└────────┬────────┘
+         │ No
+         ▼
+┌─────────────────┐
+│ Local LLM       │
+│ (Fine-tuned)    │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Local Scorer    │
+│ + Kernel Check  │───Fails──▶ Try Claude
+└────────┬────────┘
+         │ Passes
+         ▼
+    Response to User
+```
+
+**Expected Cost Reduction:**
+
+| Phase | Claude API Usage | Cost vs Current |
+|-------|-----------------|-----------------|
+| Phase 1 (Current) | 100% of responses | 100% |
+| Phase 2 | 100% responses, no scoring | 85% |
+| Phase 3 | Ranking only | 60% |
+| Phase 4 | 10-20% of responses | 20% |
+| Phase 5 | Edge cases only | 5-10% |
+
+---
+
+### Technical Requirements Summary
+
+**For Phase 2 (Local Scorer):**
+- 500+ Claude-scored conversations
+- Small ML model (~50MB)
+- CoreML/ONNX export
+- Runs on iPhone 11+
+
+**For Phase 4 (Local LLM):**
+- 2,000+ scored conversations
+- 100+ interview insights
+- 500+ correction pairs
+- Training infrastructure (GPU server)
+- Deployment infrastructure (server or edge)
+
+**Model Serving Options:**
+
+| Service | Latency | Cost | Notes |
+|---------|---------|------|-------|
+| RunPod | ~1s | $0.20/hr | Good for development |
+| Lambda Labs | ~0.5s | $1.10/hr | Fast GPUs |
+| Modal | ~0.5s | Pay per request | Serverless, auto-scale |
+| Self-hosted | ~0.3s | Fixed server cost | Maximum control |
+| On-device (Phi-3) | ~3s | $0 | Limited to small models |
+
+---
+
+### Complete Migration Timeline
+
+```
+NOW ────────────────────────────────────────────────────────────▶ GOAL
+
+Phase 1: Data Collection                                    [NOW]
+├── Automatic conversation scoring
+├── Interview insight import (to build)
+├── User feedback collection
+└── Goal: 500 Claude-scored examples
+
+Phase 2: Local Scorer                                       [NEXT]
+├── Train small classifier
+├── Validate against Claude
+├── Deploy on-device
+└── Goal: 85%+ correlation with Claude
+
+Phase 3: Response Ranking                                   [THEN]
+├── Generate candidates (Claude or local)
+├── Rank with local scorer + kernel
+├── Select best response locally
+└── Goal: 80% responses selected locally
+
+Phase 4: Fine-Tuned Local LLM                              [LATER]
+├── Assemble training dataset
+├── Fine-tune Mistral/Llama
+├── Deploy to server
+├── Integrate with app
+└── Goal: 90%+ conversations use local
+
+Phase 5: Claude as Specialist                              [FINAL]
+├── Local handles routine
+├── Claude for crisis/novel/complex
+├── Continuous improvement loop
+└── Goal: 90% cost reduction
+```
 
 ---
 
