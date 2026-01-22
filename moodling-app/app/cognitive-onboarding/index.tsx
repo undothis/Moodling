@@ -62,9 +62,9 @@ export default function CognitiveOnboardingScreen() {
         setSelectedAnswer(null);
         setQuestionCount(prev => prev + 1);
       } else {
-        // No more questions - go to reveal
+        // No more questions - complete and go straight to coach chat
         await completeOnboarding();
-        router.replace('/cognitive-onboarding/reveal');
+        router.replace('/coach');
       }
     } catch (error) {
       console.error('Failed to load question:', error);
@@ -121,7 +121,7 @@ export default function CognitiveOnboardingScreen() {
 
   const handleSkip = async () => {
     await completeOnboarding();
-    router.replace('/cognitive-onboarding/reveal');
+    router.replace('/coach');
   };
 
   const progress = questionCount / totalEstimate;

@@ -66,6 +66,12 @@ import {
   togglePersistentMode,
 } from '@/services/coachModeService';
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  generateProfileReveal,
+  getCognitiveProfile,
+} from '@/services/cognitiveProfileService';
+import { getMoodPrintSummary } from '@/services/moodPrintService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -94,12 +100,20 @@ interface DisplayMessage {
 
 const WELCOME_MESSAGE: DisplayMessage = {
   id: 'welcome',
-  text: "Hi! I'm here to chat whenever you need. What's on your mind?",
+  text: "Hi! I'm here to chat whenever you need. What's on your mind?\n\n💡 If you ever need help with the app or want a walkthrough, just ask!",
   source: 'fallback',
   timestamp: new Date(),
 };
 
+const FIRST_TIME_WELCOME: DisplayMessage = {
+  id: 'first-time-welcome',
+  text: "Welcome! 🌿 You've completed your profile - I'm excited to get to know you better.\n\nWould you like a quick walkthrough of how everything works, or should I tell you about your unique MoodPrint first?",
+  source: 'system',
+  timestamp: new Date(),
+};
+
 const MAX_TURNS_BEFORE_NUDGE = 10;
+const FIRST_TIME_COACH_KEY = 'moodleaf_first_time_coach_complete';
 
 export default function CoachScreen() {
   const colorScheme = useColorScheme();
@@ -133,6 +147,11 @@ export default function CoachScreen() {
   const [coachName, setCoachName] = useState('Your Guide');
   const [coachEmoji, setCoachEmoji] = useState('🌿');
   const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
+
+  // First-time onboarding flow state
+  const [isFirstTime, setIsFirstTime] = useState(false);
+  const [showWalkthroughChoice, setShowWalkthroughChoice] = useState(false);
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
 
   // Voice chat state
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
@@ -207,6 +226,15 @@ export default function CoachScreen() {
     const checkSetup = async () => {
       const keyExists = await hasAPIKey();
       setHasKey(keyExists);
+
+      // Check if this is the first time after completing onboarding
+      const firstTimeComplete = await AsyncStorage.getItem(FIRST_TIME_COACH_KEY);
+      if (!firstTimeComplete && !entryContext) {
+        // First time in coach after onboarding!
+        setIsFirstTime(true);
+        setShowWalkthroughChoice(true);
+        setMessages([FIRST_TIME_WELCOME]);
+      }
 
       // Initialize TTS
       await initializeTTS();
@@ -641,6 +669,107 @@ export default function CoachScreen() {
     setModesPersistent(prev => ({ ...prev, [modeId]: !isPersistent }));
   };
 
+  // WALKTHROUGH STEPS for first-time users
+  const WALKTHROUGH_MESSAGES = [
+    {
+      text: "🌳 **Your Tree** is the heart of the app. It's on the Tree tab - it grows as you journal and reflects your emotional journey.",
+      highlight: 'Tree tab',
+    },
+    {
+      text: "📝 **Journal** is where you write entries. Each entry becomes a leaf on your tree. You can also talk to me here anytime!",
+      highlight: 'Journal tab',
+    },
+    {
+      text: "🪵 **Twigs** (on the Tree screen) let you quickly log habits, mood, or medications with just a tap.",
+      highlight: 'Twigs button',
+    },
+    {
+      text: "✨ **Fireflies** float around your tree and offer personalized wisdom based on your patterns.",
+      highlight: 'Fireflies button',
+    },
+    {
+      text: "💡 **Sparks** are creative prompts to help you reflect in new ways. Each one adapts to your style!",
+      highlight: 'Spark button',
+    },
+    {
+      text: "That's the basics! The app learns about you over time. Everything stays on your device. 🔒\n\nNow, want me to tell you about your unique MoodPrint?",
+      isFinal: true,
+    },
+  ];
+
+  // Handle walkthrough choice - user wants the tour
+  const handleStartWalkthrough = async () => {
+    setShowWalkthroughChoice(false);
+    setWalkthroughStep(0);
+
+    // Add first walkthrough message
+    setMessages(prev => [...prev, {
+      id: 'walkthrough-0',
+      text: WALKTHROUGH_MESSAGES[0].text,
+      source: 'system' as MessageSource,
+      timestamp: new Date(),
+    }]);
+  };
+
+  // Continue to next walkthrough step
+  const handleNextWalkthroughStep = async () => {
+    const nextStep = walkthroughStep + 1;
+
+    if (nextStep >= WALKTHROUGH_MESSAGES.length) {
+      // Walkthrough complete - show profile
+      await handleShowProfile();
+      return;
+    }
+
+    setWalkthroughStep(nextStep);
+    setMessages(prev => [...prev, {
+      id: `walkthrough-${nextStep}`,
+      text: WALKTHROUGH_MESSAGES[nextStep].text,
+      source: 'system' as MessageSource,
+      timestamp: new Date(),
+    }]);
+  };
+
+  // Handle walkthrough choice - user wants profile explanation
+  const handleShowProfile = async () => {
+    setShowWalkthroughChoice(false);
+    setWalkthroughStep(-1); // Mark walkthrough as complete
+
+    // Mark first time as complete
+    await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
+    setIsFirstTime(false);
+
+    // Generate the profile reveal
+    try {
+      const profileReveal = await generateProfileReveal();
+      const summary = await getMoodPrintSummary();
+
+      // Add the profile explanation message
+      setMessages(prev => [...prev, {
+        id: 'profile-reveal',
+        text: `🌿 **Your MoodPrint**\n\n${profileReveal}\n\n---\n\nThis understanding grows as we talk. Feel free to chat about anything, or explore the app!`,
+        source: 'system' as MessageSource,
+        timestamp: new Date(),
+      }]);
+    } catch (error) {
+      console.error('Failed to generate profile:', error);
+      setMessages(prev => [...prev, {
+        id: 'profile-fallback',
+        text: "I'm still learning about you! As we chat more, I'll understand how you think and adapt my responses. Feel free to tell me what's on your mind.",
+        source: 'fallback' as MessageSource,
+        timestamp: new Date(),
+      }]);
+    }
+  };
+
+  // Skip walkthrough entirely
+  const handleSkipWalkthrough = async () => {
+    await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
+    setShowWalkthroughChoice(false);
+    setIsFirstTime(false);
+    setMessages([getWelcomeMessage()]);
+  };
+
   // Group modes by category for display
   const modesByCategory = useMemo(() => {
     const categories: Record<string, CoachModeConfig[]> = {};
@@ -765,6 +894,54 @@ export default function CoachScreen() {
               )}
             </View>
           ))}
+
+          {/* First-time walkthrough choice buttons */}
+          {showWalkthroughChoice && (
+            <View style={styles.walkthroughChoiceContainer}>
+              <TouchableOpacity
+                style={[styles.walkthroughButton, { backgroundColor: colors.tint }]}
+                onPress={handleStartWalkthrough}
+              >
+                <Ionicons name="map-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.walkthroughButtonText}>Show me around</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.walkthroughButton, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}
+                onPress={handleShowProfile}
+              >
+                <Ionicons name="person-outline" size={18} color={colors.text} />
+                <Text style={[styles.walkthroughButtonTextSecondary, { color: colors.text }]}>Tell me about my MoodPrint</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.skipButton}
+                onPress={handleSkipWalkthrough}
+              >
+                <Text style={[styles.skipButtonText, { color: colors.textMuted }]}>Skip for now</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Walkthrough "Next" button during tour */}
+          {isFirstTime && !showWalkthroughChoice && walkthroughStep >= 0 && walkthroughStep < WALKTHROUGH_MESSAGES.length && (
+            <View style={styles.walkthroughNextContainer}>
+              <TouchableOpacity
+                style={[styles.walkthroughNextButton, { backgroundColor: colors.tint }]}
+                onPress={handleNextWalkthroughStep}
+              >
+                <Text style={styles.walkthroughNextButtonText}>
+                  {WALKTHROUGH_MESSAGES[walkthroughStep]?.isFinal ? 'Tell me about my MoodPrint' : 'Next →'}
+                </Text>
+              </TouchableOpacity>
+              {!WALKTHROUGH_MESSAGES[walkthroughStep]?.isFinal && (
+                <TouchableOpacity
+                  style={styles.skipWalkthroughButton}
+                  onPress={handleShowProfile}
+                >
+                  <Text style={[styles.skipButtonText, { color: colors.textMuted }]}>Skip to my MoodPrint</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </ScrollView>
 
         {/* Voice Transcript Display */}
@@ -1302,5 +1479,54 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Walkthrough styles
+  walkthroughChoiceContainer: {
+    marginTop: 16,
+    gap: 12,
+    paddingHorizontal: 8,
+  },
+  walkthroughButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+  },
+  walkthroughButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  walkthroughButtonTextSecondary: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  skipButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  skipButtonText: {
+    fontSize: 14,
+  },
+  walkthroughNextContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+    gap: 8,
+  },
+  walkthroughNextButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 20,
+  },
+  walkthroughNextButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  skipWalkthroughButton: {
+    paddingVertical: 8,
   },
 });

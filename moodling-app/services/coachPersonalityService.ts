@@ -538,6 +538,9 @@ export async function resetOnboarding(): Promise<void> {
   await AsyncStorage.removeItem('moodleaf_cognitive_profile');
   await AsyncStorage.removeItem('moodleaf_onboarding_progress');
   await AsyncStorage.removeItem('moodleaf_onboarding_answers');
+
+  // Clear first time coach flag (from coach/index.tsx)
+  await AsyncStorage.removeItem('moodleaf_first_time_coach_complete');
 }
 
 // ============================================
