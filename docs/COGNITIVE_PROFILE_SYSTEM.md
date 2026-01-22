@@ -87,12 +87,33 @@ How you naturally make sense of information.
 ### 2. Learning Style
 How you best receive new information.
 
-- **Visual**: Needs diagrams, images, written text
-- **Auditory**: Needs conversation, explanation
-- **Kinesthetic**: Needs practice, movement, hands-on
-- **Reading**: Needs text, notes, written form
-- **Social**: Needs discussion, dialogue
-- **Solitary**: Needs alone time to process
+| Style | Description | How Detected |
+|-------|-------------|--------------|
+| **Visual** | Needs diagrams, images, written text | Inferred from visual_spatial mode |
+| **Auditory** | Needs conversation, explanation | Default + communication style |
+| **Kinesthetic** | Needs practice, movement, hands-on | Inferred from embodied_somatic mode |
+| **Reading** | Needs text, notes, written form | Inferred from reflective style |
+| **Social** | Needs discussion, dialogue | Inferred from socialOrientation |
+| **Solitary** | Needs alone time to process | Inferred from drained_by_people |
+
+**Note:** Learning styles are primarily INFERRED from cognitive mode and other answers, not asked directly. This is intentional - the cognitive mode question ("When learning something new...") captures the same information more naturally.
+
+**Mapping:**
+```
+cognitive_mode → learning_styles
+─────────────────────────────────
+visual_spatial          → ['visual']
+embodied_somatic        → ['kinesthetic']
+narrative_meaning       → ['auditory', 'social']
+procedural_sequential   → ['reading']
+conceptual_systems      → ['visual', 'reading']
+associative_divergent   → ['social', 'auditory']
+
+socialOrientation → additional styles
+──────────────────────────────────────
+drained_by_people       → ['solitary']
+energized_by_people     → ['social']
+```
 
 ### 3. Social Orientation
 How social interaction affects your energy.

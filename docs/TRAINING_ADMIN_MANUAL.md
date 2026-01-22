@@ -1,0 +1,266 @@
+# Training Admin Manual
+
+A simple guide to using the Training Admin to import interview insights and build training data.
+
+---
+
+## What Is This For?
+
+The Training Admin lets you **import insights from user interviews** so the coaching AI can learn from real human experiences.
+
+**This is NOT for:**
+- Chatting with the AI
+- Getting coaching advice
+
+**This IS for:**
+- Importing learnings from interviews you've conducted
+- Building a dataset to train/improve the AI
+- Tracking what the AI has learned about humans
+
+---
+
+## Quick Start: Import an Interview Insight
+
+### The Simplest Way (Single Import)
+
+1. Go to **Settings → Developer Tools → Training Admin**
+2. Click the **Import** tab
+3. Make sure **Single Import** is selected
+4. Fill in:
+   - **Title**: Short name (e.g., "Users hate generic advice")
+   - **Category**: Pick one (cognitive_patterns, emotional_needs, etc.)
+   - **Insight**: What you learned (e.g., "People with anxiety prefer body-based techniques over visualization")
+   - **Coaching Implication**: How the AI should behave differently (e.g., "Ask about physical sensations before suggesting mental exercises")
+   - **Confidence**: How sure you are (observed, inferred, validated)
+5. Click **Import Insight**
+
+That's it! The insight is now saved.
+
+---
+
+## Bulk Import: Multiple Insights at Once
+
+If you have many insights from interviews, use **Batch Import** to add them all at once.
+
+### Step 1: Prepare Your Data
+
+Create a JSON file with your insights. Here's a **simple template you can copy**:
+
+```json
+{
+  "source": "January 2025 User Interviews",
+  "insights": [
+    {
+      "category": "cognitive_patterns",
+      "title": "Systems thinkers need the 'why' first",
+      "insight": "Users who think in systems need to understand WHY a technique works before they'll try it.",
+      "coachingImplication": "For analytical users, explain the reasoning behind suggestions before giving them.",
+      "confidenceLevel": "validated"
+    },
+    {
+      "category": "neurological_differences",
+      "title": "Aphantasia users can't visualize",
+      "insight": "About 3% of users have aphantasia and cannot create mental images.",
+      "coachingImplication": "Never suggest visualization exercises. Use body-based or verbal alternatives.",
+      "confidenceLevel": "validated"
+    },
+    {
+      "category": "emotional_needs",
+      "title": "Validation before solutions",
+      "insight": "Most users want to feel heard before getting advice.",
+      "coachingImplication": "Acknowledge feelings first, wait for cue before offering solutions.",
+      "confidenceLevel": "observed"
+    }
+  ]
+}
+```
+
+### Step 2: Import the JSON
+
+1. Go to **Training Admin → Import tab**
+2. Click **Batch Import** (toggle at top)
+3. Paste your JSON into the text box
+4. Click **Import from JSON**
+5. See results: "Imported 3 insights"
+
+---
+
+## Bulk Import with Interview Links
+
+If you want to track which interview each insight came from:
+
+```json
+{
+  "source": "Q1 Research Sessions",
+  "interviewLinks": [
+    {
+      "interviewId": "INT-001",
+      "date": "2025-01-15",
+      "link": "https://notion.so/interview-001",
+      "notes": "Sarah, 28, anxiety + ADHD",
+      "insights": [
+        {
+          "category": "neurological_differences",
+          "title": "ADHD users need novelty",
+          "insight": "Users with ADHD traits get bored with repetitive exercises quickly.",
+          "coachingImplication": "Rotate techniques frequently. Offer variety in suggestions.",
+          "confidenceLevel": "observed"
+        }
+      ]
+    },
+    {
+      "interviewId": "INT-002",
+      "date": "2025-01-16",
+      "link": "https://notion.so/interview-002",
+      "notes": "Mike, 35, depression recovery",
+      "insights": [
+        {
+          "category": "emotional_needs",
+          "title": "Low phases aren't failures",
+          "insight": "Users in recovery hate being told they're 'slipping' during low periods.",
+          "coachingImplication": "Frame low phases as natural cycles, not setbacks.",
+          "confidenceLevel": "validated"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Categories Explained
+
+| Category | What It Means | Example Insight |
+|----------|---------------|-----------------|
+| `cognitive_patterns` | How people think | "Visual thinkers need diagrams" |
+| `emotional_needs` | What people need emotionally | "Validation before advice" |
+| `communication_styles` | How people prefer to be talked to | "Direct communicators hate fluff" |
+| `neurological_differences` | Brain wiring differences | "Aphantasia can't visualize" |
+| `coping_mechanisms` | How people handle stress | "Some need distraction, not processing" |
+| `social_dynamics` | Relationship patterns | "Introverts recharge alone" |
+| `growth_patterns` | How people change | "Change happens in spirals, not lines" |
+| `resistance_patterns` | Why people resist help | "Unsolicited advice feels controlling" |
+
+---
+
+## Confidence Levels
+
+| Level | Meaning | When to Use |
+|-------|---------|-------------|
+| `observed` | Saw it in interviews | One or two people mentioned this |
+| `inferred` | Concluded from patterns | You see a trend across interviews |
+| `validated` | Confirmed multiple times | 5+ people showed this pattern |
+| `research_backed` | Academic support | Research papers confirm this |
+
+---
+
+## After Importing: Approve Insights
+
+Imported insights start as **pending**. To use them for training:
+
+1. Go to **Insights** tab
+2. Filter by **Pending**
+3. Review each insight
+4. Click **Approve** or **Reject**
+
+Only approved insights are used for training.
+
+---
+
+## Exporting Data
+
+To export all your training data (for backup or actual model training):
+
+1. Go to **Export** tab
+2. Click **Export as JSON**
+3. Share/save the file
+
+---
+
+## What Happens to This Data?
+
+```
+Your Insights
+     ↓
+[Stored on device]
+     ↓
+Used to build prompts for coaching AI
+     ↓
+Eventually: Train a local model (Phase 4-5)
+```
+
+**Right now:** Insights shape how the AI responds by adding context to prompts.
+
+**Future:** With enough data (500+ scored examples, 50+ insights), you can train a local model.
+
+---
+
+## Troubleshooting
+
+### "Buttons don't work"
+- Make sure all required fields are filled (Title, Insight, Coaching Implication)
+- Check that JSON is valid (no trailing commas, proper quotes)
+
+### "Import failed"
+- Validate your JSON at jsonlint.com
+- Check that `category` matches one of the valid categories exactly
+- Check that `confidenceLevel` is one of: observed, inferred, validated, research_backed
+
+### "Can't see Training Admin"
+- Go to Settings → Developer Tools → Training Admin
+- If missing, pull latest code and restart app
+
+---
+
+## Quick Copy Templates
+
+### Single Insight (minimal)
+```json
+{
+  "source": "Interview Notes",
+  "insights": [
+    {
+      "category": "emotional_needs",
+      "title": "YOUR TITLE HERE",
+      "insight": "WHAT YOU LEARNED",
+      "coachingImplication": "HOW AI SHOULD BEHAVE",
+      "confidenceLevel": "observed"
+    }
+  ]
+}
+```
+
+### Multiple Insights (batch)
+```json
+{
+  "source": "Research Round 1",
+  "insights": [
+    {
+      "category": "cognitive_patterns",
+      "title": "Insight 1 title",
+      "insight": "What you learned",
+      "coachingImplication": "How AI should behave",
+      "confidenceLevel": "observed"
+    },
+    {
+      "category": "emotional_needs",
+      "title": "Insight 2 title",
+      "insight": "What you learned",
+      "coachingImplication": "How AI should behave",
+      "confidenceLevel": "observed"
+    }
+  ]
+}
+```
+
+---
+
+## Summary
+
+1. **Single Import**: Fill form, click button - for one insight at a time
+2. **Batch Import**: Paste JSON - for multiple insights at once
+3. **Approve**: Review pending insights in Insights tab
+4. **Export**: Get all data as JSON for training
+
+The goal is to capture what you learn from real users so the AI can serve people better.

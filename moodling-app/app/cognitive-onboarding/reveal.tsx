@@ -86,8 +86,8 @@ export default function ProfileRevealScreen() {
   };
 
   const handleContinue = () => {
-    // Navigate to main app
-    router.replace('/(tabs)');
+    // Navigate to guide walkthrough, then main app
+    router.replace('/guide');
   };
 
   const getAdaptationLabel = (key: string): string => {

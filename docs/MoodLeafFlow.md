@@ -323,21 +323,422 @@ A **MoodPrint** is the complete picture of how YOUR mind works. It's built from 
 
 ---
 
+## Onboarding Flow: Building the Initial MoodPrint
+
+The onboarding flow is a **4-stage journey** that builds the user's initial MoodPrint. Each stage gathers specific information used throughout the app.
+
+### Complete Onboarding Journey
+
+```
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║                        ONBOARDING FLOW - COMPLETE JOURNEY                        ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║                                                                                  ║
+║   ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌──────┐ ║
+║   │  STAGE 1        │    │  STAGE 2        │    │  STAGE 3        │    │STAGE4│ ║
+║   │  Coach          │───▶│  Cognitive      │───▶│  MoodPrint      │───▶│Guide │ ║
+║   │  Personality    │    │  Onboarding     │    │  Reveal         │    │      │ ║
+║   └─────────────────┘    └─────────────────┘    └─────────────────┘    └──────┘ ║
+║          │                       │                      │                  │     ║
+║          ▼                       ▼                      ▼                  ▼     ║
+║   ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌──────┐ ║
+║   │ • Persona pick  │    │ • How you learn │    │ • "Aha, that's  │    │• App │ ║
+║   │ • Chronotype    │    │ • Aphantasia    │    │   me" moment    │    │ tour │ ║
+║   │ • Adaptive mode │    │ • Inner voice   │    │ • What we       │    │• Tips│ ║
+║   │ • Communication │    │ • Insights      │    │   learned       │    │• FAQ │ ║
+║   │   style         │    │ • Frustrations  │    │ • How AI adapts │    │      │ ║
+║   └─────────────────┘    └─────────────────┘    └─────────────────┘    └──────┘ ║
+║                                                                                  ║
+║   TOTAL TIME: ~5 minutes (can skip any stage)                                   ║
+║                                                                                  ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+```
+
+### Stage 1: Coach Personality Onboarding
+
+**File:** `app/onboarding/index.tsx`
+**Service:** `services/coachPersonalityService.ts`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                       STAGE 1: COACH PERSONALITY                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   QUESTIONS ASKED:                                                               │
+│   ────────────────                                                               │
+│   1. "What kind of support feels most helpful to you?"                          │
+│      → Determines base persona (Clover, Spark, Willow, etc.)                    │
+│                                                                                  │
+│   2. "When you're struggling, what do you usually need first?"                  │
+│      → validation_first vs solution_first                                       │
+│                                                                                  │
+│   3. "What's your natural rhythm?"                                              │
+│      → Chronotype: early_bird | normal | night_owl                              │
+│                                                                                  │
+│   4. "How do you feel about adaptive coaching?"                                 │
+│      → Enable/disable adaptive mode                                             │
+│                                                                                  │
+│   DATA COLLECTED:                                                                │
+│   ────────────────                                                               │
+│   • selectedPersona: 'clover' | 'spark' | 'willow' | 'luna' | 'ridge' |        │
+│                       'flint' | 'fern'                                          │
+│   • chronotype: 'early_bird' | 'normal' | 'night_owl'                           │
+│   • adaptiveSettings.enabled: boolean                                           │
+│   • detailedSettings: warmth, directness, humor levels                          │
+│                                                                                  │
+│   OUTPUT → Saved to AsyncStorage as coach settings                              │
+│   NEXT → /cognitive-onboarding                                                   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stage 2: Cognitive Profile Onboarding
+
+**File:** `app/cognitive-onboarding/index.tsx`
+**Service:** `services/cognitiveProfileService.ts`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     STAGE 2: COGNITIVE PROFILE DISCOVERY                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   PURPOSE: Discover HOW someone thinks, not IF they're smart                    │
+│                                                                                  │
+│   ADAPTIVE QUESTIONS (8-12 based on answers):                                   │
+│   ─────────────────────────────────────────────                                 │
+│                                                                                  │
+│   CORE QUESTIONS:                                                                │
+│   ───────────────                                                                │
+│   Q: "When learning something new, what feels most natural?"                    │
+│   Options:                                                                       │
+│   • "Seeing the big picture first" → conceptual_systems                         │
+│   • "Being shown clear steps" → procedural_sequential                           │
+│   • "Hearing a story or example" → narrative_meaning                            │
+│   • "Just trying it out" → embodied_somatic                                     │
+│   • "Letting ideas connect freely" → associative_divergent                      │
+│                                                                                  │
+│   Q: "When someone explains something, what frustrates you most?"               │
+│   → Validates/refines cognitive mode                                            │
+│                                                                                  │
+│   Q: "How do insights usually arrive for you?"                                  │
+│   → Confirms processing style                                                   │
+│                                                                                  │
+│   NEUROLOGICAL DETECTION:                                                        │
+│   ─────────────────────────                                                      │
+│   Q: "When someone says 'picture a beach', what happens in your mind?"          │
+│   Options:                                                                       │
+│   • "I see it clearly, like a photo" → hyperphantasia                           │
+│   • "I see a vague impression" → typical                                        │
+│   • "I know what a beach is but don't see anything" → aphantasia               │
+│   • "I feel/hear/sense it more than see" → multi_modal                          │
+│                                                                                  │
+│   Q: "Do you have a constant inner voice narrating your thoughts?"              │
+│   → Detects inner monologue presence                                            │
+│                                                                                  │
+│   Q: "When someone says 'picture a beach', what happens?"                       │
+│   • "I see it clearly, like a photo or video" → hyperphantasia                  │
+│   • "I get a vague, fleeting image" → typical                                   │
+│   • "I know what a beach is, but I don't see anything" → APHANTASIA            │
+│   • "I feel or sense it more than see it" → multi_modal                         │
+│                                                                                  │
+│   ADAPTATION QUESTIONS (shown based on answers):                                │
+│   ─────────────────────────────────────────────────                             │
+│   • If aphantasia detected → skip visualization preference questions            │
+│   • If systems thinker → ask about structure preferences                        │
+│   • If highly sensitive → ask about emotional processing                        │
+│                                                                                  │
+│   DATA COLLECTED (All Dimensions):                                               │
+│   ────────────────────────────────                                               │
+│                                                                                  │
+│   1. PRIMARY COGNITIVE MODE (how you process):                                   │
+│      • conceptual_systems    - Big picture, patterns, why before how            │
+│      • emotional_relational  - Feelings first, connection-focused               │
+│      • procedural_sequential - Step-by-step, structured                         │
+│      • embodied_somatic      - Body-based, learns by doing                      │
+│      • associative_divergent - Makes leaps, non-linear                          │
+│      • narrative_meaning     - Stories and examples                             │
+│      • visual_spatial        - Thinks in images, spatial models                 │
+│                                                                                  │
+│   2. LEARNING STYLES (how you receive info):                                     │
+│      • visual      - Diagrams, images, written text                             │
+│      • auditory    - Conversation, explanation                                  │
+│      • kinesthetic - Practice, movement, hands-on                               │
+│      • reading     - Text, notes, written form                                  │
+│      • social      - Discussion, dialogue                                       │
+│      • solitary    - Alone time to process                                      │
+│      (Inferred from cognitive mode + explicit questions)                        │
+│                                                                                  │
+│   3. NEUROLOGICAL DIFFERENCES:                                                   │
+│      • mentalImagery: hyperphantasia | typical | hypophantasia | aphantasia     │
+│      • innerMonologue: constant | frequent | situational | rare | none          │
+│      • auditoryImagination: vivid | moderate | weak | none                      │
+│                                                                                  │
+│   4. EMOTIONAL PROCESSING:                                                       │
+│      • feeler_first    - Emotions come first, then logic                        │
+│      • thinker_first   - Logic first, emotions after                            │
+│      • integrated      - Emotions and logic intertwined                         │
+│      • action_oriented - Processes through doing                                │
+│      • delayed         - Emotions surface later                                 │
+│                                                                                  │
+│   5. COMMUNICATION STYLE:                                                        │
+│      • direct        - Get to the point                                         │
+│      • exploratory   - Think out loud, wander                                   │
+│      • reflective    - Need time, prefer writing                                │
+│      • collaborative - Build understanding together                             │
+│      • metaphorical  - Analogies and images                                     │
+│                                                                                  │
+│   6. STRUCTURE PREFERENCE:                                                       │
+│      • loves_structure   - Plans, lists, clear steps                            │
+│      • needs_flexibility - Goes with flow                                       │
+│      • structured_start  - Structure to begin, then flows                       │
+│      • emergent          - Structure emerges from doing                         │
+│                                                                                  │
+│   7. SOCIAL ORIENTATION:                                                         │
+│      • energized_by_people - Connection is fuel                                 │
+│      • drained_by_people   - Needs recovery after                               │
+│      • selective           - Deep > many connections                            │
+│      • situational         - Depends on context                                 │
+│                                                                                  │
+│   8. SENSITIVITY LEVEL:                                                          │
+│      • highly_sensitive | moderate | low_sensitivity                            │
+│                                                                                  │
+│   OUTPUT → Stored as cognitive profile                                           │
+│   NEXT → /cognitive-onboarding/reveal                                            │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stage 3: MoodPrint Reveal
+
+**File:** `app/cognitive-onboarding/reveal.tsx`
+**Service:** `services/cognitiveProfileService.ts`, `services/moodPrintService.ts`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        STAGE 3: MOODPRINT REVEAL                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   PURPOSE: Create "aha, that's me" recognition moment                           │
+│                                                                                  │
+│   SHOWS USER:                                                                    │
+│   ───────────                                                                    │
+│   • Summary of how their mind works                                             │
+│   • What coach will/won't do based on their profile                             │
+│   • Personalized adaptations                                                    │
+│                                                                                  │
+│   EXAMPLE OUTPUT:                                                                │
+│   ───────────────                                                                │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │ "You have aphantasia - your mind's eye doesn't create visual images.   │   │
+│   │  This isn't a deficiency; it's a different way of thinking. You        │   │
+│   │  likely excel at conceptual and abstract thinking.                     │   │
+│   │                                                                         │   │
+│   │  I will NEVER ask you to 'visualize' or 'picture' anything - that      │   │
+│   │  simply doesn't work for you, and that's completely fine.              │   │
+│   │                                                                         │   │
+│   │  Instead, I'll use:                                                    │   │
+│   │  • Conceptual descriptions                                             │   │
+│   │  • Body-based techniques                                               │   │
+│   │  • Verbal processing                                                   │   │
+│   │                                                                         │   │
+│   │  Your insights arrive suddenly and fully formed. I'll respect that    │   │
+│   │  - I won't ask you to 'show your work' when you already know."        │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│   ADAPTATIONS SHOWN:                                                             │
+│   ──────────────────                                                             │
+│   ✓ Using metaphors and analogies                                               │
+│   ✓ Showing the big picture first                                               │
+│   ✗ Never using visualization techniques                                        │
+│   ✓ Giving you time to process                                                  │
+│                                                                                  │
+│   OUTPUT → User sees their complete MoodPrint                                    │
+│   NEXT → /guide                                                                  │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stage 4: App Guide
+
+**File:** `app/guide/index.tsx`
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           STAGE 4: APP GUIDE                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   PURPOSE: Quick tour of app features                                           │
+│                                                                                  │
+│   COVERS:                                                                        │
+│   ───────                                                                        │
+│   • The Tree (visual journal representation)                                    │
+│   • The Coach (AI conversations)                                                │
+│   • Fireflies (gentle insights)                                                 │
+│   • Twigs (quick logs)                                                          │
+│   • Skills (grounding techniques)                                               │
+│   • Privacy (all data on device)                                                │
+│                                                                                  │
+│   OUTPUT → User understands app features                                         │
+│   NEXT → /(tabs) - Main app                                                      │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Onboarding Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          ONBOARDING DATA FLOW                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   USER ANSWERS                                                                   │
+│        │                                                                         │
+│        ▼                                                                         │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    STAGE 1: Coach Personality                           │   │
+│   │   "What kind of support feels helpful?"  ──▶  selectedPersona           │   │
+│   │   "What's your natural rhythm?"          ──▶  chronotype                │   │
+│   │   "How do you feel about adaptive?"      ──▶  adaptiveSettings         │   │
+│   └───────────────────────────────┬─────────────────────────────────────────┘   │
+│                                   │                                              │
+│                                   ▼                                              │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                   STAGE 2: Cognitive Onboarding                         │   │
+│   │   "How do you learn best?"               ──▶  primaryCognitiveMode      │   │
+│   │   "Picture a beach - what happens?"      ──▶  mentalImagery            │   │
+│   │   "Do you have inner voice?"             ──▶  innerMonologue           │   │
+│   │   "What frustrates you?"                 ──▶  communicationStyle       │   │
+│   └───────────────────────────────┬─────────────────────────────────────────┘   │
+│                                   │                                              │
+│                                   ▼                                              │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                      MOODPRINT ASSEMBLED                                │   │
+│   │                                                                          │   │
+│   │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │   │
+│   │   │ Coach Settings  │  │ Cognitive       │  │ Neurological    │        │   │
+│   │   │ • persona       │  │ Profile         │  │ Profile         │        │   │
+│   │   │ • chronotype    │  │ • mode          │  │ • mentalImagery │        │   │
+│   │   │ • adaptive      │  │ • processing    │  │ • innerMonologue│        │   │
+│   │   └────────┬────────┘  └────────┬────────┘  └────────┬────────┘        │   │
+│   │            │                    │                    │                  │   │
+│   │            └────────────────────┼────────────────────┘                  │   │
+│   │                                 │                                        │   │
+│   │                                 ▼                                        │   │
+│   │                    ┌────────────────────────┐                           │   │
+│   │                    │     MoodPrint          │                           │   │
+│   │                    │  (Complete Profile)    │                           │   │
+│   │                    └────────────────────────┘                           │   │
+│   │                                 │                                        │   │
+│   │                                 ▼                                        │   │
+│   │                    ┌────────────────────────┐                           │   │
+│   │                    │   Coach Adaptations    │                           │   │
+│   │                    │   (Response Rules)     │                           │   │
+│   │                    └────────────────────────┘                           │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Files Involved in Onboarding
+
+| Stage | File | Service | Storage Key |
+|-------|------|---------|-------------|
+| 1 | `app/onboarding/index.tsx` | `coachPersonalityService.ts` | `moodleaf_coach_settings` |
+| 2 | `app/cognitive-onboarding/index.tsx` | `cognitiveProfileService.ts` | `moodleaf_cognitive_profile` |
+| 3 | `app/cognitive-onboarding/reveal.tsx` | `cognitiveProfileService.ts`, `moodPrintService.ts` | Reads existing |
+| 4 | `app/guide/index.tsx` | None | None |
+
+### Skipping Onboarding
+
+Users can skip at any stage:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                             SKIP BEHAVIOR                                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   Skip at Stage 1:                                                               │
+│   • Uses default persona (Clover)                                               │
+│   • Uses default chronotype (normal)                                            │
+│   • Adaptive mode enabled                                                        │
+│   • Goes to Stage 2                                                              │
+│                                                                                  │
+│   Skip at Stage 2:                                                               │
+│   • Uses neutral cognitive profile                                              │
+│   • No aphantasia/inner monologue detection                                     │
+│   • System learns from conversations instead                                    │
+│   • Goes to Stage 3 (reveal shows what little we know)                          │
+│                                                                                  │
+│   Skip at Stage 3:                                                               │
+│   • Just skips the reveal                                                        │
+│   • Goes directly to Stage 4 (guide)                                            │
+│                                                                                  │
+│   Skip at Stage 4:                                                               │
+│   • Goes directly to main app                                                   │
+│                                                                                  │
+│   RECOVERY: User can always redo onboarding via Settings → "Redo Onboarding"   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### How Onboarding Data is Used
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                       HOW ONBOARDING DATA SHAPES THE APP                         │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   COLLECTED                           USED FOR                                   │
+│   ─────────────────────────────────────────────────────────────────────────     │
+│                                                                                  │
+│   selectedPersona: 'willow'      ──▶  Coach tone, greeting style, emoji use    │
+│                                                                                  │
+│   chronotype: 'night_owl'        ──▶  Energy modulation (gentle morning,       │
+│                                        more energy at night)                    │
+│                                                                                  │
+│   mentalImagery: 'aphantasia'    ──▶  HARD CONSTRAINT: Never use               │
+│                                        "visualize", "picture", "imagine seeing" │
+│                                        Use conceptual/body-based instead        │
+│                                                                                  │
+│   innerMonologue: 'absent'       ──▶  HARD CONSTRAINT: Never ask               │
+│                                        "what is your inner voice saying"        │
+│                                        Use feelings/sensations instead          │
+│                                                                                  │
+│   primaryCognitiveMode:          ──▶  Response structure:                       │
+│   'conceptual_systems'                • Show big picture first                  │
+│                                        • Explain the "why" before the "how"     │
+│                                        • Use systems metaphors                  │
+│                                                                                  │
+│   emotionalProcessing:           ──▶  Validation timing:                        │
+│   'feeler_first'                      • Always validate feelings FIRST          │
+│                                        • Wait for cue before solutions          │
+│                                                                                  │
+│   sensitivityLevel:              ──▶  Tone calibration:                         │
+│   'highly_sensitive'                  • Gentler language                        │
+│                                        • Slower pacing                          │
+│                                        • More validation                        │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Table of Contents
 1. [Introduction: What Makes Mood Leaf Unique](#introduction-what-makes-mood-leaf-unique)
 2. [The Systems That Power Mood Leaf](#the-systems-that-power-mood-leaf)
 3. [Creating the MoodPrint](#creating-the-moodprint-your-unique-profile)
-4. [System Overview](#system-overview)
-5. [Current State (NOW)](#current-state-now)
-6. [Future State (GOAL)](#future-state-goal)
-7. [Roadmap: How We Get There](#roadmap-how-we-get-there)
-8. [Service Interconnections](#service-interconnections)
-9. [User Message Flow](#user-message-flow)
-10. [Learning & Adaptation Flow](#learning--adaptation-flow)
-11. [LLM Input/Output](#llm-inputoutput)
-12. [Data Flow Diagram](#data-flow-diagram)
-13. [Training Pipeline](#training-pipeline)
-14. [What Training Data Trains](#what-training-data-trains)
+4. [Onboarding Flow: Building the Initial MoodPrint](#onboarding-flow-building-the-initial-moodprint)
+5. [System Overview](#system-overview)
+6. [Current State (NOW)](#current-state-now)
+7. [Future State (GOAL)](#future-state-goal)
+8. [Roadmap: How We Get There](#roadmap-how-we-get-there)
+9. [Service Interconnections](#service-interconnections)
+10. [User Message Flow](#user-message-flow)
+11. [Learning & Adaptation Flow](#learning--adaptation-flow)
+12. [LLM Input/Output](#llm-inputoutput)
+13. [Data Flow Diagram](#data-flow-diagram)
+14. [Training Pipeline](#training-pipeline)
+15. [What Training Data Trains](#what-training-data-trains)
 
 ---
 

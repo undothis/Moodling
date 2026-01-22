@@ -22,8 +22,11 @@ Complete technical documentation for the Mood Leaf codebase.
 14. [Ethics Implementation](#ethics-implementation)
 15. [Testing](#testing)
 16. [Psychological Analysis System](#psychological-analysis-system)
-17. [AI Coach Adaptive System](#ai-coach-adaptive-system)
-18. [AI Data Integration & Learning](#ai-data-integration--learning)
+17. [MoodPrint: Context Compression System](#moodprint-context-compression-system)
+18. [Text-to-Speech (TTS) System](#text-to-speech-tts-system)
+19. [Onboarding System](#onboarding-system)
+20. [AI Coach Adaptive System](#ai-coach-adaptive-system)
+21. [AI Data Integration & Learning](#ai-data-integration--learning)
 19. [AI Adaptation Verification System](#ai-adaptation-verification-system)
 20. [Cycle Tracking System](#cycle-tracking-system)
 21. [Slash Commands System](#slash-commands-system)
@@ -1947,6 +1950,243 @@ if (ttsEnabled && coachSettings?.selectedPersona) {
   speakCoachResponse(response.text, coachSettings.selectedPersona)
     .finally(() => setIsSpeaking(false));
 }
+```
+
+---
+
+## Onboarding System
+
+### Overview
+
+The onboarding system is a **4-stage flow** that builds the user's initial MoodPrint. Each stage collects specific data that shapes how the AI coach responds.
+
+### Complete Flow Diagram
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   STAGE 1        │     │   STAGE 2        │     │   STAGE 3        │     │   STAGE 4        │
+│   /onboarding    │────▶│/cognitive-       │────▶│/cognitive-       │────▶│   /guide         │
+│                  │     │ onboarding       │     │ onboarding/reveal│     │                  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+        │                        │                        │                        │
+        ▼                        ▼                        ▼                        ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ Coach Personality│     │ Cognitive Profile│     │ MoodPrint Reveal │     │ App Guide        │
+│ • Persona        │     │ • Learning style │     │ • "Aha moment"   │     │ • Feature tour   │
+│ • Chronotype     │     │ • Aphantasia     │     │ • Adaptations    │     │ • Tips           │
+│ • Adaptive mode  │     │ • Inner monologue│     │ • What we know   │     │                  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+        │                        │                        │                        │
+        ▼                        ▼                        ▼                        ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│coachPersonality- │     │cognitiveProfile- │     │ moodPrintService │     │      None        │
+│Service.ts        │     │Service.ts        │     │                  │     │                  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+```
+
+### Stage 1: Coach Personality Onboarding
+
+**File:** `app/onboarding/index.tsx`
+**Service:** `services/coachPersonalityService.ts`
+
+```typescript
+// Questions asked (via ONBOARDING_QUESTIONS array)
+const questions = [
+  'What kind of support feels most helpful?',      // → persona
+  'When struggling, what do you need first?',       // → validation_first
+  'What's your natural rhythm?',                    // → chronotype
+  'How do you feel about adaptive coaching?',       // → adaptiveSettings
+];
+
+// Data collected
+interface CoachSettings {
+  selectedPersona: CoachPersona;  // 'clover' | 'spark' | 'willow' | 'luna' | 'ridge' | 'flint' | 'fern'
+  chronotype: Chronotype;         // 'early_bird' | 'normal' | 'night_owl'
+  adaptiveSettings: {
+    enabled: boolean;
+    moodMappings: MoodPersonaMapping[];
+  };
+  onboardingAnswers: Record<string, string>;
+}
+
+// Storage
+const STORAGE_KEY = 'moodleaf_coach_settings';
+```
+
+**Navigation:** After completion → `/cognitive-onboarding`
+
+### Stage 2: Cognitive Profile Onboarding
+
+**File:** `app/cognitive-onboarding/index.tsx`
+**Service:** `services/cognitiveProfileService.ts`
+
+```typescript
+// Key questions
+const questions = [
+  // Core cognitive mode detection
+  'When learning something new, what feels most natural?',
+  'When someone explains something, what frustrates you most?',
+  'How do insights usually arrive for you?',
+
+  // Neurological difference detection
+  'When someone says "picture a beach", what happens in your mind?',
+  'Do you have a constant inner voice narrating your thoughts?',
+
+  // Communication preferences
+  'What makes you feel most misunderstood?',
+];
+
+// Data collected
+interface CognitiveProfile {
+  primaryCognitiveMode:
+    | 'conceptual_systems'      // Big picture, "why" first
+    | 'emotional_relational'    // Feelings first, connection-focused
+    | 'procedural_sequential'   // Step-by-step, structured
+    | 'embodied_somatic'        // Body-based, action-oriented
+    | 'associative_divergent'   // Makes leaps, non-linear
+    | 'narrative_meaning';      // Stories and examples
+
+  mentalImagery:
+    | 'hyperphantasia'  // Vivid visual
+    | 'typical'         // Normal visualization
+    | 'low'             // Weak visualization
+    | 'aphantasia';     // Cannot visualize
+
+  innerMonologue:
+    | 'constant'        // Always has inner voice
+    | 'situational'     // Sometimes
+    | 'rare'            // Rarely
+    | 'absent';         // Never
+
+  emotionalProcessing: 'feeler_first' | 'thinker_first' | 'integrated';
+  sensitivityLevel: 'highly_sensitive' | 'moderate' | 'low';
+  communicationStyle: 'direct' | 'reflective' | 'exploratory';
+}
+
+// Storage
+const STORAGE_KEY = 'moodleaf_cognitive_profile';
+```
+
+**Adaptive behavior:** Questions adapt based on previous answers. If aphantasia detected, visualization questions are skipped.
+
+**Navigation:** After completion → `/cognitive-onboarding/reveal`
+
+### Stage 3: MoodPrint Reveal
+
+**File:** `app/cognitive-onboarding/reveal.tsx`
+**Services:** `cognitiveProfileService.ts`, `moodPrintService.ts`
+
+```typescript
+// Functions used
+const revealText = await generateProfileReveal();      // Human-readable summary
+const summary = await getMoodPrintSummary();           // Structured data
+const adaptations = await getCoachAdaptations();       // Response rules
+
+// Example reveal text for aphantasia user:
+const exampleReveal = `
+  You have aphantasia - your mind's eye doesn't create visual images.
+  This isn't a deficiency; it's a different way of thinking.
+
+  I will NEVER ask you to 'visualize' or 'picture' anything.
+  Instead, I'll use conceptual descriptions and body-based techniques.
+`;
+```
+
+**Navigation:** After continue → `/guide`
+
+### Stage 4: App Guide
+
+**File:** `app/guide/index.tsx`
+
+Simple walkthrough of app features. No data collection.
+
+**Navigation:** After completion → `/(tabs)` (main app)
+
+### Key Functions
+
+```typescript
+// Check if onboarding needed (used in _layout.tsx)
+import { isOnboardingComplete } from '@/services/coachPersonalityService';
+
+// Mark onboarding complete
+import { completeOnboarding } from '@/services/coachPersonalityService';
+
+// Get next question (adaptive)
+import { getNextOnboardingQuestion } from '@/services/cognitiveProfileService';
+
+// Record answer and update profile
+import { recordOnboardingAnswer } from '@/services/cognitiveProfileService';
+
+// Generate profile reveal text
+import { generateProfileReveal } from '@/services/cognitiveProfileService';
+
+// Get coach adaptations from profile
+import { getCoachAdaptations } from '@/services/cognitiveProfileService';
+
+// Reset onboarding (for "Redo Onboarding" feature)
+import { resetOnboarding } from '@/services/coachPersonalityService';
+```
+
+### How Onboarding Data Shapes Responses
+
+```typescript
+// In claudeAPIService.ts, the MoodPrint is used to shape prompts:
+
+// 1. Persona affects tone and greeting
+const persona = coachSettings.selectedPersona; // e.g., 'willow' = wise, calm
+
+// 2. Chronotype affects energy
+if (chronotype === 'night_owl' && currentHour < 10) {
+  energyLevel = 'low'; // Gentle morning messages
+}
+
+// 3. Aphantasia creates HARD CONSTRAINTS
+if (profile.mentalImagery === 'aphantasia') {
+  constraints.push('NEVER use: visualize, picture, imagine seeing, close your eyes and see');
+  constraints.push('USE INSTEAD: conceptual descriptions, body sensations, verbal processing');
+}
+
+// 4. Inner monologue affects technique suggestions
+if (profile.innerMonologue === 'absent') {
+  constraints.push('NEVER ask: what is your inner voice saying, notice your self-talk');
+  constraints.push('USE INSTEAD: What are you sensing? What comes up for you?');
+}
+
+// 5. Cognitive mode affects response structure
+if (profile.primaryCognitiveMode === 'conceptual_systems') {
+  responseStyle.showBigPictureFirst = true;
+  responseStyle.explainWhyBeforeHow = true;
+}
+```
+
+### Redo Onboarding
+
+Users can redo onboarding at any time:
+
+**Location:** Settings → "Redo Onboarding"
+
+```typescript
+// In settings.tsx
+const handleRedoOnboarding = async () => {
+  await resetOnboarding();          // Clears onboarding completion flag
+  router.replace('/onboarding');    // Restarts flow
+};
+
+// Note: Journal entries are preserved, only profile is reset
+```
+
+### Testing Onboarding
+
+```typescript
+// To reset onboarding state for testing:
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+await AsyncStorage.removeItem('moodleaf_onboarding_complete');
+await AsyncStorage.removeItem('moodleaf_coach_settings');
+await AsyncStorage.removeItem('moodleaf_cognitive_profile');
+await AsyncStorage.removeItem('moodleaf_cognitive_onboarding_progress');
+
+// Then restart app - will show onboarding
 ```
 
 ---
