@@ -191,8 +191,13 @@ export default function CognitiveOnboardingScreen() {
         ]}
       >
         <Text style={[styles.questionText, { color: colors.text }]}>
-          {currentQuestion.question}
+          {currentQuestion.text}
         </Text>
+        {currentQuestion.subtext && (
+          <Text style={[styles.subtextText, { color: colors.textSecondary }]}>
+            {currentQuestion.subtext}
+          </Text>
+        )}
 
         <ScrollView
           style={styles.optionsScroll}
@@ -309,9 +314,16 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 24,
+    marginBottom: 12,
     lineHeight: 32,
     textAlign: 'center',
+  },
+  subtextText: {
+    fontSize: 15,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: 22,
   },
   optionsScroll: {
     flex: 1,
