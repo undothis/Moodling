@@ -14,14 +14,28 @@
  * - Hard Constraints: Things we NEVER do (violations are blocked)
  * - Soft Principles: Things we strongly prefer (violations are warned)
  * - Alignment Checks: Functions other services call to validate actions
+ * - Backend Sync: Principles can be updated from server without app update
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // ============================================
-// CORE BELIEFS
+// STORAGE KEYS
+// ============================================
+
+const STORAGE_KEYS = {
+  PRINCIPLE_OVERRIDES: 'moodleaf_principle_overrides',
+  LAST_SYNC: 'moodleaf_principles_last_sync',
+  CUSTOM_BELIEFS: 'moodleaf_custom_beliefs',
+  DISABLED_CONSTRAINTS: 'moodleaf_disabled_constraints',
+};
+
+// ============================================
+// CORE BELIEFS (Defaults)
 // These shape everything. They're not rules - they're truths we hold.
 // ============================================
 
-export const CORE_BELIEFS = {
+export const DEFAULT_CORE_BELIEFS = {
   // About Minds
   MINDS_DIFFER: "Every mind works differently. There is no 'normal' - only different.",
   INTELLIGENCE_IS_MULTIPLE: "Traditional metrics (IQ, grades, tests) miss most forms of intelligence.",
@@ -41,6 +55,9 @@ export const CORE_BELIEFS = {
   HONEST_NOT_NICE: "We're honest, even when it's uncomfortable. Growth requires truth.",
   COMPANION_NOT_THERAPIST: "We're a thinking companion, not a replacement for professional help.",
 } as const;
+
+// Mutable version that can be updated from backend
+export let CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
 
 // ============================================
 // HARD CONSTRAINTS
@@ -644,19 +661,327 @@ export function getPrincipleContextForLLM(): string {
 }
 
 // ============================================
+// BACKEND SYNC & MANAGEMENT
+// Allows updating principles without app updates
+// ============================================
+
+export interface PrincipleOverrides {
+  beliefs?: Partial<typeof DEFAULT_CORE_BELIEFS>;
+  customBeliefs?: Record<string, string>;
+  disabledConstraints?: string[];  // Constraint IDs to disable
+  customConstraints?: HardConstraint[];
+  lastUpdated: string;
+  version: number;
+}
+
+/**
+ * Sync principles from backend
+ * Call this on app startup and periodically
+ */
+export async function syncPrinciplesFromBackend(
+  backendUrl?: string
+): Promise<{ success: boolean; updated: boolean; error?: string }> {
+  try {
+    // If no URL provided, use stored overrides only
+    if (!backendUrl) {
+      await loadStoredOverrides();
+      return { success: true, updated: false };
+    }
+
+    // Fetch from backend
+    const response = await fetch(`${backendUrl}/api/principles`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const overrides: PrincipleOverrides = await response.json();
+
+    // Store locally
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.LAST_SYNC,
+      new Date().toISOString()
+    );
+
+    // Apply overrides
+    await applyOverrides(overrides);
+
+    return { success: true, updated: true };
+  } catch (error) {
+    console.error('[PrincipleKernel] Sync failed:', error);
+
+    // Fall back to stored overrides
+    await loadStoredOverrides();
+
+    return {
+      success: false,
+      updated: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+/**
+ * Load stored overrides from AsyncStorage
+ */
+async function loadStoredOverrides(): Promise<void> {
+  try {
+    const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+    if (stored) {
+      const overrides: PrincipleOverrides = JSON.parse(stored);
+      await applyOverrides(overrides);
+    }
+  } catch (error) {
+    console.error('[PrincipleKernel] Failed to load stored overrides:', error);
+  }
+}
+
+/**
+ * Apply overrides to the active principles
+ */
+async function applyOverrides(overrides: PrincipleOverrides): Promise<void> {
+  // Merge belief overrides
+  if (overrides.beliefs) {
+    CORE_BELIEFS = {
+      ...DEFAULT_CORE_BELIEFS,
+      ...overrides.beliefs
+    };
+  }
+
+  // Add custom beliefs
+  if (overrides.customBeliefs) {
+    CORE_BELIEFS = {
+      ...CORE_BELIEFS,
+      ...overrides.customBeliefs
+    } as typeof CORE_BELIEFS;
+  }
+
+  // Note: Disabling constraints should be used VERY carefully
+  // This is mainly for A/B testing or regional compliance
+  if (overrides.disabledConstraints) {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.DISABLED_CONSTRAINTS,
+      JSON.stringify(overrides.disabledConstraints)
+    );
+  }
+}
+
+/**
+ * Get list of disabled constraint IDs
+ */
+async function getDisabledConstraints(): Promise<string[]> {
+  try {
+    const stored = await AsyncStorage.getItem(STORAGE_KEYS.DISABLED_CONSTRAINTS);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Manually update a specific belief (for admin use)
+ */
+export async function updateBelief(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.beliefs = overrides.beliefs || {};
+  (overrides.beliefs as any)[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Add a custom belief (for admin use)
+ */
+export async function addCustomBelief(
+  key: string,
+  value: string
+): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const overrides: PrincipleOverrides = stored
+    ? JSON.parse(stored)
+    : { lastUpdated: new Date().toISOString(), version: 1 };
+
+  overrides.customBeliefs = overrides.customBeliefs || {};
+  overrides.customBeliefs[key] = value;
+  overrides.lastUpdated = new Date().toISOString();
+  overrides.version = (overrides.version || 0) + 1;
+
+  await AsyncStorage.setItem(
+    STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+    JSON.stringify(overrides)
+  );
+
+  await applyOverrides(overrides);
+}
+
+/**
+ * Remove a custom belief
+ */
+export async function removeCustomBelief(key: string): Promise<void> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  if (!stored) return;
+
+  const overrides: PrincipleOverrides = JSON.parse(stored);
+  if (overrides.customBeliefs) {
+    delete overrides.customBeliefs[key];
+    overrides.lastUpdated = new Date().toISOString();
+    overrides.version = (overrides.version || 0) + 1;
+
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.PRINCIPLE_OVERRIDES,
+      JSON.stringify(overrides)
+    );
+
+    await applyOverrides(overrides);
+  }
+}
+
+/**
+ * Reset all principles to defaults
+ */
+export async function resetToDefaults(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  await AsyncStorage.removeItem(STORAGE_KEYS.DISABLED_CONSTRAINTS);
+  await AsyncStorage.removeItem(STORAGE_KEYS.CUSTOM_BELIEFS);
+
+  CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
+}
+
+/**
+ * Get current principle state (for debugging/admin)
+ */
+export async function getPrincipleState(): Promise<{
+  beliefs: typeof CORE_BELIEFS;
+  defaultBeliefs: typeof DEFAULT_CORE_BELIEFS;
+  hardConstraints: { id: string; description: string; category: string }[];
+  softPrinciples: { id: string; description: string; category: string }[];
+  overrides: PrincipleOverrides | null;
+  lastSync: string | null;
+}> {
+  const overridesStored = await AsyncStorage.getItem(STORAGE_KEYS.PRINCIPLE_OVERRIDES);
+  const lastSync = await AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+
+  return {
+    beliefs: CORE_BELIEFS,
+    defaultBeliefs: DEFAULT_CORE_BELIEFS,
+    hardConstraints: HARD_CONSTRAINTS.map(c => ({
+      id: c.id,
+      description: c.description,
+      category: c.category
+    })),
+    softPrinciples: SOFT_PRINCIPLES.map(p => ({
+      id: p.id,
+      description: p.description,
+      category: p.category
+    })),
+    overrides: overridesStored ? JSON.parse(overridesStored) : null,
+    lastSync
+  };
+}
+
+/**
+ * Get a formatted summary of all current principles
+ * Useful for documentation and review
+ */
+export function getAllPrinciplesSummary(): string {
+  const parts: string[] = [];
+
+  parts.push('╔══════════════════════════════════════════════════════════════╗');
+  parts.push('║           MOOD LEAF CORE PRINCIPLE KERNEL                    ║');
+  parts.push('╚══════════════════════════════════════════════════════════════╝');
+  parts.push('');
+
+  // Core Beliefs
+  parts.push('━━━ CORE BELIEFS ━━━');
+  parts.push('(What we believe about minds, people, and growth)');
+  parts.push('');
+
+  for (const [key, value] of Object.entries(CORE_BELIEFS)) {
+    parts.push(`• ${key}`);
+    parts.push(`  "${value}"`);
+    parts.push('');
+  }
+
+  // Hard Constraints
+  parts.push('━━━ HARD CONSTRAINTS ━━━');
+  parts.push('(NEVER violated - violations are blocked)');
+  parts.push('');
+
+  for (const constraint of HARD_CONSTRAINTS) {
+    parts.push(`• [${constraint.category.toUpperCase()}] ${constraint.id}`);
+    parts.push(`  ${constraint.description}`);
+    parts.push('');
+  }
+
+  // Soft Principles
+  parts.push('━━━ SOFT PRINCIPLES ━━━');
+  parts.push('(Strongly preferred - violations generate warnings)');
+  parts.push('');
+
+  for (const principle of SOFT_PRINCIPLES) {
+    parts.push(`• [${principle.category.toUpperCase()}] ${principle.id}`);
+    parts.push(`  ${principle.description}`);
+    parts.push('');
+  }
+
+  return parts.join('\n');
+}
+
+// ============================================
+// INITIALIZE ON LOAD
+// ============================================
+
+// Load stored overrides when module is imported
+loadStoredOverrides().catch(console.error);
+
+// ============================================
 // EXPORTS FOR SERVICE INTEGRATION
 // ============================================
 
 export default {
+  // Beliefs
   CORE_BELIEFS,
+  DEFAULT_CORE_BELIEFS,
+
+  // Constraints & Principles
   HARD_CONSTRAINTS,
   SOFT_PRINCIPLES,
+
+  // Checking functions
   checkHardConstraints,
   checkSoftPrinciples,
   checkAlignment,
   checkSpecificConstraint,
   validateCoachResponse,
+
+  // Context generation
   getCoreBeliefContext,
   getCriticalConstraintsContext,
-  getPrincipleContextForLLM
+  getPrincipleContextForLLM,
+
+  // Backend sync & management
+  syncPrinciplesFromBackend,
+  updateBelief,
+  addCustomBelief,
+  removeCustomBelief,
+  resetToDefaults,
+  getPrincipleState,
+  getAllPrinciplesSummary
 };
