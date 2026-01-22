@@ -92,6 +92,7 @@ export function TourSpotlight({
 }: TourSpotlightProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const isDark = colorScheme === 'dark';
   const [pulseAnim] = useState(new Animated.Value(1));
 
   // Pulse animation for the spotlight ring around target
@@ -118,6 +119,9 @@ export function TourSpotlight({
 
   if (!visible) return null;
 
+  // Semi-transparent background for readability
+  const cardBg = isDark ? 'rgba(30, 27, 24, 0.92)' : 'rgba(255, 255, 255, 0.92)';
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Pulsing ring around target element */}
@@ -138,8 +142,8 @@ export function TourSpotlight({
         />
       )}
 
-      {/* Flat card at top center - no border/oval */}
-      <View style={styles.card}>
+      {/* Card with subtle background for readability */}
+      <View style={[styles.card, { backgroundColor: cardBg }]}>
         {/* Step badge centered */}
         <View style={[styles.stepBadge, { backgroundColor: colors.tint }]}>
           <Text style={styles.stepText}>{stepIndex + 1} of {totalSteps}</Text>
@@ -191,7 +195,13 @@ const styles = StyleSheet.create({
     right: 16,
     padding: 20,
     alignItems: 'center',
-    // No background, border, or shadow - flat and transparent
+    borderRadius: 16,
+    // Subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   stepBadge: {
     paddingHorizontal: 12,
