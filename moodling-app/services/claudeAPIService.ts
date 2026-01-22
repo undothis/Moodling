@@ -37,9 +37,15 @@ import {
   buildPromptModifiers,
   detectUserEnergy,
   detectUserMood,
+  extractTopics,
   ResponseDirectives,
 } from './conversationController';
 import { scoreExchange } from './humanScoreService';
+import {
+  getMemoryContextForLLM,
+  addMessageToSession,
+  updateSessionTopics,
+} from './memoryTierService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -744,11 +750,33 @@ export async function sendMessage(
     console.log('Could not load calendar context:', error);
   }
 
+  // Get tiered memory context (short/mid/long term)
+  let memoryContext = '';
+  try {
+    memoryContext = await getMemoryContextForLLM();
+  } catch (error) {
+    console.log('Could not load memory context:', error);
+  }
+
+  // Track this user message in session memory
+  const userMood = detectUserMood(message);
+  const userEnergy = detectUserEnergy(message);
+  try {
+    await addMessageToSession('user', message, userMood, userEnergy);
+    const topics = extractTopics(message);
+    if (topics.length > 0) {
+      await updateSessionTopics(topics);
+    }
+  } catch (error) {
+    console.log('Could not update session memory:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
-  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
-  // user preferences, then current conversation
+  // Order: memory context (most important), lifetime overview, psych profile, chronotype/travel,
+  // calendar, health + correlations, detailed tracking logs, lifestyle factors,
+  // exposure progress, recent journals, user preferences, then current conversation
   const contextParts = [
+    memoryContext,       // Tiered memory (what we know about this person)
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
     chronotypeContext,   // Chronotype and travel awareness
@@ -868,6 +896,13 @@ ${controllerModifiers}`;
       ).catch(err => console.log('Scoring error (non-blocking):', err));
     } catch (err) {
       console.log('Scoring setup error (non-blocking):', err);
+    }
+
+    // Track assistant response in session memory
+    try {
+      await addMessageToSession('assistant', responseText);
+    } catch (err) {
+      console.log('Memory tracking error (non-blocking):', err);
     }
 
     return {
