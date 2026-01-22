@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,8 @@ import {
   Platform,
   ActivityIndicator,
   Animated,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +55,16 @@ import {
   stopAudio,
   initializeTTS,
 } from '@/services/textToSpeechService';
+import {
+  COACH_MODE_SKILLS,
+  CoachModeConfig,
+  getActiveCoachModes,
+  activateSessionMode,
+  deactivateSessionMode,
+  isModeActive,
+  isPersistentMode,
+  togglePersistentMode,
+} from '@/services/coachModeService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -137,6 +149,24 @@ export default function CoachScreen() {
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Coach modes state
+  const [showModesSheet, setShowModesSheet] = useState(false);
+  const [activeModes, setActiveModes] = useState<string[]>([]);
+  const [modesPersistent, setModesPersistent] = useState<Record<string, boolean>>({});
+
+  // Load active coach modes
+  const loadActiveModes = useCallback(async () => {
+    const modes = await getActiveCoachModes();
+    setActiveModes(modes);
+
+    // Load persistent status for each mode
+    const persistentStatus: Record<string, boolean> = {};
+    for (const modeId of modes) {
+      persistentStatus[modeId] = await isPersistentMode(modeId);
+    }
+    setModesPersistent(persistentStatus);
+  }, []);
+
   // Load coach settings and API key on mount
   useEffect(() => {
     const checkSetup = async () => {
@@ -150,6 +180,9 @@ export default function CoachScreen() {
 
       const prefs = await getTonePreferences();
       setToneStyles(prefs.selectedStyles);
+
+      // Load active coach modes
+      await loadActiveModes();
 
       // Load coach persona
       const settings = await getCoachSettings();
@@ -360,6 +393,9 @@ export default function CoachScreen() {
           setMessages([getWelcomeMessage()]);
           setTurnCount(0);
         }
+        if (result.data?.action === 'show_modes_picker') {
+          setShowModesSheet(true);
+        }
         if (result.message) {
           setMessages((prev) => [
             ...prev,
@@ -548,6 +584,55 @@ export default function CoachScreen() {
     sendHandlerRef.current = handleSend;
   });
 
+  // Toggle a coach mode on/off
+  const handleToggleMode = async (modeId: string) => {
+    const isActive = activeModes.includes(modeId);
+    if (isActive) {
+      await deactivateSessionMode(modeId);
+      // Also remove from persistent if it was persistent
+      if (modesPersistent[modeId]) {
+        await togglePersistentMode(modeId, false);
+      }
+    } else {
+      await activateSessionMode(modeId);
+    }
+    await loadActiveModes();
+  };
+
+  // Toggle persistent mode
+  const handleTogglePersistent = async (modeId: string) => {
+    const isPersistent = modesPersistent[modeId];
+    await togglePersistentMode(modeId, !isPersistent);
+    setModesPersistent(prev => ({ ...prev, [modeId]: !isPersistent }));
+  };
+
+  // Group modes by category for display
+  const modesByCategory = useMemo(() => {
+    const categories: Record<string, CoachModeConfig[]> = {};
+    Object.values(COACH_MODE_SKILLS).forEach(mode => {
+      if (!categories[mode.category]) {
+        categories[mode.category] = [];
+      }
+      categories[mode.category].push(mode);
+    });
+    return categories;
+  }, []);
+
+  const categoryLabels: Record<string, { label: string; emoji: string }> = {
+    breathing: { label: 'Breathing', emoji: '🌬️' },
+    grounding: { label: 'Grounding', emoji: '🌳' },
+    cbt: { label: 'CBT', emoji: '💭' },
+    dbt: { label: 'DBT', emoji: '⚖️' },
+    mindfulness: { label: 'Mindfulness', emoji: '🧘' },
+    somatic: { label: 'Somatic', emoji: '🫀' },
+    communication: { label: 'Communication', emoji: '💬' },
+    spiritual: { label: 'Self-Discovery', emoji: '✨' },
+    sleep: { label: 'Sleep', emoji: '😴' },
+    focus: { label: 'Focus', emoji: '🎯' },
+    self_care: { label: 'Self-Care', emoji: '💝' },
+    story: { label: 'Stories', emoji: '📖' },
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -650,8 +735,45 @@ export default function CoachScreen() {
           </View>
         )}
 
+        {/* Active Modes Indicator */}
+        {activeModes.length > 0 && (
+          <TouchableOpacity
+            style={[styles.activeModesBar, { backgroundColor: colors.card }]}
+            onPress={() => setShowModesSheet(true)}
+          >
+            <View style={styles.activeModesContent}>
+              <Text style={styles.activeModesEmojis}>
+                {activeModes.slice(0, 3).map(id => COACH_MODE_SKILLS[id]?.emoji || '✨').join(' ')}
+              </Text>
+              <Text style={[styles.activeModesText, { color: colors.text }]}>
+                {activeModes.length === 1
+                  ? COACH_MODE_SKILLS[activeModes[0]]?.name || 'Mode active'
+                  : `${activeModes.length} modes active`}
+              </Text>
+            </View>
+            <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+
         {/* Input Area */}
         <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
+          {/* Modes Button */}
+          <TouchableOpacity
+            style={[
+              styles.modesButton,
+              {
+                backgroundColor: activeModes.length > 0 ? colors.tint + '20' : colors.border,
+              },
+            ]}
+            onPress={() => setShowModesSheet(true)}
+          >
+            <Ionicons
+              name="sparkles"
+              size={18}
+              color={activeModes.length > 0 ? colors.tint : colors.text}
+            />
+          </TouchableOpacity>
+
           {/* Voice Button */}
           {voiceSupported && (
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -727,6 +849,106 @@ export default function CoachScreen() {
           </Text>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Coach Modes Bottom Sheet */}
+      <Modal
+        visible={showModesSheet}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowModesSheet(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowModesSheet(false)}
+          />
+          <View style={[styles.modesSheet, { backgroundColor: colors.background }]}>
+            {/* Sheet Header */}
+            <View style={[styles.sheetHeader, { borderBottomColor: colors.border }]}>
+              <View style={styles.sheetHandle} />
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>
+                Coach Modes
+              </Text>
+              <Text style={[styles.sheetSubtitle, { color: colors.textMuted }]}>
+                Enhance how the coach helps you
+              </Text>
+            </View>
+
+            {/* Modes List */}
+            <ScrollView style={styles.modesList} showsVerticalScrollIndicator={false}>
+              {Object.entries(modesByCategory).map(([category, modes]) => (
+                <View key={category} style={styles.categorySection}>
+                  <Text style={[styles.categoryHeader, { color: colors.textMuted }]}>
+                    {categoryLabels[category]?.emoji} {categoryLabels[category]?.label || category}
+                  </Text>
+                  {modes.map(mode => {
+                    const isActive = activeModes.includes(mode.id);
+                    const isPersistent = modesPersistent[mode.id];
+                    return (
+                      <View key={mode.id}>
+                        <TouchableOpacity
+                          style={[
+                            styles.modeItem,
+                            {
+                              backgroundColor: isActive ? colors.tint + '15' : colors.card,
+                              borderColor: isActive ? colors.tint : colors.border,
+                            },
+                          ]}
+                          onPress={() => handleToggleMode(mode.id)}
+                        >
+                          <Text style={styles.modeEmoji}>{mode.emoji}</Text>
+                          <View style={styles.modeInfo}>
+                            <Text style={[styles.modeName, { color: colors.text }]}>
+                              {mode.name}
+                            </Text>
+                            {mode.approach && (
+                              <Text style={[styles.modeApproach, { color: colors.textMuted }]}>
+                                {mode.approach}
+                              </Text>
+                            )}
+                          </View>
+                          <Ionicons
+                            name={isActive ? 'checkmark-circle' : 'add-circle-outline'}
+                            size={24}
+                            color={isActive ? colors.tint : colors.textMuted}
+                          />
+                        </TouchableOpacity>
+                        {/* Persistent toggle shown when mode is active */}
+                        {isActive && (
+                          <TouchableOpacity
+                            style={[styles.persistentToggle, { backgroundColor: colors.card }]}
+                            onPress={() => handleTogglePersistent(mode.id)}
+                          >
+                            <Ionicons
+                              name={isPersistent ? 'checkbox' : 'square-outline'}
+                              size={18}
+                              color={isPersistent ? colors.tint : colors.textMuted}
+                            />
+                            <Text style={[styles.persistentText, { color: colors.textMuted }]}>
+                              Keep on across sessions
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+              {/* Bottom padding */}
+              <View style={{ height: 40 }} />
+            </ScrollView>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              style={[styles.closeSheetButton, { backgroundColor: colors.tint }]}
+              onPress={() => setShowModesSheet(false)}
+            >
+              <Text style={styles.closeSheetButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -897,5 +1119,135 @@ const styles = StyleSheet.create({
   privacyText: {
     fontSize: 11,
     textAlign: 'center',
+  },
+  // Active modes indicator bar
+  activeModesBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  activeModesContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  activeModesEmojis: {
+    fontSize: 14,
+  },
+  activeModesText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Modes button
+  modesButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modesSheet: {
+    maxHeight: '80%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#D0D0D0',
+    marginBottom: 12,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  sheetSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  modesList: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  categorySection: {
+    marginTop: 20,
+  },
+  categoryHeader: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  modeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  },
+  modeEmoji: {
+    fontSize: 24,
+  },
+  modeInfo: {
+    flex: 1,
+  },
+  modeName: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  modeApproach: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  persistentToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginLeft: 48,
+    marginTop: -4,
+    marginBottom: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  persistentText: {
+    fontSize: 12,
+  },
+  closeSheetButton: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  closeSheetButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

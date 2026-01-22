@@ -1497,6 +1497,22 @@ registerCommand({
   },
 });
 
+registerCommand({
+  name: 'modes',
+  aliases: ['mode', 'enhance', 'skills-mode'],
+  description: 'Open coach modes picker to enhance how the coach helps you',
+  category: 'power',
+  requiresPremium: false,
+  handler: async () => {
+    return {
+      type: 'action',
+      success: true,
+      message: '✨ Opening Coach Modes...\n\nSelect modes to enhance how I help you — breathing guides, CBT techniques, mindfulness, and more.',
+      data: { action: 'show_modes_picker' },
+    };
+  },
+});
+
 // ============================================
 // SECRET COMMANDS (Easter Eggs)
 // ============================================
