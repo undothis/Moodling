@@ -200,11 +200,11 @@ export default function CognitiveOnboardingScreen() {
           contentContainerStyle={styles.optionsContainer}
         >
           {currentQuestion.options.map((option) => {
-            const isSelected = selectedAnswer === option.id;
+            const isSelected = selectedAnswer === option.value;
 
             return (
               <Pressable
-                key={option.id}
+                key={option.value}
                 style={[
                   styles.optionCard,
                   {
@@ -217,7 +217,7 @@ export default function CognitiveOnboardingScreen() {
                     borderWidth: isSelected ? 2 : 1,
                   },
                 ]}
-                onPress={() => handleSelectAnswer(option.id)}
+                onPress={() => handleSelectAnswer(option.value)}
                 disabled={selectedAnswer !== null}
               >
                 <View style={styles.optionContent}>
