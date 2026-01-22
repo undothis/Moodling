@@ -53,6 +53,16 @@ import {
   saveUserPreferences,
   UserPreferences,
 } from '@/services/userContextService';
+import {
+  getTTSSettings,
+  saveTTSSettings,
+  hasTTSAPIKey,
+  setTTSAPIKey,
+  clearTTSAPIKey,
+  testTTS,
+  TTSSettings,
+  VoiceGender,
+} from '@/services/textToSpeechService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -98,6 +108,19 @@ export default function SettingsScreen() {
   // Coach personality state (Unit 17)
   const [coachSettings, setCoachSettings] = useState<CoachSettings | null>(null);
 
+  // TTS (Text-to-Speech) state
+  const [ttsSettings, setTtsSettings] = useState<TTSSettings>({
+    enabled: false,
+    voiceGender: 'female',
+    autoPlay: true,
+    speakingRateMultiplier: 1.0,
+    volume: 0.8,
+  });
+  const [ttsApiKeyConfigured, setTtsApiKeyConfigured] = useState(false);
+  const [showTtsApiKeyInput, setShowTtsApiKeyInput] = useState(false);
+  const [ttsApiKeyInput, setTtsApiKeyInput] = useState('');
+  const [isTesting, setIsTesting] = useState(false);
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -139,6 +162,12 @@ export default function SettingsScreen() {
       // Load coach personality (Unit 17)
       const loadedCoachSettings = await getCoachSettings();
       setCoachSettings(loadedCoachSettings);
+
+      // Load TTS settings
+      const loadedTtsSettings = await getTTSSettings();
+      setTtsSettings(loadedTtsSettings);
+      const hasTtsKey = await hasTTSAPIKey();
+      setTtsApiKeyConfigured(hasTtsKey);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -276,6 +305,85 @@ export default function SettingsScreen() {
     if (confirm) {
       await removeAPIKey();
       setApiKeyConfigured(false);
+    }
+  };
+
+  // Handle TTS API key save
+  const handleSaveTtsApiKey = async () => {
+    if (!ttsApiKeyInput.trim()) return;
+
+    try {
+      await setTTSAPIKey(ttsApiKeyInput.trim());
+      setTtsApiKeyConfigured(true);
+      setShowTtsApiKeyInput(false);
+      setTtsApiKeyInput('');
+    } catch (error) {
+      console.error('Failed to save TTS API key:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to save TTS API key');
+      } else {
+        Alert.alert('Error', 'Failed to save TTS API key');
+      }
+    }
+  };
+
+  // Handle TTS API key removal
+  const handleRemoveTtsApiKey = async () => {
+    const confirm = Platform.OS === 'web'
+      ? window.confirm('Remove your Google TTS API key?')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Remove TTS API Key',
+            'Remove your Google TTS API key? Voice features will be disabled.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (confirm) {
+      await clearTTSAPIKey();
+      setTtsApiKeyConfigured(false);
+      // Disable TTS when key is removed
+      const updated = { ...ttsSettings, enabled: false };
+      setTtsSettings(updated);
+      await saveTTSSettings(updated);
+    }
+  };
+
+  // Handle TTS toggle
+  const handleTtsToggle = async (enabled: boolean) => {
+    const updated = { ...ttsSettings, enabled };
+    setTtsSettings(updated);
+    await saveTTSSettings(updated);
+  };
+
+  // Handle voice gender change
+  const handleVoiceGenderChange = async (gender: VoiceGender) => {
+    const updated = { ...ttsSettings, voiceGender: gender };
+    setTtsSettings(updated);
+    await saveTTSSettings(updated);
+  };
+
+  // Test TTS voice
+  const handleTestTts = async () => {
+    if (!coachSettings?.selectedPersona) return;
+
+    setIsTesting(true);
+    try {
+      const result = await testTTS(coachSettings.selectedPersona, ttsSettings.voiceGender);
+      if (!result.success) {
+        if (Platform.OS === 'web') {
+          window.alert(`Voice test failed: ${result.error}`);
+        } else {
+          Alert.alert('Voice Test Failed', result.error || 'Unknown error');
+        }
+      }
+    } catch (error) {
+      console.error('TTS test error:', error);
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -1134,6 +1242,171 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      {/* Voice (TTS) Section */}
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Voice Output
+          </Text>
+        </View>
+
+        <Text style={[styles.apiDescription, { color: colors.textSecondary }]}>
+          Enable voice output for coach responses. Uses Google Cloud Text-to-Speech for natural-sounding voices.
+        </Text>
+
+        {ttsApiKeyConfigured ? (
+          <View style={styles.apiConfigured}>
+            <View style={styles.apiStatusRow}>
+              <Text style={styles.apiStatusIcon}>✓</Text>
+              <Text style={[styles.apiStatusText, { color: colors.text }]}>
+                Google TTS API key configured
+              </Text>
+            </View>
+
+            {/* TTS Enable Toggle */}
+            <View style={[styles.ttsSettingRow, { borderBottomColor: colors.border }]}>
+              <View style={styles.ttsSettingInfo}>
+                <Text style={[styles.ttsSettingLabel, { color: colors.text }]}>
+                  Enable Voice
+                </Text>
+                <Text style={[styles.ttsSettingHint, { color: colors.textMuted }]}>
+                  Coach will speak responses
+                </Text>
+              </View>
+              <Switch
+                value={ttsSettings.enabled}
+                onValueChange={handleTtsToggle}
+                trackColor={{ false: '#767577', true: colors.tint + '80' }}
+                thumbColor={ttsSettings.enabled ? colors.tint : '#f4f3f4'}
+              />
+            </View>
+
+            {/* Voice Gender Selection */}
+            {ttsSettings.enabled && (
+              <View style={styles.ttsVoiceGender}>
+                <Text style={[styles.ttsSettingLabel, { color: colors.text }]}>
+                  Voice Style
+                </Text>
+                <View style={styles.ttsGenderButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.ttsGenderButton,
+                      ttsSettings.voiceGender === 'female' && { backgroundColor: colors.tint },
+                      { borderColor: colors.tint },
+                    ]}
+                    onPress={() => handleVoiceGenderChange('female')}
+                  >
+                    <Text
+                      style={[
+                        styles.ttsGenderButtonText,
+                        { color: ttsSettings.voiceGender === 'female' ? '#fff' : colors.tint },
+                      ]}
+                    >
+                      Female
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.ttsGenderButton,
+                      ttsSettings.voiceGender === 'male' && { backgroundColor: colors.tint },
+                      { borderColor: colors.tint },
+                    ]}
+                    onPress={() => handleVoiceGenderChange('male')}
+                  >
+                    <Text
+                      style={[
+                        styles.ttsGenderButtonText,
+                        { color: ttsSettings.voiceGender === 'male' ? '#fff' : colors.tint },
+                      ]}
+                    >
+                      Male
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Test Voice Button */}
+            {ttsSettings.enabled && (
+              <TouchableOpacity
+                style={[styles.ttsTestButton, { backgroundColor: colors.background }]}
+                onPress={handleTestTts}
+                disabled={isTesting}
+              >
+                <Text style={[styles.ttsTestButtonText, { color: colors.tint }]}>
+                  {isTesting ? 'Playing...' : '🔊 Test Voice'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.removeApiButton, { borderColor: colors.error }]}
+              onPress={handleRemoveTtsApiKey}
+            >
+              <Text style={[styles.removeApiButtonText, { color: colors.error }]}>
+                Remove TTS API key
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.apiNotConfigured}>
+            {!showTtsApiKeyInput ? (
+              <TouchableOpacity
+                style={[styles.addApiButton, { backgroundColor: colors.tint }]}
+                onPress={() => setShowTtsApiKeyInput(true)}
+              >
+                <Text style={styles.addApiButtonText}>
+                  Add Google TTS API Key
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.apiInputContainer}>
+                <TextInput
+                  style={[styles.apiInput, {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  }]}
+                  placeholder="AIza..."
+                  placeholderTextColor={colors.textMuted}
+                  value={ttsApiKeyInput}
+                  onChangeText={setTtsApiKeyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                />
+                <View style={styles.apiInputButtons}>
+                  <TouchableOpacity
+                    style={[styles.apiSaveButton, { backgroundColor: colors.tint }]}
+                    onPress={handleSaveTtsApiKey}
+                    disabled={!ttsApiKeyInput.trim()}
+                  >
+                    <Text style={styles.apiSaveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.apiCancelButton}
+                    onPress={() => {
+                      setShowTtsApiKeyInput(false);
+                      setTtsApiKeyInput('');
+                    }}
+                  >
+                    <Text style={[styles.apiCancelButtonText, { color: colors.textMuted }]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.apiHint, { color: colors.textMuted }]}>
+              Get your API key from{' '}
+              <Text style={{ color: colors.tint }}>console.cloud.google.com</Text>
+              {'\n'}Enable "Cloud Text-to-Speech API" in your project
+            </Text>
+          </View>
+        )}
+      </View>
+
       {/* Privacy Section */}
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -1694,5 +1967,52 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
     marginTop: 4,
+  },
+  // TTS styles
+  ttsSettingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  ttsSettingInfo: {
+    flex: 1,
+  },
+  ttsSettingLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  ttsSettingHint: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  ttsVoiceGender: {
+    marginTop: 16,
+  },
+  ttsGenderButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  ttsGenderButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  ttsGenderButtonText: {
+    fontWeight: '500',
+  },
+  ttsTestButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  ttsTestButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
