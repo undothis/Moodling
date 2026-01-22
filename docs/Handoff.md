@@ -1219,6 +1219,101 @@ Added `games` category to SkillProgression types with 20 skills:
 
 ---
 
+## 25. High-Value Clinical Skills (Implemented)
+
+### Overview
+
+Added evidence-based clinical skills from DBT, CBT, and trauma-informed approaches. Framed as educational tools following Mood Leaf's philosophy of empowering users rather than prescribing solutions.
+
+### New Categories Added
+
+| Category | Emoji | Color | Description |
+|----------|-------|-------|-------------|
+| **Crisis Tools** | 🆘 | #EF4444 | Safety planning and distress tolerance |
+| **Body-Based** | 🫀 | #EC4899 | Somatic/vagal nerve exercises |
+
+### Skills Created
+
+**Crisis Tools:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Safety Plan Builder | `SafetyPlanBuilder.tsx` | 8-step interactive crisis safety plan |
+| Grounding Ladder | `GroundingLadder.tsx` | 4-level escalating grounding techniques |
+| TIPP Skills | `TIPPSkills.tsx` | DBT distress protocol (Temperature, Intense exercise, Paced breathing, Paired relaxation) |
+| Window of Tolerance | `WindowOfTolerance.tsx` | Track hyper/hypo arousal with strategies |
+
+**Body-Based:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Vagal Tone Exercises | `VagalToneExercises.tsx` | 8 exercises to stimulate vagus nerve (cold water, humming, physiological sigh, etc.) |
+
+**DBT Emotional Regulation:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Opposite Action | `OppositeAction.tsx` | Change emotions by acting opposite to urges |
+| Radical Acceptance | `RadicalAcceptance.tsx` | Accept painful realities to reduce suffering |
+
+**CBT Tools:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Thought Record | `ThoughtRecord.tsx` | 6-step CBT thought examination with history |
+
+**Relationship Skills:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| DEAR MAN Script | `DEARMANScript.tsx` | DBT interpersonal effectiveness script builder |
+
+### Files Created
+
+**Components:**
+```
+moodling-app/components/skills/
+├── SafetyPlanBuilder.tsx
+├── GroundingLadder.tsx
+├── TIPPSkills.tsx
+├── WindowOfTolerance.tsx
+├── VagalToneExercises.tsx
+├── OppositeAction.tsx
+├── RadicalAcceptance.tsx
+├── ThoughtRecord.tsx
+└── DEARMANScript.tsx
+```
+
+**Routes:**
+```
+moodling-app/app/skills/
+├── safety-plan.tsx
+├── grounding-ladder.tsx
+├── tipp.tsx
+├── window-of-tolerance.tsx
+├── vagal-tone.tsx
+├── opposite-action.tsx
+├── radical-acceptance.tsx
+├── thought-record.tsx
+└── dear-man.tsx
+```
+
+### Skills Added to Types
+
+Added 15+ new skills to `types/SkillProgression.ts`:
+- Crisis: safety_plan, grounding_ladder, tipp_skills, window_tolerance
+- Body: vagal_tone, somatic_tracking, shake_it_out
+- DBT: opposite_action, radical_acceptance, distress_tolerance_kit, wise_mind
+- CBT: thought_record, cognitive_distortions, behavioral_activation
+- Relationships: dear_man, validation_levels
+- Focus: habit_stacking, implementation_intentions
+
+### Design Philosophy
+
+All skills follow Mood Leaf philosophy:
+- Presented as tools/options, not prescriptions
+- Educational content explains "why" not just "how"
+- No "should" or "must" language
+- User empowerment over advice-giving
+- Includes "Important" notes about when to use
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
@@ -1236,7 +1331,7 @@ Added `games` category to SkillProgression types with 20 skills:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 60+ techniques and D&D progression. NEW: 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). NEW: Playback Resume for Sleep Stories and Old Time Radio.** All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 80+ techniques and D&D progression. NEW: 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). NEW: Playback Resume for Sleep Stories and Old Time Radio. NEW: High-Value Clinical Skills (Safety Plan Builder, Grounding Ladder, TIPP, Window of Tolerance, Vagal Tone, Thought Record, Opposite Action, Radical Acceptance, DEAR MAN Script).** All processing local/on-device."
 
 ---
 
