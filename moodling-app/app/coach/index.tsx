@@ -68,6 +68,15 @@ import {
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateProfileReveal } from '@/services/cognitiveProfileService';
+import {
+  startTour,
+  isTourActive,
+  getCurrentStep,
+  nextStep,
+  skipTour,
+  getTotalSteps,
+  TourStep,
+} from '@/services/guidedTourService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -171,6 +180,11 @@ export default function CoachScreen() {
   // Breathing ball state
   const [showBreathingBall, setShowBreathingBall] = useState(false);
   const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
+
+  // Guided tour state
+  const [tourActive, setTourActive] = useState(false);
+  const [currentTourStep, setCurrentTourStep] = useState<TourStep | null>(null);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
 
   // Map mode IDs to breathing patterns
   const getBreathingPatternForMode = (modeId: string): BreathingPattern | null => {
@@ -670,21 +684,10 @@ export default function CoachScreen() {
       .replace(/---/g, '—');              // --- -> em dash
   };
 
-  // Show first-time content automatically (no buttons needed)
+  // Show first-time content automatically with tour option
   const showFirstTimeContent = async () => {
     // Mark as complete immediately
     await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
-
-    // Quick app overview in one message
-    const appOverview = `Welcome! 🌿 Here's a quick overview:
-
-🌳 Tree — Your emotional home. It grows as you journal.
-📝 Journal — Write entries that become leaves on your tree.
-🪵 Twigs — Quick-log habits, mood, or meds with one tap.
-✨ Fireflies — Personal wisdom based on your patterns.
-💡 Sparks — Creative prompts to help you reflect.
-
-Everything stays on your device. 🔒`;
 
     // Get their profile
     let profileText = "I'm still learning about you! As we chat more, I'll understand how you think and adapt my responses.";
@@ -695,23 +698,57 @@ Everything stays on your device. 🔒`;
       console.log('Could not generate profile:', error);
     }
 
-    // Show both messages
+    // Show welcome message with tour option
     setMessages([
       {
-        id: 'app-overview',
-        text: appOverview,
+        id: 'welcome-first',
+        text: `Welcome! 🌿\n\n${profileText}\n\n—\n\nWould you like a guided tour of the app? I can walk you through everything, or you can explore on your own.`,
         source: 'system' as MessageSource,
         timestamp: new Date(),
-      },
-      {
-        id: 'profile-reveal',
-        text: `🌿 Your MoodPrint\n\n${profileText}\n\n—\n\nFeel free to chat about anything! If you need help with the app, just ask.`,
-        source: 'system' as MessageSource,
-        timestamp: new Date(Date.now() + 1), // Slightly later timestamp for ordering
       },
     ]);
 
     setIsFirstTime(false);
+  };
+
+  // Start the interactive guided tour
+  const handleStartTour = async () => {
+    setTourActive(true);
+    setTourStepIndex(0);
+
+    await startTour(
+      // On step change callback
+      (step, index) => {
+        setCurrentTourStep(step);
+        setTourStepIndex(index);
+      },
+      // On tour end callback
+      () => {
+        setTourActive(false);
+        setCurrentTourStep(null);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `tour-complete-${Date.now()}`,
+            text: "Tour complete! 🎉 You're all set. Feel free to chat with me anytime or explore the app on your own.",
+            source: 'system' as MessageSource,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    );
+  };
+
+  // Handle tour skip
+  const handleSkipTour = async () => {
+    await skipTour();
+    setTourActive(false);
+    setCurrentTourStep(null);
+  };
+
+  // Handle tour next step
+  const handleTourNext = async () => {
+    await nextStep();
   };
 
   // Group modes by category for display
@@ -1070,6 +1107,81 @@ Everything stays on your device. 🔒`;
           </View>
         </View>
       </Modal>
+
+      {/* Guided Tour Overlay */}
+      {tourActive && currentTourStep && (
+        <Modal
+          visible={tourActive}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={handleSkipTour}
+        >
+          <View style={styles.tourOverlay}>
+            <View style={[styles.tourCard, { backgroundColor: colors.background }]}>
+              <Text style={[styles.tourTitle, { color: colors.text }]}>
+                {currentTourStep.title}
+              </Text>
+              <Text style={[styles.tourText, { color: colors.textSecondary }]}>
+                {currentTourStep.displayText}
+              </Text>
+              <View style={styles.tourProgress}>
+                <Text style={[styles.tourProgressText, { color: colors.textMuted }]}>
+                  {tourStepIndex + 1} of {getTotalSteps()}
+                </Text>
+              </View>
+              <View style={styles.tourButtons}>
+                <TouchableOpacity
+                  style={[styles.tourSkipButton]}
+                  onPress={handleSkipTour}
+                >
+                  <Text style={[styles.tourSkipText, { color: colors.textMuted }]}>
+                    Skip Tour
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tourNextButton, { backgroundColor: colors.tint }]}
+                  onPress={handleTourNext}
+                >
+                  <Text style={styles.tourNextText}>
+                    {tourStepIndex === getTotalSteps() - 1 ? 'Finish' : 'Next'}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Tour Start Prompt - shown after first-time welcome */}
+      {messages.length === 1 && messages[0].id === 'welcome-first' && (
+        <View style={[styles.tourPrompt, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={[styles.tourStartButton, { backgroundColor: colors.tint }]}
+            onPress={handleStartTour}
+          >
+            <Ionicons name="compass" size={20} color="#FFFFFF" />
+            <Text style={styles.tourStartText}>Take the Guided Tour</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.tourDeclineButton}
+            onPress={() => {
+              setMessages([
+                {
+                  id: 'welcome',
+                  text: "No problem! Feel free to explore on your own. I'm here whenever you need me. 🌿\n\n💡 Tip: You can always ask for a tour later by saying \"show me around\" or \"walkthrough\".",
+                  source: 'system' as MessageSource,
+                  timestamp: new Date(),
+                },
+              ]);
+            }}
+          >
+            <Text style={[styles.tourDeclineText, { color: colors.textMuted }]}>
+              I'll explore on my own
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -1425,5 +1537,93 @@ const styles = StyleSheet.create({
   },
   skipWalkthroughButton: {
     paddingVertical: 8,
+  },
+  // Guided tour styles
+  tourOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  tourCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    maxWidth: 360,
+  },
+  tourTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  tourText: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  tourProgress: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  tourProgressText: {
+    fontSize: 13,
+  },
+  tourButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tourSkipButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  tourSkipText: {
+    fontSize: 15,
+  },
+  tourNextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    gap: 8,
+  },
+  tourNextText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tourPrompt: {
+    position: 'absolute',
+    bottom: 100,
+    left: 16,
+    right: 16,
+    padding: 16,
+    borderRadius: 16,
+    gap: 12,
+  },
+  tourStartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  tourStartText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tourDeclineButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  tourDeclineText: {
+    fontSize: 14,
   },
 });

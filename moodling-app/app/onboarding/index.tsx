@@ -528,16 +528,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  nextButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 25,
-  },
-  nextText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
   hintContainer: {
     padding: 12,
     borderRadius: 10,
