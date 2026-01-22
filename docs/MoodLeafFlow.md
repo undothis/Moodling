@@ -721,6 +721,193 @@ Users can skip at any stage:
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Complete Data Funnel: Everything That Feeds Into Chat
+
+Every AI response is shaped by **14 data sources** assembled into context. Here's the complete funnel:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    COMPLETE DATA FUNNEL INTO AI CHAT                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   USER SENDS MESSAGE                                                             │
+│         │                                                                        │
+│         ▼                                                                        │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    CONTEXT ASSEMBLY (14 Sources)                        │   │
+│   │                                                                          │   │
+│   │   1. COGNITIVE PROFILE (cognitiveProfileService.ts)                     │   │
+│   │      • Primary cognitive mode (how they think)                          │   │
+│   │      • Learning styles (visual, auditory, kinesthetic, etc.)            │   │
+│   │      • Communication style (direct, reflective, exploratory)            │   │
+│   │      • Emotional processing (feeler_first, thinker_first)               │   │
+│   │      • Structure preference (loves_structure, needs_flexibility)        │   │
+│   │      • Social orientation (energized_by_people, drained_by_people)      │   │
+│   │      • Sensitivity level (highly_sensitive, moderate, low)              │   │
+│   │      • NEUROLOGICAL: aphantasia, inner monologue, auditory imagination  │   │
+│   │                                                                          │   │
+│   │   2. SOCIAL CONNECTION HEALTH (socialConnectionHealthService.ts)        │   │
+│   │      • Isolation risk score                                             │   │
+│   │      • Connection quality metrics                                       │   │
+│   │      • Recent social interactions                                       │   │
+│   │      • Referral triggers (when to suggest professional help)            │   │
+│   │                                                                          │   │
+│   │   3. MEMORY TIERS (memoryService.ts)                                    │   │
+│   │      • Short-term: Current session topics, mood, energy                 │   │
+│   │      • Mid-term: This week's themes, people mentioned                   │   │
+│   │      • Long-term: Core facts, relationships, life events                │   │
+│   │                                                                          │   │
+│   │   4. LIFE CONTEXT (lifeContextService.ts)                               │   │
+│   │      • Lifetime overview (people, events, themes)                       │   │
+│   │      • Relationship map (family, friends, work)                         │   │
+│   │      • Major life events timeline                                       │   │
+│   │                                                                          │   │
+│   │   5. PSYCHOLOGICAL PROFILE (psychAnalysisService.ts)                    │   │
+│   │      • Cognitive patterns                                               │   │
+│   │      • Attachment style                                                 │   │
+│   │      • Values and beliefs                                               │   │
+│   │      • Defense mechanisms                                               │   │
+│   │                                                                          │   │
+│   │   6. CHRONOTYPE & TRAVEL (coachPersonalityService.ts)                   │   │
+│   │      • Natural rhythm (early_bird, normal, night_owl)                   │   │
+│   │      • Current time of day → energy modulation                          │   │
+│   │      • Travel/jet lag awareness                                         │   │
+│   │                                                                          │   │
+│   │   7. CALENDAR EVENTS (calendarService.ts)                               │   │
+│   │      • Upcoming meetings, deadlines                                     │   │
+│   │      • Travel plans                                                     │   │
+│   │      • Important dates                                                  │   │
+│   │                                                                          │   │
+│   │   8. HEALTH DATA (healthKitService.ts)                                  │   │
+│   │      • Heart rate patterns                                              │   │
+│   │      • Sleep quality                                                    │   │
+│   │      • Activity levels                                                  │   │
+│   │      • Step counts                                                      │   │
+│   │                                                                          │   │
+│   │   9. HEALTH CORRELATIONS (healthInsightService.ts)                      │   │
+│   │      • Mood-sleep correlations                                          │   │
+│   │      • Activity-mood correlations                                       │   │
+│   │      • Pattern insights                                                 │   │
+│   │                                                                          │   │
+│   │   10. TRACKING LOGS (quickLogsService.ts)                               │   │
+│   │       • Exercise logs (with exact counts)                               │   │
+│   │       • Habit tracking                                                  │   │
+│   │       • Medication tracking                                             │   │
+│   │       • Custom twig logs                                                │   │
+│   │                                                                          │   │
+│   │   11. LIFESTYLE FACTORS (patternService.ts)                             │   │
+│   │       • Caffeine intake                                                 │   │
+│   │       • Alcohol consumption                                             │   │
+│   │       • Outdoor time                                                    │   │
+│   │       • Social time                                                     │   │
+│   │                                                                          │   │
+│   │   12. EXPOSURE PROGRESS (exposureLadderService.ts)                      │   │
+│   │       • Social anxiety ladder progress                                  │   │
+│   │       • Completed exposure steps                                        │   │
+│   │       • Current challenge level                                         │   │
+│   │                                                                          │   │
+│   │   13. JOURNAL ENTRIES (journalStorage.ts)                               │   │
+│   │       • Recent entries (last 7 days)                                    │   │
+│   │       • Entry themes and emotions                                       │   │
+│   │       • What user actually wrote                                        │   │
+│   │                                                                          │   │
+│   │   14. USER PREFERENCES (userContextService.ts)                          │   │
+│   │       • Mood trends                                                     │   │
+│   │       • Preference settings                                             │   │
+│   │       • Conversation history                                            │   │
+│   │                                                                          │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                        │
+│         ▼                                                                        │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    COACH PERSONALITY LAYER                              │   │
+│   │                                                                          │   │
+│   │   • Active persona (Clover, Spark, Willow, etc.)                        │   │
+│   │   • Time-of-day energy modulation                                       │   │
+│   │   • Mood-based persona switching (if adaptive mode on)                  │   │
+│   │   • Tone preferences (warm, direct, playful)                            │   │
+│   │                                                                          │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                        │
+│         ▼                                                                        │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    COACH MODE ADDITIONS                                 │   │
+│   │                                                                          │   │
+│   │   • Active skill mode (if coaching specific skill)                      │   │
+│   │   • Technique-specific instructions                                     │   │
+│   │   • Session goals                                                       │   │
+│   │                                                                          │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                        │
+│         ▼                                                                        │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    CONVERSATION CONTROLLER                              │   │
+│   │                                                                          │   │
+│   │   • Human-ness scoring directives                                       │   │
+│   │   • Response style modifiers                                            │   │
+│   │   • Anti-pattern detection                                              │   │
+│   │                                                                          │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                        │
+│         ▼                                                                        │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │                    CLAUDE API CALL                                      │   │
+│   │                                                                          │   │
+│   │   System Prompt = Identity + Context + Directives                       │   │
+│   │   Messages = Conversation history + Current message                     │   │
+│   │                                                                          │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│         │                                                                        │
+│         ▼                                                                        │
+│   AI RESPONSE (shaped by all 14 data sources)                                   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Service Files for Each Data Source
+
+| # | Data Source | Service File | Function Called |
+|---|-------------|--------------|-----------------|
+| 1 | Cognitive Profile | `cognitiveProfileService.ts` | `getCognitiveProfileContextForLLM()` |
+| 2 | Social Connection | `socialConnectionHealthService.ts` | `getConnectionContextForLLM()` |
+| 3 | Memory Tiers | `memoryService.ts` | `getMemoryContextForLLM()` |
+| 4 | Life Context | `lifeContextService.ts` | `getLifeContextForClaude()` |
+| 5 | Psych Profile | `psychAnalysisService.ts` | `getCompressedContext()` |
+| 6 | Chronotype | `coachPersonalityService.ts` | `getChronotypeContextForClaude()` |
+| 7 | Calendar | `calendarService.ts` | `getCalendarContextForClaude()` |
+| 8 | Health Data | `healthKitService.ts` | `getHealthContextForClaude()` |
+| 9 | Correlations | `healthInsightService.ts` | `getCorrelationSummaryForClaude()` |
+| 10 | Tracking Logs | `quickLogsService.ts` | `getDetailedLogsContextForClaude()` |
+| 11 | Lifestyle | `patternService.ts` | `getLifestyleFactorsContextForClaude()` |
+| 12 | Exposure | `exposureLadderService.ts` | `getExposureContextForClaude()` |
+| 13 | Journals | `journalStorage.ts` | `getRecentJournalContextForClaude()` |
+| 14 | Preferences | `userContextService.ts` | `getContextForClaude()` |
+
+### Context Assembly Order
+
+The context is assembled in this specific order (most important first):
+
+```typescript
+// In claudeAPIService.ts
+const contextParts = [
+  cognitiveProfileContext,   // 1. How they think (shapes everything)
+  socialConnectionContext,   // 2. Connection health (isolation awareness)
+  memoryContext,             // 3. What we know about them
+  lifeContext,               // 4. Lifetime overview
+  psychContext,              // 5. Psychological profile
+  chronotypeContext,         // 6. Time/rhythm awareness
+  calendarContext,           // 7. Upcoming events
+  healthContext,             // 8. Body data
+  correlationContext,        // 9. Health-mood patterns
+  logsContext,               // 10. Detailed tracking
+  lifestyleContext,          // 11. Lifestyle factors
+  exposureContext,           // 12. Exposure progress
+  journalContext,            // 13. Recent writings
+  richContext,               // 14. Preferences & trends
+  conversationContext        // Current conversation
+];
+```
+
 ---
 
 ## Table of Contents
@@ -728,17 +915,18 @@ Users can skip at any stage:
 2. [The Systems That Power Mood Leaf](#the-systems-that-power-mood-leaf)
 3. [Creating the MoodPrint](#creating-the-moodprint-your-unique-profile)
 4. [Onboarding Flow: Building the Initial MoodPrint](#onboarding-flow-building-the-initial-moodprint)
-5. [System Overview](#system-overview)
-6. [Current State (NOW)](#current-state-now)
-7. [Future State (GOAL)](#future-state-goal)
-8. [Roadmap: How We Get There](#roadmap-how-we-get-there)
-9. [Service Interconnections](#service-interconnections)
-10. [User Message Flow](#user-message-flow)
-11. [Learning & Adaptation Flow](#learning--adaptation-flow)
-12. [LLM Input/Output](#llm-inputoutput)
-13. [Data Flow Diagram](#data-flow-diagram)
-14. [Training Pipeline](#training-pipeline)
-15. [What Training Data Trains](#what-training-data-trains)
+5. [Complete Data Funnel: Everything That Feeds Into Chat](#complete-data-funnel-everything-that-feeds-into-chat)
+6. [System Overview](#system-overview)
+7. [Current State (NOW)](#current-state-now)
+8. [Future State (GOAL)](#future-state-goal)
+9. [Roadmap: How We Get There](#roadmap-how-we-get-there)
+10. [Service Interconnections](#service-interconnections)
+11. [User Message Flow](#user-message-flow)
+12. [Learning & Adaptation Flow](#learning--adaptation-flow)
+13. [LLM Input/Output](#llm-inputoutput)
+14. [Data Flow Diagram](#data-flow-diagram)
+15. [Training Pipeline](#training-pipeline)
+16. [What Training Data Trains](#what-training-data-trains)
 
 ---
 

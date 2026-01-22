@@ -2010,6 +2010,11 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
   // Structure
   parts.push(`- Structure preference: ${profile.structurePreference}`);
 
+  // Learning styles
+  if (profile.learningStyles && profile.learningStyles.length > 0) {
+    parts.push(`- Learning styles: ${profile.learningStyles.join(', ')}`);
+  }
+
   // Mode-specific adaptations
   parts.push('\nADAPT YOUR RESPONSES:');
 

@@ -47,6 +47,7 @@ import {
   updateSessionTopics,
 } from './memoryTierService';
 import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
+import { getConnectionContextForLLM } from './socialConnectionHealthService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -792,12 +793,22 @@ export async function sendMessage(
     console.log('Could not load cognitive profile context:', error);
   }
 
+  // Get social connection health context (isolation risk, connection quality)
+  let socialConnectionContext = '';
+  try {
+    socialConnectionContext = await getConnectionContextForLLM();
+  } catch (error) {
+    console.log('Could not load social connection context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: cognitive profile (how they think), memory context, lifetime overview, psych profile,
-  // chronotype/travel, calendar, health + correlations, detailed tracking logs, lifestyle factors,
-  // exposure progress, recent journals, user preferences, then current conversation
+  // Order: cognitive profile (how they think), social connection health, memory context,
+  // lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
+  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
+  // user preferences, then current conversation
   const contextParts = [
     cognitiveProfileContext, // How this person thinks/learns (from onboarding)
+    socialConnectionContext, // Social connection health (isolation risk, connection quality)
     memoryContext,       // Tiered memory (what we know about this person)
     lifeContext,         // Lifetime overview (people, events, themes)
     psychContext,        // Psychological profile (cognitive patterns, attachment, values)
