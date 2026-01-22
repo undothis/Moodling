@@ -527,10 +527,17 @@ export async function completeOnboarding(): Promise<void> {
 
 /**
  * Reset onboarding (for testing or re-onboarding)
+ * Clears both coach personality AND cognitive profile onboarding
  */
 export async function resetOnboarding(): Promise<void> {
+  // Clear coach personality onboarding
   await AsyncStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETE);
   await AsyncStorage.removeItem(STORAGE_KEYS.COACH_SETTINGS);
+
+  // Clear cognitive profile onboarding (from cognitiveProfileService)
+  await AsyncStorage.removeItem('moodleaf_cognitive_profile');
+  await AsyncStorage.removeItem('moodleaf_onboarding_progress');
+  await AsyncStorage.removeItem('moodleaf_onboarding_answers');
 }
 
 // ============================================
