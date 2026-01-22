@@ -33,11 +33,15 @@ import {
   getInsightsByStatus,
   getTrainingReadiness,
   exportAsJSON,
+  batchImportInsights,
+  importFromInterviewLinks,
+  parseBatchImportJSON,
   InterviewInsight,
   TrainingReadiness,
   InsightCategory,
   SourceType,
   ConfidenceLevel,
+  BatchImportResult,
   INSIGHT_CATEGORIES,
   SOURCE_TYPES,
   CONFIDENCE_LEVELS,
@@ -57,6 +61,7 @@ export default function TrainingAdminScreen() {
   const [readiness, setReadiness] = useState<TrainingReadiness | null>(null);
 
   // Import state
+  const [importMode, setImportMode] = useState<'single' | 'batch'>('single');
   const [importForm, setImportForm] = useState({
     title: '',
     insight: '',
@@ -69,6 +74,11 @@ export default function TrainingAdminScreen() {
     confidenceLevel: 'observed' as ConfidenceLevel,
     relatedProfiles: '',
   });
+
+  // Batch import state
+  const [batchJSON, setBatchJSON] = useState('');
+  const [batchImporting, setBatchImporting] = useState(false);
+  const [lastBatchResult, setLastBatchResult] = useState<BatchImportResult | null>(null);
 
   // Insights state
   const [insights, setInsights] = useState<InterviewInsight[]>([]);
@@ -168,6 +178,55 @@ export default function TrainingAdminScreen() {
         },
       },
     ]);
+  };
+
+  // Handle batch import
+  const handleBatchImport = async () => {
+    if (!batchJSON.trim()) {
+      Alert.alert('Empty JSON', 'Please paste or enter JSON data to import.');
+      return;
+    }
+
+    // Parse and validate
+    const parseResult = parseBatchImportJSON(batchJSON);
+    if (!parseResult.valid || !parseResult.payload) {
+      Alert.alert('Invalid JSON', parseResult.error || 'Could not parse JSON');
+      return;
+    }
+
+    setBatchImporting(true);
+    setLastBatchResult(null);
+
+    try {
+      let result: BatchImportResult;
+
+      if (parseResult.type === 'interviewLinks') {
+        result = await importFromInterviewLinks(parseResult.payload as any);
+      } else {
+        result = await batchImportInsights(parseResult.payload as any);
+      }
+
+      setLastBatchResult(result);
+
+      if (result.success) {
+        Alert.alert(
+          'Import Complete',
+          `Successfully imported ${result.imported} insight(s).`
+        );
+        setBatchJSON('');
+      } else {
+        Alert.alert(
+          'Partial Import',
+          `Imported ${result.imported}, failed ${result.failed}.\n\nErrors:\n${result.errors.slice(0, 3).join('\n')}`
+        );
+      }
+
+      loadData();
+    } catch (error) {
+      Alert.alert('Import Failed', error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      setBatchImporting(false);
+    }
   };
 
   // Handle export
@@ -289,12 +348,144 @@ export default function TrainingAdminScreen() {
   const renderImport = () => {
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>
-            Import Interview Insight
-          </Text>
+        {/* Import Mode Toggle */}
+        <View style={styles.importModeToggle}>
+          <Pressable
+            style={[
+              styles.modeButton,
+              importMode === 'single' && { backgroundColor: colors.tint },
+            ]}
+            onPress={() => setImportMode('single')}
+          >
+            <Text style={[
+              styles.modeButtonText,
+              { color: importMode === 'single' ? '#fff' : colors.text }
+            ]}>
+              Single Import
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.modeButton,
+              importMode === 'batch' && { backgroundColor: colors.tint },
+            ]}
+            onPress={() => setImportMode('batch')}
+          >
+            <Text style={[
+              styles.modeButtonText,
+              { color: importMode === 'batch' ? '#fff' : colors.text }
+            ]}>
+              Batch Import
+            </Text>
+          </Pressable>
+        </View>
 
-          {/* Title */}
+        {importMode === 'batch' ? (
+          /* Batch Import UI */
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              Batch Import from JSON
+            </Text>
+
+            <Text style={[styles.batchDesc, { color: colors.textSecondary }]}>
+              Paste JSON to import multiple insights at once. Supports both standard batch format and interview links format.
+            </Text>
+
+            <TextInput
+              style={[styles.jsonInput, { color: colors.text, borderColor: colors.border }]}
+              placeholder='{"source": "...", "insights": [...]}'
+              placeholderTextColor={colors.textSecondary}
+              value={batchJSON}
+              onChangeText={setBatchJSON}
+              multiline
+              numberOfLines={12}
+            />
+
+            {lastBatchResult && (
+              <View style={[
+                styles.batchResultCard,
+                { backgroundColor: lastBatchResult.success ? '#4CAF5010' : '#FF980010' }
+              ]}>
+                <Text style={[styles.batchResultTitle, { color: colors.text }]}>
+                  Last Import Result
+                </Text>
+                <Text style={{ color: '#4CAF50' }}>
+                  Imported: {lastBatchResult.imported}
+                </Text>
+                {lastBatchResult.failed > 0 && (
+                  <>
+                    <Text style={{ color: '#F44336' }}>
+                      Failed: {lastBatchResult.failed}
+                    </Text>
+                    {lastBatchResult.errors.slice(0, 3).map((err, i) => (
+                      <Text key={i} style={[styles.errorText, { color: colors.textSecondary }]}>
+                        • {err}
+                      </Text>
+                    ))}
+                  </>
+                )}
+              </View>
+            )}
+
+            <Pressable
+              style={[
+                styles.primaryButton,
+                { backgroundColor: colors.tint, opacity: batchImporting ? 0.6 : 1 }
+              ]}
+              onPress={handleBatchImport}
+              disabled={batchImporting}
+            >
+              {batchImporting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Import from JSON</Text>
+              )}
+            </Pressable>
+
+            {/* Format guide */}
+            <View style={[styles.formatGuide, { borderColor: colors.border }]}>
+              <Text style={[styles.formatGuideTitle, { color: colors.text }]}>
+                JSON Formats
+              </Text>
+              <Text style={[styles.formatGuideText, { color: colors.textSecondary }]}>
+                Standard batch:{'\n'}
+                {`{
+  "source": "Q1 Research",
+  "insights": [
+    {
+      "category": "cognitive_patterns",
+      "title": "...",
+      "insight": "...",
+      "coachingImplication": "...",
+      "confidenceLevel": "observed"
+    }
+  ]
+}`}
+              </Text>
+              <Text style={[styles.formatGuideText, { color: colors.textSecondary, marginTop: 12 }]}>
+                Interview links:{'\n'}
+                {`{
+  "source": "Interview Sessions",
+  "interviewLinks": [
+    {
+      "interviewId": "INT-001",
+      "date": "2025-01-15",
+      "link": "https://...",
+      "insights": [...]
+    }
+  ]
+}`}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          /* Single Import UI */
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              Import Interview Insight
+            </Text>
+
+            {/* Title */}
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
             Title *
           </Text>
@@ -433,7 +624,8 @@ export default function TrainingAdminScreen() {
           >
             <Text style={styles.primaryButtonText}>Import Insight</Text>
           </Pressable>
-        </View>
+          </View>
+        )}
       </ScrollView>
     );
   };
@@ -892,5 +1084,67 @@ const styles = StyleSheet.create({
   guideText: {
     fontSize: 14,
     lineHeight: 22,
+  },
+  importModeToggle: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  batchDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  jsonInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 13,
+    fontFamily: 'monospace',
+    minHeight: 200,
+    textAlignVertical: 'top',
+  },
+  batchResultCard: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  batchResultTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  formatGuide: {
+    marginTop: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+  },
+  formatGuideTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  formatGuideText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    lineHeight: 18,
   },
 });

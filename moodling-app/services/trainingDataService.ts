@@ -444,6 +444,216 @@ export async function exportAsJSON(): Promise<string> {
 }
 
 // ============================================
+// BATCH IMPORT
+// ============================================
+
+export interface BatchInsightInput {
+  category: InsightCategory;
+  title: string;
+  insight: string;
+  quotes?: string[];
+  coachingImplication: string;
+  techniqueSuggestions?: string[];
+  antiPatterns?: string[];
+  confidenceLevel: ConfidenceLevel;
+  relatedProfiles?: string[];
+}
+
+export interface BatchImportPayload {
+  source: string;
+  sourceType?: SourceType;
+  insights: BatchInsightInput[];
+}
+
+export interface InterviewLinkPayload {
+  source: string;
+  interviewLinks: {
+    interviewId: string;
+    participantId?: string;
+    date: string;
+    link: string;
+    notes?: string;
+    insights: BatchInsightInput[];
+  }[];
+}
+
+export interface BatchImportResult {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors: string[];
+  insightIds: string[];
+}
+
+/**
+ * Batch import multiple insights at once
+ */
+export async function batchImportInsights(
+  payload: BatchImportPayload
+): Promise<BatchImportResult> {
+  const result: BatchImportResult = {
+    success: true,
+    imported: 0,
+    failed: 0,
+    errors: [],
+    insightIds: [],
+  };
+
+  for (let i = 0; i < payload.insights.length; i++) {
+    const insightInput = payload.insights[i];
+
+    try {
+      // Validate required fields
+      if (!insightInput.category || !insightInput.title || !insightInput.insight) {
+        throw new Error(`Insight ${i + 1}: Missing required fields (category, title, or insight)`);
+      }
+
+      // Validate category
+      const validCategories = INSIGHT_CATEGORIES.map(c => c.value);
+      if (!validCategories.includes(insightInput.category)) {
+        throw new Error(`Insight ${i + 1}: Invalid category "${insightInput.category}"`);
+      }
+
+      // Validate confidence level
+      const validConfidence = CONFIDENCE_LEVELS.map(c => c.value);
+      if (!validConfidence.includes(insightInput.confidenceLevel)) {
+        throw new Error(`Insight ${i + 1}: Invalid confidence level "${insightInput.confidenceLevel}"`);
+      }
+
+      const imported = await importInterviewInsight({
+        sourceType: payload.sourceType || 'user_interview',
+        source: payload.source,
+        dateCollected: new Date().toISOString(),
+        category: insightInput.category,
+        title: insightInput.title,
+        insight: insightInput.insight,
+        quotes: insightInput.quotes,
+        coachingImplication: insightInput.coachingImplication,
+        techniqueSuggestions: insightInput.techniqueSuggestions,
+        antiPatterns: insightInput.antiPatterns,
+        confidenceLevel: insightInput.confidenceLevel,
+        relatedProfiles: insightInput.relatedProfiles,
+      });
+
+      result.imported++;
+      result.insightIds.push(imported.id);
+    } catch (error) {
+      result.failed++;
+      result.errors.push(error instanceof Error ? error.message : `Insight ${i + 1}: Unknown error`);
+    }
+  }
+
+  result.success = result.failed === 0;
+  return result;
+}
+
+/**
+ * Import insights from interview links (with metadata)
+ */
+export async function importFromInterviewLinks(
+  payload: InterviewLinkPayload
+): Promise<BatchImportResult> {
+  const result: BatchImportResult = {
+    success: true,
+    imported: 0,
+    failed: 0,
+    errors: [],
+    insightIds: [],
+  };
+
+  for (const interview of payload.interviewLinks) {
+    for (let i = 0; i < interview.insights.length; i++) {
+      const insightInput = interview.insights[i];
+
+      try {
+        // Build source string with interview metadata
+        const sourceInfo = [
+          `Interview: ${interview.interviewId}`,
+          interview.participantId ? `Participant: ${interview.participantId}` : null,
+          `Date: ${interview.date}`,
+          interview.link ? `Link: ${interview.link}` : null,
+        ].filter(Boolean).join(' | ');
+
+        const imported = await importInterviewInsight({
+          sourceType: 'user_interview',
+          source: `${payload.source} - ${sourceInfo}`,
+          dateCollected: interview.date || new Date().toISOString(),
+          category: insightInput.category,
+          title: insightInput.title,
+          insight: insightInput.insight,
+          quotes: insightInput.quotes,
+          coachingImplication: insightInput.coachingImplication,
+          techniqueSuggestions: insightInput.techniqueSuggestions,
+          antiPatterns: insightInput.antiPatterns,
+          confidenceLevel: insightInput.confidenceLevel,
+          relatedProfiles: insightInput.relatedProfiles,
+        });
+
+        result.imported++;
+        result.insightIds.push(imported.id);
+      } catch (error) {
+        result.failed++;
+        result.errors.push(
+          `Interview ${interview.interviewId}, Insight ${i + 1}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`
+        );
+      }
+    }
+  }
+
+  result.success = result.failed === 0;
+  return result;
+}
+
+/**
+ * Parse and validate batch import JSON
+ */
+export function parseBatchImportJSON(jsonString: string): {
+  valid: boolean;
+  payload?: BatchImportPayload | InterviewLinkPayload;
+  error?: string;
+  type?: 'batch' | 'interviewLinks';
+} {
+  try {
+    const parsed = JSON.parse(jsonString);
+
+    // Determine type
+    if (parsed.interviewLinks && Array.isArray(parsed.interviewLinks)) {
+      // Interview links format
+      if (!parsed.source) {
+        return { valid: false, error: 'Missing "source" field' };
+      }
+      return {
+        valid: true,
+        payload: parsed as InterviewLinkPayload,
+        type: 'interviewLinks',
+      };
+    } else if (parsed.insights && Array.isArray(parsed.insights)) {
+      // Standard batch format
+      if (!parsed.source) {
+        return { valid: false, error: 'Missing "source" field' };
+      }
+      return {
+        valid: true,
+        payload: parsed as BatchImportPayload,
+        type: 'batch',
+      };
+    } else {
+      return {
+        valid: false,
+        error: 'JSON must contain either "insights" array or "interviewLinks" array',
+      };
+    }
+  } catch (e) {
+    return {
+      valid: false,
+      error: `Invalid JSON: ${e instanceof Error ? e.message : 'Parse error'}`,
+    };
+  }
+}
+
+// ============================================
 // INSIGHT CATEGORIES
 // ============================================
 
@@ -489,6 +699,11 @@ export default {
   getInsightsByStatus,
   getInsightsByCategory,
   searchInsights,
+
+  // Batch Import
+  batchImportInsights,
+  importFromInterviewLinks,
+  parseBatchImportJSON,
 
   // Corrections
   recordCorrection,
