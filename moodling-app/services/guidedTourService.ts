@@ -147,6 +147,35 @@ let tourTimeoutId: NodeJS.Timeout | null = null;
 let onStepChangeCallback: ((step: TourStep, index: number) => void) | null = null;
 let onTourEndCallback: (() => void) | null = null;
 
+// Event-based listeners for reactive updates (solves polling issues)
+type TourStateListener = (state: TourState, step: TourStep | null) => void;
+const stateListeners: Set<TourStateListener> = new Set();
+
+/**
+ * Subscribe to tour state changes (for reactive UI updates)
+ */
+export function subscribeTourState(listener: TourStateListener): () => void {
+  stateListeners.add(listener);
+  // Immediately call with current state
+  listener(tourState, tourState.isActive ? TOUR_STEPS[tourState.currentStep] : null);
+  // Return unsubscribe function
+  return () => stateListeners.delete(listener);
+}
+
+/**
+ * Notify all listeners of state change
+ */
+function notifyStateChange(): void {
+  const step = tourState.isActive ? TOUR_STEPS[tourState.currentStep] : null;
+  stateListeners.forEach(listener => {
+    try {
+      listener(tourState, step);
+    } catch (error) {
+      console.error('Tour state listener error:', error);
+    }
+  });
+}
+
 /**
  * Check if tour has been completed before
  */
@@ -204,6 +233,8 @@ export async function startTour(
   onStepChange?: (step: TourStep, index: number) => void,
   onEnd?: () => void
 ): Promise<void> {
+  console.log('[GuidedTour] Starting tour...');
+
   // Store callbacks
   onStepChangeCallback = onStepChange || null;
   onTourEndCallback = onEnd || null;
@@ -214,6 +245,9 @@ export async function startTour(
     currentStep: 0,
     isPaused: false,
   };
+
+  // Notify listeners BEFORE executing step (so overlay appears immediately)
+  notifyStateChange();
 
   // Start first step
   await executeStep(0);
@@ -231,6 +265,7 @@ export function pauseTour(): void {
     tourTimeoutId = null;
   }
   stopAudio();
+  notifyStateChange();
 }
 
 /**
@@ -240,6 +275,7 @@ export async function resumeTour(): Promise<void> {
   if (!tourState.isActive || !tourState.isPaused) return;
 
   tourState.isPaused = false;
+  notifyStateChange();
   await executeStep(tourState.currentStep);
 }
 
@@ -247,6 +283,7 @@ export async function resumeTour(): Promise<void> {
  * Skip to next step
  */
 export async function nextStep(): Promise<void> {
+  console.log('[GuidedTour] Next step requested');
   if (!tourState.isActive) return;
 
   if (tourTimeoutId) {
@@ -282,6 +319,8 @@ export async function previousStep(): Promise<void> {
  * End the tour
  */
 export async function endTour(): Promise<void> {
+  console.log('[GuidedTour] Ending tour');
+
   if (tourTimeoutId) {
     clearTimeout(tourTimeoutId);
     tourTimeoutId = null;
@@ -294,6 +333,9 @@ export async function endTour(): Promise<void> {
     isPaused: false,
   };
 
+  // Notify listeners that tour has ended
+  notifyStateChange();
+
   await markTourCompleted();
 
   if (onTourEndCallback) {
@@ -305,6 +347,7 @@ export async function endTour(): Promise<void> {
  * Skip tour entirely
  */
 export async function skipTour(): Promise<void> {
+  console.log('[GuidedTour] Skipping tour');
   await endTour();
 }
 
@@ -316,6 +359,8 @@ export async function skipTour(): Promise<void> {
  * Execute a specific tour step
  */
 async function executeStep(stepIndex: number): Promise<void> {
+  console.log(`[GuidedTour] Executing step ${stepIndex}:`, TOUR_STEPS[stepIndex]?.id);
+
   if (stepIndex < 0 || stepIndex >= TOUR_STEPS.length) {
     await endTour();
     return;
@@ -324,12 +369,18 @@ async function executeStep(stepIndex: number): Promise<void> {
   const step = TOUR_STEPS[stepIndex];
   tourState.currentStep = stepIndex;
 
-  // Navigate to route if specified
+  // Notify listeners immediately so overlay updates
+  notifyStateChange();
+
+  // Navigate to route if specified (with small delay to let overlay update first)
   if (step.route) {
     try {
+      // Small delay to ensure overlay is visible before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
       router.replace(step.route as any);
+      console.log(`[GuidedTour] Navigated to: ${step.route}`);
     } catch (error) {
-      console.error('Tour navigation error:', error);
+      console.error('[GuidedTour] Navigation error:', error);
     }
   }
 
@@ -338,26 +389,25 @@ async function executeStep(stepIndex: number): Promise<void> {
     try {
       await step.action();
     } catch (error) {
-      console.error('Tour action error:', error);
+      console.error('[GuidedTour] Action error:', error);
     }
   }
 
-  // Notify listener
+  // Notify callback listener (for legacy compatibility)
   if (onStepChangeCallback) {
     onStepChangeCallback(step, stepIndex);
   }
 
-  // Speak narration if TTS available
-  const ttsAvailable = await isTTSAvailable();
-  if (ttsAvailable) {
-    try {
-      await speakText(step.narration);
-    } catch (error) {
-      console.log('TTS not available, continuing without voice');
+  // Speak narration if TTS available (non-blocking)
+  isTTSAvailable().then(available => {
+    if (available) {
+      speakText(step.narration).catch(() => {
+        console.log('[GuidedTour] TTS not available, continuing without voice');
+      });
     }
-  }
+  });
 
-  // Schedule next step
+  // Schedule next step (auto-advance)
   if (!tourState.isPaused) {
     tourTimeoutId = setTimeout(async () => {
       if (tourState.isActive && !tourState.isPaused) {
