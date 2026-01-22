@@ -1,9 +1,9 @@
 /**
  * Tour Spotlight Component
  *
- * Renders a large floating card at the top center of the screen
- * with an arrow pointing down to the highlighted element.
- * No overlay - users can see the UI fully.
+ * Renders a large floating card at the top center of the screen.
+ * Manual advance only - user must tap Continue to proceed.
+ * Pulsing ring around target element, flat card without oval border.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -13,13 +13,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
   useColorScheme,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export interface SpotlightTarget {
   x: number;
@@ -95,10 +92,9 @@ export function TourSpotlight({
 }: TourSpotlightProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const isDark = colorScheme === 'dark';
   const [pulseAnim] = useState(new Animated.Value(1));
 
-  // Pulse animation for the spotlight ring
+  // Pulse animation for the spotlight ring around target
   useEffect(() => {
     if (visible && target) {
       const pulse = Animated.loop(
@@ -122,8 +118,6 @@ export function TourSpotlight({
 
   if (!visible) return null;
 
-  const cardBgColor = isDark ? 'rgba(44, 40, 37, 0.98)' : 'rgba(255, 255, 255, 0.98)';
-
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Pulsing ring around target element */}
@@ -144,27 +138,20 @@ export function TourSpotlight({
         />
       )}
 
-      {/* Large card at top center */}
-      <View style={[styles.card, { backgroundColor: cardBgColor }]}>
-        {/* Header with step and title */}
-        <View style={styles.header}>
-          <View style={[styles.stepBadge, { backgroundColor: colors.tint }]}>
-            <Text style={styles.stepText}>{stepIndex + 1} of {totalSteps}</Text>
-          </View>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      {/* Flat card at top center - no border/oval */}
+      <View style={styles.card}>
+        {/* Step badge centered */}
+        <View style={[styles.stepBadge, { backgroundColor: colors.tint }]}>
+          <Text style={styles.stepText}>{stepIndex + 1} of {totalSteps}</Text>
         </View>
 
-        {/* Description */}
+        {/* Title centered */}
+        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+
+        {/* Description centered */}
         <Text style={[styles.description, { color: colors.textSecondary }]}>
           {description}
         </Text>
-
-        {/* Arrow pointing down to target */}
-        {target && (
-          <View style={styles.arrowContainer}>
-            <Ionicons name="arrow-down" size={24} color={colors.tint} />
-          </View>
-        )}
 
         {/* Buttons */}
         <View style={styles.buttons}>
@@ -172,11 +159,11 @@ export function TourSpotlight({
             <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip Tour</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.nextBtn, { backgroundColor: colors.tint }]}
+            style={[styles.continueBtn, { backgroundColor: colors.tint }]}
             onPress={onNext}
           >
-            <Text style={styles.nextText}>
-              {stepIndex === totalSteps - 1 ? 'Finish' : 'Next'}
+            <Text style={styles.continueText}>
+              {stepIndex === totalSteps - 1 ? 'Finish' : 'Continue'}
             </Text>
             <Ionicons
               name={stepIndex === totalSteps - 1 ? 'checkmark' : 'arrow-forward'}
@@ -199,51 +186,41 @@ const styles = StyleSheet.create({
   },
   card: {
     position: 'absolute',
-    top: 60, // Below status bar
+    top: 60,
     left: 16,
     right: 16,
-    borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 12,
+    // No background, border, or shadow - flat and transparent
   },
   stepBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginBottom: 12,
   },
   stepText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    flex: 1,
+    textAlign: 'center',
+    marginBottom: 10,
   },
   description: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  arrowContainer: {
-    alignItems: 'center',
-    marginBottom: 12,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   buttons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 20,
   },
   skipBtn: {
     paddingVertical: 10,
@@ -252,7 +229,7 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
   },
-  nextBtn: {
+  continueBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
@@ -260,7 +237,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     gap: 8,
   },
-  nextText: {
+  continueText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

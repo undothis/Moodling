@@ -407,19 +407,7 @@ async function executeStep(stepIndex: number): Promise<void> {
     }
   });
 
-  // Schedule next step (auto-advance)
-  if (!tourState.isPaused) {
-    tourTimeoutId = setTimeout(async () => {
-      if (tourState.isActive && !tourState.isPaused) {
-        const nextIndex = stepIndex + 1;
-        if (nextIndex >= TOUR_STEPS.length) {
-          await endTour();
-        } else {
-          await executeStep(nextIndex);
-        }
-      }
-    }, step.duration);
-  }
+  // No auto-advance - user must tap Continue to proceed
 }
 
 /**
