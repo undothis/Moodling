@@ -1026,6 +1026,294 @@ Need to decide:
 
 ---
 
+## 22. Food Tracking with AI Detection (Implemented)
+
+### Overview
+General food tracking feature with calorie counting. AI automatically detects food mentions in journal entries and logs them. Integrates with period correlations when cycle tracking is enabled.
+
+### Files Created
+- `types/FoodTracking.ts` - 80+ common foods database, AI detection keywords
+- `services/foodTrackingService.ts` - Food logging, AI detection, calorie tracking
+- `components/food/FoodTracker.tsx` - Full food tracking UI
+- `app/food/index.tsx` - Food Tracker screen
+- `app/settings/food.tsx` - Food settings (enable/disable, calorie goal)
+
+### Key Features
+1. **AI Auto-Detection**: When users save journal entries, food mentions are detected and auto-logged
+2. **Calorie Tracking**: Daily goal with progress visualization
+3. **Food Database**: 80+ common foods with calorie info
+4. **Meal Types**: Breakfast, lunch, dinner, snack (auto-detected by time)
+5. **Settings**: Enable/disable tracking, toggle AI detection, set calorie goals
+
+### How AI Detection Works
+```typescript
+// In journal save flow (index.tsx)
+const foodResult = await autoLogFromJournal(entryText);
+if (foodResult && foodResult.logged.length > 0) {
+  // Show feedback: "Logged: Pizza Slice (285 cal)"
+}
+```
+
+---
+
+## 23. Skills Tab with D&D Progression (Implemented)
+
+### Overview
+A dedicated Skills tab in bottom navigation with D&D-inspired growth system. Non-competitive - users progress naturally through app usage.
+
+### Files Created
+- `types/SkillProgression.ts` - Attributes, skills, coach unlocks, point sources
+- `services/skillProgressionService.ts` - Progression tracking, unlocks, Easter eggs
+- `app/(tabs)/skills.tsx` - Skills tab screen with search
+
+### 4 Attributes (Grow from App Usage)
+| Attribute | Emoji | Grows From |
+|-----------|-------|------------|
+| Wisdom | 🦉 | Journaling, reflection, weekly reviews |
+| Resilience | 🏔️ | Grounding exercises, coping during hard times |
+| Clarity | 💎 | Identifying patterns, logging triggers, viewing insights |
+| Compassion | 💚 | Self-kindness practices, affirmations |
+
+### 50+ Skills Across 7 Categories
+- **Grounding**: 5-4-3-2-1, Box Breathing, Physiological Sigh, Cold Water Reset, etc.
+- **Anxiety**: Worry Time, Thought Challenging, Worst/Best/Likely, Containment
+- **Sleep**: Wind Down, Sleep Stories (free public domain books), Old Time Radio, 4-7-8 Breathing
+- **Focus**: Pomodoro, Brain Dump, Single-Tasking, Environment Design
+- **Self-Care**: Joy List, Gratitude, Inner Critic Work, Values Clarification
+- **Relationships**: I-Statements, Boundary Scripts, Repair Conversations, Active Listening
+- **Mindfulness**: Body Scan, RAIN Technique, Urge Surfing, Walking Meditation
+
+### Special Sleep Skills
+- **Sleep Stories**: Pulls from Project Gutenberg, Librivox - free public domain books
+- **Old Time Radio**: Classic radio dramas from Internet Archive (The Shadow, Suspense, X Minus One)
+
+### Coach Unlocks (16 Abilities)
+- Personality Traits: Light Humor, Celebration Mode, Tough Love, Extra Nurturing
+- Conversation Styles: Deep Questions, Socratic Dialogue, Story & Metaphor, Action-Focused
+- Special Abilities: Pattern Insights, Enhanced Memory, Proactive Check-ins, Crisis Support
+- Voice: Voice Responses, Voice Journaling
+
+### Search Feature
+Intelligent search filters skills and coach abilities by name, description, or category.
+
+### Easter Egg Slash Commands
+`/party` `/hug` `/coffee` `/wisdom` `/42` `/credits` `/debug` `/snake` `/pong`
+
+---
+
+## 24. Retro Games and Playback Resume (Implemented)
+
+### Overview
+
+Added classic retro games as Easter eggs and skills, plus a playback resume service for audio content (Sleep Stories, Old Time Radio).
+
+### Retro Games Created
+
+| Game | Access | Style | Category |
+|------|--------|-------|----------|
+| **Snake** | `/snake` Easter egg | Nokia green/black LCD | Easter Egg |
+| **Pong** | `/pong` Easter egg | CRT phosphor green glow | Easter Egg |
+| **Asteroids** | Skills > Games | Vector graphics arcade | Skill |
+| **Space Invaders** | `/invaders` Easter egg | Classic arcade green CRT | Easter Egg |
+| **Breakout** | `/breakout` Easter egg | CRT brick-breaking | Easter Egg |
+| **Frogger** | `/frogger` Easter egg | Classic road-crossing | Easter Egg |
+
+### Mindful Games Created
+
+| Game | Access | Description | Category |
+|------|--------|-------------|----------|
+| **Breathing Orb** | Skills > Games | Guided breathing visualization with animated orb | Mindfulness |
+| **2048** | Skills > Games | Classic sliding number puzzle | Puzzle |
+| **Memory Match** | Skills > Games | Card matching with calming themes | Cognitive |
+| **Bubble Wrap** | Skills > Games | Satisfying virtual bubble popping | Sensory |
+| **Water Ripples** | Skills > Games | Calming water surface touch simulation | Sensory |
+| **Sand Flow** | Skills > Games | Relaxing falling sand particle simulation | Sensory |
+| **Kinetic Sand** | Skills > Games | Digital kinetic sand you can push around | Sensory |
+| **Rain on Window** | Skills > Games | Soothing rain drops on glass simulation | Sensory |
+| **Kaleidoscope** | Skills > Games | Symmetrical drawing with rainbow colors | Creative |
+| **Maze Walker** | Skills > Games | Relaxing maze navigation at your own pace | Puzzle |
+| **Untangle** | Skills > Games | Drag nodes to eliminate crossing lines | Puzzle |
+
+### Files Created
+
+**Game Components:**
+| File | Purpose |
+|------|---------|
+| `components/games/RetroSnake.tsx` | Nokia-style Snake with D-pad controls |
+| `components/games/RetroPong.tsx` | Classic Pong with CRT scanlines |
+| `components/games/RetroAsteroids.tsx` | Vector graphics Asteroids |
+| `components/games/SpaceInvaders.tsx` | Classic arcade shooter |
+| `components/games/RetroBreakout.tsx` | Brick-breaking arcade game |
+| `components/games/Frogger.tsx` | Road-crossing classic |
+| `components/games/BreathingOrb.tsx` | Guided breathing visualization |
+| `components/games/Game2048.tsx` | Sliding number puzzle |
+| `components/games/MemoryMatch.tsx` | Card matching memory game |
+| `components/games/BubbleWrap.tsx` | Virtual bubble popping |
+| `components/games/WaterRipples.tsx` | Calming water surface |
+| `components/games/SandFlow.tsx` | Falling sand simulation |
+| `components/games/KineticSand.tsx` | Interactive kinetic sand |
+| `components/games/RainOnWindow.tsx` | Rain on glass simulation |
+| `components/games/Kaleidoscope.tsx` | Symmetrical drawing |
+| `components/games/MazeWalker.tsx` | Relaxing maze navigation |
+| `components/games/Untangle.tsx` | Node untangling puzzle |
+
+**Game Routes:**
+| File | Purpose |
+|------|---------|
+| `app/games/snake.tsx` | Snake game screen |
+| `app/games/pong.tsx` | Pong game screen |
+| `app/games/asteroids.tsx` | Asteroids game screen |
+| `app/games/space-invaders.tsx` | Space Invaders screen |
+| `app/games/breakout.tsx` | Breakout game screen |
+| `app/games/frogger.tsx` | Frogger game screen |
+| `app/games/breathing-orb.tsx` | Breathing Orb screen |
+| `app/games/2048.tsx` | 2048 game screen |
+| `app/games/memory-match.tsx` | Memory Match screen |
+| `app/games/bubble-wrap.tsx` | Bubble Wrap screen |
+| `app/games/water-ripples.tsx` | Water Ripples screen |
+| `app/games/sand-flow.tsx` | Sand Flow screen |
+| `app/games/kinetic-sand.tsx` | Kinetic Sand screen |
+| `app/games/rain-on-window.tsx` | Rain on Window screen |
+| `app/games/kaleidoscope.tsx` | Kaleidoscope screen |
+| `app/games/maze-walker.tsx` | Maze Walker screen |
+| `app/games/untangle.tsx` | Untangle game screen |
+
+**Services:**
+| File | Purpose |
+|------|---------|
+| `services/playbackResumeService.ts` | Track audio playback position |
+
+### Playback Resume Service
+
+Tracks where users left off in Sleep Stories and Old Time Radio content.
+
+**Key Features:**
+- Saves position for each content item
+- Continues from last position on resume
+- Tracks listening history
+- Calculates total listening time
+- Marks content as completed when finished
+
+**Key Functions:**
+```typescript
+savePlaybackPosition(type, title, positionSeconds, durationSeconds, options)
+getPlaybackPosition(type, title, episode?)
+getContinueListening() // Returns in-progress items
+getPlaybackHistory(limit?)
+getTotalListeningTime()
+formatResumeMessage(info) // "Resume from 12:34 (45%)"
+```
+
+### Games Category Added to Skills
+
+Added `games` category to SkillProgression types with 20 skills:
+- Mindful Asteroids, Retro Snake, Classic Pong
+- Fidget Pad, Bubble Wrap, Zen Blocks, Color Sort
+- **NEW:** Breathing Orb, Retro Breakout, 2048 Puzzle, Memory Match
+- **NEW:** Water Ripples, Sand Flow, Space Invaders, Frogger
+- **NEW:** Kinetic Sand, Rain on Window, Kaleidoscope, Maze Walker, Untangle
+
+### Easter Egg Commands Updated
+
+`/snake`, `/pong`, `/invaders`, `/breakout`, and `/frogger` now launch their respective games via `checkEasterEgg()`.
+
+---
+
+## 25. High-Value Clinical Skills (Implemented)
+
+### Overview
+
+Added evidence-based clinical skills from DBT, CBT, and trauma-informed approaches. Framed as educational tools following Mood Leaf's philosophy of empowering users rather than prescribing solutions.
+
+### New Categories Added
+
+| Category | Emoji | Color | Description |
+|----------|-------|-------|-------------|
+| **Crisis Tools** | 🆘 | #EF4444 | Safety planning and distress tolerance |
+| **Body-Based** | 🫀 | #EC4899 | Somatic/vagal nerve exercises |
+
+### Skills Created
+
+**Crisis Tools:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Safety Plan Builder | `SafetyPlanBuilder.tsx` | 8-step interactive crisis safety plan |
+| Grounding Ladder | `GroundingLadder.tsx` | 4-level escalating grounding techniques |
+| TIPP Skills | `TIPPSkills.tsx` | DBT distress protocol (Temperature, Intense exercise, Paced breathing, Paired relaxation) |
+| Window of Tolerance | `WindowOfTolerance.tsx` | Track hyper/hypo arousal with strategies |
+
+**Body-Based:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Vagal Tone Exercises | `VagalToneExercises.tsx` | 8 exercises to stimulate vagus nerve (cold water, humming, physiological sigh, etc.) |
+
+**DBT Emotional Regulation:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Opposite Action | `OppositeAction.tsx` | Change emotions by acting opposite to urges |
+| Radical Acceptance | `RadicalAcceptance.tsx` | Accept painful realities to reduce suffering |
+
+**CBT Tools:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| Thought Record | `ThoughtRecord.tsx` | 6-step CBT thought examination with history |
+
+**Relationship Skills:**
+| Skill | Component | Description |
+|-------|-----------|-------------|
+| DEAR MAN Script | `DEARMANScript.tsx` | DBT interpersonal effectiveness script builder |
+
+### Files Created
+
+**Components:**
+```
+moodling-app/components/skills/
+├── SafetyPlanBuilder.tsx
+├── GroundingLadder.tsx
+├── TIPPSkills.tsx
+├── WindowOfTolerance.tsx
+├── VagalToneExercises.tsx
+├── OppositeAction.tsx
+├── RadicalAcceptance.tsx
+├── ThoughtRecord.tsx
+└── DEARMANScript.tsx
+```
+
+**Routes:**
+```
+moodling-app/app/skills/
+├── safety-plan.tsx
+├── grounding-ladder.tsx
+├── tipp.tsx
+├── window-of-tolerance.tsx
+├── vagal-tone.tsx
+├── opposite-action.tsx
+├── radical-acceptance.tsx
+├── thought-record.tsx
+└── dear-man.tsx
+```
+
+### Skills Added to Types
+
+Added 15+ new skills to `types/SkillProgression.ts`:
+- Crisis: safety_plan, grounding_ladder, tipp_skills, window_tolerance
+- Body: vagal_tone, somatic_tracking, shake_it_out
+- DBT: opposite_action, radical_acceptance, distress_tolerance_kit, wise_mind
+- CBT: thought_record, cognitive_distortions, behavioral_activation
+- Relationships: dear_man, validation_levels
+- Focus: habit_stacking, implementation_intentions
+
+### Design Philosophy
+
+All skills follow Mood Leaf philosophy:
+- Presented as tools/options, not prescriptions
+- Educational content explains "why" not just "how"
+- No "should" or "must" language
+- User empowerment over advice-giving
+- Includes "Important" notes about when to use
+
+---
+
 ## 15. SUCCESS CRITERIA FOR THE NEXT CHECKPOINT
 
 - [ ] Cycle tracking works on iOS device (not just web)
@@ -1043,7 +1331,7 @@ Need to decide:
 
 ## QUICK STATUS SNAPSHOT
 
-"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. All processing local/on-device."
+"**Feature complete.** MoodPrint context compression (40% token savings). TTS with unique voices per coach. Cycle tracking with life stages. Slash commands (30+). D&D collection system. Voice chat, emotion detection, teaching system. Temporal patterns, contextual attachment, coping patterns tracking. **NEW: Food Tracking with AI detection. NEW: Skills Tab with 80+ techniques and D&D progression. NEW: 20 Mindful Games (Retro: Snake, Pong, Asteroids, Space Invaders, Breakout, Frogger | Sensory: Bubble Wrap, Water Ripples, Sand Flow, Kinetic Sand, Rain on Window | Puzzle: 2048, Memory Match, Maze Walker, Untangle | Creative: Kaleidoscope, Breathing Orb). NEW: Playback Resume for Sleep Stories and Old Time Radio. NEW: High-Value Clinical Skills (Safety Plan Builder, Grounding Ladder, TIPP, Window of Tolerance, Vagal Tone, Thought Record, Opposite Action, Radical Acceptance, DEAR MAN Script).** All processing local/on-device."
 
 ---
 
@@ -1071,6 +1359,9 @@ Need to decide:
 | `voiceChatService.ts` | Voice input | `startListening()`, `stopListening()` |
 | `emotionDetectionService.ts` | Facial analysis | `detectEmotion()`, `getEmotionHint()` |
 | `textToSpeechService.ts` | **NEW** Google Cloud TTS | `speakCoachResponse()`, `stopSpeaking()` |
+| `foodTrackingService.ts` | **NEW** Food & calorie tracking | `logFood()`, `autoLogFromJournal()`, `getTodayCalorieProgress()` |
+| `skillProgressionService.ts` | **NEW** D&D progression system | `awardPoints()`, `getSkillsWithStatus()`, `checkEasterEgg()` |
+| `playbackResumeService.ts` | **NEW** Audio playback tracking | `savePlaybackPosition()`, `getPlaybackPosition()`, `getContinueListening()` |
 
 ---
 

@@ -16,9 +16,11 @@ A comprehensive guide answering common questions about using Mood Leaf.
 8. [Notifications & Insights](#notifications--insights)
 9. [Oblique Strategies](#oblique-strategies)
 10. [Personalization](#personalization)
-11. [How Your Guide Adapts](#how-your-guide-adapts) ← NEW
-12. [Crisis Support](#crisis-support)
-13. [Technical Questions](#technical-questions)
+11. [How Your Guide Adapts](#how-your-guide-adapts)
+12. [Food Tracking](#food-tracking) ← NEW
+13. [Skills Tab](#skills-tab) ← NEW
+14. [Crisis Support](#crisis-support)
+15. [Technical Questions](#technical-questions)
 
 ---
 
@@ -687,6 +689,103 @@ Your guide combines several signals:
 6. **Travel & rhythm disruption** - Notices when your sleep patterns are off
 
 All of this creates a personalized experience where the guide adapts to you without you having to ask.
+
+---
+
+## Food Tracking
+
+### How does food tracking work?
+
+Food tracking in Mood Leaf has two modes:
+
+1. **Manual logging** - Open the Food Tracker from the home screen and log meals
+2. **AI auto-detection** - When you journal, Mood Leaf automatically detects food mentions and logs them
+
+### What is AI food detection?
+
+When you save a journal entry that mentions food (like "had pizza for lunch" or "skipped breakfast again"), Mood Leaf automatically detects the food and logs it with estimated calories. You'll see a brief notification showing what was logged.
+
+### How do I enable/disable food tracking?
+
+Go to **Settings** > **Food Tracking** where you can:
+- Enable/disable food tracking entirely
+- Toggle AI detection on/off
+- Set your daily calorie goal
+- View your tracking stats
+
+### Is food tracking required?
+
+No! Food tracking is completely optional. If you don't enable it, Mood Leaf works exactly the same - just without food logging.
+
+### How accurate are the calorie estimates?
+
+Mood Leaf uses a database of 80+ common foods with average calorie estimates. These are approximations meant for general awareness, not precise nutritional tracking. For detailed nutrition tracking, we recommend a dedicated nutrition app.
+
+### Does food tracking work with cycle tracking?
+
+Yes! If you have both food tracking and cycle tracking enabled, Mood Leaf can show you correlations between your diet and menstrual symptoms (like "cramps tend to be worse after eating fast food").
+
+---
+
+## Skills Tab
+
+### What is the Skills tab?
+
+The Skills tab (the sparkles icon in the bottom navigation) is your growth toolkit. It contains 50+ self-care techniques across 7 categories, plus coach customization options.
+
+### What are the skill categories?
+
+| Category | What's Included |
+|----------|-----------------|
+| **Grounding** | 5-4-3-2-1, Box Breathing, Cold Water Reset |
+| **Anxiety** | Worry Time, Thought Challenging, Containment |
+| **Sleep** | Wind Down, Sleep Stories, Old Time Radio, 4-7-8 Breathing |
+| **Focus** | Pomodoro, Brain Dump, Single-Tasking |
+| **Self-Care** | Joy List, Gratitude, Inner Critic Work |
+| **Relationships** | I-Statements, Boundary Scripts, Active Listening |
+| **Mindfulness** | Body Scan, RAIN Technique, Urge Surfing |
+
+### What are attributes?
+
+Mood Leaf uses a D&D-inspired growth system with 4 attributes:
+
+| Attribute | Emoji | Grows From |
+|-----------|-------|------------|
+| **Wisdom** | 🦉 | Journaling, reflection, weekly reviews |
+| **Resilience** | 🏔️ | Grounding exercises, coping during hard times |
+| **Clarity** | 💎 | Identifying patterns, viewing insights |
+| **Compassion** | 💚 | Self-kindness practices, affirmations |
+
+You earn points naturally by using the app - no grinding required!
+
+### How do I unlock skills?
+
+Most skills are available immediately. Some unlock as your attributes grow (shown as "Requires Wisdom Level 3"), and premium skills require a subscription.
+
+### What are Sleep Stories?
+
+Sleep Stories pulls relaxing audiobooks from public domain sources like Project Gutenberg and Librivox. Perfect for winding down at bedtime.
+
+### What is Old Time Radio?
+
+Classic radio dramas from the Internet Archive - shows like The Shadow, Suspense, and X Minus One. Great for relaxing while falling asleep or during quiet time.
+
+### Can I search for skills?
+
+Yes! The Skills tab has a search bar that filters skills by name, description, or category.
+
+### What are Easter eggs?
+
+Easter eggs are hidden surprises in software - a beloved tradition since 1979, when Atari programmer Warren Robinett secretly hid his name in the game *Adventure*. Mood Leaf continues this tradition with hidden `/` commands that unlock surprises.
+
+We won't tell you what they all are - that would spoil the fun! But here's a hint: try commands related to warmth, classic games, or the meaning of life. The curious will be rewarded.
+
+### What are Coach Unlocks?
+
+As you grow your attributes, you unlock coach customizations:
+- **Personality traits**: Light humor, celebration mode, tough love
+- **Conversation styles**: Deep questions, Socratic dialogue, story & metaphor
+- **Special abilities**: Pattern insights, enhanced memory, proactive check-ins
 
 ---
 

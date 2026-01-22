@@ -36,7 +36,9 @@ Complete technical documentation for the Mood Leaf codebase.
 28. [Emotion Detection System](#emotion-detection-system)
 29. [Teaching System](#teaching-system)
 30. [Fidget Pad Game](#fidget-pad-game)
-31. [Future Enhancements](#future-enhancements)
+31. [Food Tracking with AI Detection](#food-tracking-with-ai-detection)
+32. [Skills Progression Tab](#skills-progression-tab)
+33. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -4805,6 +4807,416 @@ Based on peer-reviewed research:
 - Cambridge Nutrition Review (food/menstrual symptoms)
 - Nature Scientific Reports 2025 (sleep/PMS)
 - PMC Systematic Reviews (lifestyle/cycle correlations)
+
+---
+
+## Food Tracking with AI Detection
+
+Track meals and calories with automatic detection from journal entries.
+
+### Files
+- `types/FoodTracking.ts` - Food items, settings, AI keywords
+- `services/foodTrackingService.ts` - Logging, detection, calorie tracking
+- `components/food/FoodTracker.tsx` - Full tracking UI
+- `app/food/index.tsx` - Food Tracker screen
+- `app/settings/food.tsx` - Settings page
+
+### Food Database
+80+ common foods with calorie information:
+```typescript
+export const COMMON_FOODS: FoodItem[] = [
+  { id: 'burger', name: 'Hamburger', calories: 540, servingSize: '1 burger', category: 'fast_food' },
+  { id: 'pizza_slice', name: 'Pizza Slice', calories: 285, servingSize: '1 slice', category: 'fast_food' },
+  // ...80+ items
+];
+```
+
+### AI Detection
+Detects food mentions in journal text:
+```typescript
+export const FOOD_KEYWORDS: FoodKeywordMap[] = [
+  {
+    foodId: 'burger',
+    keywords: ['burger', 'hamburger', 'cheeseburger'],
+    portionHints: [{ keyword: 'double', servings: 2 }]
+  },
+  // ...
+];
+
+// Usage in journal save
+const result = await autoLogFromJournal(journalText);
+// Returns: { logged: [entries], totalCalories: number }
+```
+
+### Settings
+- `enabled` - Toggle food tracking on/off
+- `aiDetectionEnabled` - Auto-detect from journals
+- `showCalories` - Display calorie counts
+- `calorieGoal` - Daily target (default 2000)
+
+---
+
+## Skills Progression Tab
+
+Bottom navigation tab with D&D-inspired growth system.
+
+### Files
+- `types/SkillProgression.ts` - Attributes, skills, unlocks
+- `services/skillProgressionService.ts` - Progression logic
+- `app/(tabs)/skills.tsx` - Tab screen with search
+
+### 4 Attributes
+```typescript
+export type AttributeType = 'wisdom' | 'resilience' | 'clarity' | 'compassion';
+```
+
+| Attribute | Emoji | Grows From |
+|-----------|-------|------------|
+| Wisdom | 🦉 | Journaling, reflection |
+| Resilience | 🏔️ | Grounding exercises, coping |
+| Clarity | 💎 | Patterns, triggers, insights |
+| Compassion | 💚 | Self-kindness, affirmations |
+
+### Point Awards
+```typescript
+export const POINT_SOURCES: AttributeSource[] = [
+  { action: 'journal_entry', attribute: 'wisdom', points: 5 },
+  { action: 'grounding_exercise', attribute: 'resilience', points: 8 },
+  { action: 'pattern_identified', attribute: 'clarity', points: 15 },
+  { action: 'self_kindness_practice', attribute: 'compassion', points: 10 },
+  // ...more sources
+];
+```
+
+### Level Thresholds
+```typescript
+export const LEVEL_THRESHOLDS = [0, 25, 75, 150, 300, 500, 750, 1000, 1500, 2000];
+// Level 1: 0-24 points, Level 2: 25-74 points, etc.
+```
+
+### 80+ Skills Across 9 Categories
+- **Grounding** (7): 5-4-3-2-1, Box Breathing, Physiological Sigh, etc.
+- **Anxiety** (7): Worry Time, Thought Challenging, Fact vs Feeling, etc.
+- **Sleep** (9): Wind Down, Sleep Stories, Old Time Radio, Ambient Sounds, etc.
+- **Focus** (7): Pomodoro, Brain Dump, Single-Tasking, etc.
+- **Self-Care** (7): Joy List, Gratitude, Inner Critic Work, etc.
+- **Relationships** (8): I-Statements, Boundary Scripts, DEAR MAN Script, etc.
+- **Mindfulness** (10): Body Scan, RAIN, Urge Surfing, Walking Meditation, etc.
+- **Crisis Tools** (6): Safety Plan Builder, Grounding Ladder, TIPP Skills, Window of Tolerance, etc.
+- **Body-Based** (5): Vagal Tone Exercises, Somatic Tracking, Shake It Out, etc.
+
+### Special Sleep Skills (Public Domain Content)
+- **Sleep Stories**: Pulls from Project Gutenberg, Librivox (free classic books)
+- **Old Time Radio**: Internet Archive (The Shadow, Suspense, X Minus One)
+
+**Resume Functionality Required**: Both skills must track playback position so users can pick up where they left off.
+
+### Coach Unlocks (16 Abilities)
+```typescript
+export const COACH_UNLOCKS: CoachUnlock[] = [
+  // Personality Traits
+  { id: 'humor_mode', type: 'personality_trait', requiredAttribute: 'wisdom', requiredLevel: 2 },
+  { id: 'celebration_mode', type: 'personality_trait', requiredAttribute: 'compassion', requiredLevel: 2 },
+  // Conversation Styles
+  { id: 'deep_questions', type: 'conversation_style', requiredAttribute: 'clarity', requiredLevel: 3 },
+  // Special Abilities
+  { id: 'pattern_insights', type: 'special_ability', requiredAttribute: 'clarity', requiredLevel: 4 },
+  // ...more
+];
+```
+
+### Search Feature
+Skills tab includes intelligent search that filters:
+- Skills by name, description, or category
+- Coach abilities by name or description
+
+### Easter Egg Commands
+```typescript
+export function checkEasterEgg(command: string): { found: boolean; message?: string; action?: string } {
+  const easterEggs = {
+    '/party': { message: '🎉🎊🥳 Party mode activated!', action: 'confetti' },
+    '/hug': { message: '🤗 Sending you a warm virtual hug!' },
+    '/coffee': { message: '☕ Here\'s a virtual coffee for your journey!' },
+    '/wisdom': { message: '🦉 "The only true wisdom..." - Socrates' },
+    '/42': { message: '🌌 The answer to life, the universe, and everything!' },
+    '/tree': { message: '🌳 Your tree appreciates you! 🌳' },
+    '/credits': { message: 'Made with 💚 by the Mood Leaf team', action: 'show_credits' },
+    '/debug': { message: 'Debug mode toggled', action: 'toggle_debug' },
+    '/snake': { message: '🐍 Loading retro Snake...', action: 'game_snake' },
+    '/pong': { message: '🏓 Loading classic Pong...', action: 'game_pong' },
+  };
+}
+```
+
+**Note:** Easter eggs are documented for developers but intentionally kept mysterious for users.
+
+---
+
+## Retro Games
+
+Classic games with vintage aesthetics, available as Easter eggs and skills.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `components/games/RetroSnake.tsx` | Nokia-style Snake game |
+| `components/games/RetroPong.tsx` | CRT-style Pong game |
+| `components/games/RetroAsteroids.tsx` | Vector graphics Asteroids |
+| `app/games/snake.tsx` | Snake route |
+| `app/games/pong.tsx` | Pong route |
+| `app/games/asteroids.tsx` | Asteroids route |
+
+### RetroSnake (Nokia Style)
+
+```typescript
+const COLORS = {
+  screenBg: '#9BBC0F',    // Classic Nokia green
+  screenDark: '#0F380F',  // Dark green
+  casing: '#2C2C2C',      // Phone casing
+};
+```
+
+Features: D-pad controls, Nokia phone casing visual, speaker holes aesthetic.
+
+### RetroPong (CRT Style)
+
+```typescript
+const COLORS = {
+  background: '#000000',
+  foreground: '#33FF33',  // Phosphor green
+  scanline: 'rgba(0, 0, 0, 0.15)',
+  glow: 'rgba(51, 255, 51, 0.3)',
+};
+```
+
+Features: Scanline effect, phosphor glow, AI opponent.
+
+### RetroAsteroids (Vector Style)
+
+```typescript
+const COLORS = {
+  background: '#000000',
+  vector: '#FFFFFF',
+  highlight: '#00FF00',
+};
+```
+
+Features: Vector graphics aesthetic, thrust/rotate controls, level progression.
+
+### Games Category in Skills
+
+```typescript
+export type SkillCategory = '...' | 'games';
+
+export const SKILL_CATEGORIES = {
+  games: { name: 'Mindful Games', emoji: '🎮', color: '#6366F1' },
+};
+```
+
+---
+
+## Playback Resume Service
+
+Tracks playback position for audio content (Sleep Stories, Old Time Radio).
+
+### File
+
+`services/playbackResumeService.ts`
+
+### Key Types
+
+```typescript
+export type ContentType = 'sleep_story' | 'old_time_radio';
+
+export interface PlaybackPosition {
+  contentId: string;
+  contentType: ContentType;
+  title: string;
+  positionSeconds: number;
+  durationSeconds: number;
+  lastPlayedAt: string;
+  completedAt?: string;
+}
+
+export interface ResumeInfo {
+  hasPosition: boolean;
+  positionSeconds: number;
+  percentComplete: number;
+  lastPlayedAt: string | null;
+}
+```
+
+### Key Functions
+
+```typescript
+// Save current position
+await savePlaybackPosition('sleep_story', 'Alice in Wonderland', 1234, 10800, { author: 'Lewis Carroll' });
+
+// Get position for resume
+const info = await getPlaybackPosition('sleep_story', 'Alice in Wonderland');
+// { hasPosition: true, positionSeconds: 1234, percentComplete: 11 }
+
+// Get continue listening list
+const { stories, radio } = await getContinueListening();
+
+// Format for display
+const message = formatResumeMessage(info);
+// "Resume from 20:34 (11%)"
+```
+
+---
+
+## Clinical Skills Components
+
+Evidence-based therapeutic skill components. These are presented as educational tools following Mood Leaf's philosophy - options to explore, not prescriptions to follow.
+
+### Files
+
+| Component | Route | Purpose |
+|-----------|-------|---------|
+| `components/skills/SafetyPlanBuilder.tsx` | `app/skills/safety-plan.tsx` | 8-step crisis safety plan |
+| `components/skills/GroundingLadder.tsx` | `app/skills/grounding-ladder.tsx` | 4-level escalating grounding |
+| `components/skills/TIPPSkills.tsx` | `app/skills/tipp.tsx` | DBT distress tolerance protocol |
+| `components/skills/WindowOfTolerance.tsx` | `app/skills/window-of-tolerance.tsx` | Arousal zone tracking |
+| `components/skills/VagalToneExercises.tsx` | `app/skills/vagal-tone.tsx` | 8 vagus nerve exercises |
+| `components/skills/ThoughtRecord.tsx` | `app/skills/thought-record.tsx` | CBT thought examination |
+| `components/skills/DEARMANScript.tsx` | `app/skills/dear-man.tsx` | Interpersonal effectiveness builder |
+| `components/skills/OppositeAction.tsx` | `app/skills/opposite-action.tsx` | DBT emotion regulation |
+| `components/skills/RadicalAcceptance.tsx` | `app/skills/radical-acceptance.tsx` | Accepting painful realities |
+
+### New Skill Categories
+
+```typescript
+export type SkillCategory =
+  | 'grounding' | 'anxiety' | 'sleep' | 'focus'
+  | 'self_care' | 'relationships' | 'mindfulness' | 'games'
+  | 'crisis'   // NEW - Crisis Tools
+  | 'body';    // NEW - Body-Based
+
+export const SKILL_CATEGORIES = {
+  // ... existing categories ...
+  crisis: { name: 'Crisis Tools', emoji: '🆘', color: '#EF4444' },
+  body: { name: 'Body-Based', emoji: '🫀', color: '#EC4899' },
+};
+```
+
+### SafetyPlanBuilder Component
+
+8-section crisis safety plan based on Stanley-Brown Safety Planning:
+
+```typescript
+interface SafetyPlanSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  placeholder: string;
+  multiline: boolean;
+  icon: string;
+}
+
+const SECTIONS: SafetyPlanSection[] = [
+  { id: 'warning_signs', title: 'Warning Signs', ... },
+  { id: 'coping_strategies', title: 'Internal Coping Strategies', ... },
+  { id: 'distractions', title: 'People & Places for Distraction', ... },
+  { id: 'support_people', title: 'People I Can Ask for Help', ... },
+  { id: 'professionals', title: 'Professionals I Can Contact', ... },
+  { id: 'emergency_contacts', title: 'Emergency Contacts', ... },
+  { id: 'safe_environment', title: 'Making My Environment Safe', ... },
+  { id: 'reasons_to_live', title: 'My Reasons for Living', ... },
+];
+```
+
+**Storage Key:** `mood_leaf_safety_plan`
+
+### TIPPSkills Component
+
+DBT distress tolerance protocol:
+- **T** = Temperature (cold water, ice)
+- **I** = Intense Exercise
+- **P** = Paced Breathing
+- **P** = Paired Muscle Relaxation
+
+Each step is presented with clear instructions and a timer option.
+
+### WindowOfTolerance Component
+
+Based on Dan Siegel's model - tracks three zones:
+- **Hyperarousal** (fight/flight): Anxiety, panic, hypervigilance
+- **Window** (optimal): Grounded, present, able to think clearly
+- **Hypoarousal** (freeze/shutdown): Numbness, dissociation, collapse
+
+**Storage Key:** `mood_leaf_window_log`
+
+Logs zone check-ins with timestamps for pattern recognition.
+
+### ThoughtRecord Component
+
+6-step CBT thought examination:
+1. **Situation** - What happened?
+2. **Automatic Thought** - What went through your mind?
+3. **Emotions** - How did you feel? (with intensity 1-10)
+4. **Evidence For** - Facts supporting the thought
+5. **Evidence Against** - Facts contradicting the thought
+6. **Balanced Thought** - More realistic perspective
+
+**Storage Key:** `mood_leaf_thought_records`
+
+Saves history for reviewing patterns over time.
+
+### DEARMANScript Component
+
+DBT interpersonal effectiveness script builder:
+- **D**escribe the situation factually
+- **E**xpress your feelings using "I" statements
+- **A**ssert what you want clearly
+- **R**einforce why it benefits them too
+- **M**indful - stay focused on your goal
+- **A**ppear confident
+- **N**egotiate if needed
+
+Includes share functionality for completed scripts.
+
+### OppositeAction Component
+
+DBT emotion regulation for when emotions aren't fitting the facts:
+
+```typescript
+interface EmotionData {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  urges: string[];           // What the emotion pushes you to do
+  oppositeActions: string[]; // What to try instead
+  whenToUse: string;         // When opposite action is appropriate
+}
+```
+
+Covers: Fear/Anxiety, Sadness/Depression, Anger, Shame/Guilt, Self-Disgust.
+
+### RadicalAcceptance Component
+
+Three-tab interface:
+1. **What It Is** - Pain + Non-Acceptance = Suffering formula
+2. **How To** - 5-step practice guide
+3. **Practice** - Interactive reflection questions
+
+Emphasizes that acceptance doesn't mean approval.
+
+### VagalToneExercises Component
+
+8 exercises for vagus nerve stimulation:
+1. Cold Water Face Dive
+2. Humming/Chanting
+3. Gargling
+4. Physiological Sigh
+5. Ear Massage
+6. Extended Exhale
+7. Voo Breath
+8. Eye Movements
+
+Filterable by difficulty (easy/medium).
 
 ---
 
