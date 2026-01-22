@@ -343,34 +343,161 @@ async function handleAuthAttempt(authData: AuthData): Promise<AuthResult> {
 ## Service Dependency Graph
 
 ```
-                    ┌─────────────────────────┐
-                    │  corePrincipleKernel.ts │
-                    │    (The Constitution)    │
-                    └───────────┬─────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                       │
-        ▼                       ▼                       ▼
-┌───────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ claudeAPI     │     │ conversation    │     │ journalStorage  │
-│ Service       │     │ Controller      │     │                 │
-│ (LLM context) │     │ (Response val)  │     │ (Privacy)       │
-└───────────────┘     └────────┬────────┘     └─────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-        ▼                      ▼                      ▼
-┌───────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ skillsService │     │ coachMode       │     │ moodPrint       │
-│ (Techniques)  │     │ Service         │     │ Service         │
-└───────────────┘     └─────────────────┘     └─────────────────┘
-        │                      │
-        ▼                      ▼
-┌───────────────────────────────────────┐
-│     neurologicalDifferencesService    │
-│     cognitiveProfileService           │
-│     (User understanding layer)        │
-└───────────────────────────────────────┘
+                         ┌─────────────────────────┐
+                         │  corePrincipleKernel.ts │
+                         │    (The Constitution)    │
+                         └───────────┬─────────────┘
+                                     │
+        ┌────────────────────────────┼────────────────────────────┐
+        │                            │                            │
+        ▼                            ▼                            ▼
+┌───────────────┐          ┌─────────────────┐          ┌─────────────────┐
+│ claudeAPI     │          │ conversation    │          │ journalStorage  │
+│ Service       │          │ Controller      │          │                 │
+│ (LLM context) │          │ (Response val)  │          │ (Privacy)       │
+└───────────────┘          └────────┬────────┘          └─────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    │               │               │
+                    ▼               ▼               ▼
+          ┌─────────────────┐ ┌─────────────┐ ┌─────────────────┐
+          │ socialConnection│ │ skillsServ  │ │ moodPrint       │
+          │ HealthService   │ │ (Techniques)│ │ Service         │
+          │ (Anti-Isolation)│ └─────────────┘ └─────────────────┘
+          └────────┬────────┘       │
+                   │                │
+                   ▼                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│     neurologicalDifferencesService                              │
+│     cognitiveProfileService                                     │
+│     (User understanding layer)                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Critical Flow: Social Connection**
+```
+Every User Message → processMessageForConnectionHealth()
+                          │
+                          ▼
+                   Detect Isolation?
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+         No/Mild                 Moderate/Severe
+              │                       │
+              ▼                       ▼
+        Normal flow          Add connection nudge
+                             Trigger kernel checks
+                             Include resources
+```
+
+---
+
+### 9. `socialConnectionHealthService.ts` (CRITICAL - Anti-Isolation)
+
+**What it does:** Prevents app from replacing human connection
+**Must check:** Isolation signals, external support needs, crisis detection
+
+```typescript
+import {
+  processMessageForConnectionHealth,
+  generateConnectionNudge,
+  getConnectionHealthForKernel,
+  getConnectionContextForLLM
+} from './socialConnectionHealthService';
+import { checkHardConstraints } from './corePrincipleKernel';
+
+// In conversation controller - process every user message
+async function handleUserMessage(message: string): Promise<void> {
+  // Check for isolation signals and update health
+  const { health, shouldNudge, nudgeType } = await processMessageForConnectionHealth(message);
+
+  // If severe isolation, the kernel will BLOCK responses that don't address it
+  if (health.isolationLevel === 'severe') {
+    const kernelCheck = checkHardConstraints({
+      action: 'coach_response',
+      connectionHealth: await getConnectionHealthForKernel(),
+      coachResponse: proposedResponse
+    });
+
+    // MUST_REFER_FOR_SEVERE_ISOLATION constraint kicks in
+    if (!kernelCheck.allowed) {
+      // Response will be blocked until it includes human connection suggestion
+    }
+  }
+
+  // Integrate nudges naturally
+  if (shouldNudge) {
+    const nudge = await generateConnectionNudge(nudgeType);
+    // Incorporate nudge.message into response
+    // Include nudge.resources if appropriate
+  }
+}
+
+// In Claude API service - include connection context
+async function buildSystemPrompt(): Promise<string> {
+  const parts: string[] = [];
+
+  parts.push(getPrincipleContextForLLM());
+  parts.push(await getCognitiveProfileContextForLLM());
+  parts.push(await getConnectionContextForLLM());  // ADD THIS
+
+  return parts.join('\n');
+}
+```
+
+**Key Constraints This Enables:**
+- `NO_REPLACING_THERAPY` - Never position app as therapy replacement
+- `NO_REPLACING_HUMAN_CONNECTION` - Never discourage real relationships
+- `MUST_REFER_FOR_SEVERE_ISOLATION` - MUST suggest support when isolated
+- `CRISIS_REQUIRES_HUMAN` - MUST provide crisis resources when needed
+
+---
+
+## Connection Health Integration Flow
+
+```
+User Message
+     │
+     ▼
+┌────────────────────────────────┐
+│ processMessageForConnectionHealth()
+│ - Detect friend/family mentions
+│ - Detect isolation signals
+│ - Detect app dependency signals
+│ - Update isolation level
+└────────────┬───────────────────┘
+             │
+             ▼
+┌────────────────────────────────┐
+│ getConnectionHealthForKernel()
+│ - Prepare context for checks
+└────────────┬───────────────────┘
+             │
+             ▼
+┌────────────────────────────────┐
+│ checkHardConstraints()
+│ - MUST_REFER_FOR_SEVERE_ISOLATION
+│ - CRISIS_REQUIRES_HUMAN
+│ - NO_REPLACING_THERAPY
+└────────────┬───────────────────┘
+             │
+     ┌───────┴───────┐
+     │               │
+     ▼               ▼
+ ALLOWED         BLOCKED
+     │               │
+     │               ▼
+     │    ┌──────────────────────┐
+     │    │ generateConnectionNudge()
+     │    │ - Add human connection ref
+     │    │ - Include resources
+     │    └──────────┬───────────┘
+     │               │
+     └───────┬───────┘
+             │
+             ▼
+      Final Response
 ```
 
 ---
@@ -385,6 +512,8 @@ When creating a new service, ask:
 - [ ] Does it send prompts to AI? → Include `getPrincipleContextForLLM()`
 - [ ] Does it make assumptions about the user? → Check against `CORE_BELIEFS`
 - [ ] Does it handle sensitive moments? → Check safety constraints
+- [ ] Could it contribute to isolation? → Integrate `socialConnectionHealthService`
+- [ ] Does it need to know about external support? → Check `getConnectionHealth()`
 
 ---
 
@@ -401,6 +530,70 @@ describe('ConversationController', () => {
 
     expect(validation.canSend).toBe(false);
     expect(validation.report.blockedBy[0].id).toBe('NO_VISUALIZATION_FOR_APHANTASIA');
+  });
+
+  it('requires human connection reference for severely isolated users', async () => {
+    const connectionHealth = {
+      isolationLevel: 'severe',
+      appDependencySignals: ['isolation_expressed', 'app_dependency_expressed']
+    };
+
+    // Response that doesn't mention human connection
+    const response = "Let's work through this together. What would help you feel better?";
+
+    const check = checkHardConstraints({
+      action: 'coach_response',
+      connectionHealth,
+      coachResponse: response
+    });
+
+    expect(check.allowed).toBe(false);
+    expect(check.violations[0].id).toBe('MUST_REFER_FOR_SEVERE_ISOLATION');
+  });
+
+  it('allows response with human connection reference for isolated users', async () => {
+    const connectionHealth = {
+      isolationLevel: 'severe',
+      appDependencySignals: ['isolation_expressed']
+    };
+
+    // Response that mentions reaching out
+    const response = "I hear you. Have you considered reaching out to a friend or family member about this? Sometimes talking to someone who knows you can really help.";
+
+    const check = checkHardConstraints({
+      action: 'coach_response',
+      connectionHealth,
+      coachResponse: response
+    });
+
+    expect(check.allowed).toBe(true);
+  });
+});
+
+describe('SocialConnectionHealthService', () => {
+  it('detects isolation signals in messages', async () => {
+    const signals = await analyzeMessageForConnectionSignals(
+      "I don't have anyone to talk to. No one understands me."
+    );
+
+    expect(signals.isolationSignal).toBe(true);
+  });
+
+  it('detects positive social mentions', async () => {
+    const signals = await analyzeMessageForConnectionSignals(
+      "I hung out with my friend Sarah yesterday and had a great time."
+    );
+
+    expect(signals.mentionedFriend).toBe(true);
+    expect(signals.positiveSocialMention).toBe(true);
+  });
+
+  it('detects app dependency signals', async () => {
+    const signals = await analyzeMessageForConnectionSignals(
+      "You're the only one I can talk to. People don't get me like you do."
+    );
+
+    expect(signals.appDependencySignal).toBe(true);
   });
 });
 ```

@@ -54,6 +54,12 @@ export const DEFAULT_CORE_BELIEFS = {
   ADAPT_DONT_FORCE: "We adapt to the user's mind, not force them into our framework.",
   HONEST_NOT_NICE: "We're honest, even when it's uncomfortable. Growth requires truth.",
   COMPANION_NOT_THERAPIST: "We're a thinking companion, not a replacement for professional help.",
+
+  // About Human Connection (Critical - prevents app dependency)
+  HUMANS_NEED_HUMANS: "No app can replace human connection. Real relationships are essential, not optional.",
+  CONNECTION_IS_MEDICINE: "Community, friends, and belonging are core human needs - we actively support these, not replace them.",
+  PROFESSIONAL_WHEN_NEEDED: "Some things need a human professional. We recognize our limits and actively refer out.",
+  WE_ARE_NOT_ENOUGH: "This app should be one tool in a life with real relationships - not a substitute for them.",
 } as const;
 
 // Mutable version that can be updated from backend
@@ -67,7 +73,7 @@ export let CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
 export interface HardConstraint {
   id: string;
   description: string;
-  category: 'safety' | 'privacy' | 'neurological' | 'ethical';
+  category: 'safety' | 'privacy' | 'neurological' | 'ethical' | 'connection';
   check: (context: ActionContext) => ConstraintResult;
 }
 
@@ -79,6 +85,17 @@ export interface ActionContext {
   dataInvolved?: string[];           // What data is being accessed/shared
   coachResponse?: string;            // If this is a coach response, the text
   techniquesSuggested?: string[];    // Any techniques being suggested
+
+  // Connection health context
+  connectionHealth?: {
+    isolationLevel: 'none' | 'mild' | 'moderate' | 'severe';
+    lastMentionedFriends?: string;   // ISO date
+    lastMentionedFamily?: string;    // ISO date
+    socialInteractionFrequency?: 'frequent' | 'occasional' | 'rare' | 'none';
+    appDependencySignals?: string[];
+    hasExternalSupport?: boolean;    // Therapist, groups, etc.
+  };
+  userMessage?: string;              // The user's input (for detecting crisis/isolation)
 }
 
 export interface ConstraintResult {
@@ -330,6 +347,136 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
       }
       return { allowed: true, severity: 'ok' };
     }
+  },
+
+  // === CONNECTION CONSTRAINTS ===
+  // These prevent the app from becoming a replacement for human connection
+
+  {
+    id: 'NO_REPLACING_THERAPY',
+    description: "NEVER position the app as a replacement for professional mental health support",
+    category: 'connection',
+    check: (ctx) => {
+      if (ctx.coachResponse) {
+        const replacementPhrases = [
+          "you don't need a therapist",
+          "you don't need therapy",
+          "i can be your therapist",
+          "who needs a therapist when",
+          "better than therapy",
+          "instead of therapy",
+          "therapy is unnecessary"
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const violation = replacementPhrases.find(phrase => responseLower.includes(phrase));
+
+        if (violation) {
+          return {
+            allowed: false,
+            violation: `Attempted to replace therapy with "${violation}"`,
+            severity: 'blocked',
+            alternative: 'Acknowledge the value of professional support when appropriate'
+          };
+        }
+      }
+      return { allowed: true, severity: 'ok' };
+    }
+  },
+
+  {
+    id: 'NO_REPLACING_HUMAN_CONNECTION',
+    description: "NEVER position the app as a substitute for real human relationships",
+    category: 'connection',
+    check: (ctx) => {
+      if (ctx.coachResponse) {
+        const isolatingPhrases = [
+          "you don't need anyone else",
+          "i'm all you need",
+          "who needs friends when",
+          "people are overrated",
+          "you're better off alone",
+          "humans are disappointing",
+          "i understand you better than they do"
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const violation = isolatingPhrases.find(phrase => responseLower.includes(phrase));
+
+        if (violation) {
+          return {
+            allowed: false,
+            violation: `Discouraged human connection with "${violation}"`,
+            severity: 'blocked',
+            alternative: 'Encourage real human relationships alongside app support'
+          };
+        }
+      }
+      return { allowed: true, severity: 'ok' };
+    }
+  },
+
+  {
+    id: 'MUST_REFER_FOR_SEVERE_ISOLATION',
+    description: "MUST suggest external support when severe isolation is detected",
+    category: 'connection',
+    check: (ctx) => {
+      if (ctx.connectionHealth?.isolationLevel === 'severe' && ctx.coachResponse) {
+        const referralPhrases = [
+          'therapist', 'counselor', 'support group', 'community',
+          'reach out to', 'talk to someone', 'professional help',
+          'friend', 'family', 'connect with'
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const hasReferral = referralPhrases.some(phrase => responseLower.includes(phrase));
+
+        if (!hasReferral) {
+          return {
+            allowed: false,
+            violation: 'Severe isolation detected but no external support suggested',
+            severity: 'blocked',
+            alternative: 'Include suggestion for professional support, community, or human connection'
+          };
+        }
+      }
+      return { allowed: true, severity: 'ok' };
+    }
+  },
+
+  {
+    id: 'CRISIS_REQUIRES_HUMAN',
+    description: "MUST direct to human help during mental health crisis signals",
+    category: 'connection',
+    check: (ctx) => {
+      const crisisKeywords = [
+        'want to die', 'kill myself', 'end it all', 'no reason to live',
+        'better off dead', 'suicide', 'hurt myself', 'self harm'
+      ];
+
+      const messageLower = (ctx.userMessage || '').toLowerCase();
+      const hasCrisisSignal = crisisKeywords.some(phrase => messageLower.includes(phrase));
+
+      if (hasCrisisSignal && ctx.coachResponse) {
+        const crisisResources = [
+          'crisis line', 'hotline', '988', 'emergency', 'professional',
+          'help', 'therapist', 'call', 'text'
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const hasResource = crisisResources.some(r => responseLower.includes(r));
+
+        if (!hasResource) {
+          return {
+            allowed: false,
+            violation: 'Crisis signal detected but no human resources provided',
+            severity: 'blocked',
+            alternative: 'Always provide crisis resources (988, crisis lines) for crisis signals'
+          };
+        }
+      }
+      return { allowed: true, severity: 'ok' };
+    }
   }
 ];
 
@@ -341,7 +488,7 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
 export interface SoftPrinciple {
   id: string;
   description: string;
-  category: 'coaching' | 'ux' | 'communication';
+  category: 'coaching' | 'ux' | 'communication' | 'connection';
   check: (context: ActionContext) => PrincipleResult;
 }
 
@@ -450,6 +597,98 @@ export const SOFT_PRINCIPLES: SoftPrinciple[] = [
     check: (ctx) => {
       // This would require knowing current phase - placeholder for now
       // Real implementation would check against cycle tracking
+      return { aligned: true };
+    }
+  },
+
+  // === CONNECTION PRINCIPLES ===
+  // Encourage human connection alongside app support
+
+  {
+    id: 'PERIODICALLY_ENCOURAGE_CONNECTION',
+    description: "Periodically encourage real human connection",
+    category: 'connection',
+    check: (ctx) => {
+      // Check if isolation is detected but not severe (severe is a hard constraint)
+      if (ctx.connectionHealth?.isolationLevel === 'moderate' && ctx.coachResponse) {
+        const connectionPhrases = [
+          'friend', 'family', 'someone', 'connect', 'reach out',
+          'talk to', 'community', 'group', 'together'
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const mentionsConnection = connectionPhrases.some(p => responseLower.includes(p));
+
+        if (!mentionsConnection) {
+          return {
+            aligned: false,
+            concern: 'Moderate isolation detected - consider mentioning human connection',
+            suggestion: 'Gently encourage reaching out to friends, family, or community'
+          };
+        }
+      }
+      return { aligned: true };
+    }
+  },
+
+  {
+    id: 'CELEBRATE_HUMAN_INTERACTIONS',
+    description: "Celebrate when user mentions positive human interactions",
+    category: 'connection',
+    check: (ctx) => {
+      // When user mentions friends/family, acknowledge it positively
+      if (ctx.userMessage) {
+        const socialMentions = [
+          'met with', 'talked to', 'hung out with', 'called', 'texted',
+          'friend', 'family', 'my partner', 'my mom', 'my dad',
+          'support group', 'my therapist'
+        ];
+
+        const messageLower = ctx.userMessage.toLowerCase();
+        const mentionedSocial = socialMentions.some(p => messageLower.includes(p));
+
+        if (mentionedSocial && ctx.coachResponse) {
+          const positivePhrases = ['great', 'good', 'wonderful', 'nice', 'glad', 'happy'];
+          const responseLower = ctx.coachResponse.toLowerCase();
+          const acknowledgedPositively = positivePhrases.some(p => responseLower.includes(p));
+
+          if (!acknowledgedPositively) {
+            return {
+              aligned: false,
+              concern: 'User mentioned social interaction but response didn\'t acknowledge it',
+              suggestion: 'Positively reinforce human connection when mentioned'
+            };
+          }
+        }
+      }
+      return { aligned: true };
+    }
+  },
+
+  {
+    id: 'SUGGEST_PROFESSIONAL_WHEN_STUCK',
+    description: "Suggest professional help when user seems persistently stuck",
+    category: 'connection',
+    check: (ctx) => {
+      // If same issue comes up repeatedly, suggest professional support
+      // This is a placeholder - real implementation would track conversation history
+      return { aligned: true };
+    }
+  },
+
+  {
+    id: 'DONT_BE_ONLY_SUPPORT',
+    description: "Recognize when user might be using app as only emotional support",
+    category: 'connection',
+    check: (ctx) => {
+      if (ctx.connectionHealth?.appDependencySignals &&
+          ctx.connectionHealth.appDependencySignals.length >= 3) {
+        return {
+          aligned: false,
+          concern: 'Multiple signs of app dependency detected',
+          suggestion: 'Gently explore whether user has other support sources and encourage diversifying'
+        };
+      }
       return { aligned: true };
     }
   }
@@ -649,6 +888,15 @@ export function getPrincipleContextForLLM(): string {
     parts.push(`- ${constraint.description}`);
   }
 
+  // Connection constraints (critical)
+  parts.push('\n\n=== HUMAN CONNECTION (Critical) ===');
+  parts.push('- You are ONE tool in a full life - never position yourself as a replacement for human relationships');
+  parts.push('- Real friends, family, and community are ESSENTIAL - actively encourage these');
+  parts.push('- For persistent issues or crisis: ALWAYS suggest professional help (therapist, counselor, hotline)');
+  parts.push('- If user seems isolated: Gently nudge toward human connection, support groups, therapy');
+  parts.push('- Celebrate when they mention positive human interactions');
+  parts.push('- Never discourage reaching out to others');
+
   // Reminders
   parts.push('\n\n=== REMEMBER ===');
   parts.push('- You are a companion, not a therapist');
@@ -656,6 +904,7 @@ export function getPrincipleContextForLLM(): string {
   parts.push('- Low phases are integration, not failure');
   parts.push('- Validate before advising');
   parts.push('- When in doubt, ask - don\'t assume');
+  parts.push('- NO APP CAN REPLACE HUMAN CONNECTION');
 
   return parts.join('\n');
 }
