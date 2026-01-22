@@ -1,9 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, View, ActivityIndicator } from 'react-native';
+import {
+  useColorScheme,
+  View,
+  ActivityIndicator,
+  Modal,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { isOnboardingComplete } from '@/services/coachPersonalityService';
+import {
+  isTourActive,
+  getCurrentStep,
+  nextStep,
+  skipTour,
+  getTotalSteps,
+  getTourState,
+  TourStep,
+} from '@/services/guidedTourService';
 
 /**
  * Mood Leaf Root Layout
@@ -20,8 +38,45 @@ export default function RootLayout() {
   const [isLoading, setIsLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
+  // Tour state - polled from tour service
+  const [tourActive, setTourActive] = useState(false);
+  const [currentTourStep, setCurrentTourStep] = useState<TourStep | null>(null);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+
   useEffect(() => {
     checkOnboarding();
+  }, []);
+
+  // Poll tour state to keep UI in sync
+  useEffect(() => {
+    const pollTourState = () => {
+      const active = isTourActive();
+      setTourActive(active);
+      if (active) {
+        const step = getCurrentStep();
+        const state = getTourState();
+        setCurrentTourStep(step);
+        setTourStepIndex(state.currentStep);
+      } else {
+        setCurrentTourStep(null);
+      }
+    };
+
+    // Poll every 100ms when tour might be active
+    const interval = setInterval(pollTourState, 100);
+    pollTourState(); // Initial check
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleTourNext = useCallback(async () => {
+    await nextStep();
+  }, []);
+
+  const handleSkipTour = useCallback(async () => {
+    await skipTour();
+    setTourActive(false);
+    setCurrentTourStep(null);
   }, []);
 
   useEffect(() => {
@@ -141,6 +196,112 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+
+      {/* Guided Tour Overlay - at root level so it persists across navigation */}
+      {tourActive && currentTourStep && (
+        <Modal
+          visible={tourActive}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={handleSkipTour}
+        >
+          <View style={styles.tourOverlay}>
+            <View style={[styles.tourCard, { backgroundColor: colors.background }]}>
+              <Text style={[styles.tourTitle, { color: colors.text }]}>
+                {currentTourStep.title}
+              </Text>
+              <Text style={[styles.tourText, { color: colors.textSecondary }]}>
+                {currentTourStep.displayText}
+              </Text>
+              <View style={styles.tourProgress}>
+                <Text style={[styles.tourProgressText, { color: colors.textMuted }]}>
+                  {tourStepIndex + 1} of {getTotalSteps()}
+                </Text>
+              </View>
+              <View style={styles.tourButtons}>
+                <TouchableOpacity
+                  style={styles.tourSkipButton}
+                  onPress={handleSkipTour}
+                >
+                  <Text style={[styles.tourSkipText, { color: colors.textMuted }]}>
+                    Skip Tour
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tourNextButton, { backgroundColor: colors.tint }]}
+                  onPress={handleTourNext}
+                >
+                  <Text style={styles.tourNextText}>
+                    {tourStepIndex === getTotalSteps() - 1 ? 'Finish' : 'Next'}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  tourOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  tourCard: {
+    width: '100%',
+    borderRadius: 20,
+    padding: 24,
+    maxWidth: 360,
+  },
+  tourTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  tourText: {
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  tourProgress: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  tourProgressText: {
+    fontSize: 13,
+  },
+  tourButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tourSkipButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  tourSkipText: {
+    fontSize: 15,
+  },
+  tourNextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+    gap: 8,
+  },
+  tourNextText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

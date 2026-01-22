@@ -68,15 +68,7 @@ import {
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateProfileReveal } from '@/services/cognitiveProfileService';
-import {
-  startTour,
-  isTourActive,
-  getCurrentStep,
-  nextStep,
-  skipTour,
-  getTotalSteps,
-  TourStep,
-} from '@/services/guidedTourService';
+import { startTour, isTourActive } from '@/services/guidedTourService';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -181,10 +173,18 @@ export default function CoachScreen() {
   const [showBreathingBall, setShowBreathingBall] = useState(false);
   const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
 
-  // Guided tour state
+  // Guided tour state - just track if active for hiding prompt
   const [tourActive, setTourActive] = useState(false);
-  const [currentTourStep, setCurrentTourStep] = useState<TourStep | null>(null);
-  const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  // Sync tour active state with service
+  useEffect(() => {
+    const syncTourState = () => {
+      setTourActive(isTourActive());
+    };
+    const interval = setInterval(syncTourState, 200);
+    syncTourState();
+    return () => clearInterval(interval);
+  }, []);
 
   // Map mode IDs to breathing patterns
   const getBreathingPatternForMode = (modeId: string): BreathingPattern | null => {
@@ -713,42 +713,28 @@ export default function CoachScreen() {
 
   // Start the interactive guided tour
   const handleStartTour = async () => {
-    setTourActive(true);
-    setTourStepIndex(0);
-
     await startTour(
-      // On step change callback
-      (step, index) => {
-        setCurrentTourStep(step);
-        setTourStepIndex(index);
-      },
+      // On step change callback - not needed, root layout polls
+      undefined,
       // On tour end callback
       () => {
-        setTourActive(false);
-        setCurrentTourStep(null);
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `tour-complete-${Date.now()}`,
-            text: "Tour complete! 🎉 You're all set. Feel free to chat with me anytime or explore the app on your own.",
-            source: 'system' as MessageSource,
-            timestamp: new Date(),
-          },
-        ]);
+        // Tour ended - the root layout handles the UI,
+        // we just need to update our messages when user returns
+        setMessages(prev => {
+          // Only add completion message if not already there
+          if (prev.some(m => m.id.startsWith('tour-complete'))) return prev;
+          return [
+            ...prev,
+            {
+              id: `tour-complete-${Date.now()}`,
+              text: "Tour complete! 🎉 You're all set. Feel free to chat with me anytime or explore the app on your own.",
+              source: 'system' as MessageSource,
+              timestamp: new Date(),
+            },
+          ];
+        });
       }
     );
-  };
-
-  // Handle tour skip
-  const handleSkipTour = async () => {
-    await skipTour();
-    setTourActive(false);
-    setCurrentTourStep(null);
-  };
-
-  // Handle tour next step
-  const handleTourNext = async () => {
-    await nextStep();
   };
 
   // Group modes by category for display
@@ -1108,53 +1094,8 @@ export default function CoachScreen() {
         </View>
       </Modal>
 
-      {/* Guided Tour Overlay */}
-      {tourActive && currentTourStep && (
-        <Modal
-          visible={tourActive}
-          animationType="fade"
-          transparent={true}
-          onRequestClose={handleSkipTour}
-        >
-          <View style={styles.tourOverlay}>
-            <View style={[styles.tourCard, { backgroundColor: colors.background }]}>
-              <Text style={[styles.tourTitle, { color: colors.text }]}>
-                {currentTourStep.title}
-              </Text>
-              <Text style={[styles.tourText, { color: colors.textSecondary }]}>
-                {currentTourStep.displayText}
-              </Text>
-              <View style={styles.tourProgress}>
-                <Text style={[styles.tourProgressText, { color: colors.textMuted }]}>
-                  {tourStepIndex + 1} of {getTotalSteps()}
-                </Text>
-              </View>
-              <View style={styles.tourButtons}>
-                <TouchableOpacity
-                  style={[styles.tourSkipButton]}
-                  onPress={handleSkipTour}
-                >
-                  <Text style={[styles.tourSkipText, { color: colors.textMuted }]}>
-                    Skip Tour
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tourNextButton, { backgroundColor: colors.tint }]}
-                  onPress={handleTourNext}
-                >
-                  <Text style={styles.tourNextText}>
-                    {tourStepIndex === getTotalSteps() - 1 ? 'Finish' : 'Next'}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Tour Start Prompt - shown after first-time welcome */}
-      {messages.length === 1 && messages[0].id === 'welcome-first' && (
+      {/* Tour Start Prompt - shown after first-time welcome, hidden during tour */}
+      {messages.length === 1 && messages[0].id === 'welcome-first' && !tourActive && (
         <View style={[styles.tourPrompt, { backgroundColor: colors.card }]}>
           <TouchableOpacity
             style={[styles.tourStartButton, { backgroundColor: colors.tint }]}
@@ -1538,65 +1479,7 @@ const styles = StyleSheet.create({
   skipWalkthroughButton: {
     paddingVertical: 8,
   },
-  // Guided tour styles
-  tourOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  tourCard: {
-    width: '100%',
-    borderRadius: 20,
-    padding: 24,
-    maxWidth: 360,
-  },
-  tourTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  tourText: {
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  tourProgress: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  tourProgressText: {
-    fontSize: 13,
-  },
-  tourButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  tourSkipButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  tourSkipText: {
-    fontSize: 15,
-  },
-  tourNextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    gap: 8,
-  },
-  tourNextText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  // Tour start prompt styles (overlay is in _layout.tsx)
   tourPrompt: {
     position: 'absolute',
     bottom: 100,
