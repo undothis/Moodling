@@ -107,6 +107,44 @@ export type StructurePreference =
 export type SensitivityLevel = 'highly_sensitive' | 'moderate' | 'low_sensitivity';
 
 /**
+ * Mental imagery ability (visualization)
+ * Aphantasia spectrum - crucial for coaching techniques
+ */
+export type MentalImageryAbility =
+  | 'aphantasia'           // Cannot visualize at all - "mind's eye is blind"
+  | 'hypophantasia'        // Weak/dim mental images
+  | 'typical'              // Average visualization ability
+  | 'hyperphantasia';      // Extremely vivid, almost real imagery
+
+/**
+ * Internal monologue presence
+ * Some people have constant inner speech, others think in abstract concepts
+ */
+export type InternalMonologue =
+  | 'constant'             // Always talking to themselves internally
+  | 'frequent'             // Often have inner speech
+  | 'situational'          // Only in certain contexts
+  | 'rare'                 // Rarely have verbal thoughts
+  | 'none';                // Think in concepts/feelings, not words
+
+/**
+ * Auditory imagination (can you "hear" music/voices in your head?)
+ */
+export type AuditoryImagination =
+  | 'vivid'                // Can clearly "hear" music, voices, sounds
+  | 'moderate'             // Some auditory imagination
+  | 'weak'                 // Faint or unclear
+  | 'none';                // Cannot imagine sounds
+
+/**
+ * Prospective imagination (can you imagine future scenarios?)
+ */
+export type ProspectiveImagination =
+  | 'vivid'                // Can vividly imagine future scenarios
+  | 'conceptual'           // Understand future but can't "see" it
+  | 'limited';             // Difficulty imagining future scenarios
+
+/**
  * The complete cognitive profile
  */
 export interface CognitiveProfile {
@@ -117,6 +155,12 @@ export interface CognitiveProfile {
   // Legacy: Core processing (for backward compatibility)
   primaryProcessing: ProcessingStyle;
   secondaryProcessing: ProcessingStyle | null;
+
+  // === NEUROLOGICAL DIFFERENCES (Critical for technique selection) ===
+  mentalImagery: MentalImageryAbility;
+  internalMonologue: InternalMonologue;
+  auditoryImagination: AuditoryImagination;
+  prospectiveImagination: ProspectiveImagination;
 
   // Learning
   learningStyles: LearningStyle[]; // Can have multiple
@@ -470,6 +514,140 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     adaptiveDepth: 'basic'
   },
 
+  // ========== NEUROLOGICAL DIFFERENCES (Critical for technique selection) ==========
+  // These questions detect aphantasia, internal monologue differences, etc.
+  // Essential because many coaching techniques assume abilities not everyone has
+
+  {
+    id: 'mental_imagery',
+    text: "When someone says 'picture a beach', what happens in your mind?",
+    subtext: "This isn't about imagination skill - brains genuinely work differently here.",
+    type: 'choice',
+    options: [
+      {
+        value: 'vivid',
+        label: "I see it clearly, almost like a photo or movie",
+        description: "Colors, details, movement - it's all there",
+        indicates: { mentalImagery: 'hyperphantasia' }
+      },
+      {
+        value: 'moderate',
+        label: "I see something, but it's fuzzy or fleeting",
+        description: "I can imagine it, but it's not vivid",
+        indicates: { mentalImagery: 'typical' }
+      },
+      {
+        value: 'weak',
+        label: "I get a vague sense, but not really a picture",
+        description: "More like knowing what a beach is than seeing one",
+        indicates: { mentalImagery: 'hypophantasia' }
+      },
+      {
+        value: 'nothing',
+        label: "Nothing visual happens - I just think the concept 'beach'",
+        description: "My mind's eye is basically blind",
+        indicates: { mentalImagery: 'aphantasia', discoveredStrengths: ['conceptual thinker'] }
+      }
+    ],
+    measures: ['mentalImagery', 'discoveredStrengths'],
+    adaptiveDepth: 'basic'
+  },
+
+  {
+    id: 'internal_voice',
+    text: "Do you have an internal voice - like talking to yourself in your head?",
+    subtext: "Some people think in words, others in concepts, images, or feelings.",
+    type: 'choice',
+    options: [
+      {
+        value: 'constant',
+        label: "Yes, constantly - there's always a voice narrating",
+        indicates: { internalMonologue: 'constant' }
+      },
+      {
+        value: 'frequent',
+        label: "Often, especially when thinking through things",
+        indicates: { internalMonologue: 'frequent' }
+      },
+      {
+        value: 'sometimes',
+        label: "Sometimes, but I also think in other ways",
+        indicates: { internalMonologue: 'situational' }
+      },
+      {
+        value: 'rarely',
+        label: "Rarely - my thoughts aren't usually in words",
+        indicates: { internalMonologue: 'rare' }
+      },
+      {
+        value: 'never',
+        label: "I don't really have verbal thoughts",
+        description: "I think in feelings, concepts, or abstract ways",
+        indicates: { internalMonologue: 'none', discoveredStrengths: ['non-verbal thinker'] }
+      }
+    ],
+    measures: ['internalMonologue', 'discoveredStrengths'],
+    adaptiveDepth: 'basic'
+  },
+
+  {
+    id: 'auditory_imagination',
+    text: "Can you 'hear' music in your head - like actually hear it, not just remember it exists?",
+    type: 'choice',
+    options: [
+      {
+        value: 'vivid',
+        label: "Yes, I can hear songs clearly in my mind",
+        description: "I can replay music almost like it's playing",
+        indicates: { auditoryImagination: 'vivid' }
+      },
+      {
+        value: 'moderate',
+        label: "Sort of - I can recall melodies but it's not vivid",
+        indicates: { auditoryImagination: 'moderate' }
+      },
+      {
+        value: 'weak',
+        label: "Barely - I know the song but can't really 'hear' it",
+        indicates: { auditoryImagination: 'weak' }
+      },
+      {
+        value: 'none',
+        label: "No - I can't imagine sounds at all",
+        indicates: { auditoryImagination: 'none' }
+      }
+    ],
+    measures: ['auditoryImagination'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'future_visualization',
+    text: "When you think about a future event, can you 'see' yourself there?",
+    subtext: "Like imagining yourself at a party next week, or in a new job.",
+    type: 'choice',
+    options: [
+      {
+        value: 'vivid',
+        label: "Yes, I can visualize future scenarios clearly",
+        indicates: { prospectiveImagination: 'vivid' }
+      },
+      {
+        value: 'conceptual',
+        label: "I can think about it, but not visually 'see' it",
+        description: "I understand the future conceptually",
+        indicates: { prospectiveImagination: 'conceptual' }
+      },
+      {
+        value: 'limited',
+        label: "It's hard for me to imagine future scenarios",
+        indicates: { prospectiveImagination: 'limited' }
+      }
+    ],
+    measures: ['prospectiveImagination'],
+    adaptiveDepth: 'standard'
+  },
+
   // ========== OPTIONAL: IDENTITY EXPERIENCES ==========
   {
     id: 'identity_experiences',
@@ -737,6 +915,12 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   // Legacy processing (backward compatible)
   primaryProcessing: 'stories',
   secondaryProcessing: null,
+  // Neurological differences (default to typical, detect via onboarding)
+  mentalImagery: 'typical',
+  internalMonologue: 'frequent',
+  auditoryImagination: 'moderate',
+  prospectiveImagination: 'vivid',
+  // Learning
   learningStyles: ['visual', 'auditory'],
   bestLearningContext: '',
   socialOrientation: 'selective',
@@ -1131,6 +1315,43 @@ export async function generateProfileReveal(): Promise<string> {
     parts.push(`**Your strengths:** ${profile.discoveredStrengths.join(', ')}`);
   }
 
+  // === NEUROLOGICAL DIFFERENCES ===
+  // This validates their experience and sets expectations
+
+  const hasNeurologicalDifferences =
+    profile.mentalImagery === 'aphantasia' ||
+    profile.mentalImagery === 'hypophantasia' ||
+    profile.internalMonologue === 'none' ||
+    profile.internalMonologue === 'rare' ||
+    profile.auditoryImagination === 'none';
+
+  if (hasNeurologicalDifferences) {
+    parts.push('');
+    parts.push("**About your mind's unique wiring:**");
+
+    if (profile.mentalImagery === 'aphantasia') {
+      parts.push("You have aphantasia - your mind's eye doesn't create visual images. This isn't a deficiency; it's a different way of thinking. You likely excel at conceptual and abstract thinking. I will NEVER ask you to 'visualize' or 'picture' anything - that simply doesn't work for you, and that's completely fine.");
+    } else if (profile.mentalImagery === 'hypophantasia') {
+      parts.push("Your mental imagery is on the subtler side. Visualization exercises might feel forced or frustrating. I'll use more sensory or conceptual approaches instead.");
+    }
+
+    if (profile.internalMonologue === 'none') {
+      parts.push("You think without an internal voice - your thoughts aren't in words. This is more common than people realize. I won't ask 'what is your inner voice saying' because that's not how your mind works. Instead, we'll explore your thoughts through feelings, concepts, or body sensations.");
+    } else if (profile.internalMonologue === 'rare') {
+      parts.push("Your internal monologue is quieter than most. I'll focus more on feelings and sensations than verbal self-talk.");
+    }
+
+    if (profile.auditoryImagination === 'none') {
+      parts.push("You can't imagine sounds in your head - no 'hearing' music mentally. Audio-based techniques aren't for you.");
+    }
+  }
+
+  // Hyperphantasia note (opposite of aphantasia)
+  if (profile.mentalImagery === 'hyperphantasia') {
+    parts.push('');
+    parts.push("**About your vivid inner world:** You have hyperphantasia - extremely vivid mental imagery. This is a gift for creativity and memory, though it might sometimes feel overwhelming. Visual metaphors and imagery-based reflection will work really well for you.");
+  }
+
   // Traditional learning note
   if (profile.traditionalLearningFit === 'struggled') {
     parts.push('');
@@ -1175,6 +1396,23 @@ export interface CoachAdaptations {
 
   // Length
   preferBrief: boolean;
+
+  // === NEUROLOGICAL ADAPTATIONS (Critical) ===
+  // These MUST be respected - using wrong techniques is harmful
+
+  // Visualization
+  canUseVisualization: boolean;       // false = NEVER say "picture this" or "visualize"
+  visualizationAlternative: 'conceptual' | 'sensory' | 'verbal' | 'none';
+
+  // Internal dialogue techniques
+  canUseInnerVoice: boolean;          // false = don't ask "what is your inner voice saying"
+  innerVoiceAlternative: 'feelings' | 'body' | 'concepts' | 'none';
+
+  // Audio-based techniques
+  canUseAudioImagination: boolean;    // false = don't say "imagine hearing"
+
+  // Future visualization
+  canUseFutureVisualization: boolean; // false = don't say "picture yourself in 5 years"
 }
 
 /**
@@ -1263,7 +1501,38 @@ export async function getCoachAdaptations(): Promise<CoachAdaptations> {
     // Length based on communication
     preferBrief:
       profile.communicationStyle === 'direct' ||
-      profile.prefersWrittenOrSpoken === 'spoken'
+      profile.prefersWrittenOrSpoken === 'spoken',
+
+    // === NEUROLOGICAL ADAPTATIONS ===
+    // These are critical - using wrong techniques can be harmful/frustrating
+
+    // Visualization ability
+    canUseVisualization:
+      profile.mentalImagery === 'typical' ||
+      profile.mentalImagery === 'hyperphantasia',
+
+    visualizationAlternative:
+      profile.mentalImagery === 'aphantasia' ? 'conceptual' :
+      profile.mentalImagery === 'hypophantasia' ? 'sensory' : 'none',
+
+    // Internal monologue
+    canUseInnerVoice:
+      profile.internalMonologue === 'constant' ||
+      profile.internalMonologue === 'frequent',
+
+    innerVoiceAlternative:
+      profile.internalMonologue === 'none' ? 'feelings' :
+      profile.internalMonologue === 'rare' ? 'body' : 'none',
+
+    // Audio imagination
+    canUseAudioImagination:
+      profile.auditoryImagination === 'vivid' ||
+      profile.auditoryImagination === 'moderate',
+
+    // Future visualization
+    canUseFutureVisualization:
+      profile.prospectiveImagination === 'vivid' &&
+      (profile.mentalImagery === 'typical' || profile.mentalImagery === 'hyperphantasia')
   };
 }
 
@@ -1371,6 +1640,48 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
   }
   if (adaptations.preferBrief) parts.push('- Keep responses brief');
   if (adaptations.giveTimeToThink) parts.push('- Don\'t ask rapid questions');
+
+  // === CRITICAL: NEUROLOGICAL DIFFERENCES ===
+  // These MUST be respected - using wrong techniques is harmful
+
+  parts.push('\nCRITICAL NEUROLOGICAL ADAPTATIONS:');
+
+  // Aphantasia / visualization
+  if (!adaptations.canUseVisualization) {
+    parts.push('- **NEVER use visualization** - they have aphantasia (cannot create mental images)');
+    parts.push('  - DON\'T say: "picture this", "visualize", "imagine seeing", "close your eyes and see"');
+    parts.push('  - DO use: conceptual descriptions, verbal explanations, physical sensations');
+    if (adaptations.visualizationAlternative === 'conceptual') {
+      parts.push('  - Alternative: Use conceptual/abstract descriptions instead of visual ones');
+    } else if (adaptations.visualizationAlternative === 'sensory') {
+      parts.push('  - Alternative: Use other senses (touch, sound, smell) instead of visual');
+    }
+  } else if (profile.mentalImagery === 'hyperphantasia') {
+    parts.push('- Has hyperphantasia (extremely vivid mental imagery) - visual metaphors work very well');
+  }
+
+  // Internal monologue
+  if (!adaptations.canUseInnerVoice) {
+    parts.push('- **Avoid inner voice techniques** - they don\'t have a constant internal monologue');
+    parts.push('  - DON\'T ask: "what is your inner voice saying", "notice your self-talk"');
+    if (adaptations.innerVoiceAlternative === 'feelings') {
+      parts.push('  - Alternative: Ask about feelings/emotions instead of thoughts');
+    } else if (adaptations.innerVoiceAlternative === 'body') {
+      parts.push('  - Alternative: Ask about body sensations instead of verbal thoughts');
+    }
+  }
+
+  // Audio imagination
+  if (!adaptations.canUseAudioImagination) {
+    parts.push('- Cannot imagine sounds - don\'t use audio-based imagery');
+  }
+
+  // Future visualization
+  if (!adaptations.canUseFutureVisualization) {
+    parts.push('- Cannot visualize future scenarios - use conceptual future planning instead');
+    parts.push('  - DON\'T say: "picture yourself in 5 years"');
+    parts.push('  - DO say: "what would you want to be true in 5 years"');
+  }
 
   // Strengths
   if (profile.discoveredStrengths.length > 0) {
