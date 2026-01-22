@@ -28,11 +28,13 @@ export default function RootLayout() {
     if (isLoading) return;
 
     const inOnboarding = segments[0] === 'onboarding';
+    const inCognitiveOnboarding = segments[0] === 'cognitive-onboarding';
     const inGuide = segments[0] === 'guide';
+    const inCoach = segments[0] === 'coach';
 
-    // Only redirect TO onboarding if needed and not already there
+    // Only redirect TO onboarding if needed and not already in onboarding-related screens
     // Don't redirect AWAY from onboarding - let the screen handle its own navigation
-    if (needsOnboarding && !inOnboarding && !inGuide) {
+    if (needsOnboarding && !inOnboarding && !inCognitiveOnboarding && !inGuide && !inCoach) {
       router.replace('/onboarding');
     }
   }, [isLoading, needsOnboarding, segments]);
