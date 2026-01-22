@@ -12,11 +12,13 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  PanResponder,
   Vibration,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HIGH_SCORE_KEY = 'mood_leaf_asteroids_high_score';
 
 // Vector graphics colors (Asteroids arcade style)
 const COLORS = {
@@ -104,12 +106,28 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
   const [gameOver, setGameOver] = useState(false);
   const [level, setLevel] = useState(1);
   const [isInvincible, setIsInvincible] = useState(false);
+  const [isThrusting, setIsThrusting] = useState(false);
+  const [highScore, setHighScore] = useState(0);
 
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const asteroidIdRef = useRef(0);
   const bulletIdRef = useRef(0);
   const rotatingRef = useRef<'left' | 'right' | null>(null);
   const thrustingRef = useRef(false);
+
+  // Load high score on mount
+  useEffect(() => {
+    AsyncStorage.getItem(HIGH_SCORE_KEY).then((stored) => {
+      if (stored) setHighScore(parseInt(stored, 10));
+    });
+  }, []);
+
+  // Save high score when it changes
+  useEffect(() => {
+    if (highScore > 0) {
+      AsyncStorage.setItem(HIGH_SCORE_KEY, highScore.toString());
+    }
+  }, [highScore]);
 
   // Create initial asteroids
   const createAsteroids = useCallback(
@@ -302,7 +320,11 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
 
           // Score
           const points = [20, 50, 100][asteroid.size];
-          setScore((s) => s + points);
+          setScore((s) => {
+            const newScore = s + points;
+            setHighScore((hs) => Math.max(hs, newScore));
+            return newScore;
+          });
 
           // Split or remove asteroid
           if (asteroid.size < 2) {
@@ -398,28 +420,6 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
 
   // Render ship as triangle
   const renderShip = () => {
-    const shipPoints = [
-      { x: SHIP_SIZE, y: 0 }, // Nose
-      { x: -SHIP_SIZE / 2, y: -SHIP_SIZE / 2 }, // Left wing
-      { x: -SHIP_SIZE / 3, y: 0 }, // Rear indent
-      { x: -SHIP_SIZE / 2, y: SHIP_SIZE / 2 }, // Right wing
-    ];
-
-    // Transform points based on rotation
-    const transformedPoints = shipPoints
-      .map((p) => ({
-        x:
-          ship.pos.x +
-          p.x * Math.cos(ship.rotation) -
-          p.y * Math.sin(ship.rotation),
-        y:
-          ship.pos.y +
-          p.x * Math.sin(ship.rotation) +
-          p.y * Math.cos(ship.rotation),
-      }))
-      .map((p) => `${p.x},${p.y}`)
-      .join(' ');
-
     return (
       <View
         key="ship"
@@ -440,7 +440,7 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
         >
           <View style={styles.shipNose} />
           <View style={styles.shipBody} />
-          {thrustingRef.current && (
+          {isThrusting && (
             <View style={styles.thrustFlame} />
           )}
         </View>
@@ -502,10 +502,13 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
 
         {/* Score & Lives */}
         <View style={styles.hud}>
-          <Text style={styles.hudText}>{score.toString().padStart(6, '0')}</Text>
+          <View>
+            <Text style={styles.hudText}>{score.toString().padStart(6, '0')}</Text>
+            <Text style={styles.hudTextSmall}>HI: {highScore}</Text>
+          </View>
           <View style={styles.livesContainer}>
             {[...Array(lives)].map((_, i) => (
-              <View key={i} style={styles.lifeIcon} />
+              <View key={i} style={[styles.lifeIcon, i > 0 && styles.lifeIconMargin]} />
             ))}
           </View>
           <Text style={styles.hudText}>LVL {level}</Text>
@@ -564,7 +567,7 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
               <Ionicons name="arrow-undo" size={24} color={COLORS.vector} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.controlButton}
+              style={[styles.controlButton, styles.rotateButtonMargin]}
               onPressIn={() => (rotatingRef.current = 'right')}
               onPressOut={() => (rotatingRef.current = null)}
               activeOpacity={0.7}
@@ -575,8 +578,14 @@ export default function RetroAsteroids({ onClose }: RetroAsteroidsProps) {
 
           <TouchableOpacity
             style={[styles.controlButton, styles.thrustButton]}
-            onPressIn={() => (thrustingRef.current = true)}
-            onPressOut={() => (thrustingRef.current = false)}
+            onPressIn={() => {
+              thrustingRef.current = true;
+              setIsThrusting(true);
+            }}
+            onPressOut={() => {
+              thrustingRef.current = false;
+              setIsThrusting(false);
+            }}
             activeOpacity={0.7}
           >
             <Ionicons name="caret-up" size={28} color={COLORS.vector} />
@@ -641,9 +650,13 @@ const styles = StyleSheet.create({
     color: COLORS.vector,
     letterSpacing: 2,
   },
+  hudTextSmall: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 10,
+    color: COLORS.vectorDim,
+  },
   livesContainer: {
     flexDirection: 'row',
-    gap: 8,
   },
   lifeIcon: {
     width: 0,
@@ -655,6 +668,9 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderBottomColor: COLORS.vector,
     transform: [{ rotate: '-90deg' }],
+  },
+  lifeIconMargin: {
+    marginLeft: 8,
   },
   screenBezel: {
     backgroundColor: '#000',
@@ -773,7 +789,9 @@ const styles = StyleSheet.create({
   },
   rotateControls: {
     flexDirection: 'row',
-    gap: 8,
+  },
+  rotateButtonMargin: {
+    marginLeft: 8,
   },
   controlButton: {
     width: 50,

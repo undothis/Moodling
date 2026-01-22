@@ -16,6 +16,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HIGH_SCORE_KEY = 'mood_leaf_snake_high_score';
 
 // Nokia-style colors
 const COLORS = {
@@ -66,6 +69,13 @@ export default function RetroSnake({ onClose }: RetroSnakeProps) {
 
   const directionRef = useRef(direction);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load high score on mount
+  useEffect(() => {
+    AsyncStorage.getItem(HIGH_SCORE_KEY).then((stored) => {
+      if (stored) setHighScore(parseInt(stored, 10));
+    });
+  }, []);
 
   // Generate random food position
   const generateFood = useCallback(
@@ -166,7 +176,13 @@ export default function RetroSnake({ onClose }: RetroSnakeProps) {
           // Eat food - don't remove tail
           setScore((s) => {
             const newScore = s + 10;
-            setHighScore((hs) => Math.max(hs, newScore));
+            setHighScore((hs) => {
+              const newHigh = Math.max(hs, newScore);
+              if (newHigh > hs) {
+                AsyncStorage.setItem(HIGH_SCORE_KEY, newHigh.toString());
+              }
+              return newHigh;
+            });
             return newScore;
           });
           setFood(generateFood(newSnake));
@@ -360,7 +376,7 @@ export default function RetroSnake({ onClose }: RetroSnakeProps) {
         {/* Nokia-style speaker holes */}
         <View style={styles.speakerHoles}>
           {[...Array(6)].map((_, i) => (
-            <View key={i} style={styles.speakerHole} />
+            <View key={i} style={[styles.speakerHole, i > 0 && styles.speakerHoleMargin]} />
           ))}
         </View>
       </View>
@@ -471,8 +487,9 @@ const styles = StyleSheet.create({
   controlsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 20,
-    gap: 40,
+    paddingHorizontal: 20,
   },
   dpad: {
     width: 100,
@@ -514,7 +531,7 @@ const styles = StyleSheet.create({
     top: 34,
   },
   actionButtons: {
-    gap: 12,
+    // Actions stacked vertically
   },
   actionButton: {
     backgroundColor: COLORS.screenMid,
@@ -532,7 +549,9 @@ const styles = StyleSheet.create({
   speakerHoles: {
     flexDirection: 'row',
     marginTop: 20,
-    gap: 6,
+  },
+  speakerHoleMargin: {
+    marginLeft: 6,
   },
   speakerHole: {
     width: 6,

@@ -18,6 +18,9 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const HIGH_SCORE_KEY = 'mood_leaf_pong_wins';
 
 // Classic arcade colors
 const COLORS = {
@@ -59,10 +62,18 @@ export default function RetroPong({ onClose }: RetroPongProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<'player' | 'ai' | null>(null);
-  const [showServe, setShowServe] = useState(true);
+  const [showServe, setShowServe] = useState(false); // Start false to avoid flash
+  const [totalWins, setTotalWins] = useState(0);
 
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const aiMoveRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load total wins on mount
+  useEffect(() => {
+    AsyncStorage.getItem(HIGH_SCORE_KEY).then((stored) => {
+      if (stored) setTotalWins(parseInt(stored, 10));
+    });
+  }, []);
 
   // Touch handling for player paddle
   const panResponder = useRef(
@@ -82,12 +93,14 @@ export default function RetroPong({ onClose }: RetroPongProps) {
 
   // Reset ball to center
   const resetBall = useCallback(
-    (direction: 1 | -1) => {
+    (direction: 1 | -1, showServePrompt: boolean = true) => {
       setBallX(gameWidth / 2 - BALL_SIZE / 2);
       setBallY(gameHeight / 2 - BALL_SIZE / 2);
       setBallVelX(BALL_SPEED * direction);
       setBallVelY((Math.random() - 0.5) * BALL_SPEED);
-      setShowServe(true);
+      if (showServePrompt) {
+        setShowServe(true);
+      }
     },
     [gameWidth, gameHeight]
   );
@@ -98,7 +111,7 @@ export default function RetroPong({ onClose }: RetroPongProps) {
     setAiScore(0);
     setPlayerY(gameHeight / 2 - PADDLE_HEIGHT / 2);
     setAiY(gameHeight / 2 - PADDLE_HEIGHT / 2);
-    resetBall(1);
+    resetBall(1, false); // Don't show serve on game start
     setGameOver(false);
     setWinner(null);
     setIsPlaying(true);
@@ -181,6 +194,12 @@ export default function RetroPong({ onClose }: RetroPongProps) {
               setGameOver(true);
               setIsPlaying(false);
               setWinner('player');
+              // Update total wins
+              setTotalWins((w) => {
+                const newWins = w + 1;
+                AsyncStorage.setItem(HIGH_SCORE_KEY, newWins.toString());
+                return newWins;
+              });
               if (Platform.OS !== 'web') {
                 Vibration.vibrate([100, 50, 100, 50, 100]);
               }
@@ -297,7 +316,10 @@ export default function RetroPong({ onClose }: RetroPongProps) {
       <View style={styles.monitorFrame}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>PONG</Text>
+          <View>
+            <Text style={styles.title}>PONG</Text>
+            {totalWins > 0 && <Text style={styles.winsText}>WINS: {totalWins}</Text>}
+          </View>
           {onClose && (
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={COLORS.foreground} />
@@ -412,13 +434,13 @@ export default function RetroPong({ onClose }: RetroPongProps) {
             <Ionicons name="caret-up" size={32} color={COLORS.foreground} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.controlButton}
+            style={[styles.controlButton, styles.controlButtonMargin]}
             onPressIn={() => movePlayer('down')}
             activeOpacity={0.7}
           >
             <Ionicons name="caret-down" size={32} color={COLORS.foreground} />
           </TouchableOpacity>
-          <Text style={styles.controlHint}>or drag screen</Text>
+          <Text style={[styles.controlHint, styles.controlButtonMargin]}>or drag screen</Text>
         </View>
       </View>
     </View>
@@ -579,7 +601,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 16,
-    gap: 20,
+  },
+  controlButtonMargin: {
+    marginLeft: 20,
+  },
+  winsText: {
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontSize: 10,
+    color: COLORS.dimGreen,
   },
   controlButton: {
     width: 50,
