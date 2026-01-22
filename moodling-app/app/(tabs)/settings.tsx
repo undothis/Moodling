@@ -1449,6 +1449,22 @@ export default function SettingsScreen() {
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/training')}
+        >
+          <Text style={styles.faqEmoji}>🧠</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Training Admin
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Import insights, batch import, export data
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
         <Text style={[styles.devNote, { color: colors.textMuted }]}>
           Test AI referencing accuracy and troubleshoot issues.
         </Text>
