@@ -144,11 +144,28 @@ export default function OnboardingScreen() {
     }
   };
 
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
   const handleSingleSelect = (optionId: string) => {
+    if (isTransitioning) return;
+
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: optionId,
     }));
+
+    // Auto-advance after short delay to show selection
+    setIsTransitioning(true);
+    setTimeout(async () => {
+      if (isLastStep) {
+        await finishOnboarding();
+      } else {
+        animateTransition('next', () => {
+          setCurrentStep((prev) => prev + 1);
+          setIsTransitioning(false);
+        });
+      }
+    }, 300);
   };
 
   const handleMultiSelect = (optionId: string) => {
@@ -163,11 +180,40 @@ export default function OnboardingScreen() {
     }));
   };
 
+  const handleMultiSelectDone = async () => {
+    if (isTransitioning) return;
+
+    setIsTransitioning(true);
+    if (isLastStep) {
+      await finishOnboarding();
+    } else {
+      animateTransition('next', () => {
+        setCurrentStep((prev) => prev + 1);
+        setIsTransitioning(false);
+      });
+    }
+  };
+
   const handleSliderSelect = (value: number) => {
+    if (isTransitioning) return;
+
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: value.toString(),
     }));
+
+    // Auto-advance after short delay
+    setIsTransitioning(true);
+    setTimeout(async () => {
+      if (isLastStep) {
+        await finishOnboarding();
+      } else {
+        animateTransition('next', () => {
+          setCurrentStep((prev) => prev + 1);
+          setIsTransitioning(false);
+        });
+      }
+    }, 300);
   };
 
   const renderQuestion = (question: OnboardingQuestion) => {
@@ -214,6 +260,7 @@ export default function OnboardingScreen() {
                       },
                     ]}
                     onPress={() => handleSliderSelect(index)}
+                    disabled={isTransitioning}
                   >
                     <Text
                       style={[
@@ -254,6 +301,7 @@ export default function OnboardingScreen() {
                       ? handleMultiSelect(option.id)
                       : handleSingleSelect(option.id)
                   }
+                  disabled={isTransitioning && question.type !== 'multi'}
                 >
                   <View style={styles.optionHeader}>
                     {option.emoji && (
@@ -335,10 +383,10 @@ export default function OnboardingScreen() {
       {/* Question content */}
       {renderQuestion(currentQuestion)}
 
-      {/* Navigation */}
+      {/* Navigation - Back button + Done for multi-select only */}
       <View style={[styles.navigation, { paddingBottom: insets.bottom + 20 }]}>
         {currentStep > 0 ? (
-          <Pressable style={styles.backButton} onPress={handleBack}>
+          <Pressable style={styles.backButton} onPress={handleBack} disabled={isTransitioning}>
             <Text style={[styles.backText, { color: colors.textSecondary }]}>
               ← Back
             </Text>
@@ -347,22 +395,31 @@ export default function OnboardingScreen() {
           <View style={styles.backButton} />
         )}
 
-        <Pressable
-          style={[
-            styles.nextButton,
-            {
-              backgroundColor: canProceed() ? colors.tint : colors.border,
-              opacity: canProceed() ? 1 : 0.5,
-            },
-          ]}
-          onPress={handleNext}
-          disabled={!canProceed()}
-        >
-          <Text style={styles.nextText}>
-            {isLastStep ? "Let's Go" : 'Continue'}
-          </Text>
-        </Pressable>
+        {/* Show Done button only for multi-select questions */}
+        {currentQuestion.type === 'multi' && (
+          <Pressable
+            style={[
+              styles.nextButton,
+              { backgroundColor: colors.tint },
+            ]}
+            onPress={handleMultiSelectDone}
+            disabled={isTransitioning}
+          >
+            <Text style={styles.nextText}>
+              {isLastStep ? "Let's Go" : 'Done'}
+            </Text>
+          </Pressable>
+        )}
       </View>
+
+      {/* Footer hint for single-select questions */}
+      {currentQuestion.type !== 'multi' && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>
+            Tap an option to continue
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -492,6 +549,15 @@ const styles = StyleSheet.create({
   hintText: {
     fontSize: 13,
     lineHeight: 18,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  footerText: {
+    fontSize: 13,
     textAlign: 'center',
     fontStyle: 'italic',
   },
