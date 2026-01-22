@@ -136,11 +136,11 @@ export default function OnboardingScreen() {
 
       await completeOnboarding();
 
-      // Navigate to guide walkthrough
-      router.replace('/guide');
+      // Navigate to cognitive onboarding to discover how they think
+      router.replace('/cognitive-onboarding');
     } catch (error) {
       console.error('Failed to save onboarding:', error);
-      router.replace('/guide');
+      router.replace('/cognitive-onboarding');
     }
   };
 
