@@ -13,9 +13,34 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
 import { CoachPersona } from './coachPersonalityService';
+
+// Lazy imports for expo-av and expo-file-system to handle missing dependencies
+let Audio: any = null;
+let FileSystem: any = null;
+
+const loadAudioModule = async () => {
+  if (!Audio) {
+    try {
+      const module = await import('expo-av');
+      Audio = module.Audio;
+    } catch {
+      console.warn('expo-av not available - TTS audio playback disabled');
+    }
+  }
+  return Audio;
+};
+
+const loadFileSystemModule = async () => {
+  if (!FileSystem) {
+    try {
+      FileSystem = await import('expo-file-system');
+    } catch {
+      console.warn('expo-file-system not available - TTS disabled');
+    }
+  }
+  return FileSystem;
+};
 
 const STORAGE_KEYS = {
   TTS_SETTINGS: 'moodleaf_tts_settings',
@@ -301,7 +326,7 @@ export async function clearTTSAPIKey(): Promise<void> {
 // TTS ENGINE
 // ============================================
 
-let currentSound: Audio.Sound | null = null;
+let currentSound: any = null;
 
 /**
  * Get voice profile for a specific coach and gender
@@ -384,9 +409,14 @@ export async function synthesizeSpeech(
     }
 
     // Save audio to temp file
-    const audioUri = `${FileSystem.cacheDirectory}tts_${Date.now()}.mp3`;
-    await FileSystem.writeAsStringAsync(audioUri, data.audioContent, {
-      encoding: FileSystem.EncodingType.Base64,
+    const fs = await loadFileSystemModule();
+    if (!fs) {
+      console.warn('[TTS] FileSystem not available');
+      return null;
+    }
+    const audioUri = `${fs.cacheDirectory}tts_${Date.now()}.mp3`;
+    await fs.writeAsStringAsync(audioUri, data.audioContent, {
+      encoding: fs.EncodingType.Base64,
     });
 
     return audioUri;
@@ -440,9 +470,15 @@ export async function playAudio(audioUri: string, volume?: number): Promise<void
   // Stop any currently playing audio
   await stopAudio();
 
+  const AudioModule = await loadAudioModule();
+  if (!AudioModule) {
+    console.warn('[TTS] Audio module not available');
+    return;
+  }
+
   try {
     const settings = await getTTSSettings();
-    const { sound } = await Audio.Sound.createAsync(
+    const { sound } = await AudioModule.Sound.createAsync(
       { uri: audioUri },
       { volume: volume ?? settings.volume }
     );
@@ -489,10 +525,13 @@ export async function stopAudio(): Promise<void> {
 /**
  * Cleanup sound and temp file
  */
-async function cleanupSound(sound: Audio.Sound, audioUri: string): Promise<void> {
+async function cleanupSound(sound: any, audioUri: string): Promise<void> {
   try {
     await sound.unloadAsync();
-    await FileSystem.deleteAsync(audioUri, { idempotent: true });
+    const fs = await loadFileSystemModule();
+    if (fs) {
+      await fs.deleteAsync(audioUri, { idempotent: true });
+    }
   } catch (error) {
     console.error('[TTS] Cleanup failed:', error);
   }
@@ -597,7 +636,12 @@ export async function testTTS(
  */
 export async function initializeTTS(): Promise<void> {
   try {
-    await Audio.setAudioModeAsync({
+    const AudioModule = await loadAudioModule();
+    if (!AudioModule) {
+      console.warn('[TTS] Audio module not available - TTS disabled');
+      return;
+    }
+    await AudioModule.setAudioModeAsync({
       allowsRecordingIOS: false,
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
