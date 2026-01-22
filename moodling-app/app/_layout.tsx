@@ -104,6 +104,22 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="cognitive-onboarding/index"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            title: 'Discover Your Mind',
+          }}
+        />
+        <Stack.Screen
+          name="cognitive-onboarding/reveal"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            title: 'Your MoodPrint',
+          }}
+        />
+        <Stack.Screen
           name="food/index"
           options={{
             title: 'Food Tracker',

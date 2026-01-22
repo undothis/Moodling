@@ -22,16 +22,35 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ============================================
 
 /**
- * How someone naturally processes information
- * NOT about intelligence - about cognitive style
+ * Cognitive Modes - Primary operating modes of the mind
+ * NOT personality types or intelligence levels
+ * Most people have 1-2 dominant modes
+ *
+ * These are based on a practical taxonomy of how minds actually work,
+ * not clinical categories or pop psychology.
+ */
+export type CognitiveMode =
+  | 'procedural_sequential'    // "Show me the steps" - linear, rule-based, process-oriented
+  | 'analytical_symbolic'      // "Let me analyze the variables" - logical, symbolic, precise
+  | 'conceptual_systems'       // "I see how this all fits together" - systems, patterns, frameworks
+  | 'narrative_meaning'        // "What's the story here?" - story-driven, identity-aware, meaning-seeking
+  | 'embodied_somatic'         // "I know it in my body" - sensation, movement, learning by doing
+  | 'associative_divergent'    // "Everything connects to everything" - rapid connections, nonlinear
+  | 'emotional_relational'     // "How does this affect people?" - attuned to others, interpersonal
+  | 'visual_spatial'           // "I see it" - thinks in images, spatial models, design-oriented
+  | 'temporal_foresight'       // "Where does this lead?" - timelines, consequences, long arcs
+  | 'integrative_meta';        // "How do these thinking styles interact?" - meta-cognition, holds contradictions
+
+/**
+ * Legacy ProcessingStyle - maps to cognitive modes for backward compatibility
  */
 export type ProcessingStyle =
-  | 'patterns'      // Sees connections, systems, underlying structures
-  | 'details'       // Notices specifics, remembers facts, step-by-step
-  | 'stories'       // Understands through narrative, examples, experiences
-  | 'feelings'      // Processes through emotional resonance first
-  | 'actions'       // Learns by doing, figures it out hands-on
-  | 'synthesis';    // Pulls from multiple sources, makes new wholes
+  | 'patterns'      // → conceptual_systems
+  | 'details'       // → procedural_sequential
+  | 'stories'       // → narrative_meaning
+  | 'feelings'      // → emotional_relational
+  | 'actions'       // → embodied_somatic
+  | 'synthesis';    // → integrative_meta
 
 /**
  * How someone best receives new information
@@ -91,7 +110,11 @@ export type SensitivityLevel = 'highly_sensitive' | 'moderate' | 'low_sensitivit
  * The complete cognitive profile
  */
 export interface CognitiveProfile {
-  // Core processing
+  // Core cognitive mode (primary way the mind works)
+  primaryCognitiveMode: CognitiveMode;
+  secondaryCognitiveMode: CognitiveMode | null;
+
+  // Legacy: Core processing (for backward compatibility)
   primaryProcessing: ProcessingStyle;
   secondaryProcessing: ProcessingStyle | null;
 
@@ -163,9 +186,13 @@ export interface OnboardingOption {
 
 /**
  * Core onboarding questions - adaptive and human
+ *
+ * "There are no right answers. This helps your coach understand how your mind works."
+ *
+ * Based on practical cognitive modes research, not clinical categories.
  */
 export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
-  // ========== OPENING (Everyone gets these) ==========
+  // ========== OPENING ==========
   {
     id: 'welcome_comfort',
     text: "Before we start, how are you feeling about answering some questions about yourself?",
@@ -197,132 +224,286 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     adaptiveDepth: 'basic'
   },
 
-  // ========== PROCESSING STYLE ==========
+  // ========== CORE DIAGNOSTIC: LEARNING ==========
   {
-    id: 'processing_scenario',
-    text: "When someone explains something new to you, what helps you understand it?",
+    id: 'learning_natural',
+    text: "When learning something new, what feels most natural?",
     type: 'choice',
     options: [
       {
         value: 'big_picture',
-        label: "Show me how it fits into the bigger picture",
-        description: "I need to see the whole system first",
-        indicates: { primaryProcessing: 'patterns' }
+        label: "Seeing the big picture first",
+        description: "I need to understand how it all fits together",
+        indicates: { primaryCognitiveMode: 'conceptual_systems', primaryProcessing: 'patterns' }
       },
       {
-        value: 'steps',
-        label: "Walk me through it step by step",
-        description: "I like clear, logical progression",
-        indicates: { primaryProcessing: 'details' }
+        value: 'clear_steps',
+        label: "Being shown clear steps",
+        description: "I like logical, sequential instruction",
+        indicates: { primaryCognitiveMode: 'procedural_sequential', primaryProcessing: 'details' }
       },
       {
-        value: 'example',
-        label: "Give me a real example or story",
-        description: "I understand better through concrete situations",
-        indicates: { primaryProcessing: 'stories' }
+        value: 'story_example',
+        label: "Hearing a story or example",
+        description: "I understand through narrative",
+        indicates: { primaryCognitiveMode: 'narrative_meaning', primaryProcessing: 'stories' }
       },
       {
-        value: 'why_matters',
-        label: "Tell me why it matters first",
-        description: "I need to feel connected to it emotionally",
-        indicates: { primaryProcessing: 'feelings' }
-      },
-      {
-        value: 'let_me_try',
-        label: "Just let me try it and figure it out",
+        value: 'try_it',
+        label: "Just trying it out",
         description: "I learn by doing, not listening",
-        indicates: { primaryProcessing: 'actions' }
+        indicates: { primaryCognitiveMode: 'embodied_somatic', primaryProcessing: 'actions' }
+      },
+      {
+        value: 'connections',
+        label: "Letting ideas connect freely",
+        description: "My mind makes leaps",
+        indicates: { primaryCognitiveMode: 'associative_divergent', primaryProcessing: 'synthesis' }
       }
     ],
-    measures: ['primaryProcessing'],
+    measures: ['primaryCognitiveMode', 'primaryProcessing'],
     adaptiveDepth: 'basic'
   },
 
+  // ========== CORE DIAGNOSTIC: FRUSTRATION ==========
   {
-    id: 'processing_natural',
-    text: "When you're trying to solve a problem, what's your natural first move?",
+    id: 'frustration_source',
+    text: "When someone explains something, what frustrates you most?",
     type: 'choice',
     options: [
       {
-        value: 'connect_dots',
-        label: "Look for patterns or connections to other things I know",
-        indicates: { primaryProcessing: 'patterns', secondaryProcessing: 'synthesis' }
+        value: 'too_many_steps',
+        label: "Too many steps",
+        description: "I need the concept, not the procedure",
+        indicates: { primaryCognitiveMode: 'conceptual_systems' }
       },
       {
-        value: 'break_down',
-        label: "Break it into smaller pieces and tackle them one by one",
-        indicates: { primaryProcessing: 'details' }
+        value: 'too_abstract',
+        label: "Too much abstraction",
+        description: "Give me something concrete",
+        indicates: { primaryCognitiveMode: 'embodied_somatic' }
       },
       {
-        value: 'similar_situation',
-        label: "Think of a similar situation and what worked then",
-        indicates: { primaryProcessing: 'stories' }
+        value: 'no_context',
+        label: "No emotional context",
+        description: "I need to know why it matters",
+        indicates: { primaryCognitiveMode: 'narrative_meaning', emotionalProcessing: 'feeler_first' }
       },
       {
-        value: 'gut_feeling',
-        label: "Check in with my gut feeling about it",
-        indicates: { primaryProcessing: 'feelings', emotionalIntelligence: 'high' }
+        value: 'not_enough_structure',
+        label: "Not enough structure",
+        description: "I need clear organization",
+        indicates: { primaryCognitiveMode: 'procedural_sequential', structurePreference: 'loves_structure' }
       },
       {
-        value: 'just_start',
-        label: "Just start doing something and adjust as I go",
-        indicates: { primaryProcessing: 'actions', structurePreference: 'emergent' }
-      },
-      {
-        value: 'research',
-        label: "Gather information from different sources first",
-        indicates: { primaryProcessing: 'synthesis' }
+        value: 'being_rushed',
+        label: "Being rushed",
+        description: "I need time to process",
+        indicates: { needsTimeToRespond: true, communicationStyle: 'reflective' }
       }
     ],
-    measures: ['primaryProcessing', 'secondaryProcessing'],
+    measures: ['primaryCognitiveMode', 'emotionalProcessing', 'structurePreference'],
     adaptiveDepth: 'basic'
   },
 
-  // ========== LEARNING STYLE ==========
+  // ========== CORE DIAGNOSTIC: INSIGHTS ==========
   {
-    id: 'learning_best',
-    text: "Think of something you learned easily. How did you learn it?",
+    id: 'insight_arrival',
+    text: "How do insights usually arrive for you?",
+    type: 'choice',
+    options: [
+      {
+        value: 'suddenly',
+        label: "Suddenly, fully formed",
+        description: "I just... know things",
+        indicates: { primaryCognitiveMode: 'conceptual_systems', discoveredStrengths: ['intuitive insight'] }
+      },
+      {
+        value: 'gradually',
+        label: "Gradually, step by step",
+        description: "I build understanding piece by piece",
+        indicates: { primaryCognitiveMode: 'procedural_sequential' }
+      },
+      {
+        value: 'emotional',
+        label: "Through emotional moments",
+        description: "Feelings lead me to understanding",
+        indicates: { primaryCognitiveMode: 'emotional_relational', emotionalProcessing: 'feeler_first' }
+      },
+      {
+        value: 'while_doing',
+        label: "While moving or doing something else",
+        description: "My body helps me think",
+        indicates: { primaryCognitiveMode: 'embodied_somatic' }
+      },
+      {
+        value: 'bursts',
+        label: "In bursts of connections",
+        description: "Everything suddenly links together",
+        indicates: { primaryCognitiveMode: 'associative_divergent', discoveredStrengths: ['rapid connections'] }
+      }
+    ],
+    measures: ['primaryCognitiveMode', 'emotionalProcessing', 'discoveredStrengths'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== CORE DIAGNOSTIC: MISUNDERSTOOD ==========
+  {
+    id: 'feel_misunderstood',
+    text: "What makes you feel most misunderstood?",
+    type: 'choice',
+    options: [
+      {
+        value: 'show_work',
+        label: 'Being told to "show your work"',
+        description: "I know the answer but can't explain how",
+        indicates: { primaryCognitiveMode: 'conceptual_systems', traditionalLearningFit: 'struggled' }
+      },
+      {
+        value: 'rushed_explain',
+        label: "Being rushed to explain",
+        description: "I need time to articulate",
+        indicates: { communicationStyle: 'reflective', needsTimeToRespond: true }
+      },
+      {
+        value: 'labeled_unfocused',
+        label: "Being labeled unfocused",
+        description: "My mind works differently, not worse",
+        indicates: { primaryCognitiveMode: 'associative_divergent', traditionalLearningFit: 'struggled' }
+      },
+      {
+        value: 'too_sensitive',
+        label: "Being told I'm too sensitive",
+        description: "Sensitivity is how I understand",
+        indicates: { sensitivityLevel: 'highly_sensitive', primaryCognitiveMode: 'emotional_relational' }
+      },
+      {
+        value: 'single_answer',
+        label: "Being asked for a single answer",
+        description: "I see multiple possibilities",
+        indicates: { primaryCognitiveMode: 'integrative_meta', comfortWithAmbiguity: 'high' }
+      }
+    ],
+    measures: ['primaryCognitiveMode', 'traditionalLearningFit', 'sensitivityLevel'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== CORE DIAGNOSTIC: REFLECTION ==========
+  {
+    id: 'reflection_helps',
+    text: "When reflecting, what helps most?",
+    type: 'choice',
+    options: [
+      {
+        value: 'metaphors',
+        label: "Metaphors and analogies",
+        description: "Images and comparisons click for me",
+        indicates: { communicationStyle: 'metaphorical', primaryCognitiveMode: 'visual_spatial' }
+      },
+      {
+        value: 'direct_questions',
+        label: "Direct questions",
+        description: "Clear, specific prompts",
+        indicates: { communicationStyle: 'direct', structurePreference: 'loves_structure' }
+      },
+      {
+        value: 'emotional_validation',
+        label: "Emotional validation",
+        description: "Being heard before being helped",
+        indicates: { emotionalProcessing: 'feeler_first', primaryCognitiveMode: 'emotional_relational' }
+      },
+      {
+        value: 'visual_framing',
+        label: "Visual or spatial framing",
+        description: "I think in pictures and models",
+        indicates: { primaryCognitiveMode: 'visual_spatial', learningStyles: ['visual'] }
+      },
+      {
+        value: 'future_prompts',
+        label: "Future-oriented prompts",
+        description: "Where this leads, what it means long-term",
+        indicates: { primaryCognitiveMode: 'temporal_foresight' }
+      }
+    ],
+    measures: ['communicationStyle', 'primaryCognitiveMode', 'emotionalProcessing'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== CORE DIAGNOSTIC: TRUEST STATEMENT ==========
+  {
+    id: 'truest_statement',
+    text: "Which feels truest?",
+    type: 'choice',
+    options: [
+      {
+        value: 'know_more_than_explain',
+        label: "I know more than I can explain",
+        description: "The understanding is there, words are hard",
+        indicates: { primaryCognitiveMode: 'conceptual_systems', discoveredStrengths: ['deep intuition'] }
+      },
+      {
+        value: 'explain_better_than_feel',
+        label: "I explain better than I feel",
+        description: "Logic is easier than emotions",
+        indicates: { primaryCognitiveMode: 'analytical_symbolic', emotionalProcessing: 'thinker_first' }
+      },
+      {
+        value: 'feel_before_think',
+        label: "I feel things before I think them",
+        description: "Emotions are my first language",
+        indicates: { primaryCognitiveMode: 'emotional_relational', emotionalProcessing: 'feeler_first' }
+      },
+      {
+        value: 'need_structure',
+        label: "I need structure to feel safe",
+        description: "Plans and organization ground me",
+        indicates: { primaryCognitiveMode: 'procedural_sequential', structurePreference: 'loves_structure' }
+      },
+      {
+        value: 'see_patterns',
+        label: "I see patterns others miss",
+        description: "Connections are obvious to me",
+        indicates: { primaryCognitiveMode: 'conceptual_systems', discoveredStrengths: ['pattern recognition'] }
+      }
+    ],
+    measures: ['primaryCognitiveMode', 'emotionalProcessing', 'structurePreference', 'discoveredStrengths'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== OPTIONAL: IDENTITY EXPERIENCES ==========
+  {
+    id: 'identity_experiences',
+    text: "Do you relate to any of these experiences?",
+    subtext: "Select any that resonate (or none).",
     type: 'multiselect',
     options: [
-      { value: 'watched', label: "Watched someone do it", indicates: { learningStyles: ['visual'] } },
-      { value: 'read', label: "Read about it", indicates: { learningStyles: ['reading'] } },
-      { value: 'discussed', label: "Talked it through with someone", indicates: { learningStyles: ['social', 'auditory'] } },
-      { value: 'practiced', label: "Practiced until I got it", indicates: { learningStyles: ['kinesthetic'] } },
-      { value: 'diagrams', label: "Drew diagrams or made notes", indicates: { learningStyles: ['visual', 'reading'] } },
-      { value: 'alone', label: "Figured it out on my own", indicates: { learningStyles: ['solitary'] } }
-    ],
-    measures: ['learningStyles'],
-    adaptiveDepth: 'basic'
-  },
-
-  {
-    id: 'school_experience',
-    text: "How was traditional school for you?",
-    subtext: "This isn't about intelligence - it's about fit.",
-    type: 'choice',
-    options: [
       {
-        value: 'worked',
-        label: "It worked well for how I learn",
-        indicates: { traditionalLearningFit: 'worked_well' }
+        value: 'struggled_school',
+        label: "Struggling with school but thriving later",
+        indicates: { traditionalLearningFit: 'struggled', discoveredStrengths: ['late bloomer'] }
       },
       {
-        value: 'struggled',
-        label: "I struggled, even though I'm smart in other ways",
+        value: 'smart_cant_prove',
+        label: "Feeling smart but unable to prove it",
+        indicates: { traditionalLearningFit: 'struggled', discoveredStrengths: ['hidden intelligence'] }
+      },
+      {
+        value: 'think_differently',
+        label: "Thinking differently than people expect",
+        indicates: { discoveredStrengths: ['unique perspective'] }
+      },
+      {
+        value: 'out_of_sync',
+        label: "Feeling out of sync with systems",
         indicates: { traditionalLearningFit: 'struggled' }
       },
       {
-        value: 'mixed',
-        label: "Some subjects clicked, others didn't",
-        indicates: { traditionalLearningFit: 'mixed' }
-      },
-      {
-        value: 'bored',
-        label: "I was bored - it was too slow or too linear",
-        indicates: { traditionalLearningFit: 'struggled', primaryProcessing: 'patterns' }
+        value: 'labeled_too_much',
+        label: 'Being labeled "too much" or "not enough"',
+        indicates: { sensitivityLevel: 'highly_sensitive' }
       }
     ],
-    measures: ['traditionalLearningFit'],
+    measures: ['traditionalLearningFit', 'sensitivityLevel', 'discoveredStrengths'],
     adaptiveDepth: 'standard'
   },
 
@@ -354,17 +535,6 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['socialOrientation'],
-    adaptiveDepth: 'basic'
-  },
-
-  {
-    id: 'social_comfort',
-    text: "How comfortable are you in new social situations?",
-    type: 'scale',
-    scaleMin: 1,
-    scaleMax: 10,
-    scaleLabels: { min: "Very uncomfortable", max: "Totally at ease" },
-    measures: ['socialComfortLevel'],
     adaptiveDepth: 'basic'
   },
 
@@ -444,80 +614,6 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     adaptiveDepth: 'basic'
   },
 
-  {
-    id: 'emotional_intelligence',
-    text: "How easily do you pick up on what others are feeling?",
-    type: 'choice',
-    options: [
-      {
-        value: 'very_easily',
-        label: "Very easily - I often know before they say anything",
-        indicates: { emotionalIntelligence: 'high' }
-      },
-      {
-        value: 'when_I_pay_attention',
-        label: "When I pay attention, yes",
-        indicates: { emotionalIntelligence: 'moderate' }
-      },
-      {
-        value: 'not_naturally',
-        label: "Not naturally - I often miss social cues",
-        indicates: { emotionalIntelligence: 'developing' }
-      }
-    ],
-    measures: ['emotionalIntelligence'],
-    adaptiveDepth: 'standard'
-  },
-
-  // ========== COMMUNICATION STYLE ==========
-  {
-    id: 'communication_preference',
-    text: "How do you prefer people communicate with you?",
-    type: 'choice',
-    options: [
-      {
-        value: 'direct',
-        label: "Be direct - just tell me straight",
-        indicates: { communicationStyle: 'direct' }
-      },
-      {
-        value: 'explore',
-        label: "Let's explore it together - I think out loud",
-        indicates: { communicationStyle: 'exploratory' }
-      },
-      {
-        value: 'time',
-        label: "Give me time to think before I respond",
-        indicates: { communicationStyle: 'reflective', needsTimeToRespond: true }
-      },
-      {
-        value: 'build_together',
-        label: "Build understanding back and forth",
-        indicates: { communicationStyle: 'collaborative' }
-      },
-      {
-        value: 'analogies',
-        label: "Use metaphors and comparisons - they help me get it",
-        indicates: { communicationStyle: 'metaphorical' }
-      }
-    ],
-    measures: ['communicationStyle', 'needsTimeToRespond'],
-    adaptiveDepth: 'basic'
-  },
-
-  {
-    id: 'written_spoken',
-    text: "Do you express yourself better in writing or speaking?",
-    type: 'choice',
-    options: [
-      { value: 'written', label: "Writing - I can think as I type", indicates: { prefersWrittenOrSpoken: 'written' } },
-      { value: 'spoken', label: "Speaking - talking helps me process", indicates: { prefersWrittenOrSpoken: 'spoken' } },
-      { value: 'either', label: "Depends on the situation", indicates: { prefersWrittenOrSpoken: 'either' } }
-    ],
-    measures: ['prefersWrittenOrSpoken'],
-    adaptiveDepth: 'standard'
-  },
-
   // ========== STRUCTURE PREFERENCE ==========
   {
     id: 'structure',
@@ -549,9 +645,9 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     adaptiveDepth: 'basic'
   },
 
-  // ========== DEEPER QUESTIONS (Adaptive) ==========
+  // ========== DEEP QUESTIONS ==========
   {
-    id: 'systems_thinking',
+    id: 'systems_thinking_deep',
     text: "Do you often see how different parts of life connect to each other?",
     subtext: "Like noticing that sleep affects mood affects relationships affects work...",
     type: 'choice',
@@ -559,96 +655,73 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       {
         value: 'constantly',
         label: "Yes, constantly - everything is connected",
-        indicates: { primaryProcessing: 'patterns', discoveredStrengths: ['systems thinking'] }
+        indicates: { primaryCognitiveMode: 'conceptual_systems', discoveredStrengths: ['systems thinking'] }
       },
       {
         value: 'sometimes',
         label: "Sometimes, when I step back",
-        indicates: { secondaryProcessing: 'patterns' }
+        indicates: { secondaryCognitiveMode: 'conceptual_systems' }
       },
       {
         value: 'not_really',
         label: "I tend to focus on one thing at a time",
-        indicates: { primaryProcessing: 'details' }
+        indicates: { primaryCognitiveMode: 'procedural_sequential' }
       }
     ],
-    measures: ['primaryProcessing', 'discoveredStrengths'],
+    measures: ['primaryCognitiveMode', 'secondaryCognitiveMode', 'discoveredStrengths'],
     adaptiveDepth: 'deep',
-    requiresPrevious: ['processing_scenario']
+    requiresPrevious: ['learning_natural']
   },
 
   {
-    id: 'nonlinear',
-    text: "Do you often have ideas or make connections that seem to 'come out of nowhere'?",
+    id: 'future_thinking',
+    text: "Do you often think about where things lead - consequences, timelines, long arcs?",
     type: 'choice',
     options: [
       {
-        value: 'yes',
-        label: "Yes - my mind jumps around and lands on things",
-        indicates: { structurePreference: 'emergent', discoveredStrengths: ['nonlinear thinking', 'creative connections'] }
+        value: 'always',
+        label: "Yes - I see too much sometimes",
+        description: "The future is always present",
+        indicates: { secondaryCognitiveMode: 'temporal_foresight', discoveredStrengths: ['foresight'] }
       },
       {
         value: 'sometimes',
-        label: "Sometimes - it surprises me when it happens",
-        indicates: { secondaryProcessing: 'synthesis' }
+        label: "When making big decisions",
+        indicates: {}
       },
       {
-        value: 'no',
-        label: "I usually think in more linear steps",
-        indicates: { structurePreference: 'loves_structure' }
+        value: 'present_focused',
+        label: "I'm more present-focused",
+        indicates: { primaryCognitiveMode: 'embodied_somatic' }
       }
     ],
-    measures: ['structurePreference', 'discoveredStrengths'],
+    measures: ['secondaryCognitiveMode', 'discoveredStrengths'],
     adaptiveDepth: 'deep'
   },
 
   {
-    id: 'absorb_others',
-    text: "Do you sometimes absorb other people's emotions without meaning to?",
-    type: 'choice',
-    options: [
-      {
-        value: 'very_much',
-        label: "Yes - I often feel what others feel",
-        indicates: { sensitivityLevel: 'highly_sensitive', emotionalIntelligence: 'high', discoveredStrengths: ['empathy', 'emotional attunement'] }
-      },
-      {
-        value: 'sometimes',
-        label: "Sometimes, especially with people I'm close to",
-        indicates: { emotionalIntelligence: 'high' }
-      },
-      {
-        value: 'not_really',
-        label: "Not really - I can separate my feelings from theirs",
-        indicates: { sensitivityLevel: 'moderate' }
-      }
-    ],
-    measures: ['sensitivityLevel', 'emotionalIntelligence', 'discoveredStrengths'],
-    adaptiveDepth: 'deep'
-  },
-
-  {
-    id: 'understimulated',
-    text: "Do you ever feel understimulated - like you need more complexity or novelty?",
+    id: 'meta_thinking',
+    text: "Do you think about thinking itself?",
+    subtext: "Notice how your mind works, hold contradictions, question frameworks...",
     type: 'choice',
     options: [
       {
         value: 'often',
-        label: "Often - I get bored easily and need new challenges",
-        indicates: { discoveredStrengths: ['needs intellectual stimulation'] }
+        label: "Often - I'm fascinated by how minds work",
+        indicates: { secondaryCognitiveMode: 'integrative_meta', discoveredStrengths: ['meta-cognition'] }
       },
       {
         value: 'sometimes',
-        label: "Sometimes, but I'm okay with routine too",
+        label: "Sometimes, when something confuses me",
         indicates: {}
       },
       {
         value: 'rarely',
-        label: "Rarely - I like stability and consistency",
-        indicates: { structurePreference: 'loves_structure' }
+        label: "Not really - I just think",
+        indicates: {}
       }
     ],
-    measures: ['discoveredStrengths'],
+    measures: ['secondaryCognitiveMode', 'discoveredStrengths'],
     adaptiveDepth: 'deep'
   }
 ];
@@ -658,6 +731,10 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 // ============================================
 
 const DEFAULT_PROFILE: CognitiveProfile = {
+  // New cognitive mode system
+  primaryCognitiveMode: 'narrative_meaning',
+  secondaryCognitiveMode: null,
+  // Legacy processing (backward compatible)
   primaryProcessing: 'stories',
   secondaryProcessing: null,
   learningStyles: ['visual', 'auditory'],
@@ -923,20 +1000,36 @@ export async function generateProfileReveal(): Promise<string> {
 
   parts.push('');
 
-  // Processing style
-  const processingDescriptions: Record<ProcessingStyle, string> = {
-    patterns: "You're a natural systems thinker. You see connections that others miss, and you understand things by seeing how they fit into a bigger picture. This is a real strength - even if traditional education didn't always reward it.",
-    details: "You have a gift for precision. You notice the specifics, remember the details, and think things through step by step. This makes you thorough and reliable.",
-    stories: "You understand the world through stories and examples. Abstract concepts make sense when you can see them in action. This makes you relatable and helps you connect with others.",
-    feelings: "You process through emotional resonance first. You need to feel connected to something before you can fully engage with it. This emotional intelligence is a genuine strength.",
-    actions: "You learn by doing. Sitting and listening doesn't work for you - you need to get your hands on things. This makes you practical and effective.",
-    synthesis: "You're a natural synthesizer. You pull from many sources and create something new. Your mind doesn't follow linear paths - it makes leaps."
+  // Cognitive Mode (primary)
+  const cognitiveModeDescriptions: Record<CognitiveMode, string> = {
+    procedural_sequential: "You're a **Procedural-Sequential Thinker**. You think linearly, you're strong with rules and processes, and you like clear steps. This makes you thorough, reliable, and great at following through.",
+    analytical_symbolic: "You're an **Analytical-Symbolic Thinker**. You're comfortable with logic, abstraction, and formal systems. You enjoy precision and clear reasoning chains.",
+    conceptual_systems: "You're a **Conceptual Systems Thinker**. You think in wholes, not parts. You see connections others miss and understand things by grasping how they fit into bigger patterns. You don't think from rules to meaning - you think from meaning to rules. This is a real strength, even if traditional education didn't always reward it.",
+    narrative_meaning: "You're a **Narrative-Meaning Thinker**. You understand life through stories. Meaning, identity, and emotional context are how you make sense of things. This gives you strong empathy and makes you relatable.",
+    embodied_somatic: "You're an **Embodied/Somatic Thinker**. You know things in your body before your mind catches up. You learn by doing, not explaining. This hands-on intelligence is often undervalued, but it's how you truly understand.",
+    associative_divergent: "You're an **Associative-Divergent Thinker**. Your mind makes rapid connections, jumping from idea to idea. This nonlinear thinking might feel scattered sometimes, but it's actually creative power.",
+    emotional_relational: "You're an **Emotional-Relational Thinker**. You're highly attuned to people - you read tone, mood, and subtext naturally. Your emotional intelligence is genuine intelligence, even if systems don't always recognize it.",
+    visual_spatial: "You're a **Visual-Spatial Thinker**. You think in images and spatial models. Diagrams and visual metaphors help you understand. This is architect-brain, designer-brain.",
+    temporal_foresight: "You're a **Temporal/Foresight Thinker**. You think in timelines - you see long arcs and consequences. This can sometimes make you anxious (because you see too much), but it's rare and extremely valuable.",
+    integrative_meta: "You're an **Integrative/Meta Thinker**. You think about thinking. You're comfortable with ambiguity and can hold contradictions. This philosophical mind might feel isolating, but it's a gift."
   };
 
-  parts.push(`**How you think:** ${processingDescriptions[profile.primaryProcessing]}`);
+  parts.push(`**How you think:** ${cognitiveModeDescriptions[profile.primaryCognitiveMode]}`);
 
-  if (profile.secondaryProcessing && profile.secondaryProcessing !== profile.primaryProcessing) {
-    parts.push(`You also draw on ${profile.secondaryProcessing} thinking when needed.`);
+  if (profile.secondaryCognitiveMode && profile.secondaryCognitiveMode !== profile.primaryCognitiveMode) {
+    const secondaryLabels: Record<CognitiveMode, string> = {
+      procedural_sequential: 'step-by-step thinking',
+      analytical_symbolic: 'analytical precision',
+      conceptual_systems: 'systems thinking',
+      narrative_meaning: 'story-based understanding',
+      embodied_somatic: 'body-based knowing',
+      associative_divergent: 'creative connections',
+      emotional_relational: 'emotional attunement',
+      visual_spatial: 'visual thinking',
+      temporal_foresight: 'future-oriented thinking',
+      integrative_meta: 'meta-cognition'
+    };
+    parts.push(`You also draw on ${secondaryLabels[profile.secondaryCognitiveMode]} when needed.`);
   }
 
   parts.push('');
@@ -976,29 +1069,61 @@ export async function generateProfileReveal(): Promise<string> {
 
   parts.push('');
 
-  // Communication
-  const commDescriptions: Record<CommunicationStyle, string> = {
-    direct: "You prefer directness. Don't beat around the bush - just say it.",
-    exploratory: "You think out loud. Talking helps you process, even when you don't have the answer yet.",
-    reflective: "You need time to respond. Quick conversations can feel pressured.",
-    collaborative: "You like building understanding together. Back-and-forth helps you think.",
-    metaphorical: "Metaphors and analogies help you understand. Abstract explanations don't land the same way."
-  };
+  // Communication & what the coach will do
+  parts.push("**How I'll adapt to you:**");
 
-  parts.push(`**How to talk with you:** ${commDescriptions[profile.communicationStyle]}`);
+  const adaptations: string[] = [];
 
+  // Based on cognitive mode
+  if (profile.primaryCognitiveMode === 'conceptual_systems') {
+    adaptations.push('Start with framing, not steps');
+    adaptations.push('Use metaphors');
+    adaptations.push('Allow partial articulation');
+  } else if (profile.primaryCognitiveMode === 'procedural_sequential') {
+    adaptations.push('Give clear steps');
+    adaptations.push('Provide predictable structure');
+    adaptations.push('Minimize abstraction');
+  } else if (profile.primaryCognitiveMode === 'narrative_meaning') {
+    adaptations.push('Use story-based reflection');
+    adaptations.push('Include emotional context');
+    adaptations.push('Connect to identity and meaning');
+  } else if (profile.primaryCognitiveMode === 'embodied_somatic') {
+    adaptations.push('Use grounded prompts');
+    adaptations.push('Include sensory language');
+    adaptations.push('Suggest body-based awareness');
+  } else if (profile.primaryCognitiveMode === 'associative_divergent') {
+    adaptations.push('Allow wandering, then help you return');
+    adaptations.push('Help cluster your ideas');
+    adaptations.push('Provide gentle focus');
+  } else if (profile.primaryCognitiveMode === 'emotional_relational') {
+    adaptations.push('Validate your feelings first');
+    adaptations.push('Mirror your emotional state');
+    adaptations.push('Guide gently, not correct');
+  } else if (profile.primaryCognitiveMode === 'visual_spatial') {
+    adaptations.push('Use spatial metaphors');
+    adaptations.push('Describe diagrams in words');
+    adaptations.push('Chunk information visually');
+  } else if (profile.primaryCognitiveMode === 'temporal_foresight') {
+    adaptations.push('Explore future scenarios');
+    adaptations.push('Ground you in the present when needed');
+    adaptations.push('Honor your long-term perspective');
+  } else if (profile.primaryCognitiveMode === 'integrative_meta') {
+    adaptations.push('Allow meta-reflection');
+    adaptations.push('Offer philosophical framing');
+    adaptations.push('Not force resolution');
+  }
+
+  // Based on emotional processing
+  if (profile.emotionalProcessing === 'feeler_first') {
+    adaptations.push('Always validate emotions before suggesting solutions');
+  }
+
+  // Based on communication style
   if (profile.needsTimeToRespond) {
-    parts.push("I'll give you space to think. No pressure to respond quickly.");
+    adaptations.push("Give you space to think - no rushed responses");
   }
 
-  parts.push('');
-
-  // Structure
-  if (profile.structurePreference === 'needs_flexibility' || profile.structurePreference === 'emergent') {
-    parts.push("**About structure:** You need room to flow. I won't over-structure our conversations.");
-  } else if (profile.structurePreference === 'loves_structure') {
-    parts.push("**About structure:** You like having a plan. I'll be clear and organized.");
-  }
+  parts.push(adaptations.map(a => `- ${a}`).join('\n'));
 
   // Strengths
   if (profile.discoveredStrengths.length > 0) {
@@ -1006,7 +1131,7 @@ export async function generateProfileReveal(): Promise<string> {
     parts.push(`**Your strengths:** ${profile.discoveredStrengths.join(', ')}`);
   }
 
-  // Traditional learning
+  // Traditional learning note
   if (profile.traditionalLearningFit === 'struggled') {
     parts.push('');
     parts.push("One more thing: If traditional school didn't work for you, that says nothing about your intelligence. The system rewards one type of mind. Your mind works differently - and that's actually valuable.");
@@ -1054,38 +1179,91 @@ export interface CoachAdaptations {
 
 /**
  * Generate coach adaptations based on profile
+ * This uses the new cognitive modes system
  */
 export async function getCoachAdaptations(): Promise<CoachAdaptations> {
   const profile = await getCognitiveProfile();
+  const mode = profile.primaryCognitiveMode;
 
   return {
-    // Response style based on processing
-    useMetaphors: profile.communicationStyle === 'metaphorical' || profile.primaryProcessing === 'patterns',
-    useExamples: profile.primaryProcessing === 'stories' || profile.primaryProcessing === 'actions',
-    useStepByStep: profile.primaryProcessing === 'details',
-    showBigPicture: profile.primaryProcessing === 'patterns' || profile.primaryProcessing === 'synthesis',
+    // Response style based on cognitive mode
+    useMetaphors:
+      profile.communicationStyle === 'metaphorical' ||
+      mode === 'conceptual_systems' ||
+      mode === 'visual_spatial' ||
+      mode === 'narrative_meaning',
+
+    useExamples:
+      mode === 'narrative_meaning' ||
+      mode === 'embodied_somatic' ||
+      profile.primaryProcessing === 'stories',
+
+    useStepByStep:
+      mode === 'procedural_sequential' ||
+      mode === 'analytical_symbolic',
+
+    showBigPicture:
+      mode === 'conceptual_systems' ||
+      mode === 'temporal_foresight' ||
+      mode === 'integrative_meta',
 
     // Pacing based on communication + social
-    allowSilence: profile.socialOrientation === 'drained_by_people' || profile.needsTimeToRespond,
-    quickResponses: profile.socialOrientation === 'energized_by_people' && profile.communicationStyle === 'direct',
-    giveTimeToThink: profile.needsTimeToRespond || profile.communicationStyle === 'reflective',
+    allowSilence:
+      profile.socialOrientation === 'drained_by_people' ||
+      profile.needsTimeToRespond,
 
-    // Questions based on emotional processing + communication
-    questionFrequency: profile.emotionalProcessing === 'feeler_first' ? 'low' : 'medium',
-    questionType: profile.communicationStyle === 'reflective' ? 'reflective' :
-                  profile.primaryProcessing === 'details' ? 'specific' : 'open',
+    quickResponses:
+      profile.socialOrientation === 'energized_by_people' &&
+      profile.communicationStyle === 'direct',
 
-    // Emotional based on sensitivity + emotional processing
-    validateFirst: profile.sensitivityLevel === 'highly_sensitive' || profile.emotionalProcessing === 'feeler_first',
-    mirrorEmotions: profile.emotionalIntelligence === 'high',
-    actionOriented: profile.emotionalProcessing === 'action_oriented',
+    giveTimeToThink:
+      profile.needsTimeToRespond ||
+      profile.communicationStyle === 'reflective' ||
+      mode === 'integrative_meta',
 
-    // Structure based on preference
-    provideStructure: profile.structurePreference === 'loves_structure' || profile.structurePreference === 'structured_start',
-    allowWandering: profile.structurePreference === 'needs_flexibility' || profile.structurePreference === 'emergent',
+    // Questions based on cognitive mode + emotional processing
+    questionFrequency:
+      profile.emotionalProcessing === 'feeler_first' ? 'low' :
+      mode === 'associative_divergent' ? 'low' : // Don't overwhelm with questions
+      'medium',
+
+    questionType:
+      profile.communicationStyle === 'reflective' ? 'reflective' :
+      mode === 'procedural_sequential' ? 'specific' :
+      mode === 'emotional_relational' ? 'reflective' :
+      'open',
+
+    // Emotional based on mode + sensitivity
+    validateFirst:
+      profile.sensitivityLevel === 'highly_sensitive' ||
+      profile.emotionalProcessing === 'feeler_first' ||
+      mode === 'emotional_relational' ||
+      mode === 'narrative_meaning',
+
+    mirrorEmotions:
+      profile.emotionalIntelligence === 'high' ||
+      mode === 'emotional_relational',
+
+    actionOriented:
+      profile.emotionalProcessing === 'action_oriented' ||
+      mode === 'embodied_somatic',
+
+    // Structure based on mode + preference
+    provideStructure:
+      profile.structurePreference === 'loves_structure' ||
+      profile.structurePreference === 'structured_start' ||
+      mode === 'procedural_sequential',
+
+    allowWandering:
+      profile.structurePreference === 'needs_flexibility' ||
+      profile.structurePreference === 'emergent' ||
+      mode === 'associative_divergent' ||
+      mode === 'conceptual_systems',
 
     // Length based on communication
-    preferBrief: profile.communicationStyle === 'direct' || profile.prefersWrittenOrSpoken === 'spoken'
+    preferBrief:
+      profile.communicationStyle === 'direct' ||
+      profile.prefersWrittenOrSpoken === 'spoken'
   };
 }
 
@@ -1100,10 +1278,27 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
     return ''; // No profile yet
   }
 
+  // Map cognitive modes to human-readable descriptions
+  const cognitiveModeLabelsFull: Record<CognitiveMode, string> = {
+    procedural_sequential: 'Procedural-Sequential (linear, step-by-step)',
+    analytical_symbolic: 'Analytical-Symbolic (logical, precise)',
+    conceptual_systems: 'Conceptual Systems (patterns, frameworks, big picture)',
+    narrative_meaning: 'Narrative-Meaning (stories, identity, emotional context)',
+    embodied_somatic: 'Embodied/Somatic (body-based, learns by doing)',
+    associative_divergent: 'Associative-Divergent (rapid connections, nonlinear)',
+    emotional_relational: 'Emotional-Relational (attuned to people, interpersonal)',
+    visual_spatial: 'Visual-Spatial (images, spatial models)',
+    temporal_foresight: 'Temporal/Foresight (timelines, consequences)',
+    integrative_meta: 'Integrative/Meta (meta-cognition, holds contradictions)'
+  };
+
   const parts: string[] = ['USER\'S COGNITIVE PROFILE (adapt your responses accordingly):'];
 
-  // Processing
-  parts.push(`- Thinks in: ${profile.primaryProcessing}${profile.secondaryProcessing ? ` with ${profile.secondaryProcessing}` : ''}`);
+  // Cognitive mode (primary)
+  parts.push(`- Primary cognitive mode: ${cognitiveModeLabelsFull[profile.primaryCognitiveMode]}`);
+  if (profile.secondaryCognitiveMode) {
+    parts.push(`- Secondary mode: ${cognitiveModeLabelsFull[profile.secondaryCognitiveMode]}`);
+  }
 
   // Communication
   parts.push(`- Communication style: ${profile.communicationStyle}`);
@@ -1126,21 +1321,65 @@ export async function getCognitiveProfileContextForLLM(): Promise<string> {
   // Structure
   parts.push(`- Structure preference: ${profile.structurePreference}`);
 
-  // Adaptations
+  // Mode-specific adaptations
   parts.push('\nADAPT YOUR RESPONSES:');
-  if (adaptations.useMetaphors) parts.push('- Use metaphors and analogies');
-  if (adaptations.useExamples) parts.push('- Give concrete examples');
-  if (adaptations.useStepByStep) parts.push('- Be step-by-step and clear');
-  if (adaptations.showBigPicture) parts.push('- Connect to bigger picture');
-  if (adaptations.validateFirst) parts.push('- Validate emotions before anything else');
-  if (adaptations.allowWandering) parts.push('- Allow conversation to wander');
-  if (adaptations.provideStructure) parts.push('- Provide clear structure');
+
+  // Based on cognitive mode
+  const mode = profile.primaryCognitiveMode;
+  if (mode === 'conceptual_systems') {
+    parts.push('- Start with framing and context, not steps');
+    parts.push('- Use metaphors - they understand through analogy');
+    parts.push('- Allow partial articulation - they know more than they can explain');
+    parts.push('- Connect ideas to bigger patterns');
+  } else if (mode === 'procedural_sequential') {
+    parts.push('- Give clear, logical steps');
+    parts.push('- Provide predictable structure');
+    parts.push('- Minimize unnecessary abstraction');
+  } else if (mode === 'narrative_meaning') {
+    parts.push('- Use story-based reflection');
+    parts.push('- Include emotional and identity context');
+    parts.push('- Mirror their emotional state');
+  } else if (mode === 'embodied_somatic') {
+    parts.push('- Use grounded, sensory prompts');
+    parts.push('- Suggest body-based awareness when relevant');
+    parts.push('- Keep it practical and action-oriented');
+  } else if (mode === 'associative_divergent') {
+    parts.push('- Allow wandering, then gently help return');
+    parts.push('- Help cluster ideas without forcing linear structure');
+    parts.push('- Permission to explore before formalizing');
+  } else if (mode === 'emotional_relational') {
+    parts.push('- Validate feelings first, always');
+    parts.push('- Mirror emotional attunement');
+    parts.push('- Guide gently, don\'t correct');
+  } else if (mode === 'visual_spatial') {
+    parts.push('- Use spatial metaphors and visual framing');
+    parts.push('- Describe concepts as if drawing diagrams');
+    parts.push('- Chunk information visually');
+  } else if (mode === 'temporal_foresight') {
+    parts.push('- Explore future scenarios and consequences');
+    parts.push('- Ground in present when they seem anxious about future');
+    parts.push('- Honor their long-arc perspective');
+  } else if (mode === 'integrative_meta') {
+    parts.push('- Allow meta-reflection on thinking');
+    parts.push('- Offer philosophical framing');
+    parts.push('- Don\'t force resolution - they can hold contradictions');
+  }
+
+  // Universal adaptations based on other profile attributes
+  if (adaptations.validateFirst && mode !== 'emotional_relational') {
+    parts.push('- Validate emotions before anything else');
+  }
   if (adaptations.preferBrief) parts.push('- Keep responses brief');
   if (adaptations.giveTimeToThink) parts.push('- Don\'t ask rapid questions');
 
   // Strengths
   if (profile.discoveredStrengths.length > 0) {
     parts.push(`\nKNOWN STRENGTHS: ${profile.discoveredStrengths.join(', ')}`);
+  }
+
+  // Traditional learning note
+  if (profile.traditionalLearningFit === 'struggled') {
+    parts.push('\nNOTE: Traditional education didn\'t fit their mind - don\'t use school-style instruction');
   }
 
   return parts.join('\n');
