@@ -20,9 +20,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/Colors';
 import {
   Attribute,
@@ -39,16 +41,16 @@ import {
   getUnlockRequirements,
 } from '@/services/skillProgressionService';
 
-// Map skill IDs to their actual routes
-const SKILL_ROUTES: Record<string, string> = {
+const DEV_UNLOCK_KEY = 'moodleaf_dev_unlock_all';
+
+// Skills with dedicated route files (custom components)
+const DEDICATED_ROUTES: Record<string, string> = {
   // Games -> /games/
   asteroids: '/games/asteroids',
   retro_snake: '/games/snake',
   retro_pong: '/games/pong',
   fidget_pad: '/games/fidget',
   bubble_wrap: '/games/bubble-wrap',
-  zen_blocks: '/games/zen-blocks',
-  color_sort: '/games/color-sort',
   breathing_orb: '/games/breathing-orb',
   breakout: '/games/breakout',
   game_2048: '/games/2048',
@@ -62,7 +64,7 @@ const SKILL_ROUTES: Record<string, string> = {
   kaleidoscope: '/games/kaleidoscope',
   maze_walker: '/games/maze-walker',
   untangle: '/games/untangle',
-  // Clinical skills with hyphenated routes
+  // Dedicated clinical skill components
   safety_plan: '/skills/safety-plan',
   grounding_ladder: '/skills/grounding-ladder',
   tipp_skills: '/skills/tipp',
@@ -76,8 +78,13 @@ const SKILL_ROUTES: Record<string, string> = {
   astrology_basics: '/skills/astrology',
 };
 
-function getSkillRoute(skillId: string): string | null {
-  return SKILL_ROUTES[skillId] || null;
+// Get route for any skill - dedicated or dynamic
+function getSkillRoute(skillId: string): string {
+  if (DEDICATED_ROUTES[skillId]) {
+    return DEDICATED_ROUTES[skillId];
+  }
+  // Use dynamic route for all other skills
+  return `/skills/${skillId}`;
 }
 
 export default function SkillsScreen() {
@@ -98,8 +105,15 @@ export default function SkillsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [devMode, setDevMode] = useState(false);
+  const [titleTapCount, setTitleTapCount] = useState(0);
 
   const loadData = useCallback(async () => {
+    // Check if dev mode is enabled
+    const devUnlock = await AsyncStorage.getItem(DEV_UNLOCK_KEY);
+    const isDevMode = devUnlock === 'true';
+    setDevMode(isDevMode);
+
     const [attrs, skillsData, unlocks, summaryData] = await Promise.all([
       getAttributesWithProgress(),
       getSkillsWithStatus(),
@@ -107,11 +121,48 @@ export default function SkillsScreen() {
       getProgressionSummary(),
     ]);
 
+    // If dev mode, unlock all skills
+    if (isDevMode) {
+      const unlockedSkills = skillsData.map(s => ({ ...s, isUnlocked: true }));
+      setSkills(unlockedSkills);
+    } else {
+      setSkills(skillsData);
+    }
+
     setAttributes(attrs);
-    setSkills(skillsData);
     setCoachUnlocks(unlocks);
     setSummary(summaryData);
   }, []);
+
+  // Secret dev mode toggle - tap title 7 times
+  const handleTitleTap = useCallback(() => {
+    const newCount = titleTapCount + 1;
+    setTitleTapCount(newCount);
+
+    if (newCount >= 7) {
+      setTitleTapCount(0);
+      Alert.alert(
+        devMode ? 'Disable Dev Mode?' : 'Enable Dev Mode?',
+        devMode
+          ? 'This will re-lock skills based on normal progression.'
+          : 'This will unlock ALL skills for testing.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: devMode ? 'Disable' : 'Enable',
+            onPress: async () => {
+              await AsyncStorage.setItem(DEV_UNLOCK_KEY, devMode ? 'false' : 'true');
+              setDevMode(!devMode);
+              loadData();
+            },
+          },
+        ]
+      );
+    }
+
+    // Reset tap count after 2 seconds
+    setTimeout(() => setTitleTapCount(0), 2000);
+  }, [titleTapCount, devMode, loadData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -163,11 +214,15 @@ export default function SkillsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tint} />
       }
     >
-      {/* Header */}
+      {/* Header - tap title 7 times for dev mode */}
       <View style={styles.headerContainer}>
-        <Text style={[styles.title, { color: colors.text }]}>Skills</Text>
+        <TouchableOpacity onPress={handleTitleTap} activeOpacity={0.8}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Skills {devMode && '🔓'}
+          </Text>
+        </TouchableOpacity>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Your personal growth toolkit
+          {devMode ? 'DEV MODE: All skills unlocked' : 'Your personal growth toolkit'}
         </Text>
       </View>
 
@@ -344,11 +399,7 @@ export default function SkillsScreen() {
               ]}
               onPress={() => {
                 if (skill.isUnlocked) {
-                  const route = getSkillRoute(skill.id);
-                  if (route) {
-                    router.push(route as any);
-                  }
-                  // Skills without routes are info-only (no navigation needed)
+                  router.push(getSkillRoute(skill.id) as any);
                 }
               }}
               disabled={!skill.isUnlocked}
