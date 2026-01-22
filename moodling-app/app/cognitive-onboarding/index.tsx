@@ -45,6 +45,11 @@ export default function CognitiveOnboardingScreen() {
   const [totalEstimate, setTotalEstimate] = useState(8);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // History for back navigation
+  const [questionHistory, setQuestionHistory] = useState<OnboardingQuestion[]>([]);
+  const [answerHistory, setAnswerHistory] = useState<{ questionId: string; answer: string }[]>([]);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -73,10 +78,12 @@ export default function CognitiveOnboardingScreen() {
     }
   };
 
-  const animateTransition = (callback: () => void) => {
+  const animateTransition = (direction: 'next' | 'back', callback: () => void) => {
+    const toValue = direction === 'next' ? -SCREEN_WIDTH : SCREEN_WIDTH;
+
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -SCREEN_WIDTH,
+        toValue,
         duration: 200,
         useNativeDriver: true,
       }),
@@ -87,7 +94,7 @@ export default function CognitiveOnboardingScreen() {
       }),
     ]).start(() => {
       callback();
-      slideAnim.setValue(SCREEN_WIDTH);
+      slideAnim.setValue(direction === 'next' ? SCREEN_WIDTH : -SCREEN_WIDTH);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -99,24 +106,57 @@ export default function CognitiveOnboardingScreen() {
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        setIsTransitioning(false);
+      });
     });
   };
 
   const handleSelectAnswer = async (answerId: string) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || isTransitioning) return;
 
     setSelectedAnswer(answerId);
+    setIsTransitioning(true);
 
     // Small delay to show selection
     setTimeout(async () => {
       try {
+        // Save to history before moving on
+        setQuestionHistory(prev => [...prev, currentQuestion]);
+        setAnswerHistory(prev => [...prev, { questionId: currentQuestion.id, answer: answerId }]);
+
         await recordOnboardingAnswer(currentQuestion.id, answerId);
-        animateTransition(loadNextQuestion);
+        animateTransition('next', loadNextQuestion);
       } catch (error) {
         console.error('Failed to record answer:', error);
+        setIsTransitioning(false);
       }
     }, 300);
+  };
+
+  const handleBack = () => {
+    if (questionHistory.length === 0 || isTransitioning) return;
+
+    setIsTransitioning(true);
+
+    animateTransition('back', () => {
+      // Pop the last question from history
+      const newHistory = [...questionHistory];
+      const previousQuestion = newHistory.pop();
+
+      // Pop the last answer from history
+      const newAnswerHistory = [...answerHistory];
+      newAnswerHistory.pop();
+
+      setQuestionHistory(newHistory);
+      setAnswerHistory(newAnswerHistory);
+
+      if (previousQuestion) {
+        setCurrentQuestion(previousQuestion);
+        setSelectedAnswer(null);
+        setQuestionCount(prev => prev - 1);
+      }
+    });
   };
 
   const handleSkip = async () => {
@@ -250,8 +290,25 @@ export default function CognitiveOnboardingScreen() {
         </ScrollView>
       </Animated.View>
 
+      {/* Navigation */}
+      <View style={[styles.navigation, { paddingBottom: insets.bottom + 10 }]}>
+        {questionHistory.length > 0 ? (
+          <Pressable
+            style={styles.backButton}
+            onPress={handleBack}
+            disabled={isTransitioning}
+          >
+            <Text style={[styles.backText, { color: colors.textSecondary }]}>
+              ← Back
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.backButton} />
+        )}
+      </View>
+
       {/* Footer hint */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
         <Text style={[styles.footerText, { color: colors.textSecondary }]}>
           There are no wrong answers. This is discovery, not a test.
         </Text>
@@ -363,9 +420,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  footer: {
+  navigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  backButton: {
+    width: 80,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   footerText: {
     fontSize: 13,

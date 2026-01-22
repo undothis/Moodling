@@ -31,10 +31,13 @@ export default function RootLayout() {
     const inCognitiveOnboarding = segments[0] === 'cognitive-onboarding';
     const inGuide = segments[0] === 'guide';
     const inCoach = segments[0] === 'coach';
+    const inTabs = segments[0] === '(tabs)';
 
-    // Only redirect TO onboarding if needed and not already in onboarding-related screens
-    // Don't redirect AWAY from onboarding - let the screen handle its own navigation
-    if (needsOnboarding && !inOnboarding && !inCognitiveOnboarding && !inGuide && !inCoach) {
+    // Only redirect TO onboarding if needed and not already in:
+    // - Onboarding screens (onboarding, cognitive-onboarding)
+    // - Post-onboarding screens (guide, coach)
+    // - Main app tabs (once user reaches tabs, never redirect back)
+    if (needsOnboarding && !inOnboarding && !inCognitiveOnboarding && !inGuide && !inCoach && !inTabs) {
       router.replace('/onboarding');
     }
   }, [isLoading, needsOnboarding, segments]);
