@@ -21,6 +21,23 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// ============================================
+// CORS PROXY FOR WEB
+// ============================================
+
+/**
+ * Wrap URL with CORS proxy when running on web
+ * YouTube RSS and page fetches are blocked by CORS in browsers
+ */
+function getCorsProxyUrl(url: string): string {
+  if (Platform.OS === 'web') {
+    // Use allorigins as CORS proxy for web environments
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
 
 // ============================================
 // STORAGE KEYS
@@ -561,8 +578,10 @@ export async function fetchChannelVideos(
       // First attempt: fetch channel page and extract ID
       try {
         console.log('[YouTube] Fetching channel page for:', channelInfo.id);
-        const pageResponse = await fetch(`https://www.youtube.com/@${channelInfo.id}`, {
-          headers: {
+        const channelPageUrl = getCorsProxyUrl(`https://www.youtube.com/@${channelInfo.id}`);
+        console.log('[YouTube] Using URL:', channelPageUrl);
+        const pageResponse = await fetch(channelPageUrl, {
+          headers: Platform.OS === 'web' ? {} : {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
@@ -618,9 +637,11 @@ export async function fetchChannelVideos(
     }
 
     // Fetch RSS feed
+    const rssFetchUrl = getCorsProxyUrl(feedUrl);
     console.log('[YouTubeService] Fetching RSS feed:', feedUrl);
-    const response = await fetch(feedUrl, {
-      headers: {
+    console.log('[YouTubeService] Using URL:', rssFetchUrl);
+    const response = await fetch(rssFetchUrl, {
+      headers: Platform.OS === 'web' ? {} : {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/xml,text/xml,*/*;q=0.8',
       },
@@ -1023,9 +1044,9 @@ export async function fetchVideoTranscript(
   videoId: string
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
   try {
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const videoUrl = getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`);
     const response = await fetch(videoUrl, {
-      headers: {
+      headers: Platform.OS === 'web' ? {} : {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',

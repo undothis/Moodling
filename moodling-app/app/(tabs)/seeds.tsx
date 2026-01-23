@@ -157,8 +157,12 @@ export default function SeedsScreen() {
   const handleRunAnalysis = async () => {
     setIsAnalyzing(true);
     try {
-      await runInsightAnalysis();
+      // Always force refresh when user manually triggers analysis
+      const result = await runInsightAnalysis(undefined, undefined, { forceRefresh: true });
+      console.log('[Seeds] Analysis complete:', result.newInsights.length, 'new,', result.updatedInsights.length, 'updated');
       await loadData();
+    } catch (error) {
+      console.error('[Seeds] Analysis failed:', error);
     } finally {
       setIsAnalyzing(false);
     }
