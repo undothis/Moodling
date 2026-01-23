@@ -171,8 +171,9 @@ export function VoiceEnabledTabBar({
 
         try {
           const result = await voiceRecording.stopRecording();
-          const finalTranscript = result?.transcript || overlay.transcript;
-          console.log('[VoiceTabBar] Recording stopped, transcript:', finalTranscript);
+          // Use result transcript, then overlay transcript as fallbacks
+          const finalTranscript = result?.transcript?.trim() || overlay.transcript?.trim() || '';
+          console.log('[VoiceTabBar] Recording stopped, result:', result?.transcript, 'overlay:', overlay.transcript, 'final:', finalTranscript);
 
           // Store pending message for the target screen
           if (finalTranscript.trim()) {

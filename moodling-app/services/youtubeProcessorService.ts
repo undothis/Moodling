@@ -135,6 +135,7 @@ export type ChannelCategory =
   | 'elderly_wisdom'
   | 'vulnerability_authenticity'
   | 'joy_celebration'
+  | 'addiction_recovery'
   | 'general_human_insight';
 
 export interface ProcessingJob {
@@ -491,6 +492,7 @@ export const CHANNEL_CATEGORIES: {
   { value: 'elderly_wisdom', label: 'Elderly Wisdom', description: 'Older generations sharing life perspective' },
   { value: 'vulnerability_authenticity', label: 'Vulnerability & Authenticity', description: 'Raw, honest content about being human' },
   { value: 'joy_celebration', label: 'Joy & Celebration', description: 'Positive experiences, celebration, happiness' },
+  { value: 'addiction_recovery', label: 'Addiction & Recovery', description: 'Compassionate, trauma-informed addiction recovery content' },
   { value: 'general_human_insight', label: 'General Human Insight', description: 'Mixed content with human insight value' },
 ];
 

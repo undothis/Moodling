@@ -108,6 +108,15 @@ const RECOMMENDED_CHANNELS = [
   { name: 'Michael Sealey', handle: 'MichaelSealey', channelId: 'UC9GoqsWjluXVSKHO4Wistbw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, hypnotherapy, sleep and relaxation' },
   { name: 'The Honest Guys', handle: 'thehonestguys', channelId: 'UC7tD6Ifrwbiy-BoaAHEinmQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, relaxation, sleep stories' },
   { name: 'Jason Stephenson', handle: 'JasonStephensonSleep', channelId: 'UCqDBSTeuGa1e3MSqG_nq2Uw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Sleep meditation, guided relaxation, anxiety relief' },
+
+  // === ADDICTION & RECOVERY ===
+  // Curated for compassionate, trauma-informed, non-judgmental approach to addiction
+  { name: 'Gabor Maté', handle: 'DrGaborMate', channelId: 'UC6JLfDwuqC6OmJAqVVn5f7w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Trauma-informed addiction specialist, compassionate approach to understanding addiction' },
+  { name: 'Russell Brand', handle: 'RussellBrand', channelId: 'UCswH8ovgUp5Bdg-0_JTYFNw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Recovered addict, spiritual approach to recovery, raw and authentic' },
+  { name: 'Annie Grace', handle: 'ThisNakedMind', channelId: 'UCDSEuXPwLJh4zLrVbYXj0Nw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'This Naked Mind - alcohol freedom without shame, science-based' },
+  { name: 'After Prison Show', handle: 'AfterPrisonShow', channelId: 'UCo2LGlvPwPJ_vD-dN8FdT8w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Joe Guerrero - real talk about addiction, recovery, and life after prison' },
+  { name: 'Recovery Elevator', handle: 'RecoveryElevator', channelId: 'UChvKBUy9eLU-5xVz2Rre7-g', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Paul Churchill - podcast about alcohol recovery, community-focused' },
+  { name: 'Club Soda', handle: 'ClubSodaUK', channelId: 'UC8oCJLZ_DLu7e5Qu3qbqRQw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Mindful drinking movement, harm reduction, choice without judgment' },
 ];
 
 export default function InterviewProcessorScreen() {
