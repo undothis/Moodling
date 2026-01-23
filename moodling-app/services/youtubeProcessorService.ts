@@ -48,6 +48,35 @@ export interface YouTubeVideo {
   publishedAt?: string;
   thumbnailUrl?: string;
   duration?: string;
+  // Engagement metrics (when available from YouTube Data API)
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+  // Calculated engagement score (0-100)
+  engagementScore?: number;
+}
+
+/**
+ * Video sampling strategy for training data collection
+ */
+export type SamplingStrategy =
+  | 'random'           // Pure random from available videos
+  | 'popular'          // Prioritize high view count
+  | 'recent'           // Prioritize newest videos
+  | 'balanced'         // Mix of popular + recent + random (recommended)
+  | 'engagement';      // Prioritize high engagement ratio (likes/views)
+
+export interface SamplingOptions {
+  strategy: SamplingStrategy;
+  maxVideos: number;
+  // For balanced strategy: how to split
+  popularPercent?: number;    // Default 40%
+  recentPercent?: number;     // Default 40%
+  randomPercent?: number;     // Default 20%
+  // Filters
+  minDurationMinutes?: number; // Skip short videos
+  maxAgeMonths?: number;       // Skip very old videos
+  excludeShorts?: boolean;     // Skip YouTube Shorts
 }
 
 export interface CuratedChannel {
@@ -589,6 +618,317 @@ function selectRandomVideos(videos: YouTubeVideo[], count: number): YouTubeVideo
   if (videos.length <= count) return videos;
   const shuffled = [...videos].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+/**
+ * Smart video sampling based on strategy
+ * Prioritizes quality over quantity for better training data
+ */
+export function selectVideosWithStrategy(
+  videos: YouTubeVideo[],
+  options: SamplingOptions
+): YouTubeVideo[] {
+  const { strategy, maxVideos } = options;
+
+  // Apply filters first
+  let filtered = filterVideos(videos, options);
+
+  if (filtered.length <= maxVideos) {
+    return filtered;
+  }
+
+  switch (strategy) {
+    case 'popular':
+      return selectByPopularity(filtered, maxVideos);
+
+    case 'recent':
+      return selectByRecency(filtered, maxVideos);
+
+    case 'engagement':
+      return selectByEngagement(filtered, maxVideos);
+
+    case 'balanced':
+      return selectBalanced(filtered, options);
+
+    case 'random':
+    default:
+      return selectRandomVideos(filtered, maxVideos);
+  }
+}
+
+/**
+ * Filter videos based on criteria
+ */
+function filterVideos(videos: YouTubeVideo[], options: SamplingOptions): YouTubeVideo[] {
+  let filtered = [...videos];
+
+  // Filter by age
+  if (options.maxAgeMonths) {
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - options.maxAgeMonths);
+
+    filtered = filtered.filter(v => {
+      if (!v.publishedAt) return true; // Keep if no date
+      return new Date(v.publishedAt) >= cutoffDate;
+    });
+  }
+
+  // Filter out YouTube Shorts (typically under 60 seconds, vertical format)
+  if (options.excludeShorts) {
+    filtered = filtered.filter(v => {
+      // Shorts often have #shorts in title or are very short
+      const isShortByTitle = v.title.toLowerCase().includes('#shorts') ||
+                              v.title.toLowerCase().includes('#short');
+      // If we have duration info, check that too
+      if (v.duration) {
+        const seconds = parseDuration(v.duration);
+        if (seconds > 0 && seconds < 60) return false;
+      }
+      return !isShortByTitle;
+    });
+  }
+
+  // Filter by minimum duration
+  if (options.minDurationMinutes && options.minDurationMinutes > 0) {
+    filtered = filtered.filter(v => {
+      if (!v.duration) return true; // Keep if no duration
+      const seconds = parseDuration(v.duration);
+      return seconds >= options.minDurationMinutes! * 60;
+    });
+  }
+
+  return filtered;
+}
+
+/**
+ * Parse ISO 8601 duration (PT1H30M45S) to seconds
+ */
+function parseDuration(duration: string): number {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+
+  const hours = parseInt(match[1] || '0', 10);
+  const minutes = parseInt(match[2] || '0', 10);
+  const seconds = parseInt(match[3] || '0', 10);
+
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/**
+ * Select videos by popularity (view count)
+ */
+function selectByPopularity(videos: YouTubeVideo[], count: number): YouTubeVideo[] {
+  // Sort by view count (highest first), fall back to random for videos without views
+  const withViews = videos.filter(v => v.viewCount !== undefined);
+  const withoutViews = videos.filter(v => v.viewCount === undefined);
+
+  const sorted = withViews.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+
+  // Take top performers, fill remaining with random from those without views
+  const result = sorted.slice(0, count);
+  if (result.length < count && withoutViews.length > 0) {
+    const remaining = count - result.length;
+    const randomFill = selectRandomVideos(withoutViews, remaining);
+    result.push(...randomFill);
+  }
+
+  return result;
+}
+
+/**
+ * Select videos by recency
+ */
+function selectByRecency(videos: YouTubeVideo[], count: number): YouTubeVideo[] {
+  const sorted = [...videos].sort((a, b) => {
+    const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+    const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+    return dateB - dateA; // Newest first
+  });
+
+  return sorted.slice(0, count);
+}
+
+/**
+ * Select videos by engagement ratio (likes/views)
+ * High engagement often indicates valuable, resonant content
+ */
+function selectByEngagement(videos: YouTubeVideo[], count: number): YouTubeVideo[] {
+  // Calculate engagement score for each video
+  const withScore = videos.map(v => {
+    let score = 0;
+    if (v.viewCount && v.viewCount > 0) {
+      // Engagement ratio (likes per 100 views)
+      const likeRatio = ((v.likeCount || 0) / v.viewCount) * 100;
+      // Comment engagement
+      const commentRatio = ((v.commentCount || 0) / v.viewCount) * 100;
+      // Combined score, weighted
+      score = likeRatio * 0.7 + commentRatio * 0.3;
+      // Boost for videos with more absolute engagement (avoids tiny videos with 100% like ratio)
+      const volumeBoost = Math.log10(Math.max(v.viewCount, 1)) / 7; // 0-1 scale for up to 10M views
+      score = score * (0.5 + volumeBoost * 0.5);
+    }
+    return { ...v, engagementScore: score };
+  });
+
+  // Sort by engagement score
+  const sorted = withScore.sort((a, b) => (b.engagementScore || 0) - (a.engagementScore || 0));
+
+  return sorted.slice(0, count);
+}
+
+/**
+ * Balanced sampling: mix of popular, recent, and random
+ * This is the RECOMMENDED strategy for training data
+ */
+function selectBalanced(videos: YouTubeVideo[], options: SamplingOptions): YouTubeVideo[] {
+  const { maxVideos } = options;
+  const popularPercent = options.popularPercent ?? 40;
+  const recentPercent = options.recentPercent ?? 40;
+  const randomPercent = options.randomPercent ?? 20;
+
+  // Calculate counts
+  const popularCount = Math.floor(maxVideos * (popularPercent / 100));
+  const recentCount = Math.floor(maxVideos * (recentPercent / 100));
+  const randomCount = maxVideos - popularCount - recentCount;
+
+  const selected: YouTubeVideo[] = [];
+  const selectedIds = new Set<string>();
+
+  // Get popular videos
+  const popular = selectByPopularity(videos, popularCount * 2); // Get extra to avoid overlap
+  for (const v of popular) {
+    if (selected.length >= popularCount) break;
+    if (!selectedIds.has(v.videoId)) {
+      selected.push(v);
+      selectedIds.add(v.videoId);
+    }
+  }
+
+  // Get recent videos (excluding already selected)
+  const remaining = videos.filter(v => !selectedIds.has(v.videoId));
+  const recent = selectByRecency(remaining, recentCount * 2);
+  for (const v of recent) {
+    if (selected.length >= popularCount + recentCount) break;
+    if (!selectedIds.has(v.videoId)) {
+      selected.push(v);
+      selectedIds.add(v.videoId);
+    }
+  }
+
+  // Fill rest with random (excluding already selected)
+  const stillRemaining = videos.filter(v => !selectedIds.has(v.videoId));
+  const random = selectRandomVideos(stillRemaining, randomCount);
+  for (const v of random) {
+    if (selected.length >= maxVideos) break;
+    if (!selectedIds.has(v.videoId)) {
+      selected.push(v);
+      selectedIds.add(v.videoId);
+    }
+  }
+
+  return selected;
+}
+
+/**
+ * Fetch video statistics (views, likes, comments) using YouTube Data API
+ * Requires a YouTube API key
+ */
+export async function enrichVideosWithStats(
+  videos: YouTubeVideo[],
+  youtubeApiKey: string
+): Promise<YouTubeVideo[]> {
+  if (!youtubeApiKey || videos.length === 0) {
+    return videos;
+  }
+
+  try {
+    // YouTube API allows up to 50 video IDs per request
+    const batchSize = 50;
+    const enriched: YouTubeVideo[] = [];
+
+    for (let i = 0; i < videos.length; i += batchSize) {
+      const batch = videos.slice(i, i + batchSize);
+      const videoIds = batch.map(v => v.videoId).join(',');
+
+      const url = `https://www.googleapis.com/youtube/v3/videos?` +
+        `part=statistics,contentDetails&id=${videoIds}&key=${youtubeApiKey}`;
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        console.warn(`YouTube API error: ${response.status}`);
+        // Return original videos if API fails
+        enriched.push(...batch);
+        continue;
+      }
+
+      const data = await response.json();
+      const statsMap = new Map<string, any>();
+
+      for (const item of data.items || []) {
+        statsMap.set(item.id, {
+          viewCount: parseInt(item.statistics?.viewCount || '0', 10),
+          likeCount: parseInt(item.statistics?.likeCount || '0', 10),
+          commentCount: parseInt(item.statistics?.commentCount || '0', 10),
+          duration: item.contentDetails?.duration,
+        });
+      }
+
+      // Merge stats into videos
+      for (const video of batch) {
+        const stats = statsMap.get(video.videoId);
+        if (stats) {
+          enriched.push({
+            ...video,
+            viewCount: stats.viewCount,
+            likeCount: stats.likeCount,
+            commentCount: stats.commentCount,
+            duration: stats.duration || video.duration,
+          });
+        } else {
+          enriched.push(video);
+        }
+      }
+    }
+
+    return enriched;
+  } catch (error) {
+    console.error('Failed to enrich videos with stats:', error);
+    return videos; // Return original on error
+  }
+}
+
+/**
+ * Fetch channel videos with smart sampling
+ * Enhanced version that supports popularity-based selection
+ */
+export async function fetchChannelVideosWithSampling(
+  channelUrl: string,
+  options: SamplingOptions,
+  youtubeApiKey?: string
+): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
+  // First, fetch all available videos from RSS
+  const result = await fetchChannelVideos(channelUrl, options.maxVideos * 3);
+
+  if (result.error || result.videos.length === 0) {
+    return result;
+  }
+
+  let videos = result.videos;
+
+  // If we have a YouTube API key, enrich with stats for better sampling
+  if (youtubeApiKey && (options.strategy === 'popular' || options.strategy === 'engagement' || options.strategy === 'balanced')) {
+    videos = await enrichVideosWithStats(videos, youtubeApiKey);
+  }
+
+  // Apply smart sampling
+  const selected = selectVideosWithStrategy(videos, options);
+
+  return {
+    videos: selected,
+    channelName: result.channelName,
+    channelId: result.channelId,
+  };
 }
 
 function decodeXMLEntities(text: string): string {
@@ -1272,6 +1612,11 @@ export default {
   extractChannelInfo,
   fetchChannelVideos,
   fetchVideoTranscript,
+
+  // Smart sampling
+  selectVideosWithStrategy,
+  enrichVideosWithStats,
+  fetchChannelVideosWithSampling,
 
   // Insight extraction
   buildExtractionPrompt,

@@ -338,6 +338,33 @@ YouTube RSS Feed → Returns ~15-50 recent videos
                Process each for insights
 ```
 
+### Smart Sampling Strategies
+
+If you have a YouTube Data API key, you can use **smart sampling** to prioritize better videos:
+
+| Strategy | What It Does | Best For |
+|----------|--------------|----------|
+| `random` | Pure random selection | Quick sampling, no API key needed |
+| `popular` | Prioritizes high view counts | Finding community-validated content |
+| `recent` | Prioritizes newest videos | Getting up-to-date advice |
+| `engagement` | Prioritizes high like/view ratio | Finding resonant, valuable content |
+| **`balanced`** | 40% popular + 40% recent + 20% random | **RECOMMENDED** - best of all worlds |
+
+### How Balanced Sampling Works
+
+```
+BALANCED STRATEGY (recommended):
+├── 40% from most popular videos (high views)
+├── 40% from most recent videos (last 2 years)
+├── 20% random (for diversity)
+└── Filters out: Shorts, very old, duplicates
+```
+
+This gives you:
+- **Popular videos** = content that resonated with many people
+- **Recent videos** = up-to-date perspectives and advice
+- **Random** = diversity to avoid just hitting the "greatest hits"
+
 ### Recommended Settings
 
 | Channel Type | Videos to Process | Why |

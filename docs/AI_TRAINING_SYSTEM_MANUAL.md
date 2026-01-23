@@ -103,10 +103,65 @@ The LLM kernel doesn't "follow" the app's code - the app **wraps** the kernel.
    - Assign category and trust level
    - System fetches via RSS feed (no API key needed)
 
-2. **Video Processing**
-   - Randomly selects videos from channel
+2. **Video Processing with Smart Sampling**
+
+   **Default Behavior** (no API key):
+   - Fetches recent videos via RSS feed (~15-50 videos)
+   - Randomly selects 20 for processing
    - Extracts transcript from auto-captions
    - Sends to Claude for insight extraction
+
+   **Smart Sampling Strategies** (with YouTube Data API key):
+
+   | Strategy | Description | Best For |
+   |----------|-------------|----------|
+   | `random` | Pure random selection | Quick sampling |
+   | `popular` | Prioritizes high view counts | Community-validated content |
+   | `recent` | Prioritizes newest videos | Up-to-date advice |
+   | `engagement` | Prioritizes high like/view ratio | Resonant, valuable content |
+   | **`balanced`** | 40% popular + 40% recent + 20% random | **RECOMMENDED** |
+
+   **Balanced Strategy (Default When API Key Available)**:
+   ```
+   ┌─────────────────────────────────────────────────────┐
+   │ BALANCED SAMPLING                                   │
+   ├─────────────────────────────────────────────────────┤
+   │ 40% Popular   │ High view count videos              │
+   │ 40% Recent    │ Videos from last 2 years            │
+   │ 20% Random    │ Diversity to avoid "greatest hits"  │
+   ├─────────────────────────────────────────────────────┤
+   │ FILTERS APPLIED:                                    │
+   │ • Exclude YouTube Shorts (<60 seconds)              │
+   │ • Exclude very old videos (optional)                │
+   │ • Exclude based on minimum duration (optional)      │
+   └─────────────────────────────────────────────────────┘
+   ```
+
+   **Why Smart Sampling?**
+   - Popular videos = content validated by many viewers
+   - High engagement ratio = content that resonates
+   - Diversity prevents over-fitting to one style
+   - Quality > quantity for LoRA fine-tuning
+
+   **Code Usage**:
+   ```typescript
+   import { fetchChannelVideosWithSampling } from './youtubeProcessorService';
+
+   const result = await fetchChannelVideosWithSampling(
+     'https://youtube.com/@ChannelName',
+     {
+       strategy: 'balanced',
+       maxVideos: 25,
+       popularPercent: 40,
+       recentPercent: 40,
+       randomPercent: 20,
+       excludeShorts: true,
+       maxAgeMonths: 24,
+       minDurationMinutes: 5,
+     },
+     process.env.YOUTUBE_API_KEY
+   );
+   ```
 
 3. **Insight Extraction**
    - Claude analyzes transcript for human insights
