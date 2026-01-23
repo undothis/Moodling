@@ -224,36 +224,50 @@ export default function CoachTabScreen() {
         return;
       }
 
-      // Build conversation history
+      // Build conversation history (ChatMessage type needs timestamp as string)
       const history: ChatMessage[] = messages
         .filter((m) => m.source === 'user' || m.source === 'claudeAPI')
         .slice(-10)
         .map((m) => ({
           role: m.source === 'user' ? 'user' : 'assistant',
           content: m.text,
+          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
         }));
 
       // Send to Claude
+      console.log('[Coach] Sending message to Claude API...');
       const response: AIResponse = await sendMessage(messageText, {
         recentMessages: history,
         toneStyles,
       });
+      console.log('[Coach] Got response, source:', response.source, 'text length:', response.text?.length || 0);
 
+      // Check if we got a real response
+      if (!response.text || response.text.length === 0) {
+        console.error('[Coach] Empty response from API');
+        throw new Error('Empty response from API');
+      }
+
+      // Add AI message
       const aiMessage: DisplayMessage = {
         id: `ai_${Date.now()}`,
         text: response.text,
-        source: response.source === 'crisis' ? 'crisis' : 'claudeAPI',
+        source: response.source === 'crisis' ? 'crisis' : (response.source === 'fallback' ? 'fallback' : 'claudeAPI'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // TTS if enabled
-      const ttsSettings = await getTTSSettings();
-      if (ttsSettings.enabled) {
-        speakCoachResponse(response.text);
+      // TTS if enabled (in separate try/catch so it doesn't break the response)
+      try {
+        const ttsSettings = await getTTSSettings();
+        if (ttsSettings.enabled) {
+          speakCoachResponse(response.text);
+        }
+      } catch (ttsError) {
+        console.log('[Coach] TTS error (non-blocking):', ttsError);
       }
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('[Coach] Failed to send message:', error);
       const fallbackText = getFallbackResponse();
       const fallbackMessage: DisplayMessage = {
         id: `fallback_${Date.now()}`,
@@ -272,58 +286,68 @@ export default function CoachTabScreen() {
     handleSendRef.current = handleSend;
   });
 
-  // Track voice timestamp to detect changes on already-focused screen
-  const { voiceTimestamp } = useLocalSearchParams<{ context?: string; voiceTimestamp?: string }>();
+  // Track voice params from tab bar navigation
+  const { voiceMessage, voiceTimestamp } = useLocalSearchParams<{
+    context?: string;
+    voiceMessage?: string;
+    voiceTimestamp?: string;
+  }>();
   const lastVoiceTimestamp = useRef<string | null>(null);
 
-  // Function to load and send pending voice message
+  // Function to send a voice message
+  const sendVoiceMessage = useCallback((message: string) => {
+    console.log('[Coach] Sending voice message:', message);
+    setInputText(message);
+    // Auto-send with retry mechanism for race condition
+    const attemptSend = (retries: number) => {
+      setTimeout(() => {
+        if (handleSendRef.current) {
+          console.log('[Coach] Calling handleSend with voice message');
+          handleSendRef.current(message);
+        } else if (retries > 0) {
+          console.log('[Coach] Waiting for handleSendRef...', retries);
+          attemptSend(retries - 1);
+        } else {
+          console.error('[Coach] handleSendRef timeout');
+        }
+      }, 50);
+    };
+    attemptSend(15);
+  }, []);
+
+  // Function to load pending voice message from AsyncStorage (backup method)
   const loadAndSendPendingVoice = useCallback(async () => {
     try {
       const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
-      console.log('[Coach] Checking for pending voice message:', pending ? 'found' : 'none');
+      console.log('[Coach] Checking AsyncStorage for pending voice:', pending ? 'found' : 'none');
       if (pending) {
-        // Clear the pending message
         await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
         await AsyncStorage.removeItem(`${PENDING_COACH_MESSAGE_KEY}_timestamp`);
-        // Set it in the input and auto-send
-        setInputText(pending);
-        console.log('[Coach] Set pending voice message in input, auto-sending...');
-        // Auto-send immediately with retry mechanism for race condition
-        const attemptSend = (retries: number) => {
-          setTimeout(() => {
-            if (handleSendRef.current) {
-              console.log('[Coach] Sending voice message:', pending);
-              handleSendRef.current(pending);
-            } else if (retries > 0) {
-              console.log('[Coach] Waiting for handleSendRef...', retries);
-              attemptSend(retries - 1);
-            } else {
-              console.error('[Coach] handleSendRef timeout');
-            }
-          }, 50); // Short 50ms delay, retry quickly
-        };
-        attemptSend(15); // Try up to 15 times with 50ms delays (750ms total max)
+        sendVoiceMessage(pending);
       }
     } catch (error) {
       console.error('Failed to load pending voice message:', error);
     }
-  }, []);
+  }, [sendVoiceMessage]);
 
-  // Load pending voice message on focus
+  // Handle voice message from navigation params (primary method - more reliable)
+  useEffect(() => {
+    if (voiceMessage && voiceTimestamp && voiceTimestamp !== lastVoiceTimestamp.current) {
+      lastVoiceTimestamp.current = voiceTimestamp;
+      console.log('[Coach] Got voiceMessage from params:', voiceMessage);
+      sendVoiceMessage(voiceMessage);
+    }
+  }, [voiceMessage, voiceTimestamp, sendVoiceMessage]);
+
+  // Also check AsyncStorage on focus (backup for already-mounted screens)
   useFocusEffect(
     useCallback(() => {
-      loadAndSendPendingVoice();
-    }, [loadAndSendPendingVoice])
+      // Only check AsyncStorage if no param message (avoid double-send)
+      if (!voiceMessage) {
+        loadAndSendPendingVoice();
+      }
+    }, [voiceMessage, loadAndSendPendingVoice])
   );
-
-  // Also check when voiceTimestamp param changes (for already-focused screen)
-  useEffect(() => {
-    if (voiceTimestamp && voiceTimestamp !== lastVoiceTimestamp.current) {
-      lastVoiceTimestamp.current = voiceTimestamp;
-      console.log('[Coach] voiceTimestamp changed, loading pending voice');
-      loadAndSendPendingVoice();
-    }
-  }, [voiceTimestamp, loadAndSendPendingVoice]);
 
   const renderMessage = (message: DisplayMessage) => {
     const isUser = message.source === 'user';

@@ -715,12 +715,14 @@ export async function sendMessage(
   // Get API key
   const apiKey = await getAPIKey();
   if (!apiKey) {
+    console.log('[ClaudeAPI] No API key found');
     return {
       text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
       source: 'fallback',
       cost: 0,
     };
   }
+  console.log('[ClaudeAPI] API key found, length:', apiKey.length);
 
   // Get tone preferences (with fallback to prevent API failure)
   let tonePrefs = context.toneStyles;
@@ -1028,6 +1030,9 @@ ${controllerModifiers}`;
   };
 
   try {
+    console.log('[ClaudeAPI] Making API request to:', CLAUDE_CONFIG.baseURL);
+    console.log('[ClaudeAPI] Using model:', CLAUDE_CONFIG.model);
+
     const response = await fetch(CLAUDE_CONFIG.baseURL, {
       method: 'POST',
       headers: {
@@ -1039,13 +1044,39 @@ ${controllerModifiers}`;
       body: JSON.stringify(request),
     });
 
+    console.log('[ClaudeAPI] Response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
+      console.error('[ClaudeAPI] API error:', response.status, errorText);
+
+      // Provide more specific error messages
+      if (response.status === 401) {
+        return {
+          text: "My API key seems to be invalid. Could you check it in Settings?",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
+      if (response.status === 429) {
+        return {
+          text: "I'm getting rate limited - let's wait a moment and try again.",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
+      if (response.status === 400) {
+        return {
+          text: "Something went wrong with my request. Let me try a simpler response - what's on your mind?",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
       throw new Error(`API error: ${response.status}`);
     }
 
     const data: ClaudeAPIResponse = await response.json();
+    console.log('[ClaudeAPI] Got response, tokens:', data.usage?.input_tokens, '/', data.usage?.output_tokens);
 
     // Track cost
     await recordUsage(

@@ -1058,8 +1058,143 @@ function decodeXMLEntities(text: string): string {
 }
 
 /**
- * Fetch transcript via Invidious API (most reliable method)
- * Invidious provides CORS-friendly access to YouTube captions
+ * Fetch transcript via YouTube InnerTube API
+ * This is the most reliable method as it's what YouTube itself uses
+ */
+async function fetchTranscriptViaInnerTube(
+  videoId: string
+): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  console.log(`[Transcript] Trying InnerTube API for video: ${videoId}`);
+
+  try {
+    // Step 1: Get video page to extract caption track info
+    const videoPageUrl = Platform.OS === 'web'
+      ? getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`)
+      : `https://www.youtube.com/watch?v=${videoId}`;
+
+    console.log(`[Transcript] Fetching video page...`);
+    const pageResponse = await fetch(videoPageUrl, {
+      headers: Platform.OS === 'web' ? {} : {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (!pageResponse.ok) {
+      console.log(`[Transcript] Video page fetch failed: ${pageResponse.status}`);
+      return { transcript: '', segments: [], error: `Page fetch failed: ${pageResponse.status}` };
+    }
+
+    const html = await pageResponse.text();
+    console.log(`[Transcript] Got page HTML (${html.length} chars)`);
+
+    // Extract caption tracks from ytInitialPlayerResponse
+    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+    if (!playerResponseMatch) {
+      console.log(`[Transcript] Could not find ytInitialPlayerResponse`);
+      return { transcript: '', segments: [], error: 'Could not find player response' };
+    }
+
+    let playerResponse: any;
+    try {
+      playerResponse = JSON.parse(playerResponseMatch[1]);
+    } catch (e) {
+      console.log(`[Transcript] Failed to parse player response`);
+      return { transcript: '', segments: [], error: 'Failed to parse player response' };
+    }
+
+    const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!captions || captions.length === 0) {
+      console.log(`[Transcript] No captions found in player response`);
+      return { transcript: '', segments: [], error: 'No captions available for this video' };
+    }
+
+    console.log(`[Transcript] Found ${captions.length} caption tracks`);
+
+    // Find English captions (prefer non-auto-generated)
+    let selectedCaption = captions.find(
+      (c: any) => c.languageCode === 'en' && c.kind !== 'asr'
+    );
+    if (!selectedCaption) {
+      selectedCaption = captions.find(
+        (c: any) => c.languageCode === 'en' || c.languageCode?.startsWith('en')
+      );
+    }
+    if (!selectedCaption && captions.length > 0) {
+      selectedCaption = captions[0];
+      console.log(`[Transcript] Using non-English caption: ${selectedCaption.languageCode}`);
+    }
+
+    if (!selectedCaption || !selectedCaption.baseUrl) {
+      return { transcript: '', segments: [], error: 'No usable caption track found' };
+    }
+
+    // Step 2: Fetch the caption content
+    // Add fmt=json3 for easier parsing
+    let captionUrl = selectedCaption.baseUrl;
+    if (!captionUrl.includes('fmt=')) {
+      captionUrl += '&fmt=json3';
+    }
+
+    // Use CORS proxy for web
+    const fetchUrl = Platform.OS === 'web' ? getCorsProxyUrl(captionUrl) : captionUrl;
+    console.log(`[Transcript] Fetching caption content...`);
+
+    const captionResponse = await fetch(fetchUrl);
+    if (!captionResponse.ok) {
+      console.log(`[Transcript] Caption fetch failed: ${captionResponse.status}`);
+      return { transcript: '', segments: [], error: `Caption fetch failed: ${captionResponse.status}` };
+    }
+
+    const captionData = await captionResponse.text();
+    console.log(`[Transcript] Got caption data (${captionData.length} chars)`);
+
+    // Try to parse as JSON3 format
+    if (captionData.startsWith('{')) {
+      try {
+        const json = JSON.parse(captionData);
+        const events = json.events || [];
+        const segments: TranscriptSegment[] = [];
+
+        for (const event of events) {
+          if (event.segs) {
+            const text = event.segs.map((s: any) => s.utf8 || '').join('').trim();
+            if (text) {
+              segments.push({
+                text,
+                start: (event.tStartMs || 0) / 1000,
+                duration: (event.dDurationMs || 0) / 1000,
+              });
+            }
+          }
+        }
+
+        if (segments.length > 0) {
+          const transcript = segments.map(s => s.text).join(' ');
+          console.log(`[Transcript] Parsed ${segments.length} segments via JSON3`);
+          return { transcript, segments };
+        }
+      } catch (e) {
+        console.log(`[Transcript] JSON3 parse failed, trying XML`);
+      }
+    }
+
+    // Fall back to XML parsing
+    return parseTranscriptXml(captionData);
+
+  } catch (error) {
+    console.log(`[Transcript] InnerTube method failed:`, error);
+    return {
+      transcript: '',
+      segments: [],
+      error: error instanceof Error ? error.message : 'InnerTube fetch failed',
+    };
+  }
+}
+
+/**
+ * Fetch transcript via Invidious API (fallback method)
+ * Note: Many Invidious instances have caption issues due to YouTube rate limiting
  */
 async function fetchTranscriptViaInvidious(
   videoId: string
@@ -1073,7 +1208,7 @@ async function fetchTranscriptViaInvidious(
       console.log(`[Transcript] Trying instance: ${captionsUrl}`);
 
       const captionsResponse = await fetch(captionsUrl, {
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(5000), // 5 second timeout (reduced)
       });
 
       if (!captionsResponse.ok) {
@@ -1120,7 +1255,7 @@ async function fetchTranscriptViaInvidious(
       console.log(`[Transcript] Fetching caption content from: ${captionContentUrl}`);
 
       const contentResponse = await fetch(captionContentUrl, {
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(5000),
       });
 
       if (!contentResponse.ok) {
@@ -1366,28 +1501,29 @@ function parseTranscriptXml(
 /**
  * Fetch transcript for a YouTube video
  * Tries multiple methods in order of reliability:
- * 1. Invidious API (most reliable, CORS-friendly)
+ * 1. InnerTube API (what YouTube itself uses - most reliable)
  * 2. YouTube timedtext API
- * 3. Direct YouTube page scraping
+ * 3. Invidious API (often rate-limited)
+ * 4. Direct YouTube page scraping
  */
 export async function fetchVideoTranscript(
   videoId: string
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
   console.log(`[Transcript] Fetching transcript for video: ${videoId}`);
 
-  // Try Method 1: Invidious API (most reliable for CORS)
+  // Try Method 1: InnerTube API (most reliable - what YouTube uses internally)
   try {
-    const invidiousResult = await fetchTranscriptViaInvidious(videoId);
-    if (invidiousResult.transcript && invidiousResult.transcript.length > 100) {
-      console.log(`[Transcript] Got transcript via Invidious (${invidiousResult.transcript.length} chars)`);
-      return invidiousResult;
+    const innerTubeResult = await fetchTranscriptViaInnerTube(videoId);
+    if (innerTubeResult.transcript && innerTubeResult.transcript.length > 100) {
+      console.log(`[Transcript] Got transcript via InnerTube (${innerTubeResult.transcript.length} chars)`);
+      return innerTubeResult;
     }
-    if (invidiousResult.error === 'No captions available for this video') {
+    if (innerTubeResult.error === 'No captions available for this video') {
       // Don't try other methods if captions don't exist
-      return invidiousResult;
+      return innerTubeResult;
     }
   } catch (error) {
-    console.log(`[Transcript] Invidious method failed:`, error);
+    console.log(`[Transcript] InnerTube method failed:`, error);
   }
 
   // Try Method 2: YouTube timedtext API
@@ -1401,7 +1537,18 @@ export async function fetchVideoTranscript(
     console.log(`[Transcript] Timedtext API method failed:`, error);
   }
 
-  // Try Method 3: Direct YouTube page scraping
+  // Try Method 3: Invidious API (often rate-limited but worth trying)
+  try {
+    const invidiousResult = await fetchTranscriptViaInvidious(videoId);
+    if (invidiousResult.transcript && invidiousResult.transcript.length > 100) {
+      console.log(`[Transcript] Got transcript via Invidious (${invidiousResult.transcript.length} chars)`);
+      return invidiousResult;
+    }
+  } catch (error) {
+    console.log(`[Transcript] Invidious method failed:`, error);
+  }
+
+  // Try Method 4: Direct YouTube page scraping (last resort)
   try {
     const videoUrl = getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`);
     console.log(`[Transcript] Trying direct scrape via: ${videoUrl}`);

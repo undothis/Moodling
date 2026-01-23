@@ -194,16 +194,20 @@ export function VoiceEnabledTabBar({
             }
           }
 
-          // Navigate to target - use params to trigger reload on already-focused screens
+          // Navigate to target with voice message as param
+          // This is more reliable than AsyncStorage for immediate navigation
           const tabIndex = state.routes.findIndex((r) => r.name === routeName);
-          const isAlreadyFocused = state.index === tabIndex;
 
           if (tabIndex !== -1) {
-            if (isAlreadyFocused && finalTranscript.trim()) {
-              // Already on this tab - navigate with timestamp param to trigger effect
+            // Always pass the voice message and timestamp as params for reliability
+            if (finalTranscript.trim()) {
+              console.log('[VoiceTabBar] Navigating to', routeName, 'with voiceMessage param');
               navigation.navigate({
                 name: routeName,
-                params: { voiceTimestamp: Date.now() },
+                params: {
+                  voiceMessage: finalTranscript.trim(),
+                  voiceTimestamp: Date.now()
+                },
                 merge: true,
               } as any);
             } else {
