@@ -409,6 +409,7 @@ Every response is validated against immutable tenets:
 |------|---------|
 | `services/claudeAPIService.ts` | Main API integration, context assembly |
 | `services/coachPersonalityService.ts` | Persona system, adaptive mode |
+| `services/coachStyleService.ts` | Communication style rules, persona variations, user mirroring |
 | `services/conversationController.ts` | Human-ness scoring, response directives |
 | `services/memoryTierService.ts` | Short/mid/long term memory |
 | `services/corePrincipleKernel.ts` | Immutable ethical tenets |

@@ -1043,6 +1043,12 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
         label: 'Earth Names',
         description: 'Cole, Blaze, Wade, Leo, River, Stone, Forrest'
       },
+      {
+        id: 'custom',
+        emoji: '✏️',
+        label: 'I\'ll name them myself',
+        description: 'Give your guide a custom name'
+      },
     ],
   },
   {

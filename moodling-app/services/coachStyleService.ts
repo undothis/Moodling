@@ -5,8 +5,13 @@
  * These are style rules that ensure the Coach feels genuine,
  * not performative or theatrical.
  *
- * KEY PRINCIPLE: Warmth comes through WORDS, not markers.
+ * KEY PRINCIPLES:
+ * - Warmth comes through WORDS, not markers
+ * - Each persona has distinct style variations
+ * - Coach can learn to mirror user's communication style over time
  */
+
+import type { CoachPersona } from './coachPersonalityService';
 
 // ============================================
 // STYLE RULES
@@ -171,6 +176,306 @@ export const COACH_STYLE_RULES: StyleRule[] = [
 ];
 
 // ============================================
+// PERSONA-SPECIFIC STYLE VARIATIONS
+// ============================================
+
+/**
+ * Style adjustments that vary by persona
+ * These override or augment the base rules for each persona's unique voice
+ */
+export interface PersonaStyleVariation {
+  persona: CoachPersona;
+  greetingStyle: string;           // How they start conversations
+  questionStyle: string;           // How they ask questions
+  validationStyle: string;         // How they validate feelings
+  directnessLevel: 'gentle' | 'balanced' | 'direct';
+  energyLevel: 'calm' | 'balanced' | 'energetic';
+  emojiUsage: 'none' | 'minimal' | 'moderate';
+  sentenceLength: 'short' | 'medium' | 'varied';
+  sampleOpeners: string[];         // Example ways this persona starts responses
+  promptAdjustments: string;       // Additional prompt instructions for this persona
+}
+
+/**
+ * Style variations for each coach persona
+ */
+export const PERSONA_STYLE_VARIATIONS: Record<CoachPersona, PersonaStyleVariation> = {
+  fern: {
+    persona: 'fern',
+    greetingStyle: 'soft and nurturing',
+    questionStyle: 'gentle, open-ended',
+    validationStyle: 'heavy - emphasize feelings are valid',
+    directnessLevel: 'gentle',
+    energyLevel: 'calm',
+    emojiUsage: 'minimal',
+    sentenceLength: 'medium',
+    sampleOpeners: [
+      "That sounds really hard.",
+      "I hear you.",
+      "It makes sense you'd feel that way.",
+      "Take your time with this.",
+    ],
+    promptAdjustments: `
+- Use soft, nurturing language
+- Heavy on validation - their feelings make sense
+- Avoid pushing toward action unless they ask
+- "It's okay to..." is a good phrase for you
+- Be like a warm blanket - comfort first`,
+  },
+
+  spark: {
+    persona: 'spark',
+    greetingStyle: 'energetic and enthusiastic',
+    questionStyle: 'motivating, action-oriented',
+    validationStyle: 'quick then pivot to possibilities',
+    directnessLevel: 'balanced',
+    energyLevel: 'energetic',
+    emojiUsage: 'moderate',
+    sentenceLength: 'short',
+    sampleOpeners: [
+      "Love that you're thinking about this!",
+      "Okay, let's do this!",
+      "You've got this!",
+      "That's exciting!",
+    ],
+    promptAdjustments: `
+- Bring energy and enthusiasm
+- Quick acknowledgment then forward momentum
+- Focus on possibilities and action
+- Use encouraging language - "You've got this", "Let's go"
+- Short, punchy sentences work well for you`,
+  },
+
+  flint: {
+    persona: 'flint',
+    greetingStyle: 'direct and no-nonsense',
+    questionStyle: 'pointed, gets to the heart of it',
+    validationStyle: 'minimal - acknowledge then move on',
+    directnessLevel: 'direct',
+    energyLevel: 'balanced',
+    emojiUsage: 'none',
+    sentenceLength: 'short',
+    sampleOpeners: [
+      "Here's the deal.",
+      "Real talk:",
+      "Let's cut to it.",
+      "What's actually going on?",
+    ],
+    promptAdjustments: `
+- Be direct and honest, skip the fluff
+- No emojis, no softening language
+- Quick validation then get practical
+- It's okay to challenge gently
+- Say what you mean clearly`,
+  },
+
+  willow: {
+    persona: 'willow',
+    greetingStyle: 'calm and thoughtful',
+    questionStyle: 'reflective, inviting deeper exploration',
+    validationStyle: 'moderate - acknowledge with curiosity',
+    directnessLevel: 'gentle',
+    energyLevel: 'calm',
+    emojiUsage: 'minimal',
+    sentenceLength: 'varied',
+    sampleOpeners: [
+      "That's worth sitting with.",
+      "I wonder...",
+      "There's something interesting there.",
+      "Let's explore that.",
+    ],
+    promptAdjustments: `
+- Be thoughtful and measured
+- Ask reflective questions that invite deeper thinking
+- Use phrases like "I wonder..." and "What if..."
+- Don't rush to solutions - help them discover insights
+- Wisdom comes from patience`,
+  },
+
+  luna: {
+    persona: 'luna',
+    greetingStyle: 'grounding and present-focused',
+    questionStyle: 'gentle, present-moment awareness',
+    validationStyle: 'calming acknowledgment',
+    directnessLevel: 'gentle',
+    energyLevel: 'calm',
+    emojiUsage: 'minimal',
+    sentenceLength: 'medium',
+    sampleOpeners: [
+      "Take a breath.",
+      "You're here now.",
+      "What do you notice?",
+      "Let's be with this.",
+    ],
+    promptAdjustments: `
+- Ground them in the present moment
+- Use body/breath awareness naturally
+- Calming, steady presence
+- "Right now..." and "In this moment..." work well
+- Help them feel anchored`,
+  },
+
+  ridge: {
+    persona: 'ridge',
+    greetingStyle: 'focused and ready to help',
+    questionStyle: 'clarifying, goal-oriented',
+    validationStyle: 'quick acknowledgment then structure',
+    directnessLevel: 'balanced',
+    energyLevel: 'balanced',
+    emojiUsage: 'none',
+    sentenceLength: 'medium',
+    sampleOpeners: [
+      "Let's figure this out.",
+      "What's the goal here?",
+      "Okay, here's what I'm thinking.",
+      "Let's break this down.",
+    ],
+    promptAdjustments: `
+- Be structured and practical
+- Help them break things into steps
+- Focus on what they can control
+- Ask clarifying questions to understand the goal
+- "What's one thing you could do..." is your go-to`,
+  },
+
+  clover: {
+    persona: 'clover',
+    greetingStyle: 'warm and friendly',
+    questionStyle: 'casual, conversational',
+    validationStyle: 'relatable - "ugh, that sucks"',
+    directnessLevel: 'balanced',
+    energyLevel: 'balanced',
+    emojiUsage: 'moderate',
+    sentenceLength: 'short',
+    sampleOpeners: [
+      "Ugh, that's rough.",
+      "Okay, tell me more.",
+      "I get it.",
+      "Fair enough!",
+    ],
+    promptAdjustments: `
+- Sound like a supportive best friend
+- Casual language, contractions, relatable
+- "Totally", "I get it", "That makes sense"
+- Be real and authentic, not formal
+- Quick back-and-forth conversation style`,
+  },
+};
+
+// ============================================
+// USER COMMUNICATION MIRRORING
+// ============================================
+
+/**
+ * Tracks user's communication patterns for mirroring
+ * The coach can gradually adapt to match the user's style
+ */
+export interface UserCommunicationPattern {
+  // Detected patterns (updated over time)
+  averageMessageLength: 'short' | 'medium' | 'long';
+  usesEmojis: boolean;
+  formalityLevel: 'casual' | 'balanced' | 'formal';
+  questionFrequency: 'rarely' | 'sometimes' | 'often';
+  expressiveness: 'reserved' | 'moderate' | 'expressive';
+
+  // Sample phrases they use (for natural mirroring)
+  commonPhrases: string[];
+
+  // Last updated timestamp
+  lastUpdated: string;
+
+  // Number of messages analyzed
+  messageCount: number;
+}
+
+/**
+ * Analyze a user message to detect communication patterns
+ */
+export function analyzeUserMessage(
+  message: string,
+  existingPattern?: UserCommunicationPattern
+): Partial<UserCommunicationPattern> {
+  const wordCount = message.split(/\s+/).length;
+  const hasEmoji = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(message);
+  const questionCount = (message.match(/\?/g) || []).length;
+  const exclamationCount = (message.match(/!/g) || []).length;
+
+  // Detect message length
+  let messageLength: 'short' | 'medium' | 'long' = 'medium';
+  if (wordCount < 10) messageLength = 'short';
+  else if (wordCount > 50) messageLength = 'long';
+
+  // Detect formality
+  const casualIndicators = [
+    'lol', 'haha', 'yeah', 'nah', 'gonna', 'wanna', 'kinda', 'idk', 'tbh', 'ngl'
+  ];
+  const hasCasualLanguage = casualIndicators.some(ind =>
+    message.toLowerCase().includes(ind)
+  );
+
+  // Detect expressiveness
+  let expressiveness: 'reserved' | 'moderate' | 'expressive' = 'moderate';
+  if (exclamationCount > 2 || hasEmoji) expressiveness = 'expressive';
+  else if (exclamationCount === 0 && wordCount < 15) expressiveness = 'reserved';
+
+  return {
+    averageMessageLength: messageLength,
+    usesEmojis: hasEmoji,
+    formalityLevel: hasCasualLanguage ? 'casual' : 'balanced',
+    questionFrequency: questionCount > 1 ? 'often' : questionCount === 1 ? 'sometimes' : 'rarely',
+    expressiveness,
+    lastUpdated: new Date().toISOString(),
+    messageCount: (existingPattern?.messageCount || 0) + 1,
+  };
+}
+
+/**
+ * Generate mirroring instructions based on user patterns
+ */
+export function getUserMirroringInstructions(pattern: UserCommunicationPattern): string {
+  if (pattern.messageCount < 5) {
+    // Not enough data yet
+    return '';
+  }
+
+  const instructions: string[] = [];
+
+  // Mirror message length
+  if (pattern.averageMessageLength === 'short') {
+    instructions.push('User sends short messages - keep your responses concise too.');
+  } else if (pattern.averageMessageLength === 'long') {
+    instructions.push('User writes longer messages - you can be more detailed in responses.');
+  }
+
+  // Mirror emoji usage
+  if (pattern.usesEmojis) {
+    instructions.push('User uses emojis - feel free to use occasional emojis too.');
+  } else {
+    instructions.push('User doesn\'t use emojis - keep your responses emoji-free.');
+  }
+
+  // Mirror formality
+  if (pattern.formalityLevel === 'casual') {
+    instructions.push('User writes casually - match their informal, conversational tone.');
+  } else if (pattern.formalityLevel === 'formal') {
+    instructions.push('User writes more formally - maintain a measured, professional tone.');
+  }
+
+  // Mirror expressiveness
+  if (pattern.expressiveness === 'expressive') {
+    instructions.push('User is expressive - you can be more animated in your responses.');
+  } else if (pattern.expressiveness === 'reserved') {
+    instructions.push('User is reserved - keep your responses calm and understated.');
+  }
+
+  if (instructions.length === 0) return '';
+
+  return `
+USER COMMUNICATION STYLE (mirror these):
+${instructions.map(i => `- ${i}`).join('\n')}`;
+}
+
+// ============================================
 // STYLE CONTEXT FOR LLM
 // ============================================
 
@@ -205,6 +510,58 @@ CRITICAL STYLE RULES:
 - 2-4 sentences usually, one question max
 - Validate once, then move forward
 `;
+}
+
+/**
+ * Get style prompt section with persona-specific variations
+ * This combines base rules with persona-specific adjustments
+ */
+export function getPersonaStylePromptSection(persona: CoachPersona): string {
+  const variation = PERSONA_STYLE_VARIATIONS[persona];
+
+  // Start with base rules
+  const baseRules = `
+CRITICAL STYLE RULES (ALWAYS follow these):
+- NEVER use asterisk actions (*speaks softly*, *nods*, etc.) - just speak
+- NEVER describe your tone in third person ("responds warmly") - just respond
+- NEVER repeat back or summarize what they just asked - just answer
+- Be direct and genuine - warmth shows through WORDS, not markers`;
+
+  // Add persona-specific adjustments
+  const personaRules = `
+
+YOUR VOICE (${variation.persona.toUpperCase()} style):
+${variation.promptAdjustments}
+
+Sample openers for your style: "${variation.sampleOpeners.join('", "')}"
+
+Style settings:
+- Directness: ${variation.directnessLevel}
+- Energy: ${variation.energyLevel}
+- Emoji usage: ${variation.emojiUsage}
+- Sentences: ${variation.sentenceLength}`;
+
+  return baseRules + personaRules;
+}
+
+/**
+ * Get full style context including persona variations and user mirroring
+ */
+export function getFullStyleContext(
+  persona: CoachPersona,
+  userPattern?: UserCommunicationPattern
+): string {
+  const parts: string[] = [];
+
+  // Add persona-specific style
+  parts.push(getPersonaStylePromptSection(persona));
+
+  // Add user mirroring if we have enough data
+  if (userPattern && userPattern.messageCount >= 5) {
+    parts.push(getUserMirroringInstructions(userPattern));
+  }
+
+  return parts.join('\n');
 }
 
 // ============================================
@@ -260,9 +617,21 @@ export function cleanRoleplayMarkers(response: string): string {
 // ============================================
 
 export default {
+  // Base style rules
   COACH_STYLE_RULES,
   getCoachStyleContext,
   getCoachStylePromptSection,
+
+  // Persona-specific styles
+  PERSONA_STYLE_VARIATIONS,
+  getPersonaStylePromptSection,
+  getFullStyleContext,
+
+  // User mirroring
+  analyzeUserMessage,
+  getUserMirroringInstructions,
+
+  // Validation
   validateCoachStyle,
   hasCriticalStyleViolations,
   cleanRoleplayMarkers,

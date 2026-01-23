@@ -151,7 +151,13 @@ interface ClaudeAPIResponse {
 
 // Safeguard service handles all safety detection
 import { checkSafeguards, SafeguardResult } from './safeguardService';
-import { getCoachStylePromptSection, validateCoachStyle, cleanRoleplayMarkers } from './coachStyleService';
+import {
+  getCoachStylePromptSection,
+  getPersonaStylePromptSection,
+  validateCoachStyle,
+  cleanRoleplayMarkers,
+} from './coachStyleService';
+import type { CoachPersona } from './coachPersonalityService';
 
 /**
  * Build the Mood Leaf system prompt
@@ -160,7 +166,8 @@ import { getCoachStylePromptSection, validateCoachStyle, cleanRoleplayMarkers } 
 function buildSystemPrompt(
   userContext: string,
   toneInstruction: string,
-  personalityPrompt?: string
+  personalityPrompt?: string,
+  activePersona?: CoachPersona
 ): string {
   // Use coach personality if available, otherwise default Mood Leaf identity
   const identity = personalityPrompt
@@ -352,7 +359,7 @@ RESPONSE GUIDELINES:
 - Focus on their immediate experience, not hypotheticals
 - Avoid advice that starts with "You should" - prefer "Some people find it helps to..." or "What if you tried..."
 - If they share something positive, celebrate it genuinely without overdoing it
-${getCoachStylePromptSection()}`;
+${activePersona ? getPersonaStylePromptSection(activePersona) : getCoachStylePromptSection()}`;
 }
 
 /**
@@ -757,6 +764,7 @@ export async function sendMessage(
 
   // Get coach personality settings
   let personalityPrompt: string | undefined;
+  let activePersona: CoachPersona | undefined;
   try {
     const coachSettings = await getCoachSettings();
 
@@ -764,7 +772,7 @@ export async function sendMessage(
     const timeOfDay = getCurrentTimeOfDay();
     const detectedMood = detectMoodFromMessage(message);
 
-    const activePersona = getAdaptivePersona(coachSettings, {
+    activePersona = getAdaptivePersona(coachSettings, {
       timeOfDay,
       detectedMood,
       userMessage: message,
@@ -1033,7 +1041,7 @@ When appropriate in your response (ideally near the beginning), warmly share thi
   }
 
   // Build system prompt with coach personality, skill modes, and controller directives
-  const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+  const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt, activePersona);
   let systemPrompt = baseSystemPrompt;
 
   // Add coach mode additions
