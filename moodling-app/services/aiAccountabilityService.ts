@@ -13,9 +13,16 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Calendar from 'expo-calendar';
-import * as Contacts from 'expo-contacts';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+// Contacts is optional - may not be installed
+let Contacts: typeof import('expo-contacts') | null = null;
+try {
+  Contacts = require('expo-contacts');
+} catch {
+  console.log('[Accountability] expo-contacts not available');
+}
 import {
   createQuickLog,
   QuickLog,
@@ -824,6 +831,10 @@ export async function aiCreateRecurringReminder(params: {
  * Request contacts permissions
  */
 export async function requestContactsPermission(): Promise<boolean> {
+  if (!Contacts) {
+    console.log('[Accountability] Contacts module not available');
+    return false;
+  }
   try {
     const { status } = await Contacts.requestPermissionsAsync();
     return status === 'granted';
@@ -844,6 +855,14 @@ export async function aiCreateContact(params: {
   userMessage: string;
 }): Promise<AICreationResult> {
   try {
+    if (!Contacts) {
+      return {
+        success: false,
+        type: 'contact',
+        error: 'Contacts feature not available',
+      };
+    }
+
     const hasPermission = await requestContactsPermission();
     if (!hasPermission) {
       return {
@@ -854,7 +873,7 @@ export async function aiCreateContact(params: {
       };
     }
 
-    const contact: Contacts.Contact = {
+    const contact: any = {
       contactType: Contacts.ContactTypes.Person,
       firstName: params.firstName,
       lastName: params.lastName,
