@@ -1202,10 +1202,43 @@ async function fetchTranscriptViaInnerTube(
     console.log(`[Transcript] Got page HTML (${html.length} chars)`);
 
     // Extract caption tracks from ytInitialPlayerResponse
-    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+    // YouTube changes their format often - try multiple patterns
+    let playerResponseMatch = html.match(/var\s+ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|let|const|<\/script>)/s);
     if (!playerResponseMatch) {
-      console.log(`[Transcript] Could not find ytInitialPlayerResponse`);
-      return { transcript: '', segments: [], error: 'Could not find player response' };
+      // Try alternative pattern without 'var'
+      playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|let|const|if|<\/script>)/s);
+    }
+    if (!playerResponseMatch) {
+      // Try extracting from script tag with JSON.parse
+      const scriptMatch = html.match(/ytInitialPlayerResponse\s*=\s*JSON\.parse\s*\(\s*'(.+?)'\s*\)/);
+      if (scriptMatch) {
+        try {
+          const decoded = scriptMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+          playerResponseMatch = [null, decoded];
+        } catch {
+          // ignore
+        }
+      }
+    }
+    if (!playerResponseMatch) {
+      // Last resort: look for captionTracks directly in the HTML
+      const captionTracksMatch = html.match(/"captionTracks"\s*:\s*(\[[^\]]+\])/);
+      if (captionTracksMatch) {
+        console.log(`[Transcript] Found captionTracks directly in HTML`);
+        try {
+          const tracks = JSON.parse(captionTracksMatch[1]);
+          if (tracks && tracks.length > 0) {
+            // Create a minimal playerResponse structure
+            playerResponseMatch = [null, JSON.stringify({ captions: { playerCaptionsTracklistRenderer: { captionTracks: tracks } } })];
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+    if (!playerResponseMatch) {
+      console.log(`[Transcript] Could not find ytInitialPlayerResponse or captionTracks`);
+      return { transcript: '', segments: [], error: 'Could not find player response or captions in page' };
     }
 
     let playerResponse: any;
