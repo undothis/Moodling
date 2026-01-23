@@ -15,6 +15,7 @@
  * - [ ] healthKitService (health data)
  * - [ ] calendarService (calendar events)
  * - [ ] drinkPacingService (drink tracking)
+ * - [ ] habitTimerService (custom habit pacing)
  * - [ ] coachModeService (skill modes)
  * - [ ] safeguardService (safety checks)
  * - [ ] cognitiveProfileService (cognitive patterns)

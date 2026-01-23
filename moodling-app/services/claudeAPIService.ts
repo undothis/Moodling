@@ -24,6 +24,7 @@ import {
   getAccountabilityPreferencesContext,
 } from './aiAccountabilityService';
 import { getDrinkPacingContextForCoach } from './drinkPacingService';
+import { getHabitContextForCoach } from './habitTimerService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -963,11 +964,12 @@ When appropriate in your response (ideally near the beginning), warmly share thi
   let accountabilityContext = '';
   let shouldMentionAccountability = false;
   try {
-    const [baseContext, prefsContext, limitCheck, drinkPacingContext] = await Promise.all([
+    const [baseContext, prefsContext, limitCheck, drinkPacingContext, habitContext] = await Promise.all([
       getAccountabilityContextForCoach(),
       getAccountabilityPreferencesContext(),
       shouldMentionLimits(),
       getDrinkPacingContextForCoach(),
+      getHabitContextForCoach(),
     ]);
 
     accountabilityContext = `${prefsContext}\n\n${baseContext}`;
@@ -980,6 +982,11 @@ When appropriate in your response (ideally near the beginning), warmly share thi
     // Add drink pacing context if active
     if (drinkPacingContext) {
       accountabilityContext = `${accountabilityContext}\n\n${drinkPacingContext}`;
+    }
+
+    // Add habit timer context if any active habits
+    if (habitContext) {
+      accountabilityContext = `${accountabilityContext}\n\n${habitContext}`;
     }
   } catch (error) {
     console.log('Could not load accountability context:', error);
