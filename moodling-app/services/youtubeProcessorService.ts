@@ -1038,13 +1038,136 @@ function decodeXMLEntities(text: string): string {
 }
 
 /**
+ * Try to fetch transcript via YouTube's timedtext API
+ * This is more reliable than scraping the video page
+ */
+async function fetchTranscriptViaApi(
+  videoId: string
+): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  // Try to get caption list from YouTube's innertube API
+  const apiUrl = Platform.OS === 'web'
+    ? getCorsProxyUrl(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`)
+    : `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`;
+
+  console.log(`[Transcript] Trying timedtext API: ${apiUrl}`);
+
+  const response = await fetch(apiUrl);
+
+  if (!response.ok) {
+    // Try auto-generated captions
+    const autoUrl = Platform.OS === 'web'
+      ? getCorsProxyUrl(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`)
+      : `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`;
+
+    console.log(`[Transcript] Trying auto-generated captions: ${autoUrl}`);
+    const autoResponse = await fetch(autoUrl);
+
+    if (!autoResponse.ok) {
+      return {
+        transcript: '',
+        segments: [],
+        error: 'Timedtext API returned error',
+      };
+    }
+
+    const xmlText = await autoResponse.text();
+    return parseTranscriptXml(xmlText);
+  }
+
+  const xmlText = await response.text();
+  return parseTranscriptXml(xmlText);
+}
+
+/**
+ * Parse transcript XML into segments and full text
+ */
+function parseTranscriptXml(
+  xmlText: string
+): { transcript: string; segments: TranscriptSegment[]; error?: string } {
+  if (!xmlText || xmlText.length < 50) {
+    return {
+      transcript: '',
+      segments: [],
+      error: 'Empty or invalid transcript XML',
+    };
+  }
+
+  const segments: TranscriptSegment[] = [];
+
+  // Try parsing srv3 format (newer)
+  const srv3Regex = /<p t="(\d+)" d="(\d+)"[^>]*>([^<]*)<\/p>/g;
+  let match;
+  let foundSrv3 = false;
+
+  while ((match = srv3Regex.exec(xmlText)) !== null) {
+    foundSrv3 = true;
+    const startMs = parseInt(match[1]);
+    const durationMs = parseInt(match[2]);
+    const text = decodeXMLEntities(match[3]).trim();
+
+    if (text) {
+      segments.push({
+        text,
+        start: startMs / 1000,
+        duration: durationMs / 1000,
+      });
+    }
+  }
+
+  // Try parsing older format if srv3 didn't work
+  if (!foundSrv3) {
+    const oldRegex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([^<]*)<\/text>/g;
+    while ((match = oldRegex.exec(xmlText)) !== null) {
+      const text = decodeXMLEntities(match[3]).trim();
+      if (text) {
+        segments.push({
+          text,
+          start: parseFloat(match[1]),
+          duration: parseFloat(match[2]),
+        });
+      }
+    }
+  }
+
+  if (segments.length === 0) {
+    return {
+      transcript: '',
+      segments: [],
+      error: 'Could not parse transcript segments',
+    };
+  }
+
+  const transcript = segments.map(s => s.text).join(' ');
+  console.log(`[Transcript] Parsed ${segments.length} segments, ${transcript.length} chars`);
+
+  return { transcript, segments };
+}
+
+/**
  * Fetch transcript for a YouTube video
+ * Tries multiple methods: direct YouTube page, then transcript API fallback
  */
 export async function fetchVideoTranscript(
   videoId: string
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  console.log(`[Transcript] Fetching transcript for video: ${videoId}`);
+
+  // Try Method 1: Use a transcript API service (more reliable for CORS)
+  try {
+    const transcriptApiResult = await fetchTranscriptViaApi(videoId);
+    if (transcriptApiResult.transcript) {
+      console.log(`[Transcript] Got transcript via API (${transcriptApiResult.transcript.length} chars)`);
+      return transcriptApiResult;
+    }
+  } catch (error) {
+    console.log(`[Transcript] API method failed:`, error);
+  }
+
+  // Try Method 2: Direct YouTube page scraping
   try {
     const videoUrl = getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`);
+    console.log(`[Transcript] Trying direct scrape via: ${videoUrl}`);
+
     const response = await fetch(videoUrl, {
       headers: Platform.OS === 'web' ? {} : {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1058,11 +1181,16 @@ export async function fetchVideoTranscript(
     }
 
     const html = await response.text();
+    console.log(`[Transcript] Got HTML (${html.length} chars), searching for captions...`);
 
     // Look for captions in the page data
     const captionMatch = html.match(/"captionTracks":\s*(\[[\s\S]*?\])/);
 
     if (!captionMatch) {
+      // Check if it's a proxy error page
+      if (html.includes('error') || html.length < 1000) {
+        console.log(`[Transcript] Proxy may have returned error page`);
+      }
       return {
         transcript: '',
         segments: [],
