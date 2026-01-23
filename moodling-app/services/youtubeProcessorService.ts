@@ -67,17 +67,31 @@ export type SamplingStrategy =
   | 'engagement';      // Prioritize high engagement ratio (likes/views)
 
 export interface SamplingOptions {
-  strategy: SamplingStrategy;
-  maxVideos: number;
+  strategy?: SamplingStrategy;  // Defaults to 'balanced'
+  maxVideos?: number;           // Defaults to 25
   // For balanced strategy: how to split
-  popularPercent?: number;    // Default 40%
-  recentPercent?: number;     // Default 40%
-  randomPercent?: number;     // Default 20%
+  popularPercent?: number;      // Default 40%
+  recentPercent?: number;       // Default 40%
+  randomPercent?: number;       // Default 20%
   // Filters
-  minDurationMinutes?: number; // Skip short videos
-  maxAgeMonths?: number;       // Skip very old videos
-  excludeShorts?: boolean;     // Skip YouTube Shorts
+  minDurationMinutes?: number;  // Skip short videos (default: 5)
+  maxAgeMonths?: number;        // Skip very old videos (default: 24)
+  excludeShorts?: boolean;      // Skip YouTube Shorts (default: true)
 }
+
+/**
+ * Default sampling options - balanced strategy is RECOMMENDED for training
+ */
+export const DEFAULT_SAMPLING_OPTIONS: Required<Pick<SamplingOptions, 'strategy' | 'maxVideos' | 'popularPercent' | 'recentPercent' | 'randomPercent' | 'minDurationMinutes' | 'maxAgeMonths' | 'excludeShorts'>> = {
+  strategy: 'balanced',    // RECOMMENDED: Mix of popular + recent + random
+  maxVideos: 25,           // Good balance of coverage vs. cost
+  popularPercent: 40,      // 40% from most popular
+  recentPercent: 40,       // 40% from most recent
+  randomPercent: 20,       // 20% random for diversity
+  minDurationMinutes: 5,   // Skip clips under 5 min
+  maxAgeMonths: 24,        // Focus on last 2 years
+  excludeShorts: true,     // Skip YouTube Shorts
+};
 
 export interface CuratedChannel {
   id: string;
@@ -623,15 +637,22 @@ function selectRandomVideos(videos: YouTubeVideo[], count: number): YouTubeVideo
 /**
  * Smart video sampling based on strategy
  * Prioritizes quality over quantity for better training data
+ * Default strategy is 'balanced' (40% popular + 40% recent + 20% random)
  */
 export function selectVideosWithStrategy(
   videos: YouTubeVideo[],
-  options: SamplingOptions
+  options: Partial<SamplingOptions> = {}
 ): YouTubeVideo[] {
-  const { strategy, maxVideos } = options;
+  // Merge with defaults - balanced is the default strategy
+  const mergedOptions = {
+    ...DEFAULT_SAMPLING_OPTIONS,
+    ...options,
+  };
+
+  const { strategy, maxVideos } = mergedOptions;
 
   // Apply filters first
-  let filtered = filterVideos(videos, options);
+  let filtered = filterVideos(videos, mergedOptions);
 
   if (filtered.length <= maxVideos) {
     return filtered;
@@ -901,14 +922,21 @@ export async function enrichVideosWithStats(
 /**
  * Fetch channel videos with smart sampling
  * Enhanced version that supports popularity-based selection
+ * Default strategy: 'balanced' (40% popular + 40% recent + 20% random)
  */
 export async function fetchChannelVideosWithSampling(
   channelUrl: string,
-  options: SamplingOptions,
+  options: Partial<SamplingOptions> = {},
   youtubeApiKey?: string
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
+  // Merge with defaults
+  const mergedOptions = {
+    ...DEFAULT_SAMPLING_OPTIONS,
+    ...options,
+  };
+
   // First, fetch all available videos from RSS
-  const result = await fetchChannelVideos(channelUrl, options.maxVideos * 3);
+  const result = await fetchChannelVideos(channelUrl, mergedOptions.maxVideos * 3);
 
   if (result.error || result.videos.length === 0) {
     return result;
@@ -917,12 +945,12 @@ export async function fetchChannelVideosWithSampling(
   let videos = result.videos;
 
   // If we have a YouTube API key, enrich with stats for better sampling
-  if (youtubeApiKey && (options.strategy === 'popular' || options.strategy === 'engagement' || options.strategy === 'balanced')) {
+  if (youtubeApiKey && (mergedOptions.strategy === 'popular' || mergedOptions.strategy === 'engagement' || mergedOptions.strategy === 'balanced')) {
     videos = await enrichVideosWithStats(videos, youtubeApiKey);
   }
 
   // Apply smart sampling
-  const selected = selectVideosWithStrategy(videos, options);
+  const selected = selectVideosWithStrategy(videos, mergedOptions);
 
   return {
     videos: selected,
@@ -1617,6 +1645,7 @@ export default {
   selectVideosWithStrategy,
   enrichVideosWithStats,
   fetchChannelVideosWithSampling,
+  DEFAULT_SAMPLING_OPTIONS,
 
   // Insight extraction
   buildExtractionPrompt,
