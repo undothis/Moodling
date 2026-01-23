@@ -126,11 +126,20 @@ export default function DrinkPacingScreen() {
 
   // Log a drink
   const handleLogDrink = async () => {
+    // Double-check we have an active session
+    if (!session) {
+      Alert.alert('No Session', 'Please start a pacing session first.');
+      return;
+    }
+
     try {
       const result = await logDrink();
       setDrinksConsumed(result.session.drinksConsumed);
       setMinutesUntilNext(result.nextBuzzIn);
       setAtLimit(result.atLimit);
+
+      // Update session state to stay in sync
+      setSession(result.session);
 
       if (result.overLimit) {
         Alert.alert(
@@ -147,6 +156,21 @@ export default function DrinkPacingScreen() {
       }
     } catch (error) {
       console.error('Failed to log drink:', error);
+      // Session might have been lost - try to recover
+      const activeSession = await getActiveSession();
+      if (!activeSession) {
+        Alert.alert(
+          'Session Lost',
+          'Your pacing session was not found. Would you like to start a new one?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Start New', onPress: () => setSession(null) },
+          ]
+        );
+      } else {
+        setSession(activeSession);
+        Alert.alert('Error', 'Could not log drink. Please try again.');
+      }
     }
   };
 

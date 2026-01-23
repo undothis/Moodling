@@ -2,6 +2,65 @@
 
 This document explains how the Coach system integrates throughout Mood Leaf, including adaptive behavior, context compression, and data flow.
 
+---
+
+## ⚠️ CRITICAL: Claude → LLaMA Transition
+
+**Claude is TEMPORARY. LLaMA is the target production model.**
+
+We are actively training a local LLaMA model to replace Claude. This has major implications:
+
+### Development Rules
+
+1. **Any service changes to Claude MUST be mirrored to LLaMA**
+   - If you add a service import to `claudeAPIService.ts`, add it to `llamaIntegrationService.ts`
+   - If you add context gathering, add it to both
+   - If you add style rules, add them to both
+
+2. **Service Parity Checklist** (update when adding new integrations):
+   | Service | Claude | LLaMA | Notes |
+   |---------|--------|-------|-------|
+   | `corePrincipleKernel` | ✅ | ✅ | Safety tenets |
+   | `coachStyleService` | ✅ | ✅ | Communication style |
+   | `coachPersonalityService` | ✅ | ❌ | Personas, adaptive mode |
+   | `memoryTierService` | ✅ | ❌ | Conversation memory |
+   | `userContextService` | ✅ | ❌ | User profile |
+   | `lifeContextService` | ✅ | ❌ | Life situation |
+   | `quickLogsService` | ✅ | ❌ | Twigs data |
+   | `healthKitService` | ✅ | ❌ | Health data |
+   | `calendarService` | ✅ | ❌ | Calendar events |
+   | `drinkPacingService` | ✅ | ❌ | Drink tracking |
+   | `habitTimerService` | ✅ | ❌ | Custom habit pacing |
+   | `skillRecommendationService` | ✅ | ❌ | Skill suggestions based on context |
+   | `coachModeService` | ✅ | ❌ | Skill modes |
+   | `safeguardService` | ✅ | ❌ | Safety checks |
+   | `cognitiveProfileService` | ✅ | ❌ | Cognitive patterns |
+   | `socialConnectionHealthService` | ✅ | ❌ | Social context |
+   | `exposureLadderService` | ✅ | ❌ | Anxiety exposure |
+   | `patternService` | ✅ | ❌ | Lifestyle factors |
+   | `tonePreferencesService` | ✅ | ❌ | Tone settings |
+
+3. **Training Data Quality**
+   - All training outputs are cleaned with `cleanStyleViolations()`
+   - This prevents LLaMA from learning bad patterns (roleplay markers, robotic phrases)
+   - YouTube insights + interview data feed into LLaMA fine-tuning
+
+### Architecture Files
+
+- **`claudeAPIService.ts`** - Current production (temporary)
+- **`llamaIntegrationService.ts`** - Future production (target)
+- **`llmProviderService.ts`** - Provider abstraction (for switching)
+
+### Migration Path
+
+1. ✅ Train LLaMA on curated YouTube/interview insights
+2. ⏳ Add service parity to `llamaIntegrationService.ts`
+3. ⏳ Implement actual inference (requires llama.cpp bindings)
+4. ⏳ A/B test Claude vs LLaMA responses
+5. ⏳ Full cutover to local LLaMA
+
+---
+
 ## Overview
 
 The Coach is the central conversational AI component of Mood Leaf. It connects to virtually every part of the app to provide personalized, context-aware responses.

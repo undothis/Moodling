@@ -1,6 +1,30 @@
 /**
  * Llama Integration Service
  *
+ * ⚠️  THIS IS THE TARGET PRODUCTION MODEL - CLAUDE IS TEMPORARY  ⚠️
+ *
+ * Any changes made to claudeAPIService.ts MUST be mirrored here.
+ * See docs/COACH_ARCHITECTURE.md for the service parity checklist.
+ *
+ * TODO: Services to integrate (match claudeAPIService.ts):
+ * - [ ] coachPersonalityService (personas, adaptive mode)
+ * - [ ] memoryTierService (conversation memory)
+ * - [ ] userContextService (user profile)
+ * - [ ] lifeContextService (life situation)
+ * - [ ] quickLogsService (twigs data)
+ * - [ ] healthKitService (health data)
+ * - [ ] calendarService (calendar events)
+ * - [ ] drinkPacingService (drink tracking)
+ * - [ ] habitTimerService (custom habit pacing)
+ * - [ ] skillRecommendationService (skill suggestions based on context)
+ * - [ ] coachModeService (skill modes)
+ * - [ ] safeguardService (safety checks)
+ * - [ ] cognitiveProfileService (cognitive patterns)
+ * - [ ] socialConnectionHealthService (social context)
+ * - [ ] exposureLadderService (anxiety exposure)
+ * - [ ] patternService (lifestyle factors)
+ * - [ ] tonePreferencesService (tone settings)
+ *
  * Manages the integration between the app's middleware layer and the
  * Llama LLM kernel. This service acts as the bridge between your
  * training data pipeline and the actual AI model.

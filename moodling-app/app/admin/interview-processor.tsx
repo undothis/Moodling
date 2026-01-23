@@ -108,6 +108,10 @@ const RECOMMENDED_CHANNELS = [
   // === RELATIONSHIP HEALTH ===
   { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', channelId: 'UCHQ4lSAu7jQXmVN3MPCPZGQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, relationship patterns, personal development' },
 
+  // === COMMUNICATION & NVC ===
+  { name: 'NVC Marshall Rosenberg', handle: 'NonviolentCommunicationNVC', channelId: 'UC2iuX2CG6jgCgHVfMM7w3Yw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Marshall Rosenberg - Nonviolent Communication (NVC): observations, feelings, needs, requests' },
+  { name: 'Center for Nonviolent Communication', handle: 'CNVC', channelId: 'UCnYIS6HlFTpkNpkrXLvxOaw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Official CNVC channel - NVC training, workshops, compassionate communication' },
+
   // === MEN'S EMOTIONAL HEALTH ===
   { name: 'Lewis Howes', handle: 'LewisHowes', channelId: 'UCQjBpfPj72zwYFpS7U7gd_A', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s mental health, vulnerability, growth' },
   { name: 'The Minimalists', handle: 'TheMinimalists', channelId: 'UCRPrmdh5FLt4bxWgvQ8SWOg', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - intentional living, meaning over materialism' },
