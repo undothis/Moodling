@@ -196,6 +196,42 @@ Eventually: Train a local model (Phase 4-5)
 
 ---
 
+## Frequently Asked Questions
+
+### "Do I need to install Llama to start training?"
+
+**No.** The current training workflow does NOT require Llama to be installed.
+
+Here's how the system works:
+
+1. **Interview Processor** uses **Claude API** (cloud-based) to extract insights from YouTube videos
+2. **Training Admin** stores insights locally on your device
+3. **Version Control** manages training data versions
+
+**Llama is only needed for the FUTURE phase** when you want to run a local AI model on-device. That phase is not yet implemented.
+
+**Current workflow:**
+```
+YouTube Videos → Claude API extracts insights → Stored locally → Used in prompts
+```
+
+**Future workflow (not implemented yet):**
+```
+Stored insights → Export to JSON → Fine-tune Llama with LoRA → Run local model
+```
+
+### "Where is the Version Control UI?"
+
+Go to: **Settings → Developer Tools → Version Control**
+
+If you don't see it, make sure you've pulled the latest code and rebuilt the app:
+```bash
+git pull origin <your-branch>
+npx expo start --clear
+```
+
+---
+
 ## Troubleshooting
 
 ### "Buttons don't work"
@@ -256,11 +292,34 @@ Eventually: Train a local model (Phase 4-5)
 
 ---
 
+## Related Admin Tools
+
+Besides Training Admin, there are other admin tools in **Settings → Developer Tools**:
+
+| Tool | Path | Purpose |
+|------|------|---------|
+| **Interview Processor** | `Developer Tools → Interview Processor` | Harvest insights from YouTube therapy/coaching channels automatically |
+| **Version Control** | `Developer Tools → Version Control` | Manage model versions, rollback if needed, configure deployment gates |
+| **Simulator Mode** | `Developer Tools → Simulator Mode` | Test AI adaptation with different user profiles |
+
+### Version Control Quick Reference
+
+The Version Control admin lets you:
+- View all model versions with quality scores
+- Rollback to a previous version if quality drops
+- Configure deployment gates (human approval, quality thresholds)
+- View rollback history with reasons
+
+**When to use:** After adding lots of training data, if the AI starts giving worse responses, use Version Control to rollback to a known-good version.
+
+---
+
 ## Summary
 
 1. **Single Import**: Fill form, click button - for one insight at a time
 2. **Batch Import**: Paste JSON - for multiple insights at once
 3. **Approve**: Review pending insights in Insights tab
 4. **Export**: Get all data as JSON for training
+5. **Version Control**: Rollback if quality drops (separate admin screen)
 
 The goal is to capture what you learn from real users so the AI can serve people better.

@@ -2,24 +2,42 @@
 
 ## Overview
 
-The MoodLeaf AI Training System is designed to create a specialized, human-like AI companion by fine-tuning a local LLM (Llama 3.2) on curated human experience data. This manual covers every component of the system.
+The MoodLeaf AI Training System is designed to create a specialized, human-like AI companion by training on curated human experience data. This manual covers every component of the system.
+
+### Do I Need Llama Installed?
+
+**No, not for the current workflow.**
+
+| Task | Requires Llama? | What It Uses |
+|------|-----------------|--------------|
+| Import insights manually | No | Local storage |
+| Harvest from YouTube channels | No | **Claude API** |
+| Review and approve insights | No | Local storage |
+| Version control & rollback | No | Local storage |
+| Export training data | No | Local JSON |
+| **Fine-tune local model** | **Yes** | Llama 3.2 + LoRA |
+
+**Current Phase:** The app uses Claude API for insight extraction and coaching. All training data is stored locally and used to enhance prompts.
+
+**Future Phase (not yet implemented):** Once you have enough data (500+ scored examples, 50+ insights), you can export and fine-tune a local Llama model for on-device coaching.
 
 ---
 
 ## Table of Contents
 
 1. [System Architecture](#1-system-architecture)
-2. [Core Principle Kernel](#2-core-principle-kernel) ⭐ **NEW**
+2. [Core Principle Kernel](#2-core-principle-kernel)
 3. [Data Collection Pipeline](#3-data-collection-pipeline)
 4. [Quality Control System](#4-quality-control-system)
-5. [Advanced Research Methods](#5-advanced-research-methods)
-6. [Model Version Control](#6-model-version-control)
+5. [Model Version Control](#5-model-version-control) ⭐ **Admin UI Available**
+6. [Advanced Research Methods](#6-advanced-research-methods)
 7. [Data Persistence & Backup](#7-data-persistence--backup)
 8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
 9. [Llama Integration](#9-llama-integration)
 10. [Status Monitoring](#10-status-monitoring)
-11. [Best Practices](#11-best-practices)
-12. [Troubleshooting](#12-troubleshooting)
+11. [Admin Interfaces Reference](#11-admin-interfaces-reference) ⭐ **NEW**
+12. [Best Practices](#12-best-practices)
+13. [Troubleshooting](#13-troubleshooting)
 
 ---
 
@@ -31,10 +49,10 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              USER INTERFACE                                  │
 │                                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────────────┐ │
-│  │ Interview      │  │ Training Admin │  │ Status Indicator               │ │
-│  │ Processor      │  │ (Manual Entry) │  │ (Persistent)                   │ │
-│  └───────┬────────┘  └───────┬────────┘  └───────────────────────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  ┌─────────────────┐  ┌──────────┐ │
+│  │ Interview      │  │ Training Admin │  │ Version Control │  │ Status   │ │
+│  │ Processor      │  │ (Manual Entry) │  │ (Rollback/Gates)│  │ Indicator│ │
+│  └───────┬────────┘  └───────┬────────┘  └────────┬────────┘  └──────────┘ │
 └──────────┼───────────────────┼──────────────────────────────────────────────┘
            │                   │
            ▼                   ▼
@@ -633,13 +651,36 @@ const report = await generateResearchQualityReport();
 
 ## 5. Model Version Control
 
-### 11.1 Overview
+### 5.1 Overview
 
 **Service**: `modelVersionControlService.ts`
+**Admin UI**: Settings → Developer Tools → Version Control
 
 Git-style version control for AI models. Every training creates a new version that can be tracked, tested, and rolled back.
 
-### 11.2 Version Lifecycle
+### 5.2 Version Control Admin UI
+
+**Location**: Settings → Developer Tools → "Version Control"
+
+The Version Control Admin provides a visual interface for managing model versions:
+
+#### Tabs
+
+| Tab | Purpose |
+|-----|---------|
+| **Versions** | View all model versions, their status, and quality scores |
+| **Rollback Log** | History of all rollback operations with reasons |
+| **Gates** | Configure deployment safety gates (human approval, quality thresholds) |
+
+#### Actions Available
+
+- **View Version Details**: Tap any version to see metadata, training data used, quality metrics
+- **Stage Version**: Move a version to staging for testing
+- **Promote to Production**: Deploy a staged version to production (requires gates to pass)
+- **Rollback**: Revert to a previous version with a required reason
+- **Configure Gates**: Set deployment requirements (human approval, min quality score, A/B testing)
+
+### 5.3 Version Lifecycle
 
 ```
 ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
@@ -1074,9 +1115,73 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 10. Best Practices
+## 11. Admin Interfaces Reference
 
-### 11.1 Data Collection
+All admin tools are accessible from **Settings → Developer Tools**.
+
+### 11.1 Available Admin Screens
+
+| Screen | Path | Purpose |
+|--------|------|---------|
+| **Training Admin** | `/admin/training` | Import insights, review pending, export data |
+| **Interview Processor** | `/admin/interview-processor` | YouTube channel harvesting, video processing |
+| **Version Control** | `/admin/version-control` | Model versions, rollback, deployment gates |
+| **Simulator Mode** | `/simulator` | Test AI adaptation with different profiles |
+
+### 11.2 Training Admin (`/admin/training`)
+
+**Tabs:**
+- **Import**: Single or batch import of insights (JSON format)
+- **Insights**: Review pending insights, approve/reject
+- **Export**: Export all training data as JSON
+
+**Use When:** You have interview insights or manual observations to add to training data.
+
+### 11.3 Interview Processor (`/admin/interview-processor`)
+
+**Features:**
+- Add YouTube channels (supports @handle, /channel/, /c/ formats)
+- Configure trust levels and categories
+- Process videos to extract insights via Claude
+- Smart sampling strategies (popular, recent, balanced)
+
+**Use When:** You want to harvest human insights from therapy/coaching YouTube channels.
+
+**Note:** Uses Claude API for insight extraction. No Llama installation required.
+
+### 11.4 Version Control (`/admin/version-control`)
+
+**Tabs:**
+- **Versions**: View all model versions with quality scores and status
+- **Rollback Log**: History of rollback operations with reasons
+- **Gates**: Configure deployment safety requirements
+
+**Actions:**
+- View version details (metadata, training data, metrics)
+- Stage versions for testing
+- Promote staged versions to production
+- Rollback to previous versions (with required reason)
+- Configure deployment gates (human approval, min quality, A/B testing)
+
+**Use When:** You need to manage model versions, rollback after quality drops, or configure safety gates.
+
+### 11.5 How to Access
+
+```
+Settings
+  └── [scroll down]
+      └── Developer Tools
+          ├── Simulator Mode
+          ├── Training Admin
+          ├── Interview Processor
+          └── Version Control  ← NEW
+```
+
+---
+
+## 12. Best Practices
+
+### 12.1 Data Collection
 
 **DO:**
 - Curate channels with diverse perspectives
@@ -1092,7 +1197,7 @@ View recent activity by tapping the status indicator.
 - Skip safety score reviews
 - Add channels without categorization
 
-### 11.2 Quality Maintenance
+### 12.2 Quality Maintenance
 
 **Weekly:**
 - Review quality metrics
@@ -1106,7 +1211,7 @@ View recent activity by tapping the status indicator.
 - Review flagged sources
 - Update training data export
 
-### 11.3 Version Control
+### 12.3 Version Control
 
 **Before Training:**
 1. Export current training data
@@ -1126,7 +1231,7 @@ View recent activity by tapping the status indicator.
 3. Review suspected data
 4. Either rollback or remove bad data and retrain
 
-### 11.4 Backup Strategy
+### 12.4 Backup Strategy
 
 **Development:**
 - Use `devQuickSave()` before major changes
@@ -1140,9 +1245,9 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 11. Troubleshooting
+## 13. Troubleshooting
 
-### 11.1 Common Issues
+### 13.1 Common Issues
 
 #### "Import button does nothing"
 The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then scroll down to click "Import Insight".
@@ -1167,7 +1272,7 @@ The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then
 #### "Can't find Developer Tools"
 Settings → scroll past Privacy → Developer Tools (near bottom)
 
-### 11.2 Emergency Rollback
+### 13.2 Emergency Rollback
 
 ```typescript
 import { rollback, getProductionVersion } from './modelVersionControlService';
@@ -1181,7 +1286,7 @@ if (lastGood) {
 }
 ```
 
-### 11.3 Data Recovery
+### 13.3 Data Recovery
 
 ```typescript
 import { recoverFromBackup, getBackupInfo } from './dataPersistenceService';
@@ -1197,7 +1302,7 @@ await recoverFromBackup();
 await recoverFromBackup('2026-01-20T10:00:00Z');
 ```
 
-### 11.4 Debugging Quality Issues
+### 13.4 Debugging Quality Issues
 
 ```typescript
 import { calculateAllQualityMetrics, getQualityRecommendations } from './trainingQualityService';
