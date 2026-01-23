@@ -365,6 +365,80 @@ function analyzeActivityMoodCorrelation(history: CorrelationRecord[]): string | 
 
 ---
 
+### insightService.ts
+
+**Purpose**: Discovers patterns from user data and surfaces them as "insights" (displayed in the Seeds tab). Uses heuristic analysis to find correlations without requiring an API.
+
+**Key Types**:
+```typescript
+type InsightCategory =
+  | 'correlation' | 'trigger' | 'recovery' | 'cycle' | 'social'
+  | 'activity' | 'sleep' | 'time_of_day' | 'environment' | 'momentum'
+  | 'avoidance' | 'self_talk' | 'body_mind' | 'growth' | 'warning_sign';
+
+type InsightStrength = 'emerging' | 'developing' | 'established' | 'strong';
+
+interface Insight {
+  id: string;
+  category: InsightCategory;
+  title: string;
+  description: string;
+  evidence: string[];
+  strength: InsightStrength;
+  discoveredAt: string;
+  lastUpdated: string;
+  dataPoints: number;
+  isNew: boolean;
+  userReaction?: 'resonates' | 'watching' | 'disagree';
+}
+
+// Data source interfaces
+interface InsightDataSources {
+  twigs: TwigEntry[];
+  conversations: ConversationSummary[];
+  calendarEvents?: CalendarEvent[];
+  contacts?: ContactInteraction[];
+  locationData?: LocationData[];
+  screenTime?: ScreenTimeData[];
+  healthData?: HealthData;
+  weather?: WeatherData;
+}
+```
+
+**Key Exports**:
+```typescript
+// Core functions
+analyzeForInsights(sources: InsightDataSources): Promise<Insight[]>
+getInsights(): Promise<Insight[]>
+getNewInsightCount(): Promise<number>
+markInsightsAsViewed(): Promise<void>
+
+// User reactions
+recordInsightReaction(id: string, reaction: 'resonates' | 'watching' | 'disagree'): Promise<void>
+
+// Coach integration
+getInsightContextForCoach(): Promise<string>
+shouldCongratulateOnInsight(): Promise<Insight | null>
+generateInsightCongratulations(insight: Insight): string
+```
+
+**Pattern Templates** (20+ built-in):
+- Calendar patterns (meeting overload, weekend work, etc.)
+- Contact patterns (social isolation, relationship changes)
+- Digital habits (screen time correlations)
+- Health correlations (sleep, activity, heart rate)
+- Temporal patterns (time-of-day, day-of-week)
+
+**Growth Stages** (UI metaphor):
+| Strength | Visual | Meaning |
+|----------|--------|---------|
+| `emerging` | 🌰 Sprouting | First noticed |
+| `developing` | 🌱 Growing | Pattern forming |
+| `established` | 🌿 Flourishing | Consistent pattern |
+| `strong` | 🌳 Rooted | Core understanding |
+
+---
+
 ### userContextService.ts
 
 **Purpose**: Rich user context and significant keyword detection.
@@ -5189,6 +5263,93 @@ export function checkEasterEgg(command: string): { found: boolean; message?: str
 ```
 
 **Note:** Easter eggs are documented for developers but intentionally kept mysterious for users.
+
+---
+
+## Seeds Tab (Pattern Insights)
+
+Bottom navigation tab showing discovered insights using a nature growth metaphor.
+
+### Files
+- `services/insightService.ts` - Pattern detection and insight management
+- `app/(tabs)/seeds.tsx` - Seeds tab UI
+- `app/(tabs)/_layout.tsx` - Tab bar with glowing badge animation
+
+### Nature Metaphor
+
+Insights are presented as "seeds" that grow stronger over time:
+
+| Strength | Visual | Meaning | UI |
+|----------|--------|---------|-----|
+| `emerging` | 🌰 | First noticed | Sprouting label |
+| `developing` | 🌱 | Pattern forming | Growing label |
+| `established` | 🌿 | Consistent pattern | Flourishing label |
+| `strong` | 🌳 | Core understanding | Rooted label |
+
+### Category Icons
+
+```typescript
+const CATEGORY_ICONS: Record<InsightCategory, string> = {
+  cycle: '🌊',
+  correlation: '🔗',
+  social: '🔗',
+  activity: '💪',
+  sleep: '🌙',
+  time_of_day: '🌅',
+  environment: '🏔',
+  momentum: '🌀',
+  trigger: '🌧',
+  recovery: '💫',
+  body_mind: '🦋',
+  avoidance: '🪨',
+  growth: '🌱',
+  warning_sign: '⚠️',
+  self_talk: '💬',
+};
+```
+
+### New Seeds Badge
+
+Tab icon shows a glowing green badge when new insights are discovered:
+- Counts unviewed insights (up to 9+)
+- Pulsing glow animation (1200ms cycle)
+- Badge color: #4CAF50 (green)
+
+### User Reactions
+
+Users can respond to insights:
+- 🌱 "This resonates" - Insight feels accurate
+- 🤔 "I'll watch for this" - Curious to observe
+- 🍂 "Not quite right" - Doesn't match experience
+
+### Data Sources
+
+The insight service can analyze data from multiple sources (with user permission):
+
+| Source | Permission Required | Pattern Types |
+|--------|---------------------|---------------|
+| Twigs/Quick Logs | None | All patterns |
+| Coach Conversations | None | Themes, topics |
+| Calendar Events | Calendar access | Schedule patterns |
+| Contacts | Contacts access | Social patterns |
+| Location | Location access | Environment patterns |
+| Screen Time | iOS Screen Time | Digital habit patterns |
+| Health Data | HealthKit access | Sleep, activity patterns |
+| Weather | None (API) | Environment correlations |
+
+### Coach Integration
+
+The coach can naturally reference discovered insights:
+```typescript
+// Get insights for coach context
+const insightContext = await getInsightContextForCoach();
+
+// Check if coach should congratulate
+const insight = await shouldCongratulateOnInsight();
+if (insight) {
+  const message = generateInsightCongratulations(insight);
+}
+```
 
 ---
 

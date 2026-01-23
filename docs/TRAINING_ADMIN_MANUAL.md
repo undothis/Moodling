@@ -230,6 +230,59 @@ git pull origin <your-branch>
 npx expo start --clear
 ```
 
+### "What is the Seeds tab?"
+
+The **Seeds tab** is where users see pattern insights discovered from their data. Insights are presented as "seeds" that grow over time:
+
+| Stage | Icon | Meaning |
+|-------|------|---------|
+| Sprouting | 🌰 | Just noticed, needs more data |
+| Growing | 🌱 | Pattern becoming clearer |
+| Flourishing | 🌿 | Strong, consistent pattern |
+| Rooted | 🌳 | Core understanding |
+
+**Where**: Main tab bar (between Skills and Insights)
+
+### "How does the app discover insights?"
+
+The app analyzes multiple data sources to find patterns:
+
+1. **Twigs/Quick Logs** - Mood entries and notes
+2. **Coach Conversations** - Topics and themes discussed
+3. **Calendar Events** - Schedule patterns (with permission)
+4. **Contacts** - Social interaction patterns (with permission)
+5. **Location** - Movement patterns (with permission)
+6. **Screen Time** - Digital habits (with permission)
+7. **Health Data** - Sleep, steps, heart rate (with permission)
+8. **Weather** - Environmental correlations
+
+All analysis runs locally by default (no API needed).
+
+### "What's the difference between Seeds and Insights tabs?"
+
+| Seeds Tab | Insights Tab |
+|-----------|--------------|
+| Nature-based UI with growth metaphor | Charts and data visualizations |
+| Pattern discoveries about YOU | Statistics and trends |
+| Reactions (🌱 🤔 🍂) to mark relevance | Graphs of mood over time |
+| Coach can reference these naturally | Reference data for self-analysis |
+
+Both help users understand themselves - Seeds focuses on discoveries, Insights focuses on data.
+
+### "How do I add training insights vs. user insights?"
+
+**Training Insights** (for AI learning):
+- Added via Training Admin
+- Shape how the AI responds to ALL users
+- Example: "Users with anxiety prefer body-based techniques"
+
+**User Insights** (Seeds):
+- Discovered automatically from user data
+- Personal patterns for ONE user
+- Example: "You sleep better after evening walks"
+
+They're separate systems with different purposes.
+
 ---
 
 ## Troubleshooting

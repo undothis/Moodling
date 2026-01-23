@@ -1327,26 +1327,77 @@ console.log('Problem Insights:', problems);
 
 ---
 
-## Appendix A: Insight System
+## Appendix A: Insight System (Seeds Tab)
 
 ### Overview
 
-The Insight Service (`insightService.ts`) discovers patterns from user data and surfaces them as "insights" that help users understand themselves.
+The Insight Service (`insightService.ts`) discovers patterns from user data and surfaces them as "insights" that help users understand themselves. These insights are displayed in the **Seeds tab**, using a nature metaphor where insights "grow" as they strengthen.
 
-**Location**: Settings → Insights (button glows when new insights available)
+**Location**: Seeds tab in main navigation (🌰/🌱 icon)
+
+### The Seeds Tab
+
+The Seeds tab presents insights as growing seeds that develop over time:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SEEDS TAB                                       │
+│                                                                              │
+│  "Your insights are like seeds - they grow stronger with time and data"     │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  GROWTH STAGES                                                          ││
+│  │                                                                          ││
+│  │  🌰 Sprouting    First noticed, needs more data                         ││
+│  │  🌱 Growing      Pattern becoming clearer                               ││
+│  │  🌿 Flourishing  Strong pattern, consistent over time                   ││
+│  │  🌳 Rooted       Deeply established, core understanding                 ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  CATEGORY FILTERS (Nature icons)                                        ││
+│  │                                                                          ││
+│  │  🌊 Cycles      🔗 Connections   💪 Activities   🌙 Sleep               ││
+│  │  🌅 Time        🏔 Environment   🌀 Momentum     🌧 Triggers            ││
+│  │  💫 Recovery    🦋 Body-Mind     🪨 Avoidance    🌱 Growth              ││
+│  │  ⚠️ Warnings    💬 Self-Talk                                            ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### New Seeds Indicator
+
+When new insights are discovered, the Seeds tab icon glows with a gentle pulsing animation:
+- Badge shows count of new insights (up to 9+)
+- Glow uses green (#4CAF50) to match the nature theme
+- New insights are marked as viewed when the user opens the Seeds tab
 
 ### How It Works
 
 ```
-User Data (Twigs, Conversations)
+User Data Sources
+        ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DATA INPUTS                                                                 │
+│                                                                              │
+│  📝 Twigs/Quick Logs      User mood entries and notes                       │
+│  💬 Coach Conversations   Topics discussed with AI coach                    │
+│  📅 Calendar Events       Schedule patterns (with permission)               │
+│  👥 Contacts              Social interaction patterns (with permission)     │
+│  📍 Location              Movement and place patterns (with permission)     │
+│  📱 Screen Time           Digital habit patterns (with permission)          │
+│  ❤️ Health Data           Sleep, steps, heart rate (with permission)        │
+│  🌤 Weather               Environmental correlations                        │
+└─────────────────────────────────────────────────────────────────────────────┘
         ↓
     Pattern Detection
         ↓
    ┌────────────────────────────────────────┐
    │  HEURISTIC (Default)                   │
    │  • 100% local, no API needed           │
-   │  • Built-in pattern templates          │
+   │  • 20+ built-in pattern templates      │
    │  • Statistical correlations            │
+   │  • Multi-source analysis               │
    └────────────────────────────────────────┘
         ↓ (optional, with consent)
    ┌────────────────────────────────────────┐
@@ -1356,29 +1407,50 @@ User Data (Twigs, Conversations)
    │  • Natural language insight generation │
    └────────────────────────────────────────┘
         ↓
-    Insights Discovered
+    Insights Discovered (Seeds)
         ↓
-    Coach Can Mention in Conversation
+    Shown in Seeds Tab + Coach Can Mention
 ```
 
 ### Insight Categories
 
-| Category | Description | Example |
-|----------|-------------|---------|
-| `correlation` | X correlates with Y | "Junk food → harder periods" |
-| `trigger` | What triggers moods | "Meetings trigger anxiety" |
-| `recovery` | What helps bounce back | "Walking helps after stress" |
-| `cycle` | Recurring patterns | "Weekly mood dips on Sundays" |
-| `social` | Relationship effects | "Isolation → mood drop" |
-| `activity` | Activity-mood links | "Exercise lifts mood" |
-| `sleep` | Sleep patterns | "< 6 hours → focus problems" |
-| `time_of_day` | Time-based patterns | "You're a morning person" |
-| `environment` | Location effects | "Outdoors improves mood" |
-| `momentum` | Streak effects | "Stopping meditation → off track" |
-| `avoidance` | Avoidance patterns | "No outside → more Netflix" |
-| `body_mind` | Physical-emotional | "Caffeine → anxiety" |
-| `warning_sign` | Early warnings | "Mood trending down" |
-| `growth` | Progress recognition | "Mood improved this quarter" |
+| Category | Icon | Description | Example |
+|----------|------|-------------|---------|
+| `correlation` | 🔗 | X correlates with Y | "Junk food → harder periods" |
+| `trigger` | 🌧 | What triggers moods | "Meetings trigger anxiety" |
+| `recovery` | 💫 | What helps bounce back | "Walking helps after stress" |
+| `cycle` | 🌊 | Recurring patterns | "Weekly mood dips on Sundays" |
+| `social` | 🔗 | Relationship effects | "Isolation → mood drop" |
+| `activity` | 💪 | Activity-mood links | "Exercise lifts mood" |
+| `sleep` | 🌙 | Sleep patterns | "< 6 hours → focus problems" |
+| `time_of_day` | 🌅 | Time-based patterns | "You're a morning person" |
+| `environment` | 🏔 | Location effects | "Outdoors improves mood" |
+| `momentum` | 🌀 | Streak effects | "Stopping meditation → off track" |
+| `avoidance` | 🪨 | Avoidance patterns | "No outside → more Netflix" |
+| `self_talk` | 💬 | Internal dialogue | "Negative self-talk → low days" |
+| `body_mind` | 🦋 | Physical-emotional | "Caffeine → anxiety" |
+| `warning_sign` | ⚠️ | Early warnings | "Mood trending down" |
+| `growth` | 🌱 | Progress recognition | "Mood improved this quarter" |
+
+### Insight Strength (Growth Stages)
+
+Insights grow stronger as more data supports them:
+
+| Strength | Visual | Meaning | Data Confidence |
+|----------|--------|---------|-----------------|
+| `emerging` | 🌰 Sprouting | Just noticed | Low (needs more data) |
+| `developing` | 🌱 Growing | Pattern forming | Medium |
+| `established` | 🌿 Flourishing | Consistent pattern | High |
+| `strong` | 🌳 Rooted | Core understanding | Very high |
+
+### User Reactions
+
+Users can respond to insights with nature-themed reactions:
+- 🌱 "This resonates" - Insight feels accurate
+- 🤔 "I'll watch for this" - Curious to observe
+- 🍂 "Not quite right" - Doesn't match experience
+
+Reactions help the system learn which insights are valuable.
 
 ### Coach Integration
 
