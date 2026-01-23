@@ -32,6 +32,7 @@ import {
   getCoachEmoji,
 } from '@/services/coachPersonalityService';
 import { autoLogFromJournal } from '@/services/foodTrackingService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Journal Tab - Primary Entry Point
@@ -131,10 +132,30 @@ export default function JournalScreen() {
     }
   }, []);
 
+  // Storage key for pending voice message from tab bar
+  const PENDING_JOURNAL_MESSAGE_KEY = 'moodleaf_pending_journal_voice';
+
   // Load entries on mount and when screen comes into focus
+  // Also check for pending voice messages
   useFocusEffect(
     useCallback(() => {
       loadEntries();
+
+      // Check for pending voice transcription
+      const loadPendingVoice = async () => {
+        try {
+          const pending = await AsyncStorage.getItem(PENDING_JOURNAL_MESSAGE_KEY);
+          if (pending) {
+            // Clear the pending message
+            await AsyncStorage.removeItem(PENDING_JOURNAL_MESSAGE_KEY);
+            // Add to current entry text
+            setEntryText((prev) => (prev ? `${prev}\n\n${pending}` : pending));
+          }
+        } catch (error) {
+          console.error('Failed to load pending voice message:', error);
+        }
+      };
+      loadPendingVoice();
     }, [loadEntries])
   );
 

@@ -1,39 +1,47 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, Platform } from 'react-native';
+import { useColorScheme, Platform, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
+import { VoiceEnabledTabBar } from '@/components/VoiceEnabledTabBar';
+import { useEffect, useState } from 'react';
+import { getCoachEmoji, getCoachSettings } from '@/services/coachPersonalityService';
 
 /**
  * Mood Leaf Tab Navigation
  *
- * Five tabs following the tree metaphor:
+ * Six tabs with voice-enabled quick access:
  * 1. Tree - Visual home with interactive tree (primary)
- * 2. Journal - Write entries (leaves)
- * 3. Skills - Growth toolkit and progression
- * 4. Insights - See patterns (weather/health)
- * 5. Settings - Configure app (garden settings)
+ * 2. Journal - Write entries (VOICE ENABLED: hold to speak)
+ * 3. Coach - AI companion chat (VOICE ENABLED: hold to speak)
+ * 4. Skills - Growth toolkit and progression
+ * 5. Insights - See patterns (weather/health)
+ * 6. Settings - Configure app (garden settings)
+ *
+ * Voice-Enabled Tabs:
+ * - Hold Journal tab → Speak → Release → Go to journal with transcription
+ * - Hold Coach tab → Speak → Release → Go to coach with your message
  *
  * No badges, no notification dots, no engagement tricks.
  */
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [coachEmoji, setCoachEmoji] = useState('🌿');
+
+  useEffect(() => {
+    const loadCoach = async () => {
+      const settings = await getCoachSettings();
+      setCoachEmoji(getCoachEmoji(settings));
+    };
+    loadCoach();
+  }, []);
 
   return (
     <Tabs
+      tabBar={(props) => <VoiceEnabledTabBar {...props} />}
       screenOptions={{
         tabBarActiveTintColor: colors.tint,
         tabBarInactiveTintColor: colors.tabIconDefault,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          paddingTop: 4,
-          height: Platform.OS === 'ios' ? 88 : 60,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
         headerStyle: {
           backgroundColor: colors.background,
         },
@@ -66,6 +74,16 @@ export default function TabLayout() {
               size={24}
               color={color}
             />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="coach"
+        options={{
+          title: 'Coach',
+          headerShown: false,
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 22 }}>{coachEmoji}</Text>
           ),
         }}
       />
