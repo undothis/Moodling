@@ -55,6 +55,8 @@ export interface QuickLog {
   frequency: LogFrequency;
   targetPerDay?: number;           // For multiple_daily
   targetPerWeek?: number;          // For weekly
+  maxLimitPerDay?: number;         // For limit-based tracking (e.g., max 4 coffees)
+  maxLimitPerWeek?: number;        // Weekly limit
   color?: string;                  // Custom color
   reminderEnabled: boolean;
   reminderTimes?: string[];        // ["09:00", "21:00"]
@@ -66,6 +68,9 @@ export interface QuickLog {
   // For goals
   targetDate?: string;             // Deadline
   completed?: boolean;
+  // AI creation metadata
+  createdByAI?: boolean;           // Was this created by AI from conversation?
+  createdFromMessage?: string;     // The message that triggered creation
 }
 
 /**
@@ -202,6 +207,8 @@ export async function createQuickLog(
     frequency: options?.frequency ?? 'daily',
     targetPerDay: options?.targetPerDay,
     targetPerWeek: options?.targetPerWeek,
+    maxLimitPerDay: options?.maxLimitPerDay,
+    maxLimitPerWeek: options?.maxLimitPerWeek,
     color: options?.color,
     reminderEnabled: options?.reminderEnabled ?? false,
     reminderTimes: options?.reminderTimes,
@@ -211,6 +218,8 @@ export async function createQuickLog(
     invertedTracking: options?.invertedTracking,
     targetDate: options?.targetDate,
     completed: false,
+    createdByAI: options?.createdByAI,
+    createdFromMessage: options?.createdFromMessage,
   };
 
   logs.push(newLog);

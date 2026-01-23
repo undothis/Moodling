@@ -19,8 +19,9 @@ A comprehensive guide answering common questions about using Mood Leaf.
 11. [How Your Guide Adapts](#how-your-guide-adapts)
 12. [Food Tracking](#food-tracking) ← NEW
 13. [Skills Tab](#skills-tab) ← NEW
-14. [Crisis Support](#crisis-support)
-15. [Technical Questions](#technical-questions)
+14. [AI Accountability & Auto-Creation](#ai-accountability--auto-creation) ← NEW
+15. [Crisis Support](#crisis-support)
+16. [Technical Questions](#technical-questions)
 
 ---
 
@@ -786,6 +787,65 @@ As you grow your attributes, you unlock coach customizations:
 - **Personality traits**: Light humor, celebration mode, tough love
 - **Conversation styles**: Deep questions, Socratic dialogue, story & metaphor
 - **Special abilities**: Pattern insights, enhanced memory, proactive check-ins
+
+---
+
+## AI Accountability & Auto-Creation
+
+### Can the AI create trackers for me?
+
+**Yes!** When you mention goals or habits in conversation, your AI guide can offer to create:
+
+- **Twigs (Quick Logs)** - Habit trackers that live on your home screen
+- **Calendar events** - Reminders in your phone's calendar
+- **Contacts** - Save people to your address book
+- **Limit alerts** - Get notified when you're approaching or exceeding limits
+
+Example: Say "I want to limit coffee to 4 cups a day" and the AI will offer to create a coffee tracker with alerts.
+
+### What are limit alerts?
+
+Limit alerts help you stay accountable to goals like "max 4 coffees" or "no more than 2 hours screen time."
+
+When you set a limit, the AI tracks your usage and gently alerts you:
+- **Approaching**: "You're at 3/4 - 1 left to stay on track"
+- **Reached**: "You've hit your goal for today"
+- **Exceeded**: "You're 1 over - no judgment, just data"
+
+### Can the AI add things to my calendar?
+
+**Yes!** If you say "remind me to call mom at 3pm" or "set a weekly therapy reminder," the AI can create calendar events.
+
+You'll need to grant calendar permissions the first time. Events go to a dedicated "MoodLeaf" calendar on your phone.
+
+### Can the AI save contacts?
+
+**Yes!** If you mention someone new with their phone number or email, the AI can offer to save them to your contacts.
+
+Example: "Dr. Smith's number is 555-1234" → AI offers to create a contact.
+
+### Does this require any special permissions?
+
+| Feature | Permission |
+|---------|------------|
+| Twigs | None |
+| Calendar | Calendar access |
+| Contacts | Contacts access |
+| Alerts | Notifications |
+
+You'll be prompted for permissions only when you first use each feature.
+
+### Can I see what the AI has created?
+
+Yes:
+- **Twigs**: Home screen > Quick Logs
+- **Calendar**: Phone's Calendar app > "MoodLeaf" calendar
+- **Contacts**: Phone's Contacts app
+- **Limits**: Settings > Accountability
+
+### Does the AI create things without asking?
+
+**Never.** The AI always asks for confirmation before creating anything. It might suggest things, but you're always in control.
 
 ---
 

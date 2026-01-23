@@ -1034,6 +1034,8 @@ console.log('Problem Insights:', problems);
 | `llamaIntegrationService.ts` | LLM integration, prompt formatting, export |
 | `trainingStatusService.ts` | Real-time status, activity logging, alerts |
 | `TrainingStatusIndicator.tsx` | Persistent UI indicator component |
+| `aiAccountabilityService.ts` | AI auto-creation of Twigs, calendar events, contacts, limit alerts |
+| `quickLogsService.ts` | Twig/Quick Log management with limit support |
 
 ---
 
@@ -1068,6 +1070,9 @@ console.log('Problem Insights:', problems);
 | `moodleaf_simulation_results` | Advanced Research | Response test results |
 | `moodleaf_expert_queue` | Advanced Research | Expert review queue |
 | `moodleaf_advanced_scores` | Advanced Research | Multi-dimensional scores |
+| `moodleaf_accountability_goals` | Accountability | User accountability goals |
+| `moodleaf_limit_alerts` | Accountability | Limit-based alert configurations |
+| `moodleaf_ai_created_items` | Accountability | Items created by AI from conversation |
 
 ---
 

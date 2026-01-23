@@ -108,6 +108,29 @@ const RECOMMENDED_CHANNELS = [
 
   // === SCIENCE-BASED WELLBEING ===
   { name: 'Andrew Huberman', handle: 'hubermanlab', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Huberman Lab - neuroscience-based tools for mental health, sleep, focus, stress' },
+
+  // === WOMEN'S EMOTIONAL HEALTH ===
+  { name: 'Dr. Nicole LePera', handle: 'the.holistic.psychologist', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'The Holistic Psychologist - trauma healing, self-parenting, reparenting work' },
+  { name: 'Dr. Becky Kennedy', handle: 'drbeckyatgoodinside', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Good Inside - parenting, emotional regulation, inner child work' },
+  { name: 'Mel Robbins', handle: 'melrobbins', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Motivation without toxic positivity, science-backed mindset tools' },
+  { name: 'Dr. Ramani', handle: 'DoctorRamani', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Narcissistic abuse recovery, boundaries, healing from toxic relationships' },
+  { name: 'Lisa Bilyeu', handle: 'LisaBilyeu', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Women on Top - women\'s empowerment, emotional resilience, growth mindset' },
+  { name: 'Alisa Vitti', handle: 'flloiving', category: 'therapy_mental_health' as ChannelCategory, trust: 'medium' as const, description: 'FLO Living - hormonal health, cycle syncing, women\'s health education' },
+  { name: 'Dr. Gabor Maté', handle: 'drgabormate', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Trauma, addiction, and the mind-body connection - compassionate, anti-shame' },
+
+  // === RELATIONSHIP HEALTH ===
+  { name: 'Matthew Hussey', handle: 'matthewhussey', category: 'relationships_love' as ChannelCategory, trust: 'medium' as const, description: 'Dating and relationship advice with emotional intelligence focus' },
+  { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, relationship patterns, personal development' },
+  { name: 'Mark Groves', handle: 'createthelove', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Create The Love - relationships, masculinity, emotional depth' },
+  { name: 'Dr. Alexandra Solomon', handle: 'dralexandrasolomon', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Northwestern professor, relational self-awareness, Loving Bravely' },
+  { name: 'We Met At Acme', handle: 'wemetatacme', category: 'relationships_love' as ChannelCategory, trust: 'medium' as const, description: 'Lindsey Metselaar - dating, relationships, modern love conversations' },
+
+  // === MEN'S EMOTIONAL HEALTH (Additional) ===
+  { name: 'Lewis Howes', handle: 'LewisHowes', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s mental health, vulnerability, growth' },
+  { name: 'The Minimalists', handle: 'TheMinimalists', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - intentional living, meaning over materialism' },
+  { name: 'Dr. John Delony', handle: 'johndelony', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Mental health for men, anxiety, relationships, practical wisdom' },
+  { name: 'Rich Roll', handle: 'richroll', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Plant-powered living, addiction recovery, men\'s transformation' },
+  { name: 'Terry Crews', handle: 'terrycrews', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'medium' as const, description: 'Masculinity redefined, addiction recovery, family, vulnerability' },
 ];
 
 export default function InterviewProcessorScreen() {

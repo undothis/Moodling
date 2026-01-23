@@ -25,7 +25,8 @@ A complete guide to all features and functionality in Mood Leaf.
 17. [Food Tracking](#food-tracking)
 18. [Skills Tab](#skills-tab)
 19. [Premium Features](#premium-features)
-20. [Troubleshooting](#troubleshooting)
+20. [AI Accountability Features](#ai-accountability-features)
+21. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -1431,6 +1432,112 @@ Core Mood Leaf features are always free. Premium unlocks advanced tools for thos
 ### Promo Codes
 
 Have a promo code? Go to **Settings > Subscription > Redeem Code**.
+
+---
+
+## AI Accountability Features
+
+Mood Leaf's AI can help hold you accountable by automatically creating trackers, reminders, and alerts based on your conversations.
+
+### How It Works
+
+When you mention goals or habits in conversation, the AI can offer to:
+
+1. **Create Twigs (Quick Logs)** - Track habits you want to build or break
+2. **Create Calendar Events** - Set reminders in your phone's calendar
+3. **Create Contacts** - Save people to your address book
+4. **Set Limit Alerts** - Get notified when you're approaching or exceeding limits
+
+### Example Conversations
+
+**Setting a Limit:**
+> You: "I want to limit my coffee to 4 cups a day"
+> AI: "I can help you track that! Want me to create a Coffee tracker with a limit of 4 per day? I'll alert you when you're approaching your limit."
+
+**Building a Habit:**
+> You: "I should really start meditating"
+> AI: "Would you like me to create a Meditation Twig so you can track your progress? I can also set a daily reminder."
+
+**Breaking a Habit:**
+> You: "I need to spend less time on my computer"
+> AI: "I can create a 'Computer Time' tracker to help you stay aware. Want me to set that up?"
+
+**Creating Reminders:**
+> You: "Remind me to call mom every Sunday at 2pm"
+> AI: "I'll add that to your calendar! Would you like it as a recurring weekly event?"
+
+**Saving Contacts:**
+> You: "I met a new therapist, Dr. Smith, her number is 555-1234"
+> AI: "Should I save Dr. Smith to your contacts?"
+
+### Limit-Based Alerts
+
+When you set limits (like "max 4 coffees"), the AI tracks your usage and alerts you:
+
+| Status | Example Alert |
+|--------|---------------|
+| **Approaching** | "Heads up: You're at 3/4 coffees today. 1 left if you want to stay on track." |
+| **Reached** | "You've reached your coffee limit for today. Nice awareness!" |
+| **Exceeded** | "That's 5 coffees today - 1 over your goal. No judgment, just data." |
+
+Alerts are supportive, not judgmental. The language follows MoodLeaf's "warm honesty" philosophy.
+
+### Permissions
+
+To use these features, Mood Leaf needs permissions:
+
+| Feature | Permission Needed |
+|---------|-------------------|
+| Twigs | None (stored locally) |
+| Calendar Events | Calendar access |
+| Contacts | Contacts access |
+| Limit Alerts | Notifications |
+
+You'll be asked for permissions when you first use each feature.
+
+### What the AI Can Create
+
+**Twigs (Quick Logs):**
+- Habit building (want MORE of this)
+- Habit breaking (want LESS of this)
+- Goals with deadlines
+- Symptoms to track
+- Medication reminders
+- Custom tracking
+
+**Calendar Events:**
+- One-time reminders
+- Recurring events (daily, weekly, monthly)
+- Appointment reminders
+- Deadline alerts
+
+**Contacts:**
+- Name and phone number
+- Email address
+- Notes about the person
+
+### Viewing AI-Created Items
+
+To see what the AI has created for you:
+- **Twigs**: Home screen > Quick Logs section
+- **Calendar**: Your phone's Calendar app (look for "MoodLeaf" calendar)
+- **Contacts**: Your phone's Contacts app
+- **Limit Alerts**: Settings > Accountability > Active Limits
+
+### Tips for Best Results
+
+1. **Be specific**: "Max 3 coffees" works better than "less coffee"
+2. **Include times**: "Remind me at 9am" creates better reminders
+3. **Confirm when asked**: The AI will always ask before creating anything
+4. **Review regularly**: Check your Twigs to see your progress
+
+### Privacy Note
+
+All accountability data stays on your device:
+- Twigs and their entries are stored locally
+- Calendar events go to YOUR calendar
+- Contacts go to YOUR address book
+- No data is sent to external servers
 
 ---
 
