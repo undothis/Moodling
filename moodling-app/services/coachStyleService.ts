@@ -646,6 +646,62 @@ export function cleanRoleplayMarkers(response: string): string {
   return cleaned;
 }
 
+/**
+ * Clean support announcement phrases from a response
+ * These are phrases where the coach announces they're supportive instead of showing it
+ */
+export function cleanSupportAnnouncements(response: string): string {
+  // Patterns to remove (these sentences add nothing and feel robotic)
+  const patternsToRemove = [
+    // "I'm here to..." patterns
+    /I['']m here to listen[^.!?]*[.!?]?\s*/gi,
+    /I['']m here for you[^.!?]*[.!?]?\s*/gi,
+    /I['']m here without judgment[^.!?]*[.!?]?\s*/gi,
+    /I['']m here if you[^.!?]*[.!?]?\s*/gi,
+    /I am here to[^.!?]*[.!?]?\s*/gi,
+    // "here to support/help" patterns
+    /here to support[^.!?]*[.!?]?\s*/gi,
+    /here to help you[^.!?]*[.!?]?\s*/gi,
+    /offer any support[^.!?]*[.!?]?\s*/gi,
+    /always here for[^.!?]*[.!?]?\s*/gi,
+    // "your feelings are valid" (overused)
+    /your feelings are valid[^.!?]*[.!?]?\s*/gi,
+    /remember,?\s*your feelings are valid[^.!?]*[.!?]?\s*/gi,
+    // "you're not alone" (overused)
+    /you['']re not alone[^.!?]*[.!?]?\s*/gi,
+    // Excessive "happy to" offers
+    /I['']m happy to explore this with you[^.!?]*[.!?]?\s*/gi,
+    /I['']m happy to help[^.!?]*[.!?]?\s*/gi,
+  ];
+
+  let cleaned = response;
+  for (const pattern of patternsToRemove) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  // Clean up any double spaces or awkward starts
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  cleaned = cleaned.replace(/^\s*,\s*/, ''); // Remove leading comma
+  cleaned = cleaned.replace(/\s+([.,!?])/g, '$1');
+
+  // If we removed everything, return a simple acknowledgment
+  if (cleaned.length < 10) {
+    return "What's going on?";
+  }
+
+  return cleaned;
+}
+
+/**
+ * Clean all style violations from a response
+ */
+export function cleanStyleViolations(response: string): string {
+  let cleaned = response;
+  cleaned = cleanRoleplayMarkers(cleaned);
+  cleaned = cleanSupportAnnouncements(cleaned);
+  return cleaned;
+}
+
 // ============================================
 // EXPORTS
 // ============================================
@@ -669,4 +725,6 @@ export default {
   validateCoachStyle,
   hasCriticalStyleViolations,
   cleanRoleplayMarkers,
+  cleanSupportAnnouncements,
+  cleanStyleViolations,
 };

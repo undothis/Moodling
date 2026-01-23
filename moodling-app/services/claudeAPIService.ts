@@ -155,7 +155,7 @@ import {
   getCoachStylePromptSection,
   getPersonaStylePromptSection,
   validateCoachStyle,
-  cleanRoleplayMarkers,
+  cleanStyleViolations,
 } from './coachStyleService';
 import type { CoachPersona } from './coachPersonalityService';
 
@@ -1140,11 +1140,11 @@ ${controllerModifiers}`;
 
     let responseText = data.content[0]?.text ?? '';
 
-    // Validate and clean coach style (remove any roleplay markers that slipped through)
+    // Validate and clean coach style (remove any roleplay markers or robotic phrases that slipped through)
     const styleViolations = validateCoachStyle(responseText);
     if (styleViolations.length > 0) {
       console.log('[ClaudeAPI] Style violations detected:', styleViolations.map(v => v.ruleId));
-      responseText = cleanRoleplayMarkers(responseText);
+      responseText = cleanStyleViolations(responseText);
     }
 
     // Score the exchange in background (for human-ness training data)
