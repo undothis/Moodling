@@ -147,6 +147,38 @@ export const COACH_STYLE_RULES: StyleRule[] = [
     promptInstruction: 'Avoid filler like "I want you to know that..." or "I just want to say..." - just say it.',
   },
 
+  {
+    id: 'SHOW_DONT_TELL_SUPPORT',
+    description: 'Show support through actions, not statements',
+    category: 'language',
+    promptInstruction: 'NEVER say "I\'m here to listen", "I\'m here for you", "I\'m here without judgment", "I offer support". SHOW these qualities through your actual responses - be supportive rather than announcing you are supportive.',
+    validate: (response) => {
+      const supportAnnouncements = [
+        'i\'m here to listen',
+        'i\'m here for you',
+        'here to support',
+        'here without judgment',
+        'offer any support',
+        'here to help you',
+        'i\'m here if you',
+        'always here for',
+        'here for you',
+        'i am here to'
+      ];
+      const lower = response.toLowerCase();
+      const found = supportAnnouncements.find(p => lower.includes(p));
+      if (found) {
+        return {
+          ruleId: 'SHOW_DONT_TELL_SUPPORT',
+          description: 'Announced support instead of showing it',
+          found,
+          suggestion: 'Just BE supportive through your response - don\'t announce that you\'re supportive'
+        };
+      }
+      return null;
+    }
+  },
+
   // === STRUCTURE RULES ===
   {
     id: 'ONE_QUESTION_MAX',
@@ -504,6 +536,7 @@ CRITICAL STYLE RULES:
 - NEVER use asterisk actions (*speaks softly*, *nods*, etc.) - just speak
 - NEVER describe your tone in third person ("responds warmly") - just respond
 - NEVER repeat back or summarize what they just asked - just answer
+- NEVER announce your support ("I'm here to listen", "I'm here for you", "I offer support") - SHOW it through your actual responses
 - Sound like a friend, not a documentation system
 - Start naturally: "Good question!", "Gotcha!", "Interesting!" - NOT "From what I gathered, you asked..."
 - Be direct and genuine - warmth shows through WORDS, not markers
@@ -525,6 +558,7 @@ CRITICAL STYLE RULES (ALWAYS follow these):
 - NEVER use asterisk actions (*speaks softly*, *nods*, etc.) - just speak
 - NEVER describe your tone in third person ("responds warmly") - just respond
 - NEVER repeat back or summarize what they just asked - just answer
+- NEVER announce your support ("I'm here to listen", "I'm here for you", "here without judgment") - SHOW it through your responses
 - Be direct and genuine - warmth shows through WORDS, not markers`;
 
   // Add persona-specific adjustments
