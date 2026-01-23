@@ -16,6 +16,7 @@
  * - [ ] calendarService (calendar events)
  * - [ ] drinkPacingService (drink tracking)
  * - [ ] habitTimerService (custom habit pacing)
+ * - [ ] skillRecommendationService (skill suggestions based on context)
  * - [ ] coachModeService (skill modes)
  * - [ ] safeguardService (safety checks)
  * - [ ] cognitiveProfileService (cognitive patterns)

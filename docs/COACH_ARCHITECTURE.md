@@ -31,6 +31,7 @@ We are actively training a local LLaMA model to replace Claude. This has major i
    | `calendarService` | ✅ | ❌ | Calendar events |
    | `drinkPacingService` | ✅ | ❌ | Drink tracking |
    | `habitTimerService` | ✅ | ❌ | Custom habit pacing |
+   | `skillRecommendationService` | ✅ | ❌ | Skill suggestions based on context |
    | `coachModeService` | ✅ | ❌ | Skill modes |
    | `safeguardService` | ✅ | ❌ | Safety checks |
    | `cognitiveProfileService` | ✅ | ❌ | Cognitive patterns |

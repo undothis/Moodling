@@ -25,6 +25,7 @@ import {
 } from './aiAccountabilityService';
 import { getDrinkPacingContextForCoach } from './drinkPacingService';
 import { getHabitContextForCoach } from './habitTimerService';
+import { getSkillRecommendationsForCoach } from './skillRecommendationService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -992,6 +993,22 @@ When appropriate in your response (ideally near the beginning), warmly share thi
     console.log('Could not load accountability context:', error);
   }
 
+  // Get skill recommendations based on user's message
+  let skillRecommendationsContext = '';
+  try {
+    // Determine time of day
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+
+    skillRecommendationsContext = getSkillRecommendationsForCoach(
+      message,
+      context.mood,
+      timeOfDay
+    );
+  } catch (error) {
+    console.log('Could not load skill recommendations:', error);
+  }
+
   // Assemble full context with ALL data sources:
   // Order: user name (for personalization), achievements to celebrate, cognitive profile,
   // social connection health, memory context, lifetime overview, psych profile,
@@ -1015,6 +1032,7 @@ When appropriate in your response (ideally near the beginning), warmly share thi
     exposureContext,     // Social exposure ladder progress
     journalContext,      // Recent journal entries (what user actually wrote)
     accountabilityContext, // Accountability limits and tracking
+    skillRecommendationsContext, // Skills that might help with current situation
     richContext,         // User preferences and mood trends
     conversationContext  // Current conversation context
   ].filter(Boolean);
