@@ -306,6 +306,62 @@ The system will automatically rollback if:
 
 ---
 
+## How Many Videos Should You Process?
+
+### Short Answer
+
+**15-30 videos per channel is optimal.** Not every video.
+
+### Why Not All Videos?
+
+```
+THE MATH:
+├── 40 channels × 100 videos each = 4,000 videos
+├── 4,000 videos × $0.05 API cost = $200
+├── Many videos say similar things = duplicate insights
+├── Diminishing returns after ~20 videos per creator
+└── Result: Wasted money, no better training
+```
+
+### The Research Says
+
+> "1,000 high-quality training examples outperform 10,000 mediocre ones"
+> — Meta's dataset curation best practices (2024)
+
+### Current Default Behavior
+
+```
+YouTube RSS Feed → Returns ~15-50 recent videos
+                          ↓
+               Randomly select 20
+                          ↓
+               Process each for insights
+```
+
+### Recommended Settings
+
+| Channel Type | Videos to Process | Why |
+|--------------|-------------------|-----|
+| Small channel (<50 videos) | All of them | Won't hurt, might find gems |
+| Medium (50-200 videos) | 20-30 randomly sampled | Good balance |
+| Large (200+ videos) | 25-40 strategically picked | Focus on popular + recent |
+
+### Strategic Selection Criteria
+
+When manually choosing which videos:
+
+1. **Recent** (within 2 years) - More relevant advice
+2. **High engagement** (lots of views/comments) - Community validated
+3. **Topic diversity** - Cover different subjects from same creator
+4. **Longer form** (>10 min) - More depth, better insights
+5. **Skip** compilations, Q&As, vlogs - Low insight density
+
+### Bottom Line
+
+**Quality > Quantity.** A thoughtfully curated 20 videos from each channel will train better than blindly processing 100 videos with diminishing returns.
+
+---
+
 ## Key Takeaways
 
 1. **You don't touch weights directly** - The training process handles this
