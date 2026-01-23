@@ -143,54 +143,378 @@ const KEYWORD_TO_CATEGORIES: Record<string, SkillCategory[]> = {
 
 /**
  * Map specific situations to specific skills
+ * Comprehensive mappings so coach can suggest relevant skills
  */
 const SITUATION_TO_SKILLS: Record<string, string[]> = {
-  // Grounding needs
+  // ============================================
+  // GROUNDING & PANIC
+  // ============================================
   'panic attack': ['physiological_sigh', 'tipp_skills', 'cold_water', 'grounding_ladder'],
   'anxiety attack': ['physiological_sigh', 'box_breathing', 'five_senses', 'grounding_ladder'],
   'can\'t calm down': ['physiological_sigh', 'vagal_tone', 'tipp_skills'],
   'racing thoughts': ['cognitive_shuffle', 'box_breathing', 'containment'],
   'spiraling': ['five_senses', 'grounding_ladder', 'thought_record'],
+  'freaking out': ['physiological_sigh', 'box_breathing', 'five_senses'],
+  'losing it': ['tipp_skills', 'cold_water', 'grounding_ladder'],
+  'can\'t breathe': ['physiological_sigh', 'box_breathing', '478_breathing'],
+  'heart racing': ['physiological_sigh', 'vagal_tone', 'box_breathing'],
+  'feel unreal': ['five_senses', 'grounding_ladder', 'grounding_objects'],
+  'dissociating': ['five_senses', 'grounding_ladder', 'cold_water'],
+  'out of body': ['five_senses', 'grounding_objects', 'cold_water'],
+  'need to ground': ['five_senses', 'grounding_objects', 'grounding_ladder'],
+  'feel disconnected': ['five_senses', 'butterfly_hug', 'grounding_objects'],
+  'hyperventilating': ['physiological_sigh', 'box_breathing', '478_breathing'],
+  'shaking': ['shake_it_out', 'butterfly_hug', 'vagal_tone'],
+  'trembling': ['shake_it_out', 'butterfly_hug', 'tipp_skills'],
 
-  // Sleep needs
+  // ============================================
+  // ANXIETY & WORRY
+  // ============================================
+  'so anxious': ['box_breathing', 'physiological_sigh', 'worry_time'],
+  'really anxious': ['box_breathing', 'thought_challenging', 'containment'],
+  'anxiety is bad': ['tipp_skills', 'physiological_sigh', 'grounding_ladder'],
+  'worried about': ['worry_time', 'thought_challenging', 'containment'],
+  'can\'t stop worrying': ['worry_time', 'containment', 'thought_challenging'],
+  'overthinking': ['cognitive_shuffle', 'thought_challenging', 'containment'],
+  'what if': ['worst_case_best_case', 'thought_challenging', 'fact_vs_feeling'],
+  'catastrophizing': ['worst_case_best_case', 'thought_challenging', 'cognitive_distortions'],
+  'worst case': ['worst_case_best_case', 'thought_challenging'],
+  'afraid of': ['anxiety_ladder', 'worst_case_best_case', 'thought_challenging'],
+  'scared of': ['anxiety_ladder', 'thought_challenging', 'containment'],
+  'nervous about': ['box_breathing', 'thought_challenging', 'worst_case_best_case'],
+  'dread': ['thought_challenging', 'worst_case_best_case', 'containment'],
+  'uncertain': ['uncertainty_tolerance', 'thought_challenging'],
+  'don\'t know what will happen': ['uncertainty_tolerance', 'containment'],
+  'fear of unknown': ['uncertainty_tolerance', 'worst_case_best_case'],
+  'intrusive thoughts': ['containment', 'cognitive_shuffle', 'thought_record'],
+  'obsessing': ['containment', 'thought_challenging', 'worry_time'],
+
+  // ============================================
+  // SLEEP
+  // ============================================
   'can\'t sleep': ['478_breathing', 'cognitive_shuffle', 'body_scan_sleep', 'sleep_stories'],
+  'trouble sleeping': ['sleep_hygiene', '478_breathing', 'body_scan_sleep'],
+  'insomnia': ['cognitive_shuffle', '478_breathing', 'sleep_stories'],
+  'wide awake': ['cognitive_shuffle', '478_breathing', 'body_scan_sleep'],
   'mind racing at night': ['worry_journal_night', 'cognitive_shuffle', 'sleep_stories'],
   'bad dream': ['grounding_ladder', 'safe_place_visualization'],
   'nightmare': ['grounding_ladder', 'safe_place_visualization'],
+  'night terror': ['grounding_ladder', 'safe_place_visualization', 'five_senses'],
+  'woke up anxious': ['grounding_ladder', 'box_breathing', 'safe_place_visualization'],
+  'can\'t fall asleep': ['478_breathing', 'cognitive_shuffle', 'body_scan_sleep'],
+  'can\'t stay asleep': ['worry_journal_night', '478_breathing', 'sleep_stories'],
+  'sleep problems': ['sleep_hygiene', '478_breathing', 'cognitive_shuffle'],
+  'tired but wired': ['478_breathing', 'body_scan_sleep', 'sleep_stories'],
+  'need to relax': ['body_scan_sleep', 'sleep_stories', 'ambient_sounds'],
+  'need background noise': ['ambient_sounds', 'sleep_stories', 'old_time_radio'],
+  'white noise': ['ambient_sounds'],
+  'wind down': ['wind_down', 'sleep_hygiene', '478_breathing'],
+  'bedtime routine': ['wind_down', 'sleep_hygiene'],
+  'sleep better': ['sleep_hygiene', 'wind_down', '478_breathing'],
 
-  // Relationship needs
+  // ============================================
+  // FOCUS & PRODUCTIVITY
+  // ============================================
+  'can\'t focus': ['pomodoro', 'single_tasking', 'brain_dump'],
+  'can\'t concentrate': ['pomodoro', 'single_tasking', 'environment_design'],
+  'distracted': ['single_tasking', 'pomodoro', 'environment_design'],
+  'procrastinating': ['two_minute_rule', 'pomodoro', 'brain_dump'],
+  'putting things off': ['two_minute_rule', 'pomodoro'],
+  'avoiding': ['two_minute_rule', 'brain_dump'],
+  'too many tasks': ['brain_dump', 'task_batching', 'pomodoro'],
+  'overwhelmed with work': ['brain_dump', 'task_batching', 'energy_mapping'],
+  'don\'t know where to start': ['brain_dump', 'two_minute_rule', 'task_batching'],
+  'productivity': ['pomodoro', 'task_batching', 'energy_mapping'],
+  'get things done': ['pomodoro', 'two_minute_rule', 'task_batching'],
+  'be productive': ['pomodoro', 'energy_mapping', 'environment_design'],
+  'work from home': ['environment_design', 'pomodoro', 'single_tasking'],
+  'no motivation': ['two_minute_rule', 'behavioral_activation', 'energy_mapping'],
+  'unmotivated': ['two_minute_rule', 'behavioral_activation', 'brain_dump'],
+  'low energy': ['energy_mapping', 'energy_budget', 'behavioral_activation'],
+  'exhausted': ['energy_budget', 'energy_mapping', 'self_compassion_break'],
+  'burned out': ['energy_budget', 'self_compassion_break', 'needs_inventory'],
+  'burnout': ['energy_budget', 'needs_inventory', 'self_compassion_break'],
+
+  // ============================================
+  // SELF-CARE & SELF-COMPASSION
+  // ============================================
+  'being hard on myself': ['self_compassion_break', 'inner_critic_work'],
+  'too hard on myself': ['self_compassion_break', 'inner_critic_work'],
+  'self critical': ['inner_critic_work', 'self_compassion_break'],
+  'inner critic': ['inner_critic_work', 'self_compassion_break'],
+  'hate myself': ['self_compassion_break', 'inner_critic_work', 'loving_kindness'],
+  'feel worthless': ['self_compassion_break', 'gratitude_practice', 'inner_critic_work'],
+  'not good enough': ['self_compassion_break', 'inner_critic_work', 'values_clarification'],
+  'imposter': ['self_compassion_break', 'thought_challenging', 'inner_critic_work'],
+  'need self-care': ['joy_list', 'pleasure_menu', 'self_compassion_break'],
+  'self care': ['joy_list', 'pleasure_menu', 'needs_inventory'],
+  'treat myself': ['pleasure_menu', 'joy_list'],
+  'feel guilty': ['self_compassion_break', 'thought_challenging'],
+  'ashamed': ['self_compassion_break', 'loving_kindness'],
+  'shame': ['self_compassion_break', 'loving_kindness', 'rain_technique'],
+  'grateful': ['gratitude_practice'],
+  'gratitude': ['gratitude_practice'],
+  'thankful': ['gratitude_practice'],
+  'what matters': ['values_clarification', 'needs_inventory'],
+  'my values': ['values_clarification'],
+  'what I need': ['needs_inventory', 'values_clarification'],
+  'my needs': ['needs_inventory'],
+  'depleted': ['energy_budget', 'needs_inventory', 'self_compassion_break'],
+  'running on empty': ['energy_budget', 'needs_inventory'],
+
+  // ============================================
+  // RELATIONSHIPS
+  // ============================================
   'fight with partner': ['conflict_cool_down', 'i_statements', 'repair_conversations'],
   'fight with friend': ['conflict_cool_down', 'i_statements', 'confronting_friend'],
+  'had a fight': ['conflict_cool_down', 'repair_conversations'],
+  'argument': ['conflict_cool_down', 'i_statements'],
+  'disagreement': ['i_statements', 'active_listening'],
   'need to set a boundary': ['boundary_scripts', 'setting_boundaries', 'dear_man'],
   'how to say no': ['boundary_scripts', 'setting_boundaries'],
+  'saying no': ['boundary_scripts', 'setting_boundaries'],
+  'can\'t say no': ['boundary_scripts', 'setting_boundaries', 'dear_man'],
+  'people pleasing': ['boundary_scripts', 'setting_boundaries', 'needs_inventory'],
   'break up': ['ending_relationship', 'self_compassion_break'],
+  'breaking up': ['ending_relationship', 'self_compassion_break'],
+  'end relationship': ['ending_relationship'],
+  'end the relationship': ['ending_relationship'],
   'need to apologize': ['apologizing', 'repair_conversations'],
+  'say sorry': ['apologizing', 'repair_conversations'],
+  'made a mistake': ['apologizing', 'self_compassion_break'],
+  'hurt someone': ['apologizing', 'repair_conversations', 'self_compassion_break'],
+  'relationship problems': ['i_statements', 'active_listening', 'repair_conversations'],
+  'partner issues': ['i_statements', 'conflict_cool_down', 'repair_conversations'],
+  'communication issues': ['i_statements', 'active_listening', 'nvc_practice'],
+  'not being heard': ['i_statements', 'dear_man', 'active_listening'],
+  'feel unheard': ['i_statements', 'dear_man'],
+  'support system': ['support_network_map'],
+  'who can I call': ['support_network_map'],
+  'feel alone': ['support_network_map', 'loving_kindness'],
+  'lonely': ['support_network_map', 'loving_kindness', 'self_compassion_break'],
+  'isolated': ['support_network_map', 'behavioral_activation'],
 
-  // Conversation practice needs
+  // ============================================
+  // CONVERSATION PRACTICE
+  // ============================================
   'ask for a raise': ['asking_for_raise', 'dear_man'],
+  'salary negotiation': ['asking_for_raise', 'dear_man'],
+  'negotiate salary': ['asking_for_raise', 'dear_man'],
   'job interview': ['job_interview'],
+  'interview prep': ['job_interview'],
+  'preparing for interview': ['job_interview'],
   'tell my parents': ['telling_parents'],
+  'tell my family': ['telling_parents'],
+  'come out': ['telling_parents', 'setting_boundaries'],
   'give feedback': ['giving_feedback', 'i_statements'],
+  'give criticism': ['giving_feedback', 'i_statements'],
+  'constructive feedback': ['giving_feedback', 'i_statements'],
+  'confront': ['confronting_friend', 'i_statements', 'dear_man'],
+  'confrontation': ['confronting_friend', 'i_statements'],
+  'difficult conversation': ['conversation_practice', 'dear_man', 'i_statements'],
+  'hard conversation': ['conversation_practice', 'dear_man'],
+  'tough conversation': ['conversation_practice', 'dear_man'],
+  'practice conversation': ['conversation_practice'],
+  'roleplay': ['conversation_practice'],
+  'ask for help': ['asking_for_help', 'dear_man'],
+  'need help': ['asking_for_help'],
+  'nonviolent communication': ['nvc_practice', 'i_statements'],
+  'nvc': ['nvc_practice'],
+  'communicate better': ['nvc_practice', 'i_statements', 'active_listening'],
+  'express myself': ['i_statements', 'nvc_practice'],
+  'express feelings': ['i_statements', 'nvc_practice', 'emotional_labeling'],
 
-  // Focus needs
-  'can\'t focus': ['pomodoro', 'single_tasking', 'brain_dump'],
-  'procrastinating': ['two_minute_rule', 'pomodoro'],
-  'too many tasks': ['brain_dump', 'task_batching'],
-
-  // Self-care needs
-  'being hard on myself': ['self_compassion_break', 'inner_critic_work'],
-  'feel worthless': ['self_compassion_break', 'gratitude_practice'],
-  'need self-care': ['joy_list', 'pleasure_menu', 'self_compassion_break'],
-
-  // Mindfulness needs
+  // ============================================
+  // MINDFULNESS
+  // ============================================
   'want to meditate': ['body_scan', 'mindful_moment', 'loving_kindness'],
+  'meditation': ['body_scan', 'mindful_moment', 'loving_kindness'],
+  'meditate': ['body_scan', 'mindful_moment', 'loving_kindness'],
+  'mindfulness': ['mindful_moment', 'body_scan', 'open_awareness'],
   'need to calm down': ['box_breathing', 'physiological_sigh', 'body_scan'],
+  'be present': ['mindful_moment', 'open_awareness', 'noting_practice'],
+  'stay present': ['mindful_moment', 'noting_practice'],
+  'in the moment': ['mindful_moment', 'open_awareness'],
+  'body awareness': ['body_scan', 'somatic_tracking'],
+  'scan my body': ['body_scan', 'body_scan_sleep'],
+  'self compassion': ['loving_kindness', 'self_compassion_break'],
+  'metta': ['loving_kindness'],
+  'loving kindness': ['loving_kindness'],
+  'noting': ['noting_practice'],
+  'observe thoughts': ['noting_practice', 'open_awareness'],
+  'watch thoughts': ['noting_practice', 'open_awareness'],
+  'mindful eating': ['mindful_eating'],
+  'eat mindfully': ['mindful_eating'],
+  'walking meditation': ['walking_meditation'],
+  'mindful walk': ['walking_meditation'],
+  'rain meditation': ['rain_technique'],
+  'recognize allow': ['rain_technique'],
 
-  // Drinking
+  // ============================================
+  // BODY & SOMATIC
+  // ============================================
+  'tension': ['body_scan', 'shake_it_out', 'somatic_tracking'],
+  'tight muscles': ['body_scan', 'shake_it_out'],
+  'holding tension': ['body_scan', 'shake_it_out', 'somatic_tracking'],
+  'body feels': ['somatic_tracking', 'body_scan'],
+  'feel in my body': ['somatic_tracking', 'body_scan', 'emotional_labeling'],
+  'physical symptoms': ['somatic_tracking', 'vagal_tone'],
+  'somatic': ['somatic_tracking', 'body_scan'],
+  'shake off': ['shake_it_out'],
+  'release tension': ['shake_it_out', 'body_scan'],
+  'nervous system': ['vagal_tone', 'physiological_sigh'],
+  'vagus nerve': ['vagal_tone'],
+  'calm nervous system': ['vagal_tone', 'physiological_sigh', 'cold_water'],
+
+  // ============================================
+  // EMOTIONS & URGES
+  // ============================================
+  'urge': ['urge_surfing', 'opposite_action'],
+  'craving': ['urge_surfing', 'opposite_action'],
+  'impulse': ['urge_surfing', 'wise_mind'],
+  'want to do something bad': ['urge_surfing', 'opposite_action', 'wise_mind'],
+  'feeling intense': ['urge_surfing', 'tipp_skills', 'opposite_action'],
+  'strong emotion': ['emotional_labeling', 'rain_technique', 'urge_surfing'],
+  'identify emotion': ['emotional_labeling'],
+  'what am I feeling': ['emotional_labeling', 'somatic_tracking'],
+  'name my feelings': ['emotional_labeling'],
+  'emotional': ['emotional_labeling', 'rain_technique'],
+  'overwhelming emotion': ['tipp_skills', 'urge_surfing', 'opposite_action'],
+
+  // ============================================
+  // CRISIS & DISTRESS
+  // ============================================
+  'crisis': ['safety_plan', 'grounding_ladder', 'tipp_skills'],
+  'emergency': ['safety_plan', 'tipp_skills'],
+  'suicidal': ['safety_plan', 'crisis_support'],
+  'hurt myself': ['safety_plan', 'crisis_support', 'tipp_skills'],
+  'self-harm': ['safety_plan', 'tipp_skills', 'opposite_action'],
+  'hopeless': ['safety_plan', 'self_compassion_break', 'loving_kindness'],
+  'give up': ['safety_plan', 'self_compassion_break'],
+  'can\'t take it': ['tipp_skills', 'grounding_ladder', 'distress_tolerance_kit'],
+  'can\'t handle': ['tipp_skills', 'distress_tolerance_kit', 'grounding_ladder'],
+  'too much': ['tipp_skills', 'distress_tolerance_kit'],
+  'falling apart': ['grounding_ladder', 'tipp_skills', 'self_compassion_break'],
+  'breaking down': ['grounding_ladder', 'tipp_skills', 'safety_plan'],
+  'at my limit': ['tipp_skills', 'distress_tolerance_kit', 'window_tolerance'],
+  'window of tolerance': ['window_tolerance', 'tipp_skills'],
+  'dysregulated': ['tipp_skills', 'vagal_tone', 'window_tolerance'],
+  'out of control': ['tipp_skills', 'grounding_ladder', 'opposite_action'],
+  'distress tolerance': ['distress_tolerance_kit', 'tipp_skills'],
+  'coping kit': ['distress_tolerance_kit'],
+  'opposite action': ['opposite_action'],
+  'do the opposite': ['opposite_action'],
+  'radical acceptance': ['radical_acceptance'],
+  'accept it': ['radical_acceptance', 'wise_mind'],
+  'can\'t change': ['radical_acceptance'],
+  'wise mind': ['wise_mind'],
+  'emotion mind': ['wise_mind', 'opposite_action'],
+  'reasonable mind': ['wise_mind'],
+
+  // ============================================
+  // COGNITIVE / THINKING
+  // ============================================
+  'thinking patterns': ['thought_record', 'cognitive_distortions'],
+  'thought record': ['thought_record'],
+  'track my thoughts': ['thought_record'],
+  'negative thoughts': ['thought_challenging', 'thought_record', 'cognitive_distortions'],
+  'cognitive distortion': ['cognitive_distortions', 'thought_challenging'],
+  'black and white thinking': ['cognitive_distortions', 'thought_challenging'],
+  'all or nothing': ['cognitive_distortions', 'thought_challenging'],
+  'mind reading': ['cognitive_distortions', 'thought_challenging'],
+  'fortune telling': ['cognitive_distortions', 'worst_case_best_case'],
+  'should statements': ['cognitive_distortions', 'self_compassion_break'],
+  'labeling': ['cognitive_distortions', 'emotional_labeling'],
+  'personalization': ['cognitive_distortions', 'thought_challenging'],
+  'stuck in my head': ['cognitive_shuffle', 'thought_challenging', 'mindful_moment'],
+
+  // ============================================
+  // HABITS
+  // ============================================
+  'build a habit': ['habit_stacking', 'implementation_intentions', 'habit_timer'],
+  'new habit': ['habit_stacking', 'implementation_intentions', 'habit_timer'],
+  'habit': ['habit_stacking', 'habit_timer', 'implementation_intentions'],
+  'routine': ['habit_stacking', 'implementation_intentions'],
+  'make it stick': ['habit_stacking', 'implementation_intentions'],
+  'track habit': ['habit_timer'],
+  'habit tracker': ['habit_timer'],
+  'timer for habit': ['habit_timer'],
+  'break a habit': ['habit_timer', 'urge_surfing', 'opposite_action'],
+  'bad habit': ['habit_timer', 'urge_surfing', 'implementation_intentions'],
+  'stop a habit': ['habit_timer', 'urge_surfing', 'opposite_action'],
+  'habit stacking': ['habit_stacking'],
+  'stack habits': ['habit_stacking'],
+  'if then': ['implementation_intentions'],
+  'implementation intention': ['implementation_intentions'],
+  'when then': ['implementation_intentions'],
+
+  // ============================================
+  // DRINKING (comprehensive)
+  // ============================================
   'going to a party': ['drink_pacing'],
   'drinking tonight': ['drink_pacing'],
   'track my drinking': ['drink_pacing'],
   'pace myself': ['drink_pacing'],
+  'drink too much': ['drink_pacing'],
+  'drinking too much': ['drink_pacing'],
+  'drinking problem': ['drink_pacing'],
+  'problem with drinking': ['drink_pacing'],
+  'problem with alcohol': ['drink_pacing'],
+  'alcohol problem': ['drink_pacing'],
+  'control my drinking': ['drink_pacing'],
+  'cut back on drinking': ['drink_pacing'],
+  'cut back drinking': ['drink_pacing'],
+  'drink less': ['drink_pacing'],
+  'drinking less': ['drink_pacing'],
+  'reduce drinking': ['drink_pacing'],
+  'reduce my drinking': ['drink_pacing'],
+  'binge drinking': ['drink_pacing'],
+  'heavy drinking': ['drink_pacing'],
+  'overdrinking': ['drink_pacing'],
+  'over drinking': ['drink_pacing'],
+  'too many drinks': ['drink_pacing'],
+  'had too much': ['drink_pacing'],
+  'want to drink': ['drink_pacing', 'urge_surfing'],
+  'urge to drink': ['drink_pacing', 'urge_surfing'],
+  'craving alcohol': ['drink_pacing', 'urge_surfing'],
+  'craving a drink': ['drink_pacing', 'urge_surfing'],
+  'struggle with alcohol': ['drink_pacing'],
+  'struggle with drinking': ['drink_pacing'],
+  'moderate drinking': ['drink_pacing'],
+  'moderate my drinking': ['drink_pacing'],
+  'help with drinking': ['drink_pacing'],
+  'help with alcohol': ['drink_pacing'],
+  'sober': ['drink_pacing', 'urge_surfing'],
+  'staying sober': ['drink_pacing', 'urge_surfing'],
+  'not drink': ['drink_pacing', 'urge_surfing'],
+  'stop drinking': ['drink_pacing', 'urge_surfing'],
+  'quit drinking': ['drink_pacing', 'urge_surfing'],
+  'alcoholic': ['drink_pacing', 'support_network_map'],
+  'aa': ['support_network_map', 'drink_pacing'],
+  'recovery': ['drink_pacing', 'support_network_map', 'self_compassion_break'],
+
+  // ============================================
+  // GAMES & DISTRACTION
+  // ============================================
+  'need a distraction': ['asteroids', 'retro_snake', 'bubble_wrap'],
+  'distract me': ['asteroids', 'retro_snake', 'fidget_pad'],
+  'bored': ['asteroids', 'retro_snake', 'game_2048'],
+  'play a game': ['asteroids', 'retro_snake', 'game_2048'],
+  'fidget': ['fidget_pad', 'bubble_wrap'],
+  'restless hands': ['fidget_pad', 'bubble_wrap'],
+  'something to do with hands': ['fidget_pad', 'bubble_wrap', 'kinetic_sand'],
+  'calming activity': ['zen_blocks', 'breathing_orb', 'water_ripples'],
+  'relax with': ['zen_blocks', 'sand_flow', 'water_ripples'],
+  'satisfying': ['bubble_wrap', 'kinetic_sand', 'sand_flow'],
+
+  // ============================================
+  // DBT SKILLS
+  // ============================================
+  'dbt': ['wise_mind', 'opposite_action', 'radical_acceptance', 'dear_man'],
+  'dialectical': ['wise_mind', 'radical_acceptance'],
+  'interpersonal effectiveness': ['dear_man', 'validation_levels'],
+  'validation': ['validation_levels', 'active_listening'],
+  'validate': ['validation_levels'],
 };
 
 // ============================================
@@ -380,13 +704,18 @@ export function getSkillRecommendationsForCoach(
     return '';
   }
 
-  const lines = ['RELEVANT SKILLS (you may suggest these if appropriate):'];
+  const lines = ['RELEVANT SKILLS (available to suggest when timing is right):'];
   for (const rec of recommendations) {
     const urgencyMarker = rec.urgency === 'high' ? '⚡' : rec.urgency === 'medium' ? '•' : '○';
     lines.push(`${urgencyMarker} ${rec.skill.emoji} ${rec.skill.name}: ${rec.skill.description}`);
   }
   lines.push('');
-  lines.push('Note: Only suggest skills if they fit naturally in the conversation. Don\'t force it.');
+  lines.push('IMPORTANT TIMING GUIDANCE:');
+  lines.push('- FIRST: Listen, validate, and empathize. Be a compassionate listener before anything else.');
+  lines.push('- WAIT: Let the person feel heard. Don\'t rush to solutions.');
+  lines.push('- THEN: When the moment feels right (after they\'ve shared and feel understood), gently mention a skill that might help.');
+  lines.push('- HOW: Frame it as an option, not a prescription: "When you\'re ready, there\'s a skill called X that might help with this..."');
+  lines.push('- NEVER: Jump straight to suggesting skills. That feels dismissive of their feelings.');
 
   return lines.join('\n');
 }
