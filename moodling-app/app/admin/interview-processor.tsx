@@ -62,75 +62,52 @@ type Tab = 'channels' | 'process' | 'review' | 'stats';
 // Recommended channels to pre-load
 // Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
 // embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware
+// Channel IDs are pre-populated to avoid YouTube fetch failures
 const RECOMMENDED_CHANNELS = [
   // === TIER 1: PERFECT ALIGNMENT ===
-  { name: 'Esther Perel', handle: 'estherperel', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Relationships as complex & contradictory. Never prescriptive. "Where Do We Begin"' },
-  { name: 'How to ADHD', handle: 'HowtoADHD', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe - warm, non-judgmental, practical ADHD content' },
-  { name: 'Lori Gottlieb', handle: 'laboroflovepod', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: '"Maybe You Should Talk to Someone" - honest about therapy\'s limits' },
-  { name: 'The School of Life', handle: 'theschooloflife', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Alain de Botton - philosophy for everyday emotional life' },
-  { name: 'Susan David', handle: 'susandavidphd', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: '"Emotional Agility" - feelings aren\'t good/bad, just data' },
+  { name: 'Esther Perel', handle: 'estherperel', channelId: 'UCyktTJjKdR81Cv9sMXK5QCA', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Relationships as complex & contradictory. Never prescriptive. "Where Do We Begin"' },
+  { name: 'How to ADHD', handle: 'HowtoADHD', channelId: 'UC-nPM1_kSZf91ZGkcgy_95Q', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe - warm, non-judgmental, practical ADHD content' },
+  { name: 'The School of Life', handle: 'theschooloflife', channelId: 'UC7IcJI8PUf5Z3zKxnZvTBog', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Alain de Botton - philosophy for everyday emotional life' },
 
   // === TIER 2: STRONG ALIGNMENT ===
-  { name: 'The Moth', handle: 'TheMoth', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories told live - raw, unpolished, deeply human' },
-  { name: 'Therapy in a Nutshell', handle: 'TherapyinaNutshell', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed LMFT, evidence-based mental health education' },
-  { name: 'Kati Morton', handle: 'KatiMorton', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist, personal + educational, accessible' },
-  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda - licensed therapist + professor, nuanced' },
-  { name: 'On Being', handle: 'onbeing', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Krista Tippett - meaning, wisdom, spirituality without dogma' },
-  { name: 'Brené Brown', handle: 'BreneBrown', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Vulnerability, shame research, authenticity' },
-
-  // === GRIEF + HUMOR (Anti-toxic-positivity) ===
-  { name: 'Nora McInerny', handle: 'noraborealis', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: '"Terrible, Thanks for Asking" - grief + humor, anti-toxic-positivity' },
-  { name: 'Refuge in Grief', handle: 'refugeingrief', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Megan Devine - "It\'s OK That You\'re Not OK", grief without fixing' },
+  { name: 'The Moth', handle: 'TheMoth', channelId: 'UCkVMpFPDK1F67eCM60ICAVQ', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories told live - raw, unpolished, deeply human' },
+  { name: 'Therapy in a Nutshell', handle: 'TherapyinaNutshell', channelId: 'UCpuKvNRyiFKC4Cgz5bulHjg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed LMFT, evidence-based mental health education' },
+  { name: 'Kati Morton', handle: 'KatiMorton', channelId: 'UCzBYOHyEEzlkRdDOSobbpvw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist, personal + educational, accessible' },
+  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', channelId: 'UCVQXbB1rSYdPb2boNNpu3og', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda - licensed therapist + professor, nuanced' },
+  { name: 'Brené Brown', handle: 'BreneBrown', channelId: 'UCpLsVgZrECIhPdJJCxyNRlQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Vulnerability, shame research, authenticity' },
 
   // === NEURODIVERGENCE ===
-  { name: 'Purple Ella', handle: 'PurpleElla', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism + ADHD, authentic lived experience' },
-  { name: 'Dani Donovan', handle: 'dlovin75', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'ADHD comics creator - relatable, humor-based, practical' },
+  { name: 'Purple Ella', handle: 'PurpleElla', channelId: 'UCvj7WmANb1VdDwPv_L0D4ag', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism + ADHD, authentic lived experience' },
 
   // === RELATIONSHIPS & CONNECTION ===
-  { name: 'The Gottman Institute', handle: 'gottmaninstitute', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'John Gottman - research-based relationship insights, non-judgmental' },
-  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on mental health, failure, relationships' },
-
-  // === HUMOR + DEPTH ===
-  { name: 'You Made It Weird', handle: 'youmadeitweird', category: 'humor_comedy' as ChannelCategory, trust: 'high' as const, description: 'Pete Holmes - comedy + vulnerability + spirituality, genuinely curious' },
-
-  // === MEN'S EMOTIONAL HEALTH (Gentle masculinity) ===
-  { name: 'Man Enough', handle: 'wearemanenough', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Justin Baldoni - men\'s vulnerability, gentle masculinity' },
+  { name: 'The Gottman Institute', handle: 'gottmaninstitute', channelId: 'UCWxbz64r6vI7E2awwc8apLQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'John Gottman - research-based relationship insights, non-judgmental' },
+  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', channelId: 'UCGq-a57w-aPwyi3pW7XLiHw', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on mental health, failure, relationships' },
 
   // === ELDERLY WISDOM ===
-  { name: 'StoryCorps', handle: 'storycorps', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Ordinary people\'s stories, especially elderly wisdom, deeply human' },
-  { name: 'Humans of New York', handle: 'humansofnewyork', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Brandon Stanton - raw human stories, diverse perspectives' },
+  { name: 'StoryCorps', handle: 'storycorps', channelId: 'UCBYXhmHfUOpb9TYuPpVzFWA', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Ordinary people\'s stories, especially elderly wisdom, deeply human' },
 
   // === JOY & CELEBRATION ===
-  { name: 'SoulPancake', handle: 'soulpancake', category: 'joy_celebration' as ChannelCategory, trust: 'medium' as const, description: 'Uplifting content about human connection, joy, and meaning' },
-
-  // === COMPANIONSHIP & FRIENDSHIP ===
-  { name: 'Armchair Expert', handle: 'armaborz', category: 'friendship_companionship' as ChannelCategory, trust: 'medium' as const, description: 'Dax Shepard - vulnerability, addiction recovery, real friendship' },
+  { name: 'SoulPancake', handle: 'soulpancake', channelId: 'UCvddZU4j9oalKOxCJ0IuNyg', category: 'joy_celebration' as ChannelCategory, trust: 'medium' as const, description: 'Uplifting content about human connection, joy, and meaning' },
 
   // === SCIENCE-BASED WELLBEING ===
-  { name: 'Andrew Huberman', handle: 'hubermanlab', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Huberman Lab - neuroscience-based tools for mental health, sleep, focus, stress' },
+  { name: 'Andrew Huberman', handle: 'hubermanlab', channelId: 'UC2D2CMWXMOVWx7giW1n3LIg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Huberman Lab - neuroscience-based tools for mental health, sleep, focus, stress' },
 
   // === WOMEN'S EMOTIONAL HEALTH ===
-  { name: 'Dr. Nicole LePera', handle: 'the.holistic.psychologist', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'The Holistic Psychologist - trauma healing, self-parenting, reparenting work' },
-  { name: 'Dr. Becky Kennedy', handle: 'drbeckyatgoodinside', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Good Inside - parenting, emotional regulation, inner child work' },
-  { name: 'Mel Robbins', handle: 'melrobbins', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Motivation without toxic positivity, science-backed mindset tools' },
-  { name: 'Dr. Ramani', handle: 'DoctorRamani', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Narcissistic abuse recovery, boundaries, healing from toxic relationships' },
-  { name: 'Lisa Bilyeu', handle: 'LisaBilyeu', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Women on Top - women\'s empowerment, emotional resilience, growth mindset' },
-  { name: 'Alisa Vitti', handle: 'flloiving', category: 'therapy_mental_health' as ChannelCategory, trust: 'medium' as const, description: 'FLO Living - hormonal health, cycle syncing, women\'s health education' },
-  { name: 'Dr. Gabor Maté', handle: 'drgabormate', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Trauma, addiction, and the mind-body connection - compassionate, anti-shame' },
+  { name: 'Mel Robbins', handle: 'melrobbins', channelId: 'UCk2U-Oqn7RXf-ydPqfSxG5g', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Motivation without toxic positivity, science-backed mindset tools' },
+  { name: 'Dr. Ramani', handle: 'DoctorRamani', channelId: 'UC9Qixc77KhCo88E5gMs-caQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Narcissistic abuse recovery, boundaries, healing from toxic relationships' },
 
   // === RELATIONSHIP HEALTH ===
-  { name: 'Matthew Hussey', handle: 'matthewhussey', category: 'relationships_love' as ChannelCategory, trust: 'medium' as const, description: 'Dating and relationship advice with emotional intelligence focus' },
-  { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, relationship patterns, personal development' },
-  { name: 'Mark Groves', handle: 'createthelove', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Create The Love - relationships, masculinity, emotional depth' },
-  { name: 'Dr. Alexandra Solomon', handle: 'dralexandrasolomon', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Northwestern professor, relational self-awareness, Loving Bravely' },
-  { name: 'We Met At Acme', handle: 'wemetatacme', category: 'relationships_love' as ChannelCategory, trust: 'medium' as const, description: 'Lindsey Metselaar - dating, relationships, modern love conversations' },
+  { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', channelId: 'UCHQ4lSAu7jQXmVN3MPCPZGQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, relationship patterns, personal development' },
 
-  // === MEN'S EMOTIONAL HEALTH (Additional) ===
-  { name: 'Lewis Howes', handle: 'LewisHowes', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s mental health, vulnerability, growth' },
-  { name: 'The Minimalists', handle: 'TheMinimalists', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - intentional living, meaning over materialism' },
-  { name: 'Dr. John Delony', handle: 'johndelony', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Mental health for men, anxiety, relationships, practical wisdom' },
-  { name: 'Rich Roll', handle: 'richroll', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Plant-powered living, addiction recovery, men\'s transformation' },
-  { name: 'Terry Crews', handle: 'terrycrews', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'medium' as const, description: 'Masculinity redefined, addiction recovery, family, vulnerability' },
+  // === MEN'S EMOTIONAL HEALTH ===
+  { name: 'Lewis Howes', handle: 'LewisHowes', channelId: 'UCQjBpfPj72zwYFpS7U7gd_A', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s mental health, vulnerability, growth' },
+  { name: 'The Minimalists', handle: 'TheMinimalists', channelId: 'UCRPrmdh5FLt4bxWgvQ8SWOg', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - intentional living, meaning over materialism' },
+  { name: 'Rich Roll', handle: 'richroll', channelId: 'UCOF0J3ms6IeZZCOp-jJMuXQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Plant-powered living, addiction recovery, men\'s transformation' },
+
+  // === GUIDED MEDITATION ===
+  { name: 'Michael Sealey', handle: 'MichaelSealey', channelId: 'UC9GoqsWjluXVSKHO4Wistbw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, hypnotherapy, sleep and relaxation' },
+  { name: 'The Honest Guys', handle: 'thehonestguys', channelId: 'UC7tD6Ifrwbiy-BoaAHEinmQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, relaxation, sleep stories' },
+  { name: 'Jason Stephenson', handle: 'JasonStephensonSleep', channelId: 'UCqDBSTeuGa1e3MSqG_nq2Uw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Sleep meditation, guided relaxation, anxiety relief' },
 ];
 
 export default function InterviewProcessorScreen() {
@@ -202,20 +179,37 @@ export default function InterviewProcessorScreen() {
   // Add a curated channel
   const handleAddChannel = async () => {
     if (!newChannelUrl.trim()) {
-      Alert.alert('Missing URL', 'Please enter a YouTube channel URL');
+      Alert.alert('Missing URL', 'Please enter a YouTube channel URL [ERR_NO_URL]');
       return;
     }
 
+    console.log('[InterviewProcessor] Adding channel:', newChannelUrl);
     setAddingChannel(true);
+    addLog(`Attempting to add channel: ${newChannelUrl}`);
+
     try {
       // Fetch channel info
+      addLog('Fetching channel info from YouTube...');
       const result = await fetchChannelVideos(newChannelUrl, 1);
 
+      console.log('[InterviewProcessor] Fetch result:', JSON.stringify(result, null, 2));
+      addLog(`Fetch result: channelId=${result.channelId}, channelName=${result.channelName}, error=${result.error || 'none'}`);
+
       if (result.error) {
-        Alert.alert('Error', result.error);
+        console.error('[InterviewProcessor] Fetch error:', result.error);
+        addLog(`ERROR: ${result.error}`);
+        Alert.alert('Error [ERR_FETCH_FAILED]', result.error);
         return;
       }
 
+      if (!result.channelId) {
+        console.error('[InterviewProcessor] No channel ID returned');
+        addLog('ERROR: No channel ID returned from YouTube');
+        Alert.alert('Error [ERR_NO_CHANNEL_ID]', 'Could not determine channel ID. Try using the channel ID format (youtube.com/channel/UC...)');
+        return;
+      }
+
+      addLog(`Adding channel to storage: ${result.channelName} (${result.channelId})`);
       await addCuratedChannel(
         newChannelUrl,
         result.channelId,
@@ -228,39 +222,59 @@ export default function InterviewProcessorScreen() {
       setNewChannelUrl('');
       setShowAddChannel(false);
       loadData();
+      addLog(`SUCCESS: Added ${result.channelName}`);
       Alert.alert('Success', `Added ${result.channelName}`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add channel');
+      console.error('[InterviewProcessor] Add channel error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      addLog(`EXCEPTION: ${errorMsg}`);
+      Alert.alert('Error [ERR_EXCEPTION]', `Failed to add channel: ${errorMsg}`);
     } finally {
       setAddingChannel(false);
     }
   };
 
-  // Add recommended channel
+  // Add recommended channel (uses pre-populated channel IDs to avoid YouTube fetch)
   const handleAddRecommended = async (rec: typeof RECOMMENDED_CHANNELS[0]) => {
     setAddingChannel(true);
     try {
       const url = `https://www.youtube.com/@${rec.handle}`;
-      const result = await fetchChannelVideos(url, 1);
 
-      if (result.error || !result.channelId) {
-        Alert.alert('Error', `Could not add ${rec.name}: ${result.error || 'Unknown error'}`);
-        return;
+      // Use pre-populated channel ID if available (more reliable)
+      if (rec.channelId) {
+        await addCuratedChannel(
+          url,
+          rec.channelId,
+          rec.name,
+          rec.category,
+          rec.trust,
+          rec.description
+        );
+        loadData();
+        Alert.alert('Success', `Added ${rec.name}`);
+      } else {
+        // Fallback to fetching from YouTube if no channelId
+        const result = await fetchChannelVideos(url, 1);
+
+        if (result.error || !result.channelId) {
+          Alert.alert('Error', `Could not add ${rec.name}: ${result.error || 'Unknown error'}`);
+          return;
+        }
+
+        await addCuratedChannel(
+          url,
+          result.channelId,
+          rec.name,
+          rec.category,
+          rec.trust,
+          rec.description
+        );
+        loadData();
+        Alert.alert('Success', `Added ${rec.name}`);
       }
-
-      await addCuratedChannel(
-        url,
-        result.channelId,
-        rec.name,
-        rec.category,
-        rec.trust,
-        rec.description
-      );
-
-      loadData();
-      Alert.alert('Success', `Added ${rec.name}`);
     } catch (error) {
-      Alert.alert('Error', `Failed to add ${rec.name}`);
+      console.error('[InterviewProcessor] Add recommended error:', error);
+      Alert.alert('Error', `Failed to add ${rec.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setAddingChannel(false);
     }

@@ -540,10 +540,14 @@ export async function fetchChannelVideos(
   channelUrl: string,
   maxVideos: number = 20
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
+  console.log('[YouTubeService] fetchChannelVideos called with:', channelUrl);
+
   const channelInfo = extractChannelInfo(channelUrl);
+  console.log('[YouTubeService] Extracted channel info:', JSON.stringify(channelInfo));
 
   if (!channelInfo) {
-    return { videos: [], channelName: '', channelId: '', error: 'Invalid YouTube channel URL' };
+    console.error('[YouTubeService] ERR_INVALID_URL: Could not parse URL');
+    return { videos: [], channelName: '', channelId: '', error: '[ERR_INVALID_URL] Invalid YouTube channel URL. Supported formats: youtube.com/@handle, youtube.com/channel/UC..., youtube.com/c/name' };
   }
 
   try {
@@ -567,12 +571,12 @@ export async function fetchChannelVideos(
         console.log('[YouTube] Page response status:', pageResponse.status);
 
         if (!pageResponse.ok) {
-          console.log('[YouTube] Page fetch failed with status:', pageResponse.status);
+          console.error('[YouTubeService] ERR_HTTP_STATUS: Page fetch failed with status:', pageResponse.status);
           return {
             videos: [],
             channelName: channelInfo.id,
             channelId: '',
-            error: `YouTube returned status ${pageResponse.status}. Try refreshing or check your connection.`,
+            error: `[ERR_HTTP_${pageResponse.status}] YouTube returned status ${pageResponse.status}. Try refreshing or check your connection.`,
           };
         }
 
@@ -593,34 +597,38 @@ export async function fetchChannelVideos(
             console.log('[YouTube] Found channel ID via alt pattern:', channelId);
             feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
           } else {
+            console.error('[YouTubeService] ERR_NO_CHANNEL_ID: Could not find channelId in page HTML');
             return {
               videos: [],
               channelName: channelInfo.id,
               channelId: '',
-              error: `Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
+              error: `[ERR_NO_CHANNEL_ID] Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
             };
           }
         }
       } catch (fetchError) {
-        console.log('[YouTube] Fetch error:', fetchError);
+        console.error('[YouTubeService] ERR_NETWORK:', fetchError);
         return {
           videos: [],
           channelName: channelInfo.id,
           channelId: '',
-          error: `Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}. Check your connection.`,
+          error: `[ERR_NETWORK] Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}. Check your connection.`,
         };
       }
     }
 
     // Fetch RSS feed
+    console.log('[YouTubeService] Fetching RSS feed:', feedUrl);
     const response = await fetch(feedUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/xml,text/xml,*/*;q=0.8',
       },
     });
+    console.log('[YouTubeService] RSS feed response status:', response.status);
     if (!response.ok) {
-      throw new Error(`Failed to fetch channel feed: ${response.status}`);
+      console.error('[YouTubeService] ERR_RSS_FETCH: Failed to fetch RSS feed');
+      throw new Error(`[ERR_RSS_${response.status}] Failed to fetch channel feed: ${response.status}`);
     }
 
     const xmlText = await response.text();
@@ -654,13 +662,15 @@ export async function fetchChannelVideos(
     // Randomly select if we have more than needed
     const selectedVideos = selectRandomVideos(videos, maxVideos);
 
+    console.log('[YouTubeService] SUCCESS: Found', selectedVideos.length, 'videos for channel', channelName, '(', channelId, ')');
     return { videos: selectedVideos, channelName, channelId };
   } catch (error) {
+    console.error('[YouTubeService] ERR_UNKNOWN:', error);
     return {
       videos: [],
       channelName: '',
       channelId: '',
-      error: error instanceof Error ? error.message : 'Failed to fetch channel videos',
+      error: `[ERR_UNKNOWN] ${error instanceof Error ? error.message : 'Failed to fetch channel videos'}`,
     };
   }
 }
