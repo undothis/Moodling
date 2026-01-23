@@ -400,6 +400,19 @@ export default function CoachTabScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* API Key Warning */}
+      {!hasKey && (
+        <TouchableOpacity
+          style={[styles.apiWarning, { backgroundColor: '#FFF3CD' }]}
+          onPress={() => router.push('/(tabs)/settings')}
+        >
+          <Ionicons name="warning-outline" size={18} color="#856404" />
+          <Text style={styles.apiWarningText}>
+            API key needed for AI responses. Tap to configure in Settings.
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Messages */}
       <ScrollView
         ref={scrollViewRef}
@@ -526,5 +539,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  apiWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  apiWarningText: {
+    flex: 1,
+    color: '#856404',
+    fontSize: 13,
   },
 });
