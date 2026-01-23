@@ -1203,40 +1203,109 @@ async function fetchTranscriptViaInnerTube(
 
     // Extract caption tracks from ytInitialPlayerResponse
     // YouTube changes their format often - try multiple patterns
-    let playerResponseMatch = html.match(/var\s+ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|let|const|<\/script>)/s);
+    // NOTE: Using [\s\S] instead of . with /s flag for React Native compatibility
+
+    console.log(`[Transcript] Searching for ytInitialPlayerResponse in HTML...`);
+
+    // Check if ytInitialPlayerResponse exists at all
+    const hasPlayerResponse = html.includes('ytInitialPlayerResponse');
+    console.log(`[Transcript] HTML contains 'ytInitialPlayerResponse': ${hasPlayerResponse}`);
+
+    // Check for captions/captionTracks
+    const hasCaptions = html.includes('captionTracks');
+    console.log(`[Transcript] HTML contains 'captionTracks': ${hasCaptions}`);
+
+    // Pattern 1: var ytInitialPlayerResponse = {...};
+    let playerResponseMatch = html.match(/var\s+ytInitialPlayerResponse\s*=\s*(\{[\s\S]+?\});\s*(?:var|let|const|<\/script>)/);
+    console.log(`[Transcript] Pattern 1 (var ytInitialPlayerResponse): ${playerResponseMatch ? 'MATCHED' : 'no match'}`);
+
     if (!playerResponseMatch) {
-      // Try alternative pattern without 'var'
-      playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|let|const|if|<\/script>)/s);
+      // Pattern 2: ytInitialPlayerResponse = {...}; (without var)
+      playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]+?\});\s*(?:var|let|const|if|<\/script>)/);
+      console.log(`[Transcript] Pattern 2 (ytInitialPlayerResponse =): ${playerResponseMatch ? 'MATCHED' : 'no match'}`);
     }
+
     if (!playerResponseMatch) {
-      // Try extracting from script tag with JSON.parse
-      const scriptMatch = html.match(/ytInitialPlayerResponse\s*=\s*JSON\.parse\s*\(\s*'(.+?)'\s*\)/);
+      // Pattern 3: Try a more greedy match - find the opening brace and parse until valid JSON
+      const startIndex = html.indexOf('ytInitialPlayerResponse');
+      if (startIndex !== -1) {
+        console.log(`[Transcript] Found ytInitialPlayerResponse at index ${startIndex}`);
+        const afterEquals = html.indexOf('=', startIndex);
+        if (afterEquals !== -1) {
+          const braceStart = html.indexOf('{', afterEquals);
+          if (braceStart !== -1) {
+            // Try to find matching closing brace by counting
+            let depth = 0;
+            let endIndex = braceStart;
+            for (let i = braceStart; i < html.length && i < braceStart + 500000; i++) {
+              if (html[i] === '{') depth++;
+              if (html[i] === '}') depth--;
+              if (depth === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+            if (endIndex > braceStart) {
+              const jsonStr = html.substring(braceStart, endIndex);
+              console.log(`[Transcript] Pattern 3 extracted JSON (${jsonStr.length} chars)`);
+              try {
+                JSON.parse(jsonStr); // Validate it's valid JSON
+                playerResponseMatch = [null, jsonStr];
+                console.log(`[Transcript] Pattern 3 (brace counting): MATCHED and valid JSON`);
+              } catch (e) {
+                console.log(`[Transcript] Pattern 3: extracted but invalid JSON: ${(e as Error).message}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!playerResponseMatch) {
+      // Pattern 4: Try extracting from script tag with JSON.parse
+      const scriptMatch = html.match(/ytInitialPlayerResponse\s*=\s*JSON\.parse\s*\(\s*'([\s\S]+?)'\s*\)/);
+      console.log(`[Transcript] Pattern 4 (JSON.parse): ${scriptMatch ? 'MATCHED' : 'no match'}`);
       if (scriptMatch) {
         try {
           const decoded = scriptMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
           playerResponseMatch = [null, decoded];
         } catch {
-          // ignore
+          console.log(`[Transcript] Pattern 4: decode failed`);
         }
       }
     }
+
     if (!playerResponseMatch) {
-      // Last resort: look for captionTracks directly in the HTML
-      const captionTracksMatch = html.match(/"captionTracks"\s*:\s*(\[[^\]]+\])/);
+      // Pattern 5: Last resort - look for captionTracks directly in the HTML
+      const captionTracksMatch = html.match(/"captionTracks"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+      console.log(`[Transcript] Pattern 5 (direct captionTracks): ${captionTracksMatch ? 'MATCHED' : 'no match'}`);
       if (captionTracksMatch) {
         console.log(`[Transcript] Found captionTracks directly in HTML`);
         try {
           const tracks = JSON.parse(captionTracksMatch[1]);
+          console.log(`[Transcript] Parsed ${tracks.length} caption tracks directly`);
           if (tracks && tracks.length > 0) {
             // Create a minimal playerResponse structure
             playerResponseMatch = [null, JSON.stringify({ captions: { playerCaptionsTracklistRenderer: { captionTracks: tracks } } })];
           }
-        } catch {
-          // ignore
+        } catch (e) {
+          console.log(`[Transcript] Pattern 5: JSON parse failed: ${(e as Error).message}`);
         }
       }
     }
+
     if (!playerResponseMatch) {
+      // Debug: show a snippet of what's around ytInitialPlayerResponse
+      const idx = html.indexOf('ytInitialPlayerResponse');
+      if (idx !== -1) {
+        const snippet = html.substring(idx, Math.min(idx + 500, html.length));
+        console.log(`[Transcript] DEBUG - HTML snippet around ytInitialPlayerResponse:\n${snippet.substring(0, 300)}...`);
+      } else {
+        console.log(`[Transcript] DEBUG - ytInitialPlayerResponse not found in HTML at all`);
+        // Check what script tags exist
+        const scriptCount = (html.match(/<script/g) || []).length;
+        console.log(`[Transcript] DEBUG - Page has ${scriptCount} script tags`);
+      }
       console.log(`[Transcript] Could not find ytInitialPlayerResponse or captionTracks`);
       return { transcript: '', segments: [], error: 'Could not find player response or captions in page' };
     }
