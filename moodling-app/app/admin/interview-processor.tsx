@@ -60,15 +60,54 @@ import {
 type Tab = 'channels' | 'process' | 'review' | 'stats';
 
 // Recommended channels to pre-load
+// Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
+// embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware
 const RECOMMENDED_CHANNELS = [
+  // === TIER 1: PERFECT ALIGNMENT ===
+  { name: 'Esther Perel', handle: 'estherperel', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Relationships as complex & contradictory. Never prescriptive. "Where Do We Begin"' },
+  { name: 'How to ADHD', handle: 'HowtoADHD', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe - warm, non-judgmental, practical ADHD content' },
+  { name: 'Lori Gottlieb', handle: 'laboroflovepod', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: '"Maybe You Should Talk to Someone" - honest about therapy\'s limits' },
+  { name: 'The School of Life', handle: 'theschooloflife', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Alain de Botton - philosophy for everyday emotional life' },
+  { name: 'Susan David', handle: 'susandavidphd', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: '"Emotional Agility" - feelings aren\'t good/bad, just data' },
+
+  // === TIER 2: STRONG ALIGNMENT ===
+  { name: 'The Moth', handle: 'TheMoth', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories told live - raw, unpolished, deeply human' },
   { name: 'Therapy in a Nutshell', handle: 'TherapyinaNutshell', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed LMFT, evidence-based mental health education' },
-  { name: 'How to ADHD', handle: 'HowtoADHD', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe, research-based ADHD content' },
-  { name: 'Kati Morton', handle: 'KatiMorton', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist, personal + educational' },
-  { name: 'The School of Life', handle: 'theschooloflife', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Philosophy for everyday life, meaning & purpose' },
-  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda, licensed therapist + professor' },
-  { name: 'The Moth', handle: 'TheMoth', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories told live, raw and unscripted' },
-  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on mental health & failure' },
+  { name: 'Kati Morton', handle: 'KatiMorton', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist, personal + educational, accessible' },
+  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda - licensed therapist + professor, nuanced' },
+  { name: 'On Being', handle: 'onbeing', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Krista Tippett - meaning, wisdom, spirituality without dogma' },
+  { name: 'Brené Brown', handle: 'BreneBrown', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Vulnerability, shame research, authenticity' },
+
+  // === GRIEF + HUMOR (Anti-toxic-positivity) ===
+  { name: 'Nora McInerny', handle: 'noraborealis', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: '"Terrible, Thanks for Asking" - grief + humor, anti-toxic-positivity' },
+  { name: 'Refuge in Grief', handle: 'refugeingrief', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Megan Devine - "It\'s OK That You\'re Not OK", grief without fixing' },
+
+  // === NEURODIVERGENCE ===
   { name: 'Purple Ella', handle: 'PurpleElla', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism + ADHD, authentic lived experience' },
+  { name: 'Dani Donovan', handle: 'dlovin75', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'ADHD comics creator - relatable, humor-based, practical' },
+
+  // === RELATIONSHIPS & CONNECTION ===
+  { name: 'The Gottman Institute', handle: 'gottmaninstitute', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'John Gottman - research-based relationship insights, non-judgmental' },
+  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on mental health, failure, relationships' },
+
+  // === HUMOR + DEPTH ===
+  { name: 'You Made It Weird', handle: 'youmadeitweird', category: 'humor_comedy' as ChannelCategory, trust: 'high' as const, description: 'Pete Holmes - comedy + vulnerability + spirituality, genuinely curious' },
+
+  // === MEN'S EMOTIONAL HEALTH (Gentle masculinity) ===
+  { name: 'Man Enough', handle: 'wearemanenough', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Justin Baldoni - men\'s vulnerability, gentle masculinity' },
+
+  // === ELDERLY WISDOM ===
+  { name: 'StoryCorps', handle: 'storycorps', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Ordinary people\'s stories, especially elderly wisdom, deeply human' },
+  { name: 'Humans of New York', handle: 'humansofnewyork', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Brandon Stanton - raw human stories, diverse perspectives' },
+
+  // === JOY & CELEBRATION ===
+  { name: 'SoulPancake', handle: 'soulpancake', category: 'joy_celebration' as ChannelCategory, trust: 'medium' as const, description: 'Uplifting content about human connection, joy, and meaning' },
+
+  // === COMPANIONSHIP & FRIENDSHIP ===
+  { name: 'Armchair Expert', handle: 'armaborz', category: 'friendship_companionship' as ChannelCategory, trust: 'medium' as const, description: 'Dax Shepard - vulnerability, addiction recovery, real friendship' },
+
+  // === SCIENCE-BASED WELLBEING ===
+  { name: 'Andrew Huberman', handle: 'hubermanlab', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Huberman Lab - neuroscience-based tools for mental health, sleep, focus, stress' },
 ];
 
 export default function InterviewProcessorScreen() {
