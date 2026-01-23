@@ -85,6 +85,7 @@ const DEDICATED_ROUTES: Record<string, string> = {
   old_time_radio: '/skills/old-time-radio',
   // Accountability skills
   drink_pacing: '/skills/drink-pacing',
+  habit_timer: '/skills/habit-timer',
 };
 
 // Get route for any skill - dedicated or dynamic

@@ -285,12 +285,21 @@ export default function CoachTabScreen() {
             // Set it in the input and auto-send
             setInputText(pending);
             console.log('[Coach] Set pending voice message in input, auto-sending...');
-            // Auto-send after a short delay so user sees it
-            setTimeout(() => {
-              if (handleSendRef.current) {
-                handleSendRef.current(pending);
-              }
-            }, 300);
+            // Auto-send immediately with retry mechanism for race condition
+            const attemptSend = (retries: number) => {
+              setTimeout(() => {
+                if (handleSendRef.current) {
+                  console.log('[Coach] Sending voice message:', pending);
+                  handleSendRef.current(pending);
+                } else if (retries > 0) {
+                  console.log('[Coach] Waiting for handleSendRef...', retries);
+                  attemptSend(retries - 1);
+                } else {
+                  console.error('[Coach] handleSendRef timeout');
+                }
+              }, 50); // Short 50ms delay, retry quickly
+            };
+            attemptSend(10); // Try up to 10 times with 50ms delays (500ms total max)
           }
         } catch (error) {
           console.error('Failed to load pending voice message:', error);

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -90,6 +90,9 @@ export default function JournalScreen() {
   // Food detection feedback state
   const [detectedFood, setDetectedFood] = useState<string | null>(null);
 
+  // Ref for handleSave - initialized as null, updated after handleSave is defined
+  const handleSaveRef = useRef<((text?: string) => Promise<void>) | null>(null);
+
   // Load coach persona on mount
   useEffect(() => {
     const loadCoach = async () => {
@@ -145,11 +148,28 @@ export default function JournalScreen() {
       const loadPendingVoice = async () => {
         try {
           const pending = await AsyncStorage.getItem(PENDING_JOURNAL_MESSAGE_KEY);
+          console.log('[Journal] Checking for pending voice message:', pending ? 'found' : 'none');
           if (pending) {
             // Clear the pending message
             await AsyncStorage.removeItem(PENDING_JOURNAL_MESSAGE_KEY);
-            // Add to current entry text
+            // Set the text
             setEntryText((prev) => (prev ? `${prev}\n\n${pending}` : pending));
+            console.log('[Journal] Set pending voice message, auto-saving...');
+            // Auto-save with retry mechanism
+            const attemptSave = (retries: number) => {
+              setTimeout(() => {
+                if (handleSaveRef.current) {
+                  console.log('[Journal] Calling handleSave with:', pending);
+                  handleSaveRef.current(pending);
+                } else if (retries > 0) {
+                  console.log('[Journal] Waiting for handleSaveRef...', retries);
+                  attemptSave(retries - 1);
+                } else {
+                  console.error('[Journal] handleSaveRef timeout');
+                }
+              }, 50);
+            };
+            attemptSave(10);
           }
         } catch (error) {
           console.error('Failed to load pending voice message:', error);
@@ -159,16 +179,17 @@ export default function JournalScreen() {
     }, [loadEntries])
   );
 
-  const handleSave = async () => {
-    if (!canSave) return;
+  const handleSave = async (overrideText?: string) => {
+    const textToSave = overrideText || entryText;
+    if (!textToSave.trim() || isSaving) return;
 
     try {
       setIsSaving(true);
 
       // Analyze sentiment (on-device, instant)
-      const sentimentResult = analyzeSentiment(entryText);
+      const sentimentResult = analyzeSentiment(textToSave);
 
-      const newEntry = createJournalEntry(entryText, {
+      const newEntry = createJournalEntry(textToSave, {
         score: sentimentResult.normalizedScore,
         mood: sentimentResult.mood,
         emoji: sentimentResult.emoji,
@@ -180,7 +201,7 @@ export default function JournalScreen() {
 
       // AI Food Detection - auto-log food from journal text
       try {
-        const foodResult = await autoLogFromJournal(entryText);
+        const foodResult = await autoLogFromJournal(textToSave);
         if (foodResult && foodResult.logged.length > 0) {
           const foodNames = foodResult.logged.map(e => e.foodItem.name).join(', ');
           setDetectedFood(`Logged: ${foodNames} (${foodResult.totalCalories} cal)`);
@@ -220,6 +241,11 @@ export default function JournalScreen() {
       setIsSaving(false);
     }
   };
+
+  // Keep handleSaveRef updated with latest handleSave
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
 
   // Voice recording handlers (Unit 5)
   const handleVoiceToggle = () => {

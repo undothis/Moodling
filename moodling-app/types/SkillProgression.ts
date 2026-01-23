@@ -540,6 +540,24 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isUnlocked: false,
     previewText: 'Track and protect your emotional energy',
   },
+  {
+    id: 'drink_pacing',
+    name: 'Drink Pacing Timer',
+    description: 'Harm reduction tool - set intervals and get reminders to pace yourself',
+    category: 'self_care',
+    emoji: '🍷',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'habit_timer',
+    name: 'Habit Timer',
+    description: 'Custom pacing timers for any habit - coffee, snacks, medication, breaks',
+    category: 'self_care',
+    emoji: '⏱️',
+    isPremium: false,
+    isUnlocked: true,
+  },
 
   // ==================== RELATIONSHIPS ====================
   {
