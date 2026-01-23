@@ -24,19 +24,130 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // ============================================
-// CORS PROXY FOR WEB
+// CORS PROXIES FOR WEB (Multiple fallbacks)
 // ============================================
 
 /**
- * Wrap URL with CORS proxy when running on web
- * YouTube RSS and page fetches are blocked by CORS in browsers
+ * List of CORS proxies to try (in order of reliability)
+ * Having multiple proxies helps when one is rate-limited or down
  */
-function getCorsProxyUrl(url: string): string {
-  if (Platform.OS === 'web') {
-    // Use allorigins as CORS proxy for web environments
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+const CORS_PROXIES = [
+  // Format: [prefix, suffix, needsEncoding]
+  { prefix: 'https://api.allorigins.win/raw?url=', suffix: '', encode: true },
+  { prefix: 'https://corsproxy.io/?', suffix: '', encode: true },
+  { prefix: 'https://api.codetabs.com/v1/proxy?quest=', suffix: '', encode: true },
+  { prefix: 'https://thingproxy.freeboard.io/fetch/', suffix: '', encode: false },
+];
+
+let currentProxyIndex = 0;
+let lastProxyRotation = 0;
+const PROXY_ROTATION_INTERVAL = 60000; // Rotate proxy every minute if issues
+
+/**
+ * Get CORS proxy URL with automatic rotation on failures
+ */
+function getCorsProxyUrl(url: string, forceRotate = false): string {
+  if (Platform.OS !== 'web') {
+    return url;
   }
-  return url;
+
+  // Rotate proxy if forced or if it's been a while
+  const now = Date.now();
+  if (forceRotate || (now - lastProxyRotation > PROXY_ROTATION_INTERVAL)) {
+    currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
+    lastProxyRotation = now;
+  }
+
+  const proxy = CORS_PROXIES[currentProxyIndex];
+  const encodedUrl = proxy.encode ? encodeURIComponent(url) : url;
+  return `${proxy.prefix}${encodedUrl}${proxy.suffix}`;
+}
+
+/**
+ * Try fetching with multiple CORS proxies until one works
+ */
+async function fetchWithProxyFallback(
+  url: string,
+  options: RequestInit = {},
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let proxyAttempt = 0; proxyAttempt < CORS_PROXIES.length; proxyAttempt++) {
+    const proxyIndex = (currentProxyIndex + proxyAttempt) % CORS_PROXIES.length;
+    const proxy = CORS_PROXIES[proxyIndex];
+    const encodedUrl = proxy.encode ? encodeURIComponent(url) : url;
+    const proxyUrl = Platform.OS === 'web'
+      ? `${proxy.prefix}${encodedUrl}${proxy.suffix}`
+      : url;
+
+    // Retry with exponential backoff
+    for (let retry = 0; retry < maxRetries; retry++) {
+      try {
+        if (retry > 0) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, retry) * 1000;
+          console.log(`[YouTube] Retry ${retry + 1}/${maxRetries} after ${delay}ms delay...`);
+          await sleep(delay);
+        }
+
+        const response = await fetch(proxyUrl, {
+          ...options,
+          signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
+
+        if (response.ok) {
+          // Success - remember this proxy worked
+          currentProxyIndex = proxyIndex;
+          return response;
+        }
+
+        // If we get a 429 (rate limited), try next proxy immediately
+        if (response.status === 429) {
+          console.log(`[YouTube] Proxy ${proxyIndex} rate limited, trying next...`);
+          break; // Move to next proxy
+        }
+
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.log(`[YouTube] Fetch attempt failed:`, lastError.message);
+      }
+    }
+
+    // If we're on web and this proxy failed, try the next one
+    if (Platform.OS === 'web') {
+      console.log(`[YouTube] Proxy ${proxyIndex} exhausted, trying next proxy...`);
+    } else {
+      break; // On native, no point trying different "proxies"
+    }
+  }
+
+  throw lastError || new Error('All fetch attempts failed');
+}
+
+/**
+ * Sleep helper for delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Rate limiter to avoid triggering bot detection
+ */
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests
+
+async function rateLimit(): Promise<void> {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    console.log(`[YouTube] Rate limiting: waiting ${waitTime}ms...`);
+    await sleep(waitTime);
+  }
+  lastRequestTime = Date.now();
 }
 
 // ============================================
@@ -597,12 +708,13 @@ export async function fetchChannelVideos(
       // For handles, try to resolve to channel ID
       // First attempt: fetch channel page and extract ID
       try {
+        await rateLimit();
         console.log('[YouTube] Fetching channel page for:', channelInfo.id);
-        const channelPageUrl = getCorsProxyUrl(`https://www.youtube.com/@${channelInfo.id}`);
-        console.log('[YouTube] Using URL:', channelPageUrl);
-        const pageResponse = await fetch(channelPageUrl, {
+        const channelPageUrl = `https://www.youtube.com/@${channelInfo.id}`;
+        console.log('[YouTube] Using URL with proxy fallback...');
+        const pageResponse = await fetchWithProxyFallback(channelPageUrl, {
           headers: Platform.OS === 'web' ? {} : {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
           },
@@ -656,13 +768,12 @@ export async function fetchChannelVideos(
       }
     }
 
-    // Fetch RSS feed
-    const rssFetchUrl = getCorsProxyUrl(feedUrl);
+    // Fetch RSS feed with rate limiting and proxy fallback
+    await rateLimit();
     console.log('[YouTubeService] Fetching RSS feed:', feedUrl);
-    console.log('[YouTubeService] Using URL:', rssFetchUrl);
-    const response = await fetch(rssFetchUrl, {
+    const response = await fetchWithProxyFallback(feedUrl, {
       headers: Platform.OS === 'web' ? {} : {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': 'application/xml,text/xml,*/*;q=0.8',
       },
     });
@@ -1067,22 +1178,24 @@ async function fetchTranscriptViaInnerTube(
   console.log(`[Transcript] Trying InnerTube API for video: ${videoId}`);
 
   try {
-    // Step 1: Get video page to extract caption track info
-    const videoPageUrl = Platform.OS === 'web'
-      ? getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`)
-      : `https://www.youtube.com/watch?v=${videoId}`;
+    // Rate limit to avoid bot detection
+    await rateLimit();
 
-    console.log(`[Transcript] Fetching video page...`);
-    const pageResponse = await fetch(videoPageUrl, {
+    // Step 1: Get video page to extract caption track info
+    const videoPageUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    console.log(`[Transcript] Fetching video page with proxy fallback...`);
+    const pageResponse = await fetchWithProxyFallback(videoPageUrl, {
       headers: Platform.OS === 'web' ? {} : {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
 
     if (!pageResponse.ok) {
       console.log(`[Transcript] Video page fetch failed: ${pageResponse.status}`);
-      return { transcript: '', segments: [], error: `Page fetch failed: ${pageResponse.status}` };
+      return { transcript: '', segments: [], error: `[ERR_PAGE_FETCH] Video page returned ${pageResponse.status}` };
     }
 
     const html = await pageResponse.text();
@@ -1136,14 +1249,14 @@ async function fetchTranscriptViaInnerTube(
       captionUrl += '&fmt=json3';
     }
 
-    // Use CORS proxy for web
-    const fetchUrl = Platform.OS === 'web' ? getCorsProxyUrl(captionUrl) : captionUrl;
-    console.log(`[Transcript] Fetching caption content...`);
+    // Rate limit before caption fetch
+    await rateLimit();
 
-    const captionResponse = await fetch(fetchUrl);
+    console.log(`[Transcript] Fetching caption content with proxy fallback...`);
+    const captionResponse = await fetchWithProxyFallback(captionUrl, {}, 2);
     if (!captionResponse.ok) {
       console.log(`[Transcript] Caption fetch failed: ${captionResponse.status}`);
-      return { transcript: '', segments: [], error: `Caption fetch failed: ${captionResponse.status}` };
+      return { transcript: '', segments: [], error: `[ERR_CAPTION_FETCH] Caption request returned ${captionResponse.status}` };
     }
 
     const captionData = await captionResponse.text();
@@ -1201,14 +1314,22 @@ async function fetchTranscriptViaInvidious(
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
   console.log(`[Transcript] Trying Invidious API for video: ${videoId}`);
 
-  for (const instance of INVIDIOUS_INSTANCES) {
+  // Shuffle instances to distribute load
+  const shuffledInstances = [...INVIDIOUS_INSTANCES].sort(() => Math.random() - 0.5);
+
+  for (const instance of shuffledInstances) {
     try {
+      await rateLimit();
+
       // First, get the list of available captions
       const captionsUrl = `${instance}/api/v1/captions/${videoId}`;
-      console.log(`[Transcript] Trying instance: ${captionsUrl}`);
+      console.log(`[Transcript] Trying instance: ${instance}`);
 
       const captionsResponse = await fetch(captionsUrl, {
-        signal: AbortSignal.timeout(5000), // 5 second timeout (reduced)
+        signal: AbortSignal.timeout(8000), // 8 second timeout
+        headers: {
+          'Accept': 'application/json',
+        },
       });
 
       if (!captionsResponse.ok) {
@@ -1399,38 +1520,47 @@ function parseVttTimestamp(timestamp: string): number {
 async function fetchTranscriptViaApi(
   videoId: string
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
-  // Try to get caption list from YouTube's innertube API
-  const apiUrl = Platform.OS === 'web'
-    ? getCorsProxyUrl(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`)
-    : `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`;
+  await rateLimit();
 
-  console.log(`[Transcript] Trying timedtext API: ${apiUrl}`);
+  const manualUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`;
+  console.log(`[Transcript] Trying timedtext API (manual captions)...`);
 
-  const response = await fetch(apiUrl);
+  try {
+    const response = await fetchWithProxyFallback(manualUrl, {}, 2);
 
-  if (!response.ok) {
-    // Try auto-generated captions
-    const autoUrl = Platform.OS === 'web'
-      ? getCorsProxyUrl(`https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`)
-      : `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`;
-
-    console.log(`[Transcript] Trying auto-generated captions: ${autoUrl}`);
-    const autoResponse = await fetch(autoUrl);
-
-    if (!autoResponse.ok) {
-      return {
-        transcript: '',
-        segments: [],
-        error: 'Timedtext API returned error',
-      };
+    if (response.ok) {
+      const xmlText = await response.text();
+      if (xmlText && xmlText.length > 100) {
+        return parseTranscriptXml(xmlText);
+      }
     }
-
-    const xmlText = await autoResponse.text();
-    return parseTranscriptXml(xmlText);
+  } catch (e) {
+    console.log(`[Transcript] Manual caption fetch failed:`, e);
   }
 
-  const xmlText = await response.text();
-  return parseTranscriptXml(xmlText);
+  // Try auto-generated captions
+  await rateLimit();
+  const autoUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`;
+  console.log(`[Transcript] Trying timedtext API (auto-generated captions)...`);
+
+  try {
+    const autoResponse = await fetchWithProxyFallback(autoUrl, {}, 2);
+
+    if (autoResponse.ok) {
+      const xmlText = await autoResponse.text();
+      if (xmlText && xmlText.length > 100) {
+        return parseTranscriptXml(xmlText);
+      }
+    }
+  } catch (e) {
+    console.log(`[Transcript] Auto caption fetch failed:`, e);
+  }
+
+  return {
+    transcript: '',
+    segments: [],
+    error: '[ERR_TIMEDTEXT_API] Timedtext API returned no usable captions',
+  };
 }
 
 /**
@@ -1550,19 +1680,20 @@ export async function fetchVideoTranscript(
 
   // Try Method 4: Direct YouTube page scraping (last resort)
   try {
-    const videoUrl = getCorsProxyUrl(`https://www.youtube.com/watch?v=${videoId}`);
-    console.log(`[Transcript] Trying direct scrape via: ${videoUrl}`);
+    await rateLimit();
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    console.log(`[Transcript] Trying direct scrape with proxy fallback...`);
 
-    const response = await fetch(videoUrl, {
+    const response = await fetchWithProxyFallback(videoUrl, {
       headers: Platform.OS === 'web' ? {} : {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
       },
-    });
+    }, 2);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch video page: ${response.status}`);
+      throw new Error(`[ERR_PAGE_SCRAPE] Video page returned ${response.status}`);
     }
 
     const html = await response.text();
