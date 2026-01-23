@@ -1498,8 +1498,24 @@ export default function SettingsScreen() {
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/interview-processor')}
+        >
+          <Text style={styles.faqEmoji}>🎬</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Interview Processor
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Harvest insights from YouTube channels
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
         <Text style={[styles.devNote, { color: colors.textMuted }]}>
-          Test AI referencing accuracy and troubleshoot issues.
+          Tools for training the AI with human insights.
         </Text>
       </View>
 
