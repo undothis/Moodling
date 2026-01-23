@@ -172,6 +172,7 @@ export function VoiceEnabledTabBar({
         try {
           const result = await voiceRecording.stopRecording();
           const finalTranscript = result?.transcript || overlay.transcript;
+          console.log('[VoiceTabBar] Recording stopped, transcript:', finalTranscript);
 
           // Store pending message for the target screen
           if (finalTranscript.trim()) {
@@ -179,6 +180,7 @@ export function VoiceEnabledTabBar({
               routeName === 'coach'
                 ? PENDING_COACH_MESSAGE_KEY
                 : PENDING_JOURNAL_MESSAGE_KEY;
+            console.log('[VoiceTabBar] Saving to AsyncStorage:', storageKey);
             await AsyncStorage.setItem(storageKey, finalTranscript);
 
             // Haptic success feedback
