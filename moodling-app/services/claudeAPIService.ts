@@ -722,8 +722,17 @@ export async function sendMessage(
     };
   }
 
-  // Get tone preferences
-  const tonePrefs = context.toneStyles ?? (await getTonePreferences()).selectedStyles;
+  // Get tone preferences (with fallback to prevent API failure)
+  let tonePrefs = context.toneStyles;
+  if (!tonePrefs) {
+    try {
+      const prefs = await getTonePreferences();
+      tonePrefs = prefs.selectedStyles;
+    } catch (error) {
+      console.log('Could not load tone preferences:', error);
+      tonePrefs = ['balanced']; // Default fallback
+    }
+  }
   const toneInstruction = getToneInstruction(tonePrefs);
 
   // Get coach personality settings
@@ -754,8 +763,22 @@ export async function sendMessage(
   // Build context and prompt
   // Combine: rich user context (Unit 18B) + lifetime context + health context + conversation context
   const conversationContext = buildConversationContext(context);
-  const richContext = await getContextForClaude();
-  const lifeContext = await getLifeContextForClaude();
+
+  // Get rich user context (must be wrapped in try/catch to prevent full API failure)
+  let richContext = '';
+  try {
+    richContext = await getContextForClaude();
+  } catch (error) {
+    console.log('Could not load rich user context:', error);
+  }
+
+  // Get life context (must be wrapped in try/catch to prevent full API failure)
+  let lifeContext = '';
+  try {
+    lifeContext = await getLifeContextForClaude();
+  } catch (error) {
+    console.log('Could not load life context:', error);
+  }
 
   // Get health context if HealthKit is enabled
   let healthContext = '';
