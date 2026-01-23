@@ -556,6 +556,7 @@ export async function fetchChannelVideos(
       // For handles, try to resolve to channel ID
       // First attempt: fetch channel page and extract ID
       try {
+        console.log('[YouTube] Fetching channel page for:', channelInfo.id);
         const pageResponse = await fetch(`https://www.youtube.com/@${channelInfo.id}`, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -563,25 +564,50 @@ export async function fetchChannelVideos(
             'Accept-Language': 'en-US,en;q=0.5',
           },
         });
-        const pageHtml = await pageResponse.text();
-        const channelIdMatch = pageHtml.match(/"channelId":"(UC[^"]+)"/);
-        if (channelIdMatch) {
-          channelId = channelIdMatch[1];
-          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-        } else {
+        console.log('[YouTube] Page response status:', pageResponse.status);
+
+        if (!pageResponse.ok) {
+          console.log('[YouTube] Page fetch failed with status:', pageResponse.status);
           return {
             videos: [],
             channelName: channelInfo.id,
             channelId: '',
-            error: `Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
+            error: `YouTube returned status ${pageResponse.status}. Try refreshing or check your connection.`,
           };
         }
-      } catch {
+
+        const pageHtml = await pageResponse.text();
+        console.log('[YouTube] Page HTML length:', pageHtml.length);
+
+        const channelIdMatch = pageHtml.match(/"channelId":"(UC[^"]+)"/);
+        if (channelIdMatch) {
+          channelId = channelIdMatch[1];
+          console.log('[YouTube] Found channel ID:', channelId);
+          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+        } else {
+          console.log('[YouTube] Could not find channelId in page HTML');
+          // Try alternative patterns
+          const altMatch = pageHtml.match(/channel_id=([^"&]+)/);
+          if (altMatch) {
+            channelId = altMatch[1];
+            console.log('[YouTube] Found channel ID via alt pattern:', channelId);
+            feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+          } else {
+            return {
+              videos: [],
+              channelName: channelInfo.id,
+              channelId: '',
+              error: `Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
+            };
+          }
+        }
+      } catch (fetchError) {
+        console.log('[YouTube] Fetch error:', fetchError);
         return {
           videos: [],
           channelName: channelInfo.id,
           channelId: '',
-          error: `Could not resolve channel. Try the channel ID format.`,
+          error: `Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}. Check your connection.`,
         };
       }
     }
