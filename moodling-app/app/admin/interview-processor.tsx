@@ -229,12 +229,19 @@ export default function InterviewProcessorScreen() {
 
   // Save YouTube API key
   const handleSaveYoutubeApiKey = async () => {
+    console.log('[InterviewProcessor] Saving YouTube API key, length:', youtubeApiKey?.length);
+    if (!youtubeApiKey || !youtubeApiKey.trim()) {
+      Alert.alert('Error', 'Please enter an API key first');
+      return;
+    }
     try {
-      await AsyncStorage.setItem('youtube_api_key', youtubeApiKey);
+      await AsyncStorage.setItem('youtube_api_key', youtubeApiKey.trim());
       setShowYoutubeApiInput(false);
+      console.log('[InterviewProcessor] YouTube API key saved successfully');
       Alert.alert('Saved', 'YouTube API key saved. This enables video statistics for better sampling.');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save API key');
+      console.error('[InterviewProcessor] Failed to save YouTube API key:', error);
+      Alert.alert('Error', `Failed to save API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -886,7 +893,7 @@ export default function InterviewProcessorScreen() {
               value={youtubeApiKey}
               onChangeText={setYoutubeApiKey}
               autoCapitalize="none"
-              secureTextEntry
+              autoCorrect={false}
             />
             <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
               {youtubeApiKey ? (
