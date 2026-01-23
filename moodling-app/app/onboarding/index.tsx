@@ -20,6 +20,9 @@ import {
   ScrollView,
   Animated,
   useColorScheme,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -120,9 +123,13 @@ export default function OnboardingScreen() {
       // Get name style preference (defaults to 'classic')
       const nameStyle = (answers.name_style as NameStyle) || 'classic';
 
+      // Get user's name (optional)
+      const userName = (answers.user_name as string)?.trim() || undefined;
+
       // Save settings
       await saveCoachSettings({
         selectedPersona: recommendedPersona,
+        userName, // User's preferred name/nickname
         nameStyle, // User's preferred name style for coaches
         detailedSettings: {
           ...getSettingsForPersona(recommendedPersona),
@@ -259,8 +266,78 @@ export default function OnboardingScreen() {
           style={styles.optionsScroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.optionsContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          {question.type === 'slider' && question.sliderConfig ? (
+          {question.type === 'text' && question.textConfig ? (
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                placeholder={question.textConfig.placeholder}
+                placeholderTextColor={colors.textMuted}
+                value={(selectedValue as string) || ''}
+                onChangeText={(text) => {
+                  setAnswers((prev) => ({
+                    ...prev,
+                    [question.id]: text,
+                  }));
+                }}
+                maxLength={question.textConfig.maxLength}
+                autoFocus={currentStep === 0}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (selectedValue && (selectedValue as string).trim()) {
+                    handleNext();
+                  }
+                }}
+              />
+              <Pressable
+                style={[
+                  styles.textContinueButton,
+                  {
+                    backgroundColor: selectedValue && (selectedValue as string).trim()
+                      ? colors.tint
+                      : colors.border,
+                  },
+                ]}
+                onPress={handleNext}
+                disabled={!selectedValue || !(selectedValue as string).trim()}
+              >
+                <Text
+                  style={[
+                    styles.textContinueText,
+                    {
+                      color: selectedValue && (selectedValue as string).trim()
+                        ? '#fff'
+                        : colors.textMuted,
+                    },
+                  ]}
+                >
+                  Continue
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.skipNameButton}
+                onPress={() => {
+                  setAnswers((prev) => ({
+                    ...prev,
+                    [question.id]: '',
+                  }));
+                  handleNext();
+                }}
+              >
+                <Text style={[styles.skipNameText, { color: colors.textMuted }]}>
+                  Skip for now
+                </Text>
+              </Pressable>
+            </View>
+          ) : question.type === 'slider' && question.sliderConfig ? (
             <View style={styles.sliderContainer}>
               {question.sliderConfig.labels.map((label, index) => {
                 const isSelected = selectedValue === index.toString();
@@ -552,5 +629,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  textInputContainer: {
+    gap: 16,
+  },
+  textInput: {
+    fontSize: 18,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    textAlign: 'center',
+  },
+  textContinueButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  textContinueText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  skipNameButton: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  skipNameText: {
+    fontSize: 15,
   },
 });

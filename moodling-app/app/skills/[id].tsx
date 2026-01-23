@@ -31,6 +31,71 @@ import {
   togglePersistentMode,
 } from '@/services/coachModeService';
 
+// Skills that should launch the breathing orb directly
+const BREATHING_SKILLS = [
+  'box_breathing',
+  'physiological_sigh',
+  '478_breathing',
+];
+
+// Skills that should launch a guided step-by-step experience
+const GUIDED_STEP_SKILLS = [
+  // Grounding
+  'five_senses',
+  'cold_water',
+  'butterfly_hug',
+  'safe_place_visualization',
+  // Anxiety
+  'worry_time',
+  'thought_challenging',
+  'worst_case_best_case',
+  'fact_vs_feeling',
+  'containment',
+  // Sleep
+  'wind_down',
+  'body_scan_sleep',
+  'cognitive_shuffle',
+  // Focus
+  'pomodoro',
+  'brain_dump',
+  'single_tasking',
+  'habit_stacking',
+  'implementation_intentions',
+  // Self-care
+  'self_compassion_break',
+  'gratitude_practice',
+  'values_clarification',
+  'needs_inventory',
+  'behavioral_activation',
+  // Relationships
+  'conflict_cool_down',
+  'repair_conversations',
+  'i_statements',
+  'active_listening',
+  // Mindfulness
+  'body_scan',
+  'loving_kindness',
+  'mindful_moment',
+  'noting_practice',
+  'rain_technique',
+  'mindful_eating',
+  'walking_meditation',
+  'urge_surfing',
+  'emotional_labeling',
+  'wise_mind',
+  // Body
+  'somatic_tracking',
+  'shake_it_out',
+];
+
+// Get execution mode for a skill
+type ExecutionMode = 'breathing' | 'guided_steps' | 'game' | 'info';
+function getExecutionMode(skillId: string): ExecutionMode {
+  if (BREATHING_SKILLS.includes(skillId)) return 'breathing';
+  if (GUIDED_STEP_SKILLS.includes(skillId)) return 'guided_steps';
+  return 'info';
+}
+
 // Skill-specific content and instructions
 const SKILL_CONTENT: Record<string, {
   steps?: string[];
@@ -604,6 +669,12 @@ export default function SkillDetailScreen() {
   const [isPersistent, setIsPersistent] = useState(false);
   const coachModeConfig = id ? getCoachModeConfig(id) : null;
 
+  // Guided experience state
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepTimer, setStepTimer] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
   const skill = AVAILABLE_SKILLS.find(s => s.id === id);
   const content = id ? SKILL_CONTENT[id] : null;
   const category = skill?.category ? SKILL_CATEGORIES[skill.category] : null;
@@ -842,19 +913,137 @@ export default function SkillDetailScreen() {
         <TouchableOpacity
           style={[styles.startButton, { backgroundColor: colors.tint }]}
           onPress={() => {
-            Alert.alert(
-              'Practice Started',
-              `You're practicing ${skill.name}. Take your time and follow the steps above.`,
-              [{ text: 'Got it' }]
-            );
+            const mode = id ? getExecutionMode(id) : 'info';
+
+            if (mode === 'breathing') {
+              // Navigate to breathing orb
+              router.push('/games/breathing-orb' as any);
+            } else if (mode === 'guided_steps' && content?.steps) {
+              // Start guided step experience
+              setCurrentStep(0);
+              setStepTimer(0);
+              setIsPaused(false);
+              setIsPracticing(true);
+            } else {
+              // Just show info alert
+              Alert.alert(
+                'Practice Started',
+                `You're practicing ${skill.name}. Take your time and follow the steps above.`,
+                [{ text: 'Got it' }]
+              );
+            }
           }}
         >
           <Ionicons name="play" size={20} color="#FFFFFF" />
-          <Text style={styles.startButtonText}>Start Practice</Text>
+          <Text style={styles.startButtonText}>
+            {id && getExecutionMode(id) === 'breathing' ? 'Start Breathing Exercise' :
+             id && getExecutionMode(id) === 'guided_steps' ? 'Start Guided Practice' :
+             'Start Practice'}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Guided Step Experience Overlay */}
+      {isPracticing && content?.steps && (
+        <View style={[styles.guidedOverlay, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
+          <SafeAreaView style={styles.guidedContent}>
+            {/* Close button */}
+            <TouchableOpacity
+              style={styles.guidedCloseButton}
+              onPress={() => {
+                Alert.alert(
+                  'End Practice?',
+                  'Are you sure you want to stop?',
+                  [
+                    { text: 'Continue', style: 'cancel' },
+                    { text: 'Stop', style: 'destructive', onPress: () => setIsPracticing(false) },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+
+            {/* Progress indicator */}
+            <View style={styles.guidedProgress}>
+              {content.steps.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.guidedProgressDot,
+                    {
+                      backgroundColor: i === currentStep ? colors.tint : i < currentStep ? colors.success : 'rgba(255,255,255,0.3)',
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Step number */}
+            <Text style={styles.guidedStepNumber}>
+              Step {currentStep + 1} of {content.steps.length}
+            </Text>
+
+            {/* Current step */}
+            <View style={styles.guidedStepContainer}>
+              <Text style={styles.guidedEmoji}>{skill.emoji}</Text>
+              <Text style={styles.guidedStepText}>
+                {content.steps[currentStep]}
+              </Text>
+            </View>
+
+            {/* Controls */}
+            <View style={styles.guidedControls}>
+              {currentStep > 0 && (
+                <TouchableOpacity
+                  style={[styles.guidedControlButton, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                  onPress={() => setCurrentStep(prev => prev - 1)}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                  <Text style={styles.guidedControlText}>Previous</Text>
+                </TouchableOpacity>
+              )}
+
+              {currentStep < content.steps.length - 1 ? (
+                <TouchableOpacity
+                  style={[styles.guidedControlButton, { backgroundColor: colors.tint }]}
+                  onPress={() => setCurrentStep(prev => prev + 1)}
+                >
+                  <Text style={styles.guidedControlText}>Next Step</Text>
+                  <Ionicons name="arrow-forward" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.guidedControlButton, { backgroundColor: colors.success }]}
+                  onPress={() => {
+                    setIsPracticing(false);
+                    Alert.alert(
+                      'Well Done! 🎉',
+                      `You completed ${skill.name}. How do you feel?`,
+                      [{ text: 'Great!' }]
+                    );
+                  }}
+                >
+                  <Text style={styles.guidedControlText}>Complete</Text>
+                  <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Tip at bottom */}
+            {content.tips && content.tips[currentStep % content.tips.length] && (
+              <View style={styles.guidedTip}>
+                <Ionicons name="bulb" size={16} color={colors.tint} />
+                <Text style={[styles.guidedTipText, { color: 'rgba(255,255,255,0.7)' }]}>
+                  {content.tips[currentStep % content.tips.length]}
+                </Text>
+              </View>
+            )}
+          </SafeAreaView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1062,5 +1251,88 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: 'italic',
     marginBottom: 4,
+  },
+  // Guided Experience Styles
+  guidedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+  },
+  guidedContent: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  guidedCloseButton: {
+    alignSelf: 'flex-end',
+    padding: 8,
+  },
+  guidedProgress: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+  },
+  guidedProgressDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  guidedStepNumber: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  guidedStepContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  guidedEmoji: {
+    fontSize: 64,
+    marginBottom: 24,
+  },
+  guidedStepText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 36,
+  },
+  guidedControls: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  guidedControlButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  guidedControlText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guidedTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  guidedTipText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

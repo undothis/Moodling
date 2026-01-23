@@ -63,6 +63,10 @@ import {
   TTSSettings,
   VoiceGender,
 } from '@/services/textToSpeechService';
+import {
+  createTestAchievement,
+  clearAllAchievements,
+} from '@/services/achievementNotificationService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -1466,6 +1470,41 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
+        {/* Test Achievement Notification */}
+        <View style={styles.devTestSection}>
+          <Text style={[styles.devTestLabel, { color: colors.textSecondary }]}>
+            Test Notifications
+          </Text>
+          <View style={styles.devTestButtons}>
+            <TouchableOpacity
+              style={[styles.devTestButton, { backgroundColor: colors.tint }]}
+              onPress={async () => {
+                await createTestAchievement();
+                if (Platform.OS === 'web') {
+                  window.alert('Test achievement created! Check the Coach tab for a glow.');
+                } else {
+                  Alert.alert('Test Achievement Created', 'Check the Coach tab for a golden glow notification!');
+                }
+              }}
+            >
+              <Text style={styles.devTestButtonText}>Test Achievement Glow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.devTestButton, { backgroundColor: colors.border }]}
+              onPress={async () => {
+                await clearAllAchievements();
+                if (Platform.OS === 'web') {
+                  window.alert('All achievements cleared.');
+                } else {
+                  Alert.alert('Cleared', 'All test achievements have been cleared.');
+                }
+              }}
+            >
+              <Text style={[styles.devTestButtonText, { color: colors.text }]}>Clear Achievements</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <TouchableOpacity
           style={[styles.faqItem, { backgroundColor: colors.background }]}
           onPress={() => router.push('/simulator')}
@@ -2048,6 +2087,34 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
     marginTop: 4,
+  },
+  devTestSection: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 10,
+  },
+  devTestLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  devTestButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  devTestButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  devTestButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   // TTS styles
   ttsSettingRow: {

@@ -18,6 +18,12 @@ import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
 import { getLogsContextForClaude, getDetailedLogsContextForClaude } from './quickLogsService';
+import {
+  getAccountabilityContextForCoach,
+  shouldMentionLimits,
+  getAccountabilityPreferencesContext,
+} from './aiAccountabilityService';
+import { getDrinkPacingContextForCoach } from './drinkPacingService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -53,6 +59,12 @@ import {
   validateCoachResponse,
   validateAgainstTenets,
 } from './corePrincipleKernel';
+import {
+  shouldCoachGlow,
+  getNextCelebration,
+  markAsCelebrated,
+  generateCelebrationMessage,
+} from './achievementNotificationService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -137,31 +149,8 @@ interface ClaudeAPIResponse {
   };
 }
 
-/**
- * Crisis detection keywords
- * If detected, skip Claude and provide crisis resources
- */
-const CRISIS_KEYWORDS = [
-  'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
-  'hurt myself', 'self-harm', 'self harm', 'cutting myself',
-  'don\'t want to live', 'better off dead', 'no reason to live',
-];
-
-/**
- * Crisis response - always provide resources
- */
-const CRISIS_RESPONSE: AIResponse = {
-  text: `I hear that you're going through something really difficult. Your safety matters.
-
-If you're in crisis, please reach out:
-• **988 Suicide & Crisis Lifeline**: Call or text 988
-• **Crisis Text Line**: Text HOME to 741741
-• **International Association for Suicide Prevention**: https://www.iasp.info/resources/Crisis_Centres/
-
-You don't have to face this alone. A trained counselor can help right now.`,
-  source: 'crisis',
-  cost: 0,
-};
+// Safeguard service handles all safety detection
+import { checkSafeguards, SafeguardResult } from './safeguardService';
 
 /**
  * Build the Mood Leaf system prompt
@@ -273,6 +262,40 @@ HEALTH DATA AWARENESS:
 - Use health insights to empower self-awareness, not create dependency
 - If sleep was poor, gently acknowledge it might affect how they're feeling
 - If activity is low, you might gently suggest movement as self-care (not prescription)
+
+ACCOUNTABILITY AWARENESS (Twigs with Limits):
+- If accountability data shows limits, be aware of the user's goals without being preachy
+- If they've exceeded a limit: Be supportive, not judgmental. "I notice you're over your coffee limit today - no judgment, just data. How are you feeling?"
+- If they're approaching a limit: Gently note it. "You're at 3/4 coffees - just a heads up."
+- If they ask about their limits/habits, reference the specific data
+- Help them reflect on patterns: "You've hit your coffee limit 3 days this week - what's going on?"
+- NEVER shame or guilt-trip - accountability is about awareness, not punishment
+- Celebrate awareness: "I like that you're tracking this - awareness is the first step"
+- If they seem stressed about exceeding: "Tomorrow's a fresh start. One day over your limit doesn't undo your progress."
+
+ADAPTING ACCOUNTABILITY TO USER COMFORT:
+- If user says things like "stop reminding me", "don't hold me accountable", "leave me alone about this":
+  * Acknowledge their request warmly: "Got it! I'll back off on the accountability for now."
+  * Let them know they can change it: "Just let me know when you want me to start checking in again."
+  * ACTUALLY reduce accountability mentions in subsequent responses
+
+- If user says "pause accountability for today" or "I don't need this today":
+  * Respond: "No problem - I'll pause the reminders for today. Tomorrow's a fresh start."
+  * Don't mention any limits for the rest of the conversation
+
+- If user says "be more/less strict" or "hold me more/less accountable":
+  * Acknowledge: "I hear you - I'll adjust my approach."
+  * Adapt your accountability mentions accordingly
+
+- IMPORTANT: Periodically (every few conversations where accountability comes up), ask:
+  * "How's the accountability feeling? Too much? Too little? Just right?"
+  * Only ask if it feels natural in the conversation, not forced
+
+- User preferences about accountability intensity are included in the context. RESPECT THEM.
+  * 'off' = Never mention limits
+  * 'gentle' = Only mention significant issues, very softly
+  * 'moderate' = Normal accountability
+  * 'proactive' = User wants active check-ins
 
 CORRELATION INSIGHTS:
 - Help users connect the dots: journal entries + mood + health metrics
@@ -399,13 +422,7 @@ function buildMessages(
   return messages;
 }
 
-/**
- * Check if message contains crisis keywords
- */
-function detectCrisis(message: string): boolean {
-  const lower = message.toLowerCase();
-  return CRISIS_KEYWORDS.some(keyword => lower.includes(keyword));
-}
+// Crisis and violence detection now handled by safeguardService
 
 /**
  * Calculate cost from token usage
@@ -685,9 +702,14 @@ export async function sendMessage(
   message: string,
   context: ConversationContext
 ): Promise<AIResponse> {
-  // Check for crisis first
-  if (detectCrisis(message)) {
-    return CRISIS_RESPONSE;
+  // Check for safety concerns (self-harm, violence, etc.)
+  const safeguardCheck = checkSafeguards(message);
+  if (safeguardCheck.triggered && safeguardCheck.response) {
+    return {
+      text: safeguardCheck.response.text,
+      source: 'crisis',
+      cost: 0,
+    };
   }
 
   // Get API key
@@ -842,12 +864,74 @@ export async function sendMessage(
     console.log('Could not load social connection context:', error);
   }
 
+  // Get user name for personalized address
+  let userNameContext = '';
+  let userName = '';
+  try {
+    const coachSettings = await getCoachSettings();
+    if (coachSettings.userName && coachSettings.userName.trim()) {
+      userName = coachSettings.userName.trim();
+      userNameContext = `USER'S NAME: ${userName} (use this name naturally in conversation when appropriate, but don't overuse it)`;
+    }
+  } catch (error) {
+    console.log('Could not load user name:', error);
+  }
+
+  // Check for achievements to celebrate
+  let achievementContext = '';
+  let pendingAchievement: any = null;
+  try {
+    const shouldGlow = await shouldCoachGlow();
+    if (shouldGlow) {
+      const celebration = await getNextCelebration();
+      if (celebration) {
+        pendingAchievement = celebration;
+        const celebrationMsg = generateCelebrationMessage(celebration);
+        achievementContext = `CELEBRATION OPPORTUNITY: You have something exciting to share with the user!
+${celebrationMsg}
+
+When appropriate in your response (ideally near the beginning), warmly share this with the user. Make it feel natural, not forced. Example: "Oh, before we dive in - ${celebration.title.toLowerCase()}! ${celebration.description}"`;
+      }
+    }
+  } catch (error) {
+    console.log('Could not load achievement context:', error);
+  }
+
+  // Get accountability context (limits, tracked items, AI-created twigs, preferences)
+  let accountabilityContext = '';
+  let shouldMentionAccountability = false;
+  try {
+    const [baseContext, prefsContext, limitCheck, drinkPacingContext] = await Promise.all([
+      getAccountabilityContextForCoach(),
+      getAccountabilityPreferencesContext(),
+      shouldMentionLimits(),
+      getDrinkPacingContextForCoach(),
+    ]);
+
+    accountabilityContext = `${prefsContext}\n\n${baseContext}`;
+    shouldMentionAccountability = limitCheck.shouldMention;
+
+    if (shouldMentionAccountability && limitCheck.context) {
+      accountabilityContext = `${accountabilityContext}\n\nCRITICAL ACCOUNTABILITY NOTE:\n${limitCheck.context}`;
+    }
+
+    // Add drink pacing context if active
+    if (drinkPacingContext) {
+      accountabilityContext = `${accountabilityContext}\n\n${drinkPacingContext}`;
+    }
+  } catch (error) {
+    console.log('Could not load accountability context:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: cognitive profile (how they think), social connection health, memory context,
-  // lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
-  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
+  // Order: user name (for personalization), achievements to celebrate, cognitive profile,
+  // social connection health, memory context, lifetime overview, psych profile,
+  // chronotype/travel, calendar, health + correlations, detailed tracking logs,
+  // lifestyle factors, exposure progress, recent journals, accountability (limits),
   // user preferences, then current conversation
   const contextParts = [
+    userNameContext,     // User's name for personalized address
+    achievementContext,  // Achievements to celebrate (insights, skill completions)
     cognitiveProfileContext, // How this person thinks/learns (from onboarding)
     socialConnectionContext, // Social connection health (isolation risk, connection quality)
     memoryContext,       // Tiered memory (what we know about this person)
@@ -861,6 +945,7 @@ export async function sendMessage(
     lifestyleContext,    // Lifestyle factors (caffeine, alcohol, outdoor, social time)
     exposureContext,     // Social exposure ladder progress
     journalContext,      // Recent journal entries (what user actually wrote)
+    accountabilityContext, // Accountability limits and tracking
     richContext,         // User preferences and mood trends
     conversationContext  // Current conversation context
   ].filter(Boolean);
@@ -977,6 +1062,16 @@ ${controllerModifiers}`;
       await addMessageToSession('assistant', responseText);
     } catch (err) {
       console.log('Memory tracking error (non-blocking):', err);
+    }
+
+    // Mark achievement as celebrated (if we had one to share)
+    if (pendingAchievement) {
+      try {
+        await markAsCelebrated(pendingAchievement.id);
+        console.log('[Achievement] Marked as celebrated:', pendingAchievement.title);
+      } catch (err) {
+        console.log('Achievement marking error (non-blocking):', err);
+      }
     }
 
     // Validate response against Core Principle Kernel tenets

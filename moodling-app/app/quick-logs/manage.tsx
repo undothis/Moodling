@@ -38,6 +38,12 @@ import {
   LOG_PRESETS,
   getPresetsByCategory,
 } from '@/services/quickLogsService';
+import {
+  createLimitAlert,
+  getLimitAlerts,
+  deleteLimitAlert,
+  LimitAlert,
+} from '@/services/aiAccountabilityService';
 
 // Common emojis for quick selection
 const COMMON_EMOJIS = [
@@ -71,6 +77,7 @@ export default function QuickLogsManagerScreen() {
   const router = useRouter();
 
   const [logs, setLogs] = useState<QuickLog[]>([]);
+  const [limitAlerts, setLimitAlerts] = useState<LimitAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Create/Edit modal state
@@ -82,6 +89,8 @@ export default function QuickLogsManagerScreen() {
   const [emoji, setEmoji] = useState('✅');
   const [type, setType] = useState<QuickLogType>('habit_build');
   const [frequency, setFrequency] = useState<LogFrequency>('daily');
+  const [hasLimit, setHasLimit] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState('');
 
   // Preset picker state
   const [showPresets, setShowPresets] = useState(false);
@@ -90,8 +99,12 @@ export default function QuickLogsManagerScreen() {
   const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const quickLogs = await getQuickLogs();
+      const [quickLogs, alerts] = await Promise.all([
+        getQuickLogs(),
+        getLimitAlerts(),
+      ]);
       setLogs(quickLogs);
+      setLimitAlerts(alerts);
     } catch (error) {
       console.error('Failed to load quick logs:', error);
     } finally {
@@ -110,6 +123,8 @@ export default function QuickLogsManagerScreen() {
     setEmoji('✅');
     setType('habit_build');
     setFrequency('daily');
+    setHasLimit(false);
+    setDailyLimit('');
     setShowModal(true);
   };
 
@@ -120,6 +135,10 @@ export default function QuickLogsManagerScreen() {
     setEmoji(log.emoji);
     setType(log.type);
     setFrequency(log.frequency);
+    // Check if this log has a limit alert
+    const existingAlert = limitAlerts.find(a => a.twigId === log.id && a.isActive);
+    setHasLimit(!!existingAlert);
+    setDailyLimit(existingAlert ? String(existingAlert.maxLimit) : '');
     setShowModal(true);
   };
 
@@ -127,6 +146,12 @@ export default function QuickLogsManagerScreen() {
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Name required', 'Please enter a name for your quick log');
+      return;
+    }
+
+    const limitValue = hasLimit ? parseInt(dailyLimit) : 0;
+    if (hasLimit && (!limitValue || limitValue < 1)) {
+      Alert.alert('Invalid limit', 'Please enter a valid daily limit (at least 1)');
       return;
     }
 
@@ -139,9 +164,27 @@ export default function QuickLogsManagerScreen() {
           type,
           frequency,
         });
+
+        // Handle limit alert updates
+        const existingAlert = limitAlerts.find(a => a.twigId === editingLog.id);
+        if (hasLimit && limitValue > 0) {
+          if (existingAlert) {
+            // Delete old alert and create new one with updated limit
+            await deleteLimitAlert(existingAlert.id);
+          }
+          await createLimitAlert(editingLog.id, name.trim(), limitValue);
+        } else if (!hasLimit && existingAlert) {
+          // Remove limit
+          await deleteLimitAlert(existingAlert.id);
+        }
       } else {
         // Create new
-        await createQuickLog(name.trim(), emoji, type, { frequency });
+        const newLog = await createQuickLog(name.trim(), emoji, type, { frequency });
+
+        // Create limit alert if specified
+        if (hasLimit && limitValue > 0) {
+          await createLimitAlert(newLog.id, name.trim(), limitValue);
+        }
       }
 
       setShowModal(false);
@@ -231,6 +274,11 @@ export default function QuickLogsManagerScreen() {
                     <Text style={[styles.logMeta, { color: colors.textMuted }]}>
                       {TYPE_OPTIONS.find((t) => t.value === log.type)?.label} •{' '}
                       {FREQUENCY_OPTIONS.find((f) => f.value === log.frequency)?.label}
+                      {limitAlerts.find(a => a.twigId === log.id && a.isActive) && (
+                        <Text style={{ color: '#FF9800' }}>
+                          {' '}• Limit: {limitAlerts.find(a => a.twigId === log.id)?.maxLimit}/day
+                        </Text>
+                      )}
                     </Text>
                   </View>
                 </View>
@@ -386,6 +434,60 @@ export default function QuickLogsManagerScreen() {
                   )}
                 </TouchableOpacity>
               ))}
+            </View>
+
+            {/* Daily Limit (Accountability) */}
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: colors.text }]}>
+                Daily Limit (Accountability)
+              </Text>
+              <Text style={[styles.formDescription, { color: colors.textMuted }]}>
+                Get notified when you're approaching or exceeding your limit
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.optionCard,
+                  {
+                    backgroundColor: hasLimit ? colors.tint + '20' : colors.card,
+                    borderColor: hasLimit ? colors.tint : colors.border,
+                  },
+                ]}
+                onPress={() => setHasLimit(!hasLimit)}
+              >
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionLabel, { color: colors.text }]}>
+                    Enable daily limit
+                  </Text>
+                  <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                    e.g., max 2 coffees, max 4 hours screen time
+                  </Text>
+                </View>
+                <Ionicons
+                  name={hasLimit ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={22}
+                  color={hasLimit ? colors.tint : colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              {hasLimit && (
+                <View style={styles.limitInputContainer}>
+                  <Text style={[styles.limitLabel, { color: colors.text }]}>
+                    Maximum per day:
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.limitInput,
+                      { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                    ]}
+                    value={dailyLimit}
+                    onChangeText={setDailyLimit}
+                    placeholder="e.g., 2"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                  />
+                </View>
+              )}
             </View>
           </ScrollView>
         </View>
@@ -606,6 +708,28 @@ const styles = StyleSheet.create({
   },
   optionDescription: {
     fontSize: 13,
+  },
+  formDescription: {
+    fontSize: 13,
+    marginBottom: 10,
+  },
+  limitInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 12,
+  },
+  limitLabel: {
+    fontSize: 14,
+  },
+  limitInput: {
+    fontSize: 18,
+    fontWeight: '600',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    width: 80,
+    textAlign: 'center',
   },
   // Preset styles
   presetCategory: {

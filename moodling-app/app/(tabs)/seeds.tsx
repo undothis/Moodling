@@ -36,6 +36,11 @@ import {
   runInsightAnalysis,
   getInsightSettings,
 } from '@/services/insightService';
+import {
+  recordInsightFeedback,
+  getAllFeedbackOptions,
+  FeedbackType,
+} from '@/services/insightFeedbackService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -137,6 +142,16 @@ export default function SeedsScreen() {
     await recordInsightReaction(insightId, reaction);
     await loadData();
     setExpandedInsight(null);
+  };
+
+  const handleFeedback = async (insight: Insight, feedbackType: FeedbackType) => {
+    await recordInsightFeedback(insight.description, feedbackType, {
+      insightCategory: insight.category,
+      daysSinceGenerated: Math.floor(
+        (Date.now() - new Date(insight.firstDetected).getTime()) / (1000 * 60 * 60 * 24)
+      ),
+    });
+    console.log('[Seeds] Recorded feedback:', feedbackType, 'for insight:', insight.title);
   };
 
   const handleRunAnalysis = async () => {
@@ -308,6 +323,7 @@ export default function SeedsScreen() {
               )}
               onAcknowledge={() => handleAcknowledge(insight)}
               onReaction={(reaction) => handleReaction(insight.id, reaction)}
+              onFeedback={handleFeedback}
               glowAnim={glowAnim}
             />
           ))}
@@ -333,6 +349,7 @@ export default function SeedsScreen() {
               )}
               onAcknowledge={() => {}}
               onReaction={(reaction) => handleReaction(insight.id, reaction)}
+              onFeedback={handleFeedback}
             />
           ))}
         </View>
@@ -411,6 +428,7 @@ interface InsightCardProps {
   onPress: () => void;
   onAcknowledge: () => void;
   onReaction: (reaction: Insight['userReaction']) => void;
+  onFeedback: (insight: Insight, feedbackType: FeedbackType) => void;
   glowAnim?: Animated.Value;
 }
 
@@ -422,8 +440,10 @@ function InsightCard({
   onPress,
   onAcknowledge,
   onReaction,
+  onFeedback,
   glowAnim,
 }: InsightCardProps) {
+  const [showFeedbackOptions, setShowFeedbackOptions] = useState(false);
   const categoryInfo = CATEGORY_NATURE[insight.category];
   const strengthInfo = STRENGTH_VISUALS[insight.strength];
 
@@ -518,7 +538,7 @@ function InsightCard({
             </View>
 
             {/* Reaction Buttons */}
-            {!insight.userReaction && (
+            {!insight.userReaction && !showFeedbackOptions && (
               <View style={styles.reactionContainer}>
                 <Text style={[styles.reactionPrompt, { color: colors.textMuted }]}>
                   Was this insight helpful?
@@ -542,7 +562,51 @@ function InsightCard({
                   >
                     <Text style={{ color: '#606060' }}>Already knew</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.reactionButton, { backgroundColor: '#F4433620' }]}
+                    onPress={() => setShowFeedbackOptions(true)}
+                  >
+                    <Text style={{ color: '#F44336' }}>Doesn't fit</Text>
+                  </TouchableOpacity>
                 </View>
+              </View>
+            )}
+
+            {/* Detailed Feedback Options */}
+            {showFeedbackOptions && (
+              <View style={styles.feedbackContainer}>
+                <Text style={[styles.feedbackPrompt, { color: colors.text }]}>
+                  Help us improve - what's off?
+                </Text>
+                <Text style={[styles.feedbackSubtext, { color: colors.textMuted }]}>
+                  Your feedback improves future insights (anonymous)
+                </Text>
+                <View style={styles.feedbackOptions}>
+                  {getAllFeedbackOptions().filter(opt => opt.type.startsWith('disagree')).map(option => (
+                    <TouchableOpacity
+                      key={option.type}
+                      style={[styles.feedbackOption, { backgroundColor: colors.background }]}
+                      onPress={() => {
+                        onFeedback(insight, option.type);
+                        setShowFeedbackOptions(false);
+                        onReaction('not_applicable');
+                      }}
+                    >
+                      <Text style={styles.feedbackOptionEmoji}>{option.emoji}</Text>
+                      <Text style={[styles.feedbackOptionText, { color: colors.text }]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={[styles.feedbackCancel, { backgroundColor: colors.border }]}
+                  onPress={() => setShowFeedbackOptions(false)}
+                >
+                  <Text style={[styles.feedbackCancelText, { color: colors.textMuted }]}>
+                    Never mind
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -840,6 +904,48 @@ const styles = StyleSheet.create({
   },
   reactionShownText: {
     fontSize: 12,
+  },
+
+  // Feedback
+  feedbackContainer: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+  },
+  feedbackPrompt: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  feedbackSubtext: {
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  feedbackOptions: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  feedbackOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 8,
+  },
+  feedbackOptionEmoji: {
+    fontSize: 18,
+  },
+  feedbackOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  feedbackCancel: {
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 8,
+  },
+  feedbackCancelText: {
+    fontSize: 13,
   },
 
   // Acknowledge

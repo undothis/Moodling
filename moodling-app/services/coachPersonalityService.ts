@@ -286,6 +286,9 @@ export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
 
+  // User's preferred name/nickname (what coach calls them)
+  userName?: string;
+
   // Name style preference (classic or alternative names)
   // This applies to ALL coaches - switches between name sets
   nameStyle: NameStyle;
@@ -997,6 +1000,17 @@ export interface OnboardingQuestion {
 }
 
 export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
+  {
+    id: 'user_name',
+    question: "What should I call you?",
+    subtitle: "A name, nickname, or whatever feels right",
+    type: 'text',
+    textConfig: {
+      placeholder: "Your name or nickname...",
+      maxLength: 30,
+    },
+    hint: "Your guide will use this when talking to you. You can change it anytime.",
+  },
   {
     id: 'current_state',
     question: "What brings you to Mood Leaf?",

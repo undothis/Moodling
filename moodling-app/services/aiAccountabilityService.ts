@@ -1045,11 +1045,23 @@ export async function getAccountabilityContextForCoach(): Promise<string> {
 
 /**
  * Check if AI should proactively mention limit status
+ * Respects user preferences for accountability intensity and paused status
  */
 export async function shouldMentionLimits(): Promise<{
   shouldMention: boolean;
   context?: string;
 }> {
+  // Check if accountability is paused
+  if (await isAccountabilityPaused()) {
+    return { shouldMention: false };
+  }
+
+  // Check intensity preference
+  const prefs = await getAccountabilityPreferences();
+  if (prefs.intensity === 'off') {
+    return { shouldMention: false };
+  }
+
   const triggered = await checkLimitAlerts();
 
   if (triggered.length === 0) {
@@ -1058,19 +1070,59 @@ export async function shouldMentionLimits(): Promise<{
 
   const exceeded = triggered.filter(t => t.status === 'exceeded');
   const reached = triggered.filter(t => t.status === 'reached');
+  const approaching = triggered.filter(t => t.status === 'approaching');
 
-  if (exceeded.length > 0) {
-    return {
-      shouldMention: true,
-      context: `User has exceeded their limit on: ${exceeded.map(t => t.alert.twigName).join(', ')}. Be supportive, not judgmental.`,
-    };
+  // For gentle intensity, only mention if significantly exceeded
+  if (prefs.intensity === 'gentle') {
+    if (exceeded.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User has exceeded their limit on: ${exceeded.map(t => t.alert.twigName).join(', ')}. User prefers GENTLE accountability - be very soft and supportive, don't dwell on it.`,
+      };
+    }
+    return { shouldMention: false };
   }
 
-  if (reached.length > 0) {
-    return {
-      shouldMention: true,
-      context: `User has reached their limit on: ${reached.map(t => t.alert.twigName).join(', ')}. Acknowledge their awareness.`,
-    };
+  // For moderate intensity, mention exceeded and reached
+  if (prefs.intensity === 'moderate') {
+    if (exceeded.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User has exceeded their limit on: ${exceeded.map(t => t.alert.twigName).join(', ')}. Be supportive, not judgmental.`,
+      };
+    }
+
+    if (reached.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User has reached their limit on: ${reached.map(t => t.alert.twigName).join(', ')}. Acknowledge their awareness.`,
+      };
+    }
+    return { shouldMention: false };
+  }
+
+  // For proactive intensity, mention all including approaching
+  if (prefs.intensity === 'proactive') {
+    if (exceeded.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User has exceeded their limit on: ${exceeded.map(t => t.alert.twigName).join(', ')}. User wants proactive accountability - you can check in on how they're feeling about this.`,
+      };
+    }
+
+    if (reached.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User has reached their limit on: ${reached.map(t => t.alert.twigName).join(', ')}. Acknowledge and encourage.`,
+      };
+    }
+
+    if (approaching.length > 0) {
+      return {
+        shouldMention: true,
+        context: `User is approaching their limit on: ${approaching.map(t => `${t.alert.twigName} (${t.currentCount}/${t.alert.maxLimit})`).join(', ')}. Gentle heads up is appropriate.`,
+      };
+    }
   }
 
   return { shouldMention: false };
@@ -1144,4 +1196,166 @@ export function parseDaysFromText(text: string): string[] {
   }
 
   return [...new Set(days)]; // Remove duplicates
+}
+
+// ============================================
+// ACCOUNTABILITY PREFERENCES
+// ============================================
+
+const ACCOUNTABILITY_PREFS_KEY = 'moodleaf_accountability_prefs';
+
+/**
+ * Accountability intensity level
+ */
+export type AccountabilityIntensity = 'off' | 'gentle' | 'moderate' | 'proactive';
+
+/**
+ * User preferences for accountability
+ */
+export interface AccountabilityPreferences {
+  intensity: AccountabilityIntensity;
+  pausedUntil?: string; // ISO date - pause until this date
+  pausedItems?: string[]; // Specific twig IDs paused for today
+  lastAskedAboutComfort?: string; // When we last asked if we're being too pushy
+  userFeedback?: string; // User's last feedback about accountability style
+}
+
+/**
+ * Get accountability preferences
+ */
+export async function getAccountabilityPreferences(): Promise<AccountabilityPreferences> {
+  try {
+    const data = await AsyncStorage.getItem(ACCOUNTABILITY_PREFS_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch {
+    // Default
+  }
+  return {
+    intensity: 'moderate', // Default to moderate
+  };
+}
+
+/**
+ * Save accountability preferences
+ */
+export async function setAccountabilityPreferences(
+  prefs: Partial<AccountabilityPreferences>
+): Promise<void> {
+  const current = await getAccountabilityPreferences();
+  const updated = { ...current, ...prefs };
+  await AsyncStorage.setItem(ACCOUNTABILITY_PREFS_KEY, JSON.stringify(updated));
+}
+
+/**
+ * Pause accountability for today
+ */
+export async function pauseAccountabilityForToday(twigIds?: string[]): Promise<void> {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+
+  await setAccountabilityPreferences({
+    pausedUntil: today.toISOString(),
+    pausedItems: twigIds,
+  });
+}
+
+/**
+ * Resume accountability
+ */
+export async function resumeAccountability(): Promise<void> {
+  await setAccountabilityPreferences({
+    pausedUntil: undefined,
+    pausedItems: undefined,
+  });
+}
+
+/**
+ * Check if accountability is currently paused
+ */
+export async function isAccountabilityPaused(twigId?: string): Promise<boolean> {
+  const prefs = await getAccountabilityPreferences();
+
+  if (prefs.pausedUntil) {
+    const pauseEnd = new Date(prefs.pausedUntil);
+    if (new Date() < pauseEnd) {
+      // If specific twig, check if it's in the paused list
+      if (twigId && prefs.pausedItems && prefs.pausedItems.length > 0) {
+        return prefs.pausedItems.includes(twigId);
+      }
+      // All paused if no specific items
+      return !prefs.pausedItems || prefs.pausedItems.length === 0;
+    }
+  }
+  return false;
+}
+
+/**
+ * Set accountability intensity
+ */
+export async function setAccountabilityIntensity(
+  intensity: AccountabilityIntensity
+): Promise<void> {
+  await setAccountabilityPreferences({ intensity });
+}
+
+/**
+ * Record user feedback about accountability
+ */
+export async function recordAccountabilityFeedback(feedback: string): Promise<void> {
+  await setAccountabilityPreferences({
+    userFeedback: feedback,
+    lastAskedAboutComfort: new Date().toISOString(),
+  });
+}
+
+/**
+ * Check if we should ask about accountability comfort level
+ * (Don't ask more than once every 7 days)
+ */
+export async function shouldAskAboutAccountabilityComfort(): Promise<boolean> {
+  const prefs = await getAccountabilityPreferences();
+
+  if (!prefs.lastAskedAboutComfort) {
+    return true;
+  }
+
+  const lastAsked = new Date(prefs.lastAskedAboutComfort);
+  const daysSince = (Date.now() - lastAsked.getTime()) / (1000 * 60 * 60 * 24);
+
+  return daysSince >= 7;
+}
+
+/**
+ * Get accountability preferences context for the coach
+ */
+export async function getAccountabilityPreferencesContext(): Promise<string> {
+  const prefs = await getAccountabilityPreferences();
+  const parts: string[] = ['ACCOUNTABILITY PREFERENCES:'];
+
+  parts.push(`  - Intensity: ${prefs.intensity}`);
+
+  if (prefs.intensity === 'off') {
+    parts.push('  - NOTE: User has turned off accountability. Do NOT mention limits or tracked items unless they ask.');
+  } else if (prefs.intensity === 'gentle') {
+    parts.push('  - NOTE: User prefers gentle accountability. Only mention limits if they exceed them significantly. Be very soft in your approach.');
+  } else if (prefs.intensity === 'proactive') {
+    parts.push('  - NOTE: User wants proactive accountability. Feel free to check in on their limits and offer encouragement.');
+  }
+
+  if (await isAccountabilityPaused()) {
+    parts.push('  - STATUS: Accountability is PAUSED for today. Do NOT mention any limits or tracking.');
+  }
+
+  if (prefs.userFeedback) {
+    parts.push(`  - User feedback: "${prefs.userFeedback}"`);
+  }
+
+  const shouldAsk = await shouldAskAboutAccountabilityComfort();
+  if (shouldAsk && prefs.intensity !== 'off') {
+    parts.push('  - OPTIONAL: Consider asking if the accountability level feels right (but only if natural in conversation)');
+  }
+
+  return parts.join('\n');
 }

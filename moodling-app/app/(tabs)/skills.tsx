@@ -76,6 +76,15 @@ const DEDICATED_ROUTES: Record<string, string> = {
   radical_acceptance: '/skills/radical-acceptance',
   human_design: '/skills/human-design',
   astrology_basics: '/skills/astrology',
+  // Breathing skills -> Launch breathing orb directly
+  box_breathing: '/games/breathing-orb',
+  physiological_sigh: '/games/breathing-orb',
+  '478_breathing': '/games/breathing-orb',
+  // Audio skills -> Audio player
+  sleep_stories: '/skills/sleep-stories',
+  old_time_radio: '/skills/old-time-radio',
+  // Accountability skills
+  drink_pacing: '/skills/drink-pacing',
 };
 
 // Get route for any skill - dedicated or dynamic
