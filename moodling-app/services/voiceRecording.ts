@@ -196,6 +196,36 @@ class VoiceRecordingService {
   }
 
   /**
+   * Start recording with options (alias for VoiceEnabledTabBar compatibility)
+   */
+  async startRecording(options?: {
+    onInterimResult?: (text: string) => void;
+    onFinalResult?: (text: string) => void;
+    onStateChange?: (state: VoiceRecordingState | 'error') => void;
+  }): Promise<boolean> {
+    return this.start((state) => {
+      if (state.error) {
+        options?.onStateChange?.('error');
+      }
+      if (state.interimTranscript) {
+        options?.onInterimResult?.(state.interimTranscript);
+      }
+      if (state.transcript) {
+        options?.onFinalResult?.(state.transcript);
+      }
+    });
+  }
+
+  /**
+   * Stop recording and return transcript (alias for VoiceEnabledTabBar compatibility)
+   */
+  async stopRecording(): Promise<{ transcript: string } | null> {
+    this.stop();
+    const transcript = this.getTranscript();
+    return { transcript };
+  }
+
+  /**
    * Get the final transcript
    */
   getTranscript(): string {
