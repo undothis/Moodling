@@ -144,37 +144,8 @@ export default function CoachTabScreen() {
   // Typing animation
   const typingAnim = useRef(new Animated.Value(0)).current;
 
-  // Use ref to get latest handleSend for voice callback
-  const handleSendRef = useRef(handleSend);
-  useEffect(() => {
-    handleSendRef.current = handleSend;
-  }, [handleSend]);
-
-  // Load pending voice message on focus
-  useFocusEffect(
-    useCallback(() => {
-      const loadPendingVoice = async () => {
-        try {
-          const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
-          console.log('[Coach] Checking for pending voice message:', pending ? 'found' : 'none');
-          if (pending) {
-            // Clear the pending message
-            await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
-            // Set it in the input and auto-send
-            setInputText(pending);
-            console.log('[Coach] Set pending voice message in input, auto-sending...');
-            // Auto-send after a short delay so user sees it
-            setTimeout(() => {
-              handleSendRef.current(pending);
-            }, 300);
-          }
-        } catch (error) {
-          console.error('Failed to load pending voice message:', error);
-        }
-      };
-      loadPendingVoice();
-    }, [])
-  );
+  // Ref for handleSend - initialized as null, updated after handleSend is defined
+  const handleSendRef = useRef<((text?: string) => Promise<void>) | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -295,6 +266,39 @@ export default function CoachTabScreen() {
       setIsLoading(false);
     }
   };
+
+  // Keep handleSendRef updated with latest handleSend
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  });
+
+  // Load pending voice message on focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadPendingVoice = async () => {
+        try {
+          const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
+          console.log('[Coach] Checking for pending voice message:', pending ? 'found' : 'none');
+          if (pending) {
+            // Clear the pending message
+            await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
+            // Set it in the input and auto-send
+            setInputText(pending);
+            console.log('[Coach] Set pending voice message in input, auto-sending...');
+            // Auto-send after a short delay so user sees it
+            setTimeout(() => {
+              if (handleSendRef.current) {
+                handleSendRef.current(pending);
+              }
+            }, 300);
+          }
+        } catch (error) {
+          console.error('Failed to load pending voice message:', error);
+        }
+      };
+      loadPendingVoice();
+    }, [])
+  );
 
   const renderMessage = (message: DisplayMessage) => {
     const isUser = message.source === 'user';
