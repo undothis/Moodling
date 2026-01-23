@@ -57,7 +57,16 @@ import {
   EXTRACTION_CATEGORIES,
 } from '@/services/youtubeProcessorService';
 
-type Tab = 'channels' | 'process' | 'review' | 'stats';
+type Tab = 'channels' | 'batch' | 'process' | 'review' | 'stats';
+
+// Batch processing state
+interface BatchQueueItem {
+  channel: CuratedChannel | typeof RECOMMENDED_CHANNELS[0];
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
+  videosProcessed?: number;
+  insightsFound?: number;
+  error?: string;
+}
 
 // Recommended channels to pre-load
 // Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
@@ -177,6 +186,21 @@ export default function InterviewProcessorScreen() {
   const [apiKey, setApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showYoutubeApiInput, setShowYoutubeApiInput] = useState(false);
+
+  // Batch processing state
+  const [batchQueue, setBatchQueue] = useState<BatchQueueItem[]>([]);
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchPaused, setBatchPaused] = useState(false);
+  const [batchVideosPerChannel, setBatchVideosPerChannel] = useState('5');
+  const [batchProgress, setBatchProgress] = useState({
+    currentChannelIndex: 0,
+    totalChannels: 0,
+    totalInsights: 0,
+    totalVideosProcessed: 0,
+    totalSkipped: 0,
+  });
+  const batchProcessingRef = useRef(false);
+  const batchPausedRef = useRef(false);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -542,6 +566,280 @@ export default function InterviewProcessorScreen() {
     addLog('⏹ Stopping processing...');
   };
 
+  // ============================================
+  // BATCH PROCESSING FUNCTIONS
+  // ============================================
+
+  // Add recommended channel to batch queue
+  const handleAddToBatchQueue = (rec: typeof RECOMMENDED_CHANNELS[0]) => {
+    // Check if already in queue
+    if (batchQueue.find(item => 'handle' in item.channel && item.channel.handle === rec.handle)) {
+      return;
+    }
+    setBatchQueue(prev => [...prev, { channel: rec, status: 'pending' }]);
+  };
+
+  // Add all recommended channels to batch queue
+  const handleAddAllRecommended = () => {
+    const notAdded = RECOMMENDED_CHANNELS.filter(rec =>
+      !channels.find(c => c.name === rec.name) &&
+      !batchQueue.find(item => 'handle' in item.channel && item.channel.handle === rec.handle)
+    );
+    const newItems: BatchQueueItem[] = notAdded.map(rec => ({ channel: rec, status: 'pending' }));
+    setBatchQueue(prev => [...prev, ...newItems]);
+  };
+
+  // Add existing channels to batch queue
+  const handleAddChannelsToBatch = () => {
+    const notInQueue = channels.filter(c =>
+      !batchQueue.find(item => 'channelId' in item.channel && item.channel.channelId === c.channelId)
+    );
+    const newItems: BatchQueueItem[] = notInQueue.map(c => ({ channel: c, status: 'pending' }));
+    setBatchQueue(prev => [...prev, ...newItems]);
+  };
+
+  // Remove from batch queue
+  const handleRemoveFromBatchQueue = (index: number) => {
+    setBatchQueue(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Clear batch queue
+  const handleClearBatchQueue = () => {
+    if (!batchProcessing) {
+      setBatchQueue([]);
+    }
+  };
+
+  // Pause batch processing
+  const handlePauseBatch = () => {
+    batchPausedRef.current = true;
+    setBatchPaused(true);
+    addLog('⏸ Pausing batch processing...');
+  };
+
+  // Resume batch processing
+  const handleResumeBatch = () => {
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    addLog('▶ Resuming batch processing...');
+  };
+
+  // Stop batch processing
+  const handleStopBatch = () => {
+    batchProcessingRef.current = false;
+    batchPausedRef.current = false;
+    setBatchPaused(false);
+    addLog('⏹ Stopping batch processing...');
+  };
+
+  // Start batch processing
+  const handleStartBatchProcessing = async () => {
+    if (batchQueue.length === 0) {
+      Alert.alert('Empty Queue', 'Add channels to the batch queue first');
+      return;
+    }
+
+    if (!apiKey) {
+      Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
+      return;
+    }
+
+    const numVideos = parseInt(batchVideosPerChannel) || 5;
+    setBatchProcessing(true);
+    batchProcessingRef.current = true;
+    batchPausedRef.current = false;
+    setProcessingLog([]);
+
+    addLog(`Starting batch processing of ${batchQueue.length} channels...`);
+    addLog(`Videos per channel: ${numVideos}`);
+
+    setBatchProgress({
+      currentChannelIndex: 0,
+      totalChannels: batchQueue.length,
+      totalInsights: 0,
+      totalVideosProcessed: 0,
+      totalSkipped: 0,
+    });
+
+    let totalInsightsAllChannels = 0;
+    let totalVideosAllChannels = 0;
+    let totalSkippedAllChannels = 0;
+
+    for (let channelIndex = 0; channelIndex < batchQueue.length && batchProcessingRef.current; channelIndex++) {
+      // Check for pause
+      while (batchPausedRef.current && batchProcessingRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (!batchProcessingRef.current) break;
+
+      const queueItem = batchQueue[channelIndex];
+      const channelInfo = queueItem.channel;
+
+      addLog(`\n[${ channelIndex + 1}/${batchQueue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+
+      // Update queue item status
+      setBatchQueue(prev => prev.map((item, i) =>
+        i === channelIndex ? { ...item, status: 'processing' } : item
+      ));
+
+      setBatchProgress(prev => ({
+        ...prev,
+        currentChannelIndex: channelIndex + 1,
+      }));
+
+      try {
+        // First, ensure the channel is added (for recommended channels)
+        let channel: CuratedChannel;
+
+        if ('handle' in channelInfo) {
+          // It's a recommended channel, add it first
+          const rec = channelInfo as typeof RECOMMENDED_CHANNELS[0];
+          const url = `https://www.youtube.com/@${rec.handle}`;
+
+          if (rec.channelId) {
+            await addCuratedChannel(url, rec.channelId, rec.name, rec.category, rec.trust, rec.description);
+          } else {
+            const result = await fetchChannelVideos(url, 1);
+            if (result.error || !result.channelId) {
+              throw new Error(result.error || 'Could not get channel ID');
+            }
+            await addCuratedChannel(url, result.channelId, rec.name, rec.category, rec.trust, rec.description);
+          }
+
+          // Reload channels to get the newly added one
+          const updatedChannels = await getCuratedChannels();
+          channel = updatedChannels.find(c => c.name === rec.name)!;
+
+          if (!channel) {
+            throw new Error('Channel was not added properly');
+          }
+        } else {
+          channel = channelInfo as CuratedChannel;
+        }
+
+        // Fetch videos
+        addLog(`  Fetching ${numVideos} videos...`);
+        const { videos, error } = await fetchChannelVideos(channel.url, numVideos);
+
+        if (error) {
+          throw new Error(error);
+        }
+
+        if (videos.length === 0) {
+          addLog(`  ⚠ No videos found, skipping`);
+          setBatchQueue(prev => prev.map((item, i) =>
+            i === channelIndex ? { ...item, status: 'skipped', error: 'No videos found' } : item
+          ));
+          continue;
+        }
+
+        addLog(`  Found ${videos.length} videos`);
+
+        let channelInsights = 0;
+        let channelVideosProcessed = 0;
+        let channelSkipped = 0;
+
+        // Process each video
+        for (let i = 0; i < videos.length && batchProcessingRef.current; i++) {
+          // Check for pause
+          while (batchPausedRef.current && batchProcessingRef.current) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          if (!batchProcessingRef.current) break;
+
+          const video = videos[i];
+          addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
+
+          // Fetch transcript
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+
+          if (transcriptError || !transcript) {
+            addLog(`      ⚠ No transcript, skipping`);
+            channelSkipped++;
+            continue;
+          }
+
+          // Extract insights
+          const { insights, error: extractError } = await extractInsightsWithClaude(
+            transcript,
+            video.title,
+            video.videoId,
+            channel.name,
+            ['emotional_struggles', 'humor_wit', 'companionship', 'vulnerability', 'growth_moments'],
+            apiKey
+          );
+
+          if (extractError) {
+            addLog(`      ⚠ Extraction error: ${extractError}`);
+            channelSkipped++;
+            continue;
+          }
+
+          addLog(`      ✓ ${insights.length} insights`);
+          channelInsights += insights.length;
+          channelVideosProcessed++;
+
+          if (insights.length > 0) {
+            await savePendingInsights(insights);
+          }
+
+          await markVideoProcessed(video.videoId);
+
+          // Small delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        totalInsightsAllChannels += channelInsights;
+        totalVideosAllChannels += channelVideosProcessed;
+        totalSkippedAllChannels += channelSkipped;
+
+        // Update queue item
+        setBatchQueue(prev => prev.map((item, i) =>
+          i === channelIndex ? {
+            ...item,
+            status: 'completed',
+            videosProcessed: channelVideosProcessed,
+            insightsFound: channelInsights,
+          } : item
+        ));
+
+        setBatchProgress(prev => ({
+          ...prev,
+          totalInsights: totalInsightsAllChannels,
+          totalVideosProcessed: totalVideosAllChannels,
+          totalSkipped: totalSkippedAllChannels,
+        }));
+
+        addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
+
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        addLog(`  ❌ Error: ${errorMsg}`);
+
+        setBatchQueue(prev => prev.map((item, i) =>
+          i === channelIndex ? { ...item, status: 'failed', error: errorMsg } : item
+        ));
+      }
+
+      // Delay between channels
+      if (channelIndex < batchQueue.length - 1 && batchProcessingRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    addLog(`\n✅ Batch processing complete!`);
+    addLog(`Total: ${totalInsightsAllChannels} insights from ${totalVideosAllChannels} videos`);
+    addLog(`Skipped: ${totalSkippedAllChannels} videos (no transcript)`);
+
+    setBatchProcessing(false);
+    batchProcessingRef.current = false;
+
+    // Refresh data
+    loadData();
+  };
+
   // Approve insight
   const handleApproveInsight = async (insight: ExtractedInsight) => {
     await approvePendingInsight(insight.id);
@@ -774,6 +1072,256 @@ export default function InterviewProcessorScreen() {
       </Modal>
     </ScrollView>
   );
+
+  // ============================================
+  // BATCH TAB RENDERER
+  // ============================================
+
+  const renderBatchTab = () => {
+    const queueProgress = batchQueue.length > 0
+      ? Math.round((batchProgress.currentChannelIndex / batchQueue.length) * 100)
+      : 0;
+
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Batch Controls */}
+        <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Batch Processing</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary, marginTop: 0 }]}>
+            Process multiple channels automatically with pause/resume
+          </Text>
+
+          {/* Videos per channel */}
+          <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 12 }]}>
+            Videos per Channel
+          </Text>
+          <TextInput
+            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+            value={batchVideosPerChannel}
+            onChangeText={setBatchVideosPerChannel}
+            keyboardType="number-pad"
+            placeholder="5"
+            editable={!batchProcessing}
+          />
+
+          {/* Quick add buttons */}
+          {!batchProcessing && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <Pressable
+                style={[styles.addRecButton, { borderColor: colors.tint, flex: 1 }]}
+                onPress={handleAddAllRecommended}
+              >
+                <Text style={{ color: colors.tint, fontSize: 12 }}>+ All Recommended</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.addRecButton, { borderColor: colors.tint, flex: 1 }]}
+                onPress={handleAddChannelsToBatch}
+              >
+                <Text style={{ color: colors.tint, fontSize: 12 }}>+ My Channels</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Start/Stop/Pause buttons */}
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+            {!batchProcessing ? (
+              <Pressable
+                style={[styles.processButton, { backgroundColor: colors.tint, flex: 1 }]}
+                onPress={handleStartBatchProcessing}
+                disabled={batchQueue.length === 0}
+              >
+                <Text style={styles.processButtonText}>
+                  Start Batch ({batchQueue.filter(q => q.status === 'pending').length})
+                </Text>
+              </Pressable>
+            ) : (
+              <>
+                {batchPaused ? (
+                  <Pressable
+                    style={[styles.processButton, { backgroundColor: '#4CAF50', flex: 1 }]}
+                    onPress={handleResumeBatch}
+                  >
+                    <Text style={styles.processButtonText}>▶ Resume</Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    style={[styles.processButton, { backgroundColor: '#FF9800', flex: 1 }]}
+                    onPress={handlePauseBatch}
+                  >
+                    <Text style={styles.processButtonText}>⏸ Pause</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  style={[styles.processButton, { backgroundColor: '#F44336', flex: 1 }]}
+                  onPress={handleStopBatch}
+                >
+                  <Text style={styles.processButtonText}>⏹ Stop</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Batch Progress */}
+        {batchProcessing && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.progressHeader}>
+              <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>
+                {batchPaused ? '⏸ Paused' : 'Processing...'}
+              </Text>
+              {!batchPaused && <ActivityIndicator size="small" color={colors.tint} />}
+            </View>
+
+            <View style={styles.progressSection}>
+              <View style={styles.progressLabelRow}>
+                <Text style={[styles.progressLabel, { color: colors.text }]}>
+                  Channel {batchProgress.currentChannelIndex} of {batchQueue.length}
+                </Text>
+                <Text style={[styles.progressPercent, { color: colors.tint }]}>
+                  {queueProgress}%
+                </Text>
+              </View>
+              <View style={[styles.progressBarLarge, { backgroundColor: colors.border }]}>
+                <View
+                  style={[
+                    styles.progressFillLarge,
+                    { width: `${queueProgress}%`, backgroundColor: colors.tint }
+                  ]}
+                />
+              </View>
+            </View>
+
+            <View style={styles.processingStats}>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: '#4CAF50' }]}>
+                  {batchProgress.totalInsights}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Insights
+                </Text>
+              </View>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: colors.text }]}>
+                  {batchProgress.totalVideosProcessed}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Videos
+                </Text>
+              </View>
+              <View style={styles.processingStat}>
+                <Text style={[styles.processingStatValue, { color: '#FF9800' }]}>
+                  {batchProgress.totalSkipped}
+                </Text>
+                <Text style={[styles.processingStatLabel, { color: colors.textSecondary }]}>
+                  Skipped
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Batch Queue */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Queue ({batchQueue.length})
+          </Text>
+          {batchQueue.length > 0 && !batchProcessing && (
+            <Pressable onPress={handleClearBatchQueue}>
+              <Text style={{ color: '#F44336', fontSize: 13 }}>Clear All</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {batchQueue.length === 0 ? (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary, marginVertical: 8 }]}>
+              Add channels to the queue below, then start batch processing
+            </Text>
+          </View>
+        ) : (
+          batchQueue.map((item, index) => {
+            const name = 'name' in item.channel ? item.channel.name : item.channel.name;
+            const statusColor = item.status === 'completed' ? '#4CAF50' :
+                               item.status === 'processing' ? colors.tint :
+                               item.status === 'failed' ? '#F44336' :
+                               item.status === 'skipped' ? '#FF9800' : colors.textSecondary;
+            const statusIcon = item.status === 'completed' ? '✓' :
+                              item.status === 'processing' ? '⚙' :
+                              item.status === 'failed' ? '✗' :
+                              item.status === 'skipped' ? '⊘' : '○';
+
+            return (
+              <View key={index} style={[styles.queueItem, { backgroundColor: colors.cardBackground }]}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.queueItemStatus, { color: statusColor }]}>
+                      {statusIcon}
+                    </Text>
+                    <Text style={[styles.queueItemName, { color: colors.text }]} numberOfLines={1}>
+                      {name}
+                    </Text>
+                  </View>
+                  {item.status === 'completed' && (
+                    <Text style={[styles.queueItemMeta, { color: colors.textSecondary }]}>
+                      {item.insightsFound} insights from {item.videosProcessed} videos
+                    </Text>
+                  )}
+                  {item.status === 'failed' && (
+                    <Text style={[styles.queueItemMeta, { color: '#F44336' }]}>
+                      {item.error}
+                    </Text>
+                  )}
+                </View>
+                {!batchProcessing && item.status === 'pending' && (
+                  <Pressable onPress={() => handleRemoveFromBatchQueue(index)} hitSlop={10}>
+                    <Text style={{ color: '#F44336', fontSize: 18 }}>×</Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })
+        )}
+
+        {/* Add from Recommended */}
+        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>
+          Add from Recommended
+        </Text>
+
+        {RECOMMENDED_CHANNELS.filter(rec =>
+          !channels.find(c => c.name === rec.name) &&
+          !batchQueue.find(item => 'handle' in item.channel && item.channel.handle === rec.handle)
+        ).slice(0, 10).map(rec => (
+          <View key={rec.handle} style={[styles.queueItem, { backgroundColor: colors.cardBackground }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.queueItemName, { color: colors.text }]}>{rec.name}</Text>
+              <Text style={[styles.queueItemMeta, { color: colors.textSecondary }]}>{rec.category.replace(/_/g, ' ')}</Text>
+            </View>
+            <Pressable
+              style={[styles.addRecButton, { borderColor: colors.tint, paddingHorizontal: 12, paddingVertical: 6 }]}
+              onPress={() => handleAddToBatchQueue(rec)}
+              disabled={batchProcessing}
+            >
+              <Text style={{ color: colors.tint, fontSize: 12 }}>+ Add</Text>
+            </Pressable>
+          </View>
+        ))}
+
+        {/* Processing Log */}
+        {processingLog.length > 0 && (
+          <View style={[styles.card, { backgroundColor: colors.cardBackground, marginTop: 16 }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Batch Log</Text>
+            <ScrollView style={styles.logContainer} nestedScrollEnabled>
+              {processingLog.map((log, i) => (
+                <Text key={i} style={[styles.logText, { color: colors.textSecondary }]}>
+                  {log}
+                </Text>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
 
   const renderProcessTab = () => {
     const progressPercent = progressState.totalVideos > 0
@@ -1244,6 +1792,7 @@ export default function InterviewProcessorScreen() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'channels': return renderChannelsTab();
+      case 'batch': return renderBatchTab();
       case 'process': return renderProcessTab();
       case 'review': return renderReviewTab();
       case 'stats': return renderStatsTab();
@@ -1271,7 +1820,7 @@ export default function InterviewProcessorScreen() {
 
       {/* Tabs */}
       <View style={styles.tabBar}>
-        {(['channels', 'process', 'review', 'stats'] as Tab[]).map(tab => (
+        {(['channels', 'batch', 'process', 'review', 'stats'] as Tab[]).map(tab => (
           <Pressable
             key={tab}
             style={[
@@ -1282,6 +1831,7 @@ export default function InterviewProcessorScreen() {
           >
             <Text style={[styles.tabText, { color: activeTab === tab ? colors.tint : colors.textSecondary }]}>
               {tab === 'channels' ? 'Channels' :
+               tab === 'batch' ? `Batch${batchQueue.length > 0 ? ` (${batchQueue.length})` : ''}` :
                tab === 'process' ? 'Process' :
                tab === 'review' ? `Review (${pendingInsights.length})` :
                'Stats'}
@@ -1797,5 +2347,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  // Batch queue styles
+  queueItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  queueItemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  queueItemStatus: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  queueItemMeta: {
+    fontSize: 11,
+    marginTop: 2,
+    marginLeft: 22,
   },
 });

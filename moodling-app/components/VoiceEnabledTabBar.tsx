@@ -182,7 +182,11 @@ export function VoiceEnabledTabBar({
                 ? PENDING_COACH_MESSAGE_KEY
                 : PENDING_JOURNAL_MESSAGE_KEY;
             console.log('[VoiceTabBar] Saving to AsyncStorage:', storageKey);
+
+            // Add timestamp to force re-reads even on same screen
+            const timestampKey = `${storageKey}_timestamp`;
             await AsyncStorage.setItem(storageKey, finalTranscript);
+            await AsyncStorage.setItem(timestampKey, Date.now().toString());
 
             // Haptic success feedback
             if (Platform.OS !== 'web') {
@@ -190,10 +194,21 @@ export function VoiceEnabledTabBar({
             }
           }
 
-          // Navigate to target
+          // Navigate to target - use params to trigger reload on already-focused screens
           const tabIndex = state.routes.findIndex((r) => r.name === routeName);
+          const isAlreadyFocused = state.index === tabIndex;
+
           if (tabIndex !== -1) {
-            navigation.navigate(routeName);
+            if (isAlreadyFocused && finalTranscript.trim()) {
+              // Already on this tab - navigate with timestamp param to trigger effect
+              navigation.navigate({
+                name: routeName,
+                params: { voiceTimestamp: Date.now() },
+                merge: true,
+              } as any);
+            } else {
+              navigation.navigate(routeName);
+            }
           }
         } catch (error) {
           console.error('Failed to stop recording:', error);

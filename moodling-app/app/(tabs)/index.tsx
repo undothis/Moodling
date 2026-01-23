@@ -11,7 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { JournalEntry, createJournalEntry } from '@/types/JournalEntry';
@@ -138,46 +138,60 @@ export default function JournalScreen() {
   // Storage key for pending voice message from tab bar
   const PENDING_JOURNAL_MESSAGE_KEY = 'moodleaf_pending_journal_voice';
 
+  // Track voice timestamp to detect changes on already-focused screen
+  const { voiceTimestamp } = useLocalSearchParams<{ voiceTimestamp?: string }>();
+  const lastVoiceTimestamp = useRef<string | null>(null);
+
+  // Function to load and save pending voice message
+  const loadAndSavePendingVoice = useCallback(async () => {
+    try {
+      const pending = await AsyncStorage.getItem(PENDING_JOURNAL_MESSAGE_KEY);
+      console.log('[Journal] Checking for pending voice message:', pending ? 'found' : 'none');
+      if (pending) {
+        // Clear the pending message
+        await AsyncStorage.removeItem(PENDING_JOURNAL_MESSAGE_KEY);
+        await AsyncStorage.removeItem(`${PENDING_JOURNAL_MESSAGE_KEY}_timestamp`);
+        // Set the text
+        setEntryText((prev) => (prev ? `${prev}\n\n${pending}` : pending));
+        console.log('[Journal] Set pending voice message, auto-saving...');
+        // Auto-save with retry mechanism
+        const attemptSave = (retries: number) => {
+          setTimeout(() => {
+            if (handleSaveRef.current) {
+              console.log('[Journal] Calling handleSave with:', pending);
+              handleSaveRef.current(pending);
+            } else if (retries > 0) {
+              console.log('[Journal] Waiting for handleSaveRef...', retries);
+              attemptSave(retries - 1);
+            } else {
+              console.error('[Journal] handleSaveRef timeout');
+            }
+          }, 50);
+        };
+        attemptSave(15); // Try up to 15 times with 50ms delays (750ms total max)
+      }
+    } catch (error) {
+      console.error('Failed to load pending voice message:', error);
+    }
+  }, []);
+
   // Load entries on mount and when screen comes into focus
   // Also check for pending voice messages
   useFocusEffect(
     useCallback(() => {
       loadEntries();
-
-      // Check for pending voice transcription
-      const loadPendingVoice = async () => {
-        try {
-          const pending = await AsyncStorage.getItem(PENDING_JOURNAL_MESSAGE_KEY);
-          console.log('[Journal] Checking for pending voice message:', pending ? 'found' : 'none');
-          if (pending) {
-            // Clear the pending message
-            await AsyncStorage.removeItem(PENDING_JOURNAL_MESSAGE_KEY);
-            // Set the text
-            setEntryText((prev) => (prev ? `${prev}\n\n${pending}` : pending));
-            console.log('[Journal] Set pending voice message, auto-saving...');
-            // Auto-save with retry mechanism
-            const attemptSave = (retries: number) => {
-              setTimeout(() => {
-                if (handleSaveRef.current) {
-                  console.log('[Journal] Calling handleSave with:', pending);
-                  handleSaveRef.current(pending);
-                } else if (retries > 0) {
-                  console.log('[Journal] Waiting for handleSaveRef...', retries);
-                  attemptSave(retries - 1);
-                } else {
-                  console.error('[Journal] handleSaveRef timeout');
-                }
-              }, 50);
-            };
-            attemptSave(10);
-          }
-        } catch (error) {
-          console.error('Failed to load pending voice message:', error);
-        }
-      };
-      loadPendingVoice();
-    }, [loadEntries])
+      loadAndSavePendingVoice();
+    }, [loadEntries, loadAndSavePendingVoice])
   );
+
+  // Also check when voiceTimestamp param changes (for already-focused screen)
+  useEffect(() => {
+    if (voiceTimestamp && voiceTimestamp !== lastVoiceTimestamp.current) {
+      lastVoiceTimestamp.current = voiceTimestamp;
+      console.log('[Journal] voiceTimestamp changed, loading pending voice');
+      loadAndSavePendingVoice();
+    }
+  }, [voiceTimestamp, loadAndSavePendingVoice]);
 
   const handleSave = async (overrideText?: string) => {
     const textToSave = overrideText || entryText;

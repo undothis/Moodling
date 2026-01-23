@@ -272,42 +272,58 @@ export default function CoachTabScreen() {
     handleSendRef.current = handleSend;
   });
 
+  // Track voice timestamp to detect changes on already-focused screen
+  const { voiceTimestamp } = useLocalSearchParams<{ context?: string; voiceTimestamp?: string }>();
+  const lastVoiceTimestamp = useRef<string | null>(null);
+
+  // Function to load and send pending voice message
+  const loadAndSendPendingVoice = useCallback(async () => {
+    try {
+      const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
+      console.log('[Coach] Checking for pending voice message:', pending ? 'found' : 'none');
+      if (pending) {
+        // Clear the pending message
+        await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
+        await AsyncStorage.removeItem(`${PENDING_COACH_MESSAGE_KEY}_timestamp`);
+        // Set it in the input and auto-send
+        setInputText(pending);
+        console.log('[Coach] Set pending voice message in input, auto-sending...');
+        // Auto-send immediately with retry mechanism for race condition
+        const attemptSend = (retries: number) => {
+          setTimeout(() => {
+            if (handleSendRef.current) {
+              console.log('[Coach] Sending voice message:', pending);
+              handleSendRef.current(pending);
+            } else if (retries > 0) {
+              console.log('[Coach] Waiting for handleSendRef...', retries);
+              attemptSend(retries - 1);
+            } else {
+              console.error('[Coach] handleSendRef timeout');
+            }
+          }, 50); // Short 50ms delay, retry quickly
+        };
+        attemptSend(15); // Try up to 15 times with 50ms delays (750ms total max)
+      }
+    } catch (error) {
+      console.error('Failed to load pending voice message:', error);
+    }
+  }, []);
+
   // Load pending voice message on focus
   useFocusEffect(
     useCallback(() => {
-      const loadPendingVoice = async () => {
-        try {
-          const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
-          console.log('[Coach] Checking for pending voice message:', pending ? 'found' : 'none');
-          if (pending) {
-            // Clear the pending message
-            await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
-            // Set it in the input and auto-send
-            setInputText(pending);
-            console.log('[Coach] Set pending voice message in input, auto-sending...');
-            // Auto-send immediately with retry mechanism for race condition
-            const attemptSend = (retries: number) => {
-              setTimeout(() => {
-                if (handleSendRef.current) {
-                  console.log('[Coach] Sending voice message:', pending);
-                  handleSendRef.current(pending);
-                } else if (retries > 0) {
-                  console.log('[Coach] Waiting for handleSendRef...', retries);
-                  attemptSend(retries - 1);
-                } else {
-                  console.error('[Coach] handleSendRef timeout');
-                }
-              }, 50); // Short 50ms delay, retry quickly
-            };
-            attemptSend(10); // Try up to 10 times with 50ms delays (500ms total max)
-          }
-        } catch (error) {
-          console.error('Failed to load pending voice message:', error);
-        }
-      };
-      loadPendingVoice();
-    }, [])
+      loadAndSendPendingVoice();
+    }, [loadAndSendPendingVoice])
   );
+
+  // Also check when voiceTimestamp param changes (for already-focused screen)
+  useEffect(() => {
+    if (voiceTimestamp && voiceTimestamp !== lastVoiceTimestamp.current) {
+      lastVoiceTimestamp.current = voiceTimestamp;
+      console.log('[Coach] voiceTimestamp changed, loading pending voice');
+      loadAndSendPendingVoice();
+    }
+  }, [voiceTimestamp, loadAndSendPendingVoice]);
 
   const renderMessage = (message: DisplayMessage) => {
     const isUser = message.source === 'user';
