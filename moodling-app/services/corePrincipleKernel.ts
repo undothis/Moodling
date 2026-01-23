@@ -66,6 +66,66 @@ export const DEFAULT_CORE_BELIEFS = {
 export let CORE_BELIEFS = { ...DEFAULT_CORE_BELIEFS };
 
 // ============================================
+// PROGRAM-LEVEL TENETS
+// Foundational principles that shape how the entire system operates.
+// These are philosophical commitments that cannot be overridden.
+// ============================================
+
+export const PROGRAM_LEVEL_TENETS = {
+  // Growth & Change
+  AWARENESS_PRECEDES_CHANGE:
+    "Change begins with noticing. Before any transformation can occur, awareness must be present.",
+
+  UNDERSTANDING_REQUIRES_TIME_AND_REPETITION:
+    "Deep understanding isn't instant. It emerges through patient, repeated engagement over time.",
+
+  INTEGRATION_MATTERS_MORE_THAN_INSIGHT_ALONE:
+    "Knowing something intellectually isn't enough. Real growth happens when insight becomes lived experience.",
+
+  // Human Nature
+  INNER_CONFLICT_IS_NORMAL_AND_NON_PATHOLOGICAL:
+    "Having conflicting feelings or thoughts is part of being human, not a sign of something broken.",
+
+  STRUGGLE_IS_A_VALID_FORM_OF_ENGAGEMENT:
+    "Wrestling with difficulty is meaningful work, not a sign of failure or weakness.",
+
+  THOUGHT_EMOTION_AND_ACTION_ARE_INTERDEPENDENT:
+    "Mind, heart, and behavior are interconnected systems. Change in one affects the others.",
+
+  // Patterns of Progress
+  SMALL_CONSISTENT_ACTIONS_OUTWEIGH_GRAND_RESOLUTIONS:
+    "Tiny repeated steps create lasting change. Grand plans without action create nothing.",
+
+  HUMAN_EXPERIENCE_IS_CYCLICAL_NOT_LINEAR:
+    "Life moves in rhythms and seasons, not straight lines. Returning to old ground is natural.",
+
+  // Relationship & Support
+  COMPASSION_IS_A_BASELINE_NOT_A_REWARD:
+    "Kindness toward oneself isn't earned through success. It's the starting point, always.",
+
+  RELATIONSHIP_IS_MORE_TRANSFORMATIVE_THAN_INSTRUCTION:
+    "How we relate matters more than what we say. Connection creates the conditions for growth.",
+
+  // Inner Life
+  REFLECTION_RESTORES_AGENCY:
+    "Taking time to reflect reconnects us with our capacity to choose and act with intention.",
+
+  QUIET_PHASES_ARE_PART_OF_GROWTH:
+    "Periods of apparent stillness often contain invisible integration and preparation for the next phase.",
+
+  // Purpose & Connection
+  INNER_WORK_EXISTS_TO_SUPPORT_OUTER_CONNECTION:
+    "Self-understanding serves relationship with others and the world, not isolation from it.",
+
+  // System Design
+  THE_SYSTEM_ADAPTS_TO_THE_HUMAN_NOT_THE_REVERSE:
+    "The app molds itself to fit the user's mind, never forcing the user to conform to the app.",
+
+  NO_SINGLE_MODE_OF_INTELLIGENCE_IS_PRIVILEGED:
+    "Analytical, emotional, embodied, intuitive - all ways of knowing are equally valid and valuable.",
+} as const;
+
+// ============================================
 // HARD CONSTRAINTS
 // These are NEVER violated. If an action would violate these, it MUST be blocked.
 // ============================================
@@ -835,28 +895,38 @@ export function getCriticalConstraintsContext(): string {
 export async function validateCoachResponse(
   response: string,
   cognitiveProfile: any,
-  neurologicalProfile: any
+  neurologicalProfile: any,
+  userMessage?: string
 ): Promise<{
   isValid: boolean;
   canSend: boolean;
   modifications?: string;
+  tenetViolations?: string[];
   report: AlignmentReport;
 }> {
   const context: ActionContext = {
     action: 'coach_response',
     cognitiveProfile,
     neurologicalProfile,
-    coachResponse: response
+    coachResponse: response,
+    userMessage
   };
 
   const report = checkAlignment(context);
 
+  // Also validate against program-level tenets
+  const tenetCheck = validateAgainstTenets(response, { userMessage });
+
+  // Response is blocked if it violates hard constraints OR program-level tenets
+  const canSend = report.canProceed && tenetCheck.aligned;
+
   return {
-    isValid: report.hardConstraintsPassed && report.softPrinciplesAligned,
-    canSend: report.canProceed,  // Blocked only by hard constraints
+    isValid: report.hardConstraintsPassed && report.softPrinciplesAligned && tenetCheck.aligned,
+    canSend,
     modifications: report.blockedBy.length > 0
       ? report.blockedBy.map(v => v.alternative).join('; ')
       : undefined,
+    tenetViolations: tenetCheck.violations.length > 0 ? tenetCheck.violations : undefined,
     report
   };
 }
@@ -873,10 +943,16 @@ export async function validateCoachResponse(
 export function getPrincipleContextForLLM(): string {
   const parts: string[] = [];
 
+  // Program-Level Tenets (FIRST - these are foundational)
+  parts.push('=== FOUNDATIONAL TENETS (Unbreakable Philosophy) ===\n');
+  for (const [key, tenet] of Object.entries(PROGRAM_LEVEL_TENETS)) {
+    parts.push(`• ${tenet}`);
+  }
+
   // Core beliefs
-  parts.push('=== CORE PRINCIPLES (Your Guiding Philosophy) ===\n');
+  parts.push('\n\n=== CORE BELIEFS (Your Guiding Principles) ===\n');
   for (const [key, belief] of Object.entries(CORE_BELIEFS)) {
-    parts.push(`${belief}`);
+    parts.push(`• ${belief}`);
   }
 
   // Hard constraints
@@ -1117,6 +1193,7 @@ export async function resetToDefaults(): Promise<void> {
  * Get current principle state (for debugging/admin)
  */
 export async function getPrincipleState(): Promise<{
+  tenets: typeof PROGRAM_LEVEL_TENETS;
   beliefs: typeof CORE_BELIEFS;
   defaultBeliefs: typeof DEFAULT_CORE_BELIEFS;
   hardConstraints: { id: string; description: string; category: string }[];
@@ -1128,6 +1205,7 @@ export async function getPrincipleState(): Promise<{
   const lastSync = await AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC);
 
   return {
+    tenets: PROGRAM_LEVEL_TENETS,
     beliefs: CORE_BELIEFS,
     defaultBeliefs: DEFAULT_CORE_BELIEFS,
     hardConstraints: HARD_CONSTRAINTS.map(c => ({
@@ -1156,6 +1234,17 @@ export function getAllPrinciplesSummary(): string {
   parts.push('║           MOOD LEAF CORE PRINCIPLE KERNEL                    ║');
   parts.push('╚══════════════════════════════════════════════════════════════╝');
   parts.push('');
+
+  // Program-Level Tenets (FIRST - foundational)
+  parts.push('━━━ PROGRAM-LEVEL TENETS ━━━');
+  parts.push('(Foundational philosophy - cannot be overridden)');
+  parts.push('');
+
+  for (const [key, value] of Object.entries(PROGRAM_LEVEL_TENETS)) {
+    parts.push(`• ${key}`);
+    parts.push(`  "${value}"`);
+    parts.push('');
+  }
 
   // Core Beliefs
   parts.push('━━━ CORE BELIEFS ━━━');
@@ -1204,7 +1293,128 @@ loadStoredOverrides().catch(console.error);
 // EXPORTS FOR SERVICE INTEGRATION
 // ============================================
 
+/**
+ * Get program-level tenets as formatted text (for LLM context)
+ */
+export function getProgramLevelTenetsContext(): string {
+  const parts = ['PROGRAM-LEVEL TENETS (Foundational philosophy - unbreakable):'];
+
+  for (const [key, tenet] of Object.entries(PROGRAM_LEVEL_TENETS)) {
+    parts.push(`- ${tenet}`);
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Validate that an action or response aligns with program-level tenets
+ * This is a higher-level check than hard constraints
+ */
+export function validateAgainstTenets(
+  response: string,
+  context?: { action?: string; userMessage?: string }
+): { aligned: boolean; violations: string[] } {
+  const violations: string[] = [];
+  const responseLower = response.toLowerCase();
+
+  // Check AWARENESS_PRECEDES_CHANGE: Don't push change without awareness
+  const forcingChangePhrases = [
+    'you need to change now',
+    'just change',
+    'stop being',
+    'you must immediately'
+  ];
+  if (forcingChangePhrases.some(p => responseLower.includes(p))) {
+    violations.push('AWARENESS_PRECEDES_CHANGE: Response forces change without building awareness');
+  }
+
+  // Check UNDERSTANDING_REQUIRES_TIME_AND_REPETITION: Don't expect instant understanding
+  const instantUnderstandingPhrases = [
+    'you should understand this immediately',
+    'it\'s simple just',
+    'why don\'t you get it',
+    'this is obvious'
+  ];
+  if (instantUnderstandingPhrases.some(p => responseLower.includes(p))) {
+    violations.push('UNDERSTANDING_REQUIRES_TIME_AND_REPETITION: Response expects instant understanding');
+  }
+
+  // Check INNER_CONFLICT_IS_NORMAL: Don't pathologize mixed feelings
+  const pathologizingConflictPhrases = [
+    'you shouldn\'t feel conflicted',
+    'make up your mind',
+    'pick one feeling',
+    'you can\'t feel both'
+  ];
+  if (pathologizingConflictPhrases.some(p => responseLower.includes(p))) {
+    violations.push('INNER_CONFLICT_IS_NORMAL: Response pathologizes normal inner conflict');
+  }
+
+  // Check STRUGGLE_IS_A_VALID_FORM_OF_ENGAGEMENT: Don't dismiss struggle
+  const dismissingStrugglePhrases = [
+    'stop struggling',
+    'why are you making this hard',
+    'it shouldn\'t be a struggle',
+    'just let go'
+  ];
+  if (dismissingStrugglePhrases.some(p => responseLower.includes(p))) {
+    violations.push('STRUGGLE_IS_VALID: Response dismisses valid struggle');
+  }
+
+  // Check COMPASSION_IS_A_BASELINE: Don't make compassion conditional
+  const conditionalCompassionPhrases = [
+    'you\'ll deserve kindness when',
+    'earn self-compassion',
+    'you don\'t deserve',
+    'be kind to yourself only if'
+  ];
+  if (conditionalCompassionPhrases.some(p => responseLower.includes(p))) {
+    violations.push('COMPASSION_IS_BASELINE: Response makes compassion conditional');
+  }
+
+  // Check QUIET_PHASES_ARE_PART_OF_GROWTH: Don't push during quiet phases
+  const pushingPhrases = [
+    'you should be doing more',
+    'why aren\'t you progressing',
+    'you\'re falling behind',
+    'you need to be more productive'
+  ];
+  if (pushingPhrases.some(p => responseLower.includes(p))) {
+    violations.push('QUIET_PHASES_ARE_GROWTH: Response pushes against natural quiet phase');
+  }
+
+  // Check THE_SYSTEM_ADAPTS_TO_THE_HUMAN: Don't force conformity
+  const forcingConformityPhrases = [
+    'the right way to do this',
+    'everyone does it this way',
+    'you need to fit',
+    'that\'s not how it\'s done'
+  ];
+  if (forcingConformityPhrases.some(p => responseLower.includes(p))) {
+    violations.push('SYSTEM_ADAPTS_TO_HUMAN: Response forces user to conform to system');
+  }
+
+  // Check NO_SINGLE_MODE_OF_INTELLIGENCE: Don't privilege one way of knowing
+  const privilegingModePhrases = [
+    'think about it logically',
+    'be rational',
+    'stop being emotional',
+    'that\'s not logical'
+  ];
+  if (privilegingModePhrases.some(p => responseLower.includes(p))) {
+    violations.push('NO_PRIVILEGED_INTELLIGENCE: Response privileges analytical thinking over other modes');
+  }
+
+  return {
+    aligned: violations.length === 0,
+    violations
+  };
+}
+
 export default {
+  // Program-Level Tenets (foundational)
+  PROGRAM_LEVEL_TENETS,
+
   // Beliefs
   CORE_BELIEFS,
   DEFAULT_CORE_BELIEFS,
@@ -1219,11 +1429,13 @@ export default {
   checkAlignment,
   checkSpecificConstraint,
   validateCoachResponse,
+  validateAgainstTenets,
 
   // Context generation
   getCoreBeliefContext,
   getCriticalConstraintsContext,
   getPrincipleContextForLLM,
+  getProgramLevelTenetsContext,
 
   // Backend sync & management
   syncPrinciplesFromBackend,
