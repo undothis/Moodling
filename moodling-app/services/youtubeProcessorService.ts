@@ -556,7 +556,13 @@ export async function fetchChannelVideos(
       // For handles, try to resolve to channel ID
       // First attempt: fetch channel page and extract ID
       try {
-        const pageResponse = await fetch(`https://www.youtube.com/@${channelInfo.id}`);
+        const pageResponse = await fetch(`https://www.youtube.com/@${channelInfo.id}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+          },
+        });
         const pageHtml = await pageResponse.text();
         const channelIdMatch = pageHtml.match(/"channelId":"(UC[^"]+)"/);
         if (channelIdMatch) {
@@ -581,7 +587,12 @@ export async function fetchChannelVideos(
     }
 
     // Fetch RSS feed
-    const response = await fetch(feedUrl);
+    const response = await fetch(feedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/xml,text/xml,*/*;q=0.8',
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch channel feed: ${response.status}`);
     }
@@ -977,7 +988,13 @@ export async function fetchVideoTranscript(
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
   try {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const response = await fetch(videoUrl);
+    const response = await fetch(videoUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch video page: ${response.status}`);
