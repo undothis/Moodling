@@ -9,16 +9,17 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 ## Table of Contents
 
 1. [System Architecture](#1-system-architecture)
-2. [Data Collection Pipeline](#2-data-collection-pipeline)
-3. [Quality Control System](#3-quality-control-system)
-4. [Advanced Research Methods](#4-advanced-research-methods)
-5. [Model Version Control](#5-model-version-control)
-6. [Data Persistence & Backup](#6-data-persistence--backup)
-7. [Training Data Impact Analysis](#7-training-data-impact-analysis)
-8. [Llama Integration](#8-llama-integration)
-9. [Status Monitoring](#9-status-monitoring)
-10. [Best Practices](#10-best-practices)
-11. [Troubleshooting](#11-troubleshooting)
+2. [Core Principle Kernel](#2-core-principle-kernel) ⭐ **NEW**
+3. [Data Collection Pipeline](#3-data-collection-pipeline)
+4. [Quality Control System](#4-quality-control-system)
+5. [Advanced Research Methods](#5-advanced-research-methods)
+6. [Model Version Control](#6-model-version-control)
+7. [Data Persistence & Backup](#7-data-persistence--backup)
+8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
+9. [Llama Integration](#9-llama-integration)
+10. [Status Monitoring](#10-status-monitoring)
+11. [Best Practices](#11-best-practices)
+12. [Troubleshooting](#12-troubleshooting)
 
 ---
 
@@ -88,7 +89,152 @@ The LLM kernel doesn't "follow" the app's code - the app **wraps** the kernel.
 
 ---
 
-## 2. Data Collection Pipeline
+## 2. Core Principle Kernel
+
+### What Is It?
+
+The Core Principle Kernel is the **"constitution"** of Mood Leaf. It contains the foundational beliefs, tenets, and constraints that govern ALL AI behavior in the app - whether using Claude, Llama, or any future model.
+
+**Service**: `corePrincipleKernel.ts`
+
+**Key Point**: Both Claude AND Llama must abide by the kernel. It is injected into every system prompt and validated against every response.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       CORE PRINCIPLE KERNEL                                  │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  PROGRAM-LEVEL TENETS (15)                                              ││
+│  │  Foundational philosophy - CANNOT be overridden                         ││
+│  │  • Awareness Precedes Change                                            ││
+│  │  • Understanding Requires Time and Repetition                           ││
+│  │  • Integration Matters More Than Insight Alone                          ││
+│  │  • Inner Conflict Is Normal and Non-Pathological                        ││
+│  │  • Struggle Is a Valid Form of Engagement                               ││
+│  │  • ... and 10 more                                                      ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  CORE BELIEFS (17)                                                      ││
+│  │  What we believe about minds, people, and growth                        ││
+│  │  • Every mind works differently                                         ││
+│  │  • Neurodiversity is valid, not deficit                                 ││
+│  │  • No app can replace human connection                                  ││
+│  │  • ... and more                                                         ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  HARD CONSTRAINTS (12)                                                  ││
+│  │  NEVER violated - violations are BLOCKED                                ││
+│  │  • No visualization for aphantasia users                                ││
+│  │  • No diagnosis of mental health conditions                             ││
+│  │  • No replacing therapy/human connection                                ││
+│  │  • Crisis = must provide human resources                                ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                    │                                         │
+│                                    ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  SOFT PRINCIPLES (10)                                                   ││
+│  │  Strongly preferred - violations generate WARNINGS                      ││
+│  │  • Validate before advising                                             ││
+│  │  • Questions over statements                                            ││
+│  │  • Celebrate human interactions                                         ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### The 15 Program-Level Tenets
+
+These are **unbreakable** philosophical commitments:
+
+| # | Tenet | Meaning |
+|---|-------|---------|
+| 1 | **Awareness Precedes Change** | Change begins with noticing. Before any transformation can occur, awareness must be present. |
+| 2 | **Understanding Requires Time and Repetition** | Deep understanding isn't instant. It emerges through patient, repeated engagement. |
+| 3 | **Integration Matters More Than Insight Alone** | Knowing something intellectually isn't enough. Real growth happens when insight becomes lived experience. |
+| 4 | **Inner Conflict Is Normal** | Having conflicting feelings is part of being human, not a sign of something broken. |
+| 5 | **Struggle Is Valid Engagement** | Wrestling with difficulty is meaningful work, not a sign of failure. |
+| 6 | **Thought, Emotion, Action Are Interdependent** | Mind, heart, and behavior are interconnected systems. |
+| 7 | **Small, Consistent Actions > Grand Resolutions** | Tiny repeated steps create lasting change. |
+| 8 | **Human Experience Is Cyclical, Not Linear** | Life moves in rhythms and seasons, not straight lines. |
+| 9 | **Compassion Is a Baseline, Not a Reward** | Kindness toward oneself isn't earned. It's the starting point. |
+| 10 | **Relationship > Instruction** | How we relate matters more than what we say. |
+| 11 | **Reflection Restores Agency** | Taking time to reflect reconnects us with our capacity to choose. |
+| 12 | **Quiet Phases Are Part of Growth** | Periods of stillness contain invisible integration. |
+| 13 | **Inner Work Supports Outer Connection** | Self-understanding serves relationship with others, not isolation. |
+| 14 | **The System Adapts to the Human** | The app molds itself to fit the user's mind, never the reverse. |
+| 15 | **No Single Intelligence Is Privileged** | Analytical, emotional, embodied, intuitive - all equally valid. |
+
+### How It's Enforced
+
+**For Claude (cloudAPIService.ts):**
+```typescript
+// Kernel context is injected into every system prompt
+const principleContext = getPrincipleContextForLLM();
+systemPrompt = `${identity}\n\n${principleContext}\n\n...`;
+
+// Every response is validated against tenets
+const tenetCheck = validateAgainstTenets(responseText, { userMessage });
+if (!tenetCheck.aligned) {
+  console.warn('[CoreKernel] Violations:', tenetCheck.violations);
+}
+```
+
+**For Llama (llamaIntegrationService.ts):**
+```typescript
+// Same kernel context is injected into Llama prompts
+const principleContext = getPrincipleContextForLLM();
+systemPrompt = `${MOODPRINT_SYSTEM_PROMPT}\n\n${principleContext}`;
+
+// Response validation runs on Llama outputs too
+const tenetCheck = validateAgainstTenets(response.content, { userMessage });
+```
+
+### Violation Detection
+
+The `validateAgainstTenets()` function scans responses for phrases that violate tenets:
+
+| Tenet | Example Violation Phrases |
+|-------|---------------------------|
+| AWARENESS_PRECEDES_CHANGE | "you need to change now", "just change" |
+| INNER_CONFLICT_IS_NORMAL | "make up your mind", "pick one feeling" |
+| COMPASSION_IS_BASELINE | "you'll deserve kindness when", "earn self-compassion" |
+| STRUGGLE_IS_VALID | "stop struggling", "it shouldn't be a struggle" |
+| SYSTEM_ADAPTS_TO_HUMAN | "the right way to do this", "that's not how it's done" |
+
+### Key Functions
+
+| Function | Purpose |
+|----------|---------|
+| `getPrincipleContextForLLM()` | Get full kernel context for system prompts |
+| `validateAgainstTenets(response)` | Check response for tenet violations |
+| `validateCoachResponse(response, profile)` | Full validation (tenets + constraints) |
+| `checkHardConstraints(context)` | Check hard constraints only |
+| `getAllPrinciplesSummary()` | Get formatted summary of all principles |
+
+### Why This Matters
+
+**Without the Kernel:**
+- Claude might give visualization advice to someone with aphantasia
+- Llama might tell users "just think positive" during crisis
+- AI could position itself as a replacement for therapy
+- Responses might pathologize natural human cycles
+
+**With the Kernel:**
+- ALL AI behavior is aligned with Mood Leaf's ethics
+- Neurological differences are respected
+- Human connection is always encouraged
+- Users are protected from harmful advice
+
+The kernel ensures that no matter which model powers the coach, the core philosophy remains consistent.
+
+---
+
+## 3. Data Collection Pipeline
 
 ### 2.1 YouTube Harvesting
 

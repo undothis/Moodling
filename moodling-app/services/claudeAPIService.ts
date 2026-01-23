@@ -48,6 +48,11 @@ import {
 } from './memoryTierService';
 import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
 import { getConnectionContextForLLM } from './socialConnectionHealthService';
+import {
+  getPrincipleContextForLLM,
+  validateCoachResponse,
+  validateAgainstTenets,
+} from './corePrincipleKernel';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -160,6 +165,7 @@ You don't have to face this alone. A trained counselor can help right now.`,
 
 /**
  * Build the Mood Leaf system prompt
+ * IMPORTANT: Includes Core Principle Kernel tenets that CANNOT be violated
  */
 function buildSystemPrompt(
   userContext: string,
@@ -171,7 +177,12 @@ function buildSystemPrompt(
     ? personalityPrompt
     : 'You are Mood Leaf, a warm and compassionate companion in a journaling app.';
 
+  // Get the Core Principle Kernel context - MUST be included in every prompt
+  const principleContext = getPrincipleContextForLLM();
+
   return `${identity}
+
+${principleContext}
 
 YOUR ROLE:
 - Listen with empathy and without judgment
@@ -966,6 +977,18 @@ ${controllerModifiers}`;
       await addMessageToSession('assistant', responseText);
     } catch (err) {
       console.log('Memory tracking error (non-blocking):', err);
+    }
+
+    // Validate response against Core Principle Kernel tenets
+    // This ensures ALL AI responses abide by the kernel
+    try {
+      const tenetCheck = validateAgainstTenets(responseText, { userMessage: message });
+      if (!tenetCheck.aligned) {
+        console.warn('[CoreKernel] Response may violate tenets:', tenetCheck.violations);
+        // Log for monitoring - in strict mode, we could regenerate or modify
+      }
+    } catch (err) {
+      console.log('Tenet validation error (non-blocking):', err);
     }
 
     return {

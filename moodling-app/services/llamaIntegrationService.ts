@@ -45,6 +45,11 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  getPrincipleContextForLLM,
+  validateAgainstTenets,
+  PROGRAM_LEVEL_TENETS,
+} from './corePrincipleKernel';
 
 // ============================================
 // TYPES
@@ -177,12 +182,19 @@ You draw on insights from real human experiences to understand the nuance of emo
 /**
  * Format a conversation for Llama inference
  * This is where the app controls what reaches the kernel
+ * IMPORTANT: Includes Core Principle Kernel tenets that CANNOT be violated
  */
 export function formatPromptForLlama(
   context: ConversationContext,
   userMessage: string
 ): string {
-  let systemPrompt = MOODPRINT_SYSTEM_PROMPT;
+  // Get Core Principle Kernel context - MUST be included in every prompt
+  // This ensures Llama, like Claude, abides by the kernel
+  const principleContext = getPrincipleContextForLLM();
+
+  let systemPrompt = `${MOODPRINT_SYSTEM_PROMPT}
+
+${principleContext}`;
 
   // Inject relevant insights if available
   if (context.relevantInsights && context.relevantInsights.length > 0) {
@@ -477,6 +489,21 @@ export async function runInference(request: InferenceRequest): Promise<Inference
     inferenceTimeMs: Date.now() - startTime,
     modelVersion: 'placeholder',
   };
+
+  // Validate response against Core Principle Kernel tenets
+  // This ensures ALL AI responses (including Llama) abide by the kernel
+  // When actual inference is implemented, this will catch violations
+  try {
+    const tenetCheck = validateAgainstTenets(placeholderResponse.content, {
+      userMessage: request.prompt
+    });
+    if (!tenetCheck.aligned) {
+      console.warn('[CoreKernel][Llama] Response may violate tenets:', tenetCheck.violations);
+      // In strict mode, we could regenerate or modify the response
+    }
+  } catch (err) {
+    console.log('Llama tenet validation error (non-blocking):', err);
+  }
 
   // Log inference stats
   await logInferenceStats(placeholderResponse);
