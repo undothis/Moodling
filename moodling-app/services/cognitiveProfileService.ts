@@ -1370,6 +1370,54 @@ export async function getNextOnboardingQuestion(): Promise<OnboardingQuestion | 
 }
 
 /**
+ * Get onboarding progress info for UI display
+ * Returns answered count, available count at current depth, and progress percentage
+ */
+export async function getOnboardingProgressInfo(): Promise<{
+  answeredCount: number;
+  remainingCount: number;
+  totalAtCurrentDepth: number;
+  progressPercent: number;
+}> {
+  const progress = await getOnboardingProgress();
+
+  // Count questions available at current depth
+  const depthOrder = { basic: 0, standard: 1, deep: 2 };
+  const questionsAtCurrentDepth = ONBOARDING_QUESTIONS.filter(q => {
+    // Include if depth is at or below current level
+    return depthOrder[q.adaptiveDepth] <= depthOrder[progress.adaptiveDepth];
+  });
+
+  // Count remaining questions that can be answered (meets requirements)
+  const remainingQuestions = questionsAtCurrentDepth.filter(q => {
+    if (progress.answeredQuestions.includes(q.id)) return false;
+    if (q.requiresPrevious) {
+      const hasRequired = q.requiresPrevious.every(id =>
+        progress.answeredQuestions.includes(id)
+      );
+      if (!hasRequired) return false;
+    }
+    return true;
+  });
+
+  const answeredCount = progress.answeredQuestions.length;
+  const totalAtCurrentDepth = questionsAtCurrentDepth.length;
+  const remainingCount = remainingQuestions.length;
+
+  // Calculate progress as percentage of answered vs total at current depth
+  // Use a minimum total to avoid division issues
+  const effectiveTotal = Math.max(totalAtCurrentDepth, answeredCount + remainingCount);
+  const progressPercent = effectiveTotal > 0 ? (answeredCount / effectiveTotal) * 100 : 0;
+
+  return {
+    answeredCount,
+    remainingCount,
+    totalAtCurrentDepth,
+    progressPercent: Math.min(progressPercent, 100), // Cap at 100
+  };
+}
+
+/**
  * Record an answer and update profile
  */
 export async function recordOnboardingAnswer(
