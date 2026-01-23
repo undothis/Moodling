@@ -19,7 +19,7 @@
  * - [ ] skillRecommendationService (skill suggestions based on context) - SERVICE READY: comprehensive phrase mappings added, timing guidance included
  * - [ ] coachModeService (skill modes)
  * - [ ] safeguardService (safety checks)
- * - [ ] cognitiveProfileService (cognitive patterns)
+ * - [x] cognitiveProfileService (cognitive patterns) - INTEGRATED: getCognitiveProfileContextForLLM included in prompt
  * - [ ] socialConnectionHealthService (social context)
  * - [ ] exposureLadderService (anxiety exposure)
  * - [ ] patternService (lifestyle factors)
@@ -78,6 +78,7 @@ import {
   cleanStyleViolations,
   validateCoachStyle,
 } from './coachStyleService';
+import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
 
 // ============================================
 // TYPES
@@ -221,18 +222,34 @@ You draw on insights from real human experiences to understand the nuance of emo
  * Format a conversation for Llama inference
  * This is where the app controls what reaches the kernel
  * IMPORTANT: Includes Core Principle Kernel tenets that CANNOT be violated
+ * IMPORTANT: Includes cognitive profile context for neurological adaptations (aphantasia, etc.)
  */
-export function formatPromptForLlama(
+export async function formatPromptForLlama(
   context: ConversationContext,
   userMessage: string
-): string {
+): Promise<string> {
   // Get Core Principle Kernel context - MUST be included in every prompt
   // This ensures Llama, like Claude, abides by the kernel
   const principleContext = getPrincipleContextForLLM();
 
+  // Get cognitive profile context - CRITICAL for neurological adaptations
+  // This tells the model about aphantasia, internal monologue, etc.
+  // so it never suggests visualization to users who can't visualize
+  let cognitiveProfileContext = '';
+  try {
+    cognitiveProfileContext = await getCognitiveProfileContextForLLM();
+  } catch (error) {
+    console.log('[Llama] Could not load cognitive profile context:', error);
+  }
+
   let systemPrompt = `${MOODPRINT_SYSTEM_PROMPT}
 
 ${principleContext}`;
+
+  // Add cognitive profile context (neurological adaptations)
+  if (cognitiveProfileContext) {
+    systemPrompt += `\n\n${cognitiveProfileContext}`;
+  }
 
   // Inject relevant insights if available
   if (context.relevantInsights && context.relevantInsights.length > 0) {
@@ -522,8 +539,8 @@ export async function runInference(request: InferenceRequest): Promise<Inference
   const config = await getLlamaConfig();
   const startTime = Date.now();
 
-  // Format the prompt
-  const formattedPrompt = formatPromptForLlama(request.context, request.prompt);
+  // Format the prompt (async to load cognitive profile context)
+  const formattedPrompt = await formatPromptForLlama(request.context, request.prompt);
 
   // TODO: Actual Llama inference
   // This would use a binding like:
