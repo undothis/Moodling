@@ -151,6 +151,7 @@ interface ClaudeAPIResponse {
 
 // Safeguard service handles all safety detection
 import { checkSafeguards, SafeguardResult } from './safeguardService';
+import { getCoachStylePromptSection, validateCoachStyle, cleanRoleplayMarkers } from './coachStyleService';
 
 /**
  * Build the Mood Leaf system prompt
@@ -351,13 +352,7 @@ RESPONSE GUIDELINES:
 - Focus on their immediate experience, not hypotheticals
 - Avoid advice that starts with "You should" - prefer "Some people find it helps to..." or "What if you tried..."
 - If they share something positive, celebrate it genuinely without overdoing it
-
-CRITICAL - NEVER DO THESE:
-- NEVER use asterisk actions like *speaks softly*, *responds with warmth*, *smiles*, *nods*
-- NEVER use roleplay markers or stage directions of any kind
-- NEVER describe your own tone or emotions in third person
-- Just speak naturally - your warmth should come through your WORDS, not performative markers
-- Be direct and genuine, not theatrical`;
+${getCoachStylePromptSection()}`;
 }
 
 /**
@@ -1135,7 +1130,14 @@ ${controllerModifiers}`;
       CLAUDE_CONFIG.model
     );
 
-    const responseText = data.content[0]?.text ?? '';
+    let responseText = data.content[0]?.text ?? '';
+
+    // Validate and clean coach style (remove any roleplay markers that slipped through)
+    const styleViolations = validateCoachStyle(responseText);
+    if (styleViolations.length > 0) {
+      console.log('[ClaudeAPI] Style violations detected:', styleViolations.map(v => v.ruleId));
+      responseText = cleanRoleplayMarkers(responseText);
+    }
 
     // Score the exchange in background (for human-ness training data)
     // This runs async - doesn't block the response
