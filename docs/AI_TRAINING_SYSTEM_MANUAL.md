@@ -1327,10 +1327,92 @@ console.log('Problem Insights:', problems);
 
 ---
 
-## Appendix A: Service File Reference
+## Appendix A: Insight System
+
+### Overview
+
+The Insight Service (`insightService.ts`) discovers patterns from user data and surfaces them as "insights" that help users understand themselves.
+
+**Location**: Settings → Insights (button glows when new insights available)
+
+### How It Works
+
+```
+User Data (Twigs, Conversations)
+        ↓
+    Pattern Detection
+        ↓
+   ┌────────────────────────────────────────┐
+   │  HEURISTIC (Default)                   │
+   │  • 100% local, no API needed           │
+   │  • Built-in pattern templates          │
+   │  • Statistical correlations            │
+   └────────────────────────────────────────┘
+        ↓ (optional, with consent)
+   ┌────────────────────────────────────────┐
+   │  LLM ANALYSIS (Future: Llama)          │
+   │  • Deeper pattern recognition          │
+   │  • Complex multi-variable correlations │
+   │  • Natural language insight generation │
+   └────────────────────────────────────────┘
+        ↓
+    Insights Discovered
+        ↓
+    Coach Can Mention in Conversation
+```
+
+### Insight Categories
+
+| Category | Description | Example |
+|----------|-------------|---------|
+| `correlation` | X correlates with Y | "Junk food → harder periods" |
+| `trigger` | What triggers moods | "Meetings trigger anxiety" |
+| `recovery` | What helps bounce back | "Walking helps after stress" |
+| `cycle` | Recurring patterns | "Weekly mood dips on Sundays" |
+| `social` | Relationship effects | "Isolation → mood drop" |
+| `activity` | Activity-mood links | "Exercise lifts mood" |
+| `sleep` | Sleep patterns | "< 6 hours → focus problems" |
+| `time_of_day` | Time-based patterns | "You're a morning person" |
+| `environment` | Location effects | "Outdoors improves mood" |
+| `momentum` | Streak effects | "Stopping meditation → off track" |
+| `avoidance` | Avoidance patterns | "No outside → more Netflix" |
+| `body_mind` | Physical-emotional | "Caffeine → anxiety" |
+| `warning_sign` | Early warnings | "Mood trending down" |
+| `growth` | Progress recognition | "Mood improved this quarter" |
+
+### Coach Integration
+
+The coach is automatically aware of insights and can:
+- Mention insights naturally in conversation
+- Congratulate users on positive patterns
+- Reference evidence when giving advice
+
+```typescript
+// Coach gets insight context in system prompt
+const context = await getInsightContextForCoach();
+
+// Check if coach should congratulate
+const insight = await shouldCongratulateOnInsight();
+if (insight) {
+  const message = generateInsightCongratulations(insight);
+}
+```
+
+### Privacy Modes
+
+| Mode | Data Stays Local | Requires API | Depth |
+|------|------------------|--------------|-------|
+| Heuristic (Default) | ✅ Yes | No | Good |
+| Claude API | ❌ No (opt-in) | Yes | Deep |
+| Llama (Future) | ✅ Yes | No | Deep |
+
+---
+
+## Appendix B: Service File Reference
 
 | File | Purpose |
 |------|---------|
+| `insightService.ts` | Pattern discovery, insight management, coach integration |
 | `youtubeProcessorService.ts` | YouTube harvesting, transcript extraction, Claude insight extraction |
 | `trainingQualityService.ts` | Semantic dedup, balance, freshness, diversity, curriculum |
 | `advancedResearchService.ts` | Contrastive examples, persona diversity, bias detection, contradiction detection, evidence grading, sentiment analysis, response simulation, expert queue, synthetic augmentation |

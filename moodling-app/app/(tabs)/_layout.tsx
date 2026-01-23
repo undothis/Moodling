@@ -1,10 +1,11 @@
 import { Tabs } from 'expo-router';
-import { useColorScheme, Platform, Text } from 'react-native';
+import { useColorScheme, Platform, Text, View, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { VoiceEnabledTabBar } from '@/components/VoiceEnabledTabBar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getCoachEmoji, getCoachSettings } from '@/services/coachPersonalityService';
+import { getNewInsightCount } from '@/services/insightService';
 
 /**
  * Mood Leaf Tab Navigation
@@ -27,6 +28,8 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [coachEmoji, setCoachEmoji] = useState('🌿');
+  const [newSeedsCount, setNewSeedsCount] = useState(0);
+  const seedGlowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const loadCoach = async () => {
@@ -35,6 +38,43 @@ export default function TabLayout() {
     };
     loadCoach();
   }, []);
+
+  // Load new seeds count and start glow animation
+  useEffect(() => {
+    const loadSeedsCount = async () => {
+      const count = await getNewInsightCount();
+      setNewSeedsCount(count);
+    };
+    loadSeedsCount();
+
+    // Refresh count periodically
+    const interval = setInterval(loadSeedsCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Glow animation for new seeds
+  useEffect(() => {
+    if (newSeedsCount > 0) {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(seedGlowAnim, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: false,
+          }),
+          Animated.timing(seedGlowAnim, {
+            toValue: 0,
+            duration: 1200,
+            useNativeDriver: false,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    } else {
+      seedGlowAnim.setValue(0);
+    }
+  }, [newSeedsCount, seedGlowAnim]);
 
   return (
     <Tabs
@@ -98,6 +138,54 @@ export default function TabLayout() {
               color={color}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="seeds"
+        options={{
+          title: 'Seeds',
+          tabBarIcon: ({ color, focused }) => {
+            // Glowing seed icon when there are new insights
+            const glowOpacity = seedGlowAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.6],
+            });
+
+            return (
+              <View style={{ position: 'relative' }}>
+                <Text style={{ fontSize: 22 }}>
+                  {focused ? '🌱' : '🌰'}
+                </Text>
+                {newSeedsCount > 0 && (
+                  <Animated.View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: '#4CAF50',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: glowOpacity.interpolate({
+                        inputRange: [0, 0.6],
+                        outputRange: [1, 1],
+                      }),
+                      shadowColor: '#4CAF50',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: glowOpacity,
+                      shadowRadius: 6,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                      {newSeedsCount > 9 ? '9+' : newSeedsCount}
+                    </Text>
+                  </Animated.View>
+                )}
+              </View>
+            );
+          },
         }}
       />
       <Tabs.Screen
