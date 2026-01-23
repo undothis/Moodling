@@ -280,7 +280,9 @@ A night owl journaling at 10pm won't get "time to sleep" pressure if that's thei
 Go to **Settings** > **Coach Settings** > **Choose Persona** to switch your base guide.
 
 #### Custom Name
-Give your guide a custom name that feels right to you.
+Give your guide a custom name that feels right to you. You can:
+- During onboarding: Select "I'll name them myself" when asked about names
+- Anytime: Go to Settings > Coach Settings > Custom Name
 
 #### Toggle Adaptive Mode
 Turn automatic personality shifts on/off in **Settings** > **Coach Settings** > **Adaptive Mode**.

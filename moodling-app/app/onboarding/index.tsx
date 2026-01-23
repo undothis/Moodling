@@ -51,6 +51,7 @@ export default function OnboardingScreen() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [customCoachName, setCustomCoachName] = useState('');
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -120,8 +121,14 @@ export default function OnboardingScreen() {
       // Get chronotype from schedule preference (defaults to 'normal')
       const chronotype = (answers.schedule_preference as Chronotype) || 'normal';
 
-      // Get name style preference (defaults to 'classic')
-      const nameStyle = (answers.name_style as NameStyle) || 'classic';
+      // Get name style preference (defaults to 'classic' if 'custom' was selected)
+      const nameStyleAnswer = answers.name_style as string;
+      const nameStyle: NameStyle = nameStyleAnswer === 'custom' ? 'classic' : (nameStyleAnswer as NameStyle) || 'classic';
+
+      // Get custom coach name if user chose to name their guide
+      const customCoachName = nameStyleAnswer === 'custom'
+        ? (answers.custom_coach_name as string)?.trim()
+        : undefined;
 
       // Get user's name (optional)
       const userName = (answers.user_name as string)?.trim() || undefined;
@@ -131,6 +138,7 @@ export default function OnboardingScreen() {
         selectedPersona: recommendedPersona,
         userName, // User's preferred name/nickname
         nameStyle, // User's preferred name style for coaches
+        customName: customCoachName, // Custom name for the coach (overrides persona name)
         detailedSettings: {
           ...getSettingsForPersona(recommendedPersona),
           ...detailedSettings,
@@ -165,6 +173,11 @@ export default function OnboardingScreen() {
       ...prev,
       [currentQuestion.id]: optionId,
     }));
+
+    // If selecting "custom" for name_style, don't auto-advance - wait for name input
+    if (currentQuestion.id === 'name_style' && optionId === 'custom') {
+      return;
+    }
 
     // Auto-advance after short delay to show selection
     setIsTransitioning(true);
@@ -429,6 +442,71 @@ export default function OnboardingScreen() {
               );
             })
           )}
+
+          {/* Custom coach name input - shown when "custom" is selected for name_style */}
+          {question.id === 'name_style' && selectedValue === 'custom' && (
+            <View style={styles.customNameContainer}>
+              <TextInput
+                style={[
+                  styles.customNameInput,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.tint,
+                  },
+                ]}
+                placeholder="Enter a name for your guide..."
+                placeholderTextColor={colors.textMuted}
+                value={customCoachName}
+                onChangeText={setCustomCoachName}
+                maxLength={20}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (customCoachName.trim()) {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      custom_coach_name: customCoachName.trim(),
+                    }));
+                    handleNext();
+                  }
+                }}
+              />
+              <Pressable
+                style={[
+                  styles.customNameButton,
+                  {
+                    backgroundColor: customCoachName.trim()
+                      ? colors.tint
+                      : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  if (customCoachName.trim()) {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      custom_coach_name: customCoachName.trim(),
+                    }));
+                    handleNext();
+                  }
+                }}
+                disabled={!customCoachName.trim()}
+              >
+                <Text
+                  style={[
+                    styles.customNameButtonText,
+                    {
+                      color: customCoachName.trim()
+                        ? '#fff'
+                        : colors.textMuted,
+                    },
+                  ]}
+                >
+                  Continue
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </ScrollView>
 
         {question.hint && (
@@ -663,5 +741,25 @@ const styles = StyleSheet.create({
   },
   skipNameText: {
     fontSize: 15,
+  },
+  customNameContainer: {
+    marginTop: 16,
+    gap: 12,
+  },
+  customNameInput: {
+    fontSize: 18,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    textAlign: 'center',
+  },
+  customNameButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  customNameButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
 });
