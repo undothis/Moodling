@@ -43,6 +43,13 @@ import { shouldCoachGlow, getNextCelebration } from '@/services/achievementNotif
 import { getAccountabilityContextForCoach } from '@/services/aiAccountabilityService';
 import { getCoachModeSystemPrompt } from '@/services/coachModeService';
 import { checkSafeguards } from '@/services/safeguardService';
+import {
+  getAlivenessSettings,
+  getAlivenessQualities,
+  getAlivenessContextForLLM,
+  detectUserAlivenessSignals,
+  getAlivenessDirectiveForLLM,
+} from '@/services/alivenessService';
 
 interface DiagnosticResult {
   name: string;
@@ -352,6 +359,29 @@ export default function CoachDiagnosticsScreen() {
     }));
     setResults([...diagnostics]);
 
+    // 23. Aliveness Service
+    diagnostics.push(await runDiagnostic('Aliveness Service', async () => {
+      const settings = await getAlivenessSettings();
+      const qualities = await getAlivenessQualities();
+      const enabledCount = qualities.filter(q => q.enabled).length;
+      const context = await getAlivenessContextForLLM();
+
+      // Test adaptive detection
+      const testSignals = detectUserAlivenessSignals('This is a test message!');
+      const testDirective = await getAlivenessDirectiveForLLM(testSignals);
+
+      return {
+        success: settings.enabled,
+        message: settings.enabled
+          ? `Enabled - ${enabledCount}/${qualities.length} qualities active`
+          : 'Disabled',
+        details: settings.adaptiveResponseEnabled
+          ? `Adaptive: ON | Audio: ${settings.audioAnalysisEnabled ? 'ON' : 'OFF'} | Intensity: ${settings.intensityLevel} | Context: ${context.length} chars`
+          : 'Adaptive response disabled'
+      };
+    }));
+    setResults([...diagnostics]);
+
     // Generate summary
     const successCount = diagnostics.filter(d => d.status === 'success').length;
     const warningCount = diagnostics.filter(d => d.status === 'warning').length;
@@ -448,7 +478,7 @@ export default function CoachDiagnosticsScreen() {
               What This Tests
             </Text>
             <Text style={[styles.instructionsText, { color: colors.textSecondary }]}>
-              This diagnostic tool checks all 22 services that the Coach uses to provide personalized responses:
+              This diagnostic tool checks all 23 services that the Coach uses to provide personalized responses:
               {'\n\n'}
               • API connectivity & authentication{'\n'}
               • Safety & safeguard systems{'\n'}
@@ -457,6 +487,7 @@ export default function CoachDiagnosticsScreen() {
               • Health & calendar integrations{'\n'}
               • Memory & cognitive profile{'\n'}
               • Achievement & accountability systems{'\n'}
+              • Aliveness (adaptive communication style){'\n'}
               • Core Principle Kernel (safety rules)
               {'\n\n'}
               If any test fails, the Coach may not respond correctly.
