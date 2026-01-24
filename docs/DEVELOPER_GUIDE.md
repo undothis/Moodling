@@ -2485,6 +2485,13 @@ People answer as who they *want* to be, not who they *are*. Self-report fails be
 
 **Solution:** Observe behavior silently over 5-10 interactions. Never ask directly.
 
+**How it works:**
+- Every message sent to the coach is silently observed
+- Tracks: response length, hedging words, decisive words, clarifying questions, mixed emotions
+- After 5+ observations, calculates decision style
+- Updates every 5 messages as more data comes in
+- User never sees a score or label - coach just naturally adapts
+
 #### Binary vs Nuanced Thinking
 
 | Trait | Binary Thinker | Nuanced/Grey Thinker |
