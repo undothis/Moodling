@@ -57,6 +57,12 @@ import {
   isSourceEnabled,
   DataSource,
 } from '@/services/coachAccessRegistry';
+import {
+  runFullDiagnostic,
+  testSourceById,
+  TestResult,
+  DiagnosticReport,
+} from '@/services/diagnosticTestService';
 
 interface DiagnosticResult {
   name: string;
@@ -144,8 +150,8 @@ export default function CoachDiagnosticsScreen() {
     }));
     setResults([...diagnostics]);
 
-    // 0.5 Test individual blocked sources
-    diagnostics.push(await runDiagnostic('Data Flow Verification', async () => {
+    // 0.5 Test ALL data sources with actual service verification
+    diagnostics.push(await runDiagnostic('Data Source Path Verification', async () => {
       const registry = await getAccessRegistry();
       if (!registry.globalEnabled) {
         return {
@@ -155,22 +161,90 @@ export default function CoachDiagnosticsScreen() {
         };
       }
 
-      // Test a few key sources
-      const testSources = ['user_context', 'life_context', 'health_kit', 'calendar_events', 'quick_logs'];
-      const results: string[] = [];
+      // Run full diagnostic to test each source's actual service path
+      const fullReport = await runFullDiagnostic();
 
-      for (const sourceId of testSources) {
-        const isEnabled = await isSourceEnabled(sourceId);
-        const source = registry.sources.find(s => s.id === sourceId);
-        const name = source?.name || sourceId;
-        results.push(`${isEnabled ? '✅' : '🚫'} ${name}: ${isEnabled ? 'flows to AI' : 'BLOCKED'}`);
+      // Build detailed results for each source
+      const passed: string[] = [];
+      const failed: string[] = [];
+      const blocked: string[] = [];
+
+      for (const result of fullReport.results) {
+        const source = registry.sources.find(s => s.id === result.sourceId);
+        const isEnabled = source?.enabled ?? false;
+
+        if (!isEnabled) {
+          blocked.push(`🚫 ${result.sourceName}: BLOCKED (toggle OFF)`);
+        } else if (result.status === 'passed') {
+          passed.push(`🟢 ${result.sourceName}: OK (${result.responseTime}ms)`);
+        } else if (result.status === 'failed') {
+          failed.push(`🔴 ${result.sourceName}: FAILED - ${result.error || 'Unknown error'}`);
+        } else if (result.status === 'warning') {
+          passed.push(`🟡 ${result.sourceName}: ${result.details || 'Needs permission'}`);
+        } else {
+          passed.push(`⚪ ${result.sourceName}: Skipped (no test available)`);
+        }
       }
 
-      const blockedCount = testSources.filter(async id => !(await isSourceEnabled(id))).length;
+      const allResults = [...failed, ...blocked, ...passed];
+      const hasFailures = failed.length > 0;
 
       return {
-        success: true,
-        message: `Verified ${testSources.length} key data sources`,
+        success: !hasFailures,
+        message: hasFailures
+          ? `${failed.length} FAILED, ${blocked.length} blocked, ${passed.length} OK`
+          : `All ${passed.length} enabled sources OK, ${blocked.length} blocked`,
+        details: allResults.slice(0, 15).join('\n') +
+          (allResults.length > 15 ? `\n... and ${allResults.length - 15} more` : '')
+      };
+    }));
+    setResults([...diagnostics]);
+
+    // 0.6 Quick verification of toggle states match actual blocking
+    diagnostics.push(await runDiagnostic('Toggle State Verification', async () => {
+      const registry = await getAccessRegistry();
+      const results: string[] = [];
+      let mismatches = 0;
+
+      // Check key sources that should definitely work
+      const criticalSources = [
+        'user_context',
+        'coach_personality',
+        'tone_preferences',
+        'quick_logs',
+        'journal_entries',
+        'life_context',
+        'memory_tiers'
+      ];
+
+      for (const sourceId of criticalSources) {
+        const source = registry.sources.find(s => s.id === sourceId);
+        if (!source) {
+          results.push(`❓ ${sourceId}: Source not found in registry`);
+          mismatches++;
+          continue;
+        }
+
+        const toggleEnabled = source.enabled;
+        const actualEnabled = await isSourceEnabled(sourceId);
+
+        // Verify toggle matches isSourceEnabled result
+        const globalBlocked = !registry.globalEnabled;
+        const expectedEnabled = toggleEnabled && !globalBlocked;
+
+        if (actualEnabled === expectedEnabled) {
+          results.push(`${actualEnabled ? '🟢' : '🚫'} ${source.name}: ${actualEnabled ? 'ALLOWED' : 'BLOCKED'} ✓`);
+        } else {
+          results.push(`⚠️ ${source.name}: MISMATCH (toggle=${toggleEnabled}, actual=${actualEnabled})`);
+          mismatches++;
+        }
+      }
+
+      return {
+        success: mismatches === 0,
+        message: mismatches === 0
+          ? `All ${criticalSources.length} toggle states verified correct`
+          : `${mismatches} toggle state mismatches found`,
         details: results.join('\n')
       };
     }));
@@ -524,9 +598,24 @@ export default function CoachDiagnosticsScreen() {
 
         {/* Results */}
         {results.map((result, index) => (
-          <View key={index} style={[styles.resultCard, { backgroundColor: colors.card }]}>
+          <View
+            key={index}
+            style={[
+              styles.resultCard,
+              {
+                backgroundColor: colors.card,
+                borderLeftWidth: 4,
+                borderLeftColor: getStatusColor(result.status),
+              }
+            ]}
+          >
             <View style={styles.resultHeader}>
-              <Text style={styles.resultIcon}>{getStatusIcon(result.status)}</Text>
+              <View style={[
+                styles.statusIndicator,
+                { backgroundColor: getStatusColor(result.status) }
+              ]}>
+                <Text style={styles.resultIcon}>{getStatusIcon(result.status)}</Text>
+              </View>
               <Text style={[styles.resultName, { color: colors.text }]}>{result.name}</Text>
               {result.duration && (
                 <Text style={[styles.resultDuration, { color: colors.textMuted }]}>
@@ -552,7 +641,7 @@ export default function CoachDiagnosticsScreen() {
               What This Tests
             </Text>
             <Text style={[styles.instructionsText, { color: colors.textSecondary }]}>
-              This diagnostic tool checks all 24 services that the Coach uses to provide personalized responses:
+              This diagnostic tool checks all 26 services that the Coach uses to provide personalized responses:
               {'\n\n'}
               • AI Data Access Registry (what data Coach can see){'\n'}
               • API connectivity & authentication{'\n'}
@@ -640,9 +729,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  statusIndicator: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
   resultIcon: {
-    fontSize: 16,
-    marginRight: 8,
+    fontSize: 14,
   },
   resultName: {
     fontSize: 14,
