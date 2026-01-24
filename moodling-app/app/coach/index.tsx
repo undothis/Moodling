@@ -346,10 +346,8 @@ export default function CoachScreen() {
     if (!voiceControllerRef.current) return;
 
     if (voiceState === 'idle') {
-      // Enable continuous voice mode when TTS is on (conversation mode)
-      if (ttsEnabled) {
-        setContinuousVoiceMode(true);
-      }
+      // Always enable continuous voice mode when starting voice
+      setContinuousVoiceMode(true);
       // Update mode based on autoSendEnabled
       await voiceControllerRef.current.updateSettings({
         mode: autoSendEnabled ? 'auto_detect' : 'push_to_talk',
@@ -667,6 +665,11 @@ export default function CoachScreen() {
               }, 500);
             }
           });
+      } else if (continuousVoiceMode && voiceControllerRef.current && voiceSupported) {
+        // No TTS - still restart listening after a short delay for reading
+        setTimeout(async () => {
+          await voiceControllerRef.current?.startListening();
+        }, 1500); // Give user time to read the response
       }
 
       // Track turns for anti-dependency
