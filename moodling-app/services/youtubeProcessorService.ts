@@ -962,12 +962,14 @@ export function extractChannelInfo(url: string): { type: 'channel' | 'user' | 'h
 
 /**
  * Fetch video list from a YouTube channel using RSS feed
+ * @param knownChannelId - If provided, skip channel ID resolution and use this directly
  */
 export async function fetchChannelVideos(
   channelUrl: string,
-  maxVideos: number = 20
+  maxVideos: number = 20,
+  knownChannelId?: string
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
-  console.log('[YouTubeService] fetchChannelVideos called with:', channelUrl);
+  console.log('[YouTubeService] fetchChannelVideos called with:', channelUrl, 'knownChannelId:', knownChannelId);
 
   const channelInfo = extractChannelInfo(channelUrl);
   console.log('[YouTubeService] Extracted channel info:', JSON.stringify(channelInfo));
@@ -979,9 +981,13 @@ export async function fetchChannelVideos(
 
   try {
     let feedUrl: string;
-    let channelId = channelInfo.id;
+    let channelId = knownChannelId || channelInfo.id;
 
-    if (channelInfo.type === 'channel') {
+    // If we have a known channel ID, use it directly (skip resolution)
+    if (knownChannelId) {
+      console.log('[YouTubeService] Using pre-populated channel ID:', knownChannelId);
+      feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${knownChannelId}`;
+    } else if (channelInfo.type === 'channel') {
       feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelInfo.id}`;
     } else {
       // For handles, try to resolve to channel ID
@@ -1401,11 +1407,13 @@ export async function enrichVideosWithStats(
  * Fetch channel videos with smart sampling
  * Enhanced version that supports popularity-based selection
  * Default strategy: 'balanced' (40% popular + 40% recent + 20% random)
+ * @param knownChannelId - If provided, skip channel ID resolution and use this directly
  */
 export async function fetchChannelVideosWithSampling(
   channelUrl: string,
   options: Partial<SamplingOptions> = {},
-  youtubeApiKey?: string
+  youtubeApiKey?: string,
+  knownChannelId?: string
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
   // Merge with defaults
   const mergedOptions = {
@@ -1414,7 +1422,7 @@ export async function fetchChannelVideosWithSampling(
   };
 
   // First, fetch all available videos from RSS
-  const result = await fetchChannelVideos(channelUrl, mergedOptions.maxVideos * 3);
+  const result = await fetchChannelVideos(channelUrl, mergedOptions.maxVideos * 3, knownChannelId);
 
   if (result.error || result.videos.length === 0) {
     return result;

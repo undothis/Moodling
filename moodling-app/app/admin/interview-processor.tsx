@@ -682,8 +682,8 @@ export default function InterviewProcessorScreen() {
     addLog(`Fetching ${numVideos} videos (this may take up to 30s)...`);
 
     try {
-      // Fetch videos
-      const { videos, error } = await fetchChannelVideos(selectedChannel.url, numVideos);
+      // Fetch videos - pass channelId to skip unreliable handle resolution
+      const { videos, error } = await fetchChannelVideos(selectedChannel.url, numVideos, selectedChannel.channelId);
 
       if (error) {
         addLog(`Error fetching videos: ${error}`);
@@ -988,7 +988,7 @@ export default function InterviewProcessorScreen() {
 
         // Fetch videos
         addLog(`  Fetching ${numVideos} videos...`);
-        const { videos, error } = await fetchChannelVideos(channel.url, numVideos);
+        const { videos, error } = await fetchChannelVideos(channel.url, numVideos, channel.channelId);
 
         if (error) {
           throw new Error(error);
@@ -1228,7 +1228,7 @@ export default function InterviewProcessorScreen() {
 
         // Fetch videos
         addLog(`  Fetching ${numVideos} videos...`);
-        const { videos, error } = await fetchChannelVideos(channel.url, numVideos);
+        const { videos, error } = await fetchChannelVideos(channel.url, numVideos, channel.channelId);
 
         if (error) {
           throw new Error(error);
