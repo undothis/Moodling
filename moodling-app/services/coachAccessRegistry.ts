@@ -102,6 +102,47 @@ export const DEFAULT_DATA_SOURCES: DataSource[] = [
     contextFunction: 'getCognitiveProfileContextForLLM',
   },
 
+  // === INPUT CHANNELS ===
+  {
+    id: 'chat_conversations',
+    name: 'Chat Conversations',
+    description: 'Current and recent chat messages you send',
+    category: 'core_user_data',
+    enabled: true,
+    serviceName: 'chatService',
+    contextFunction: 'getConversationContext',
+  },
+  {
+    id: 'voice_input',
+    name: 'Voice Input',
+    description: 'Speech-to-text from voice messages and dictation',
+    category: 'core_user_data',
+    enabled: true,
+    requiresPermission: true,
+    serviceName: 'speechInputService',
+    contextFunction: 'getVoiceTranscripts',
+  },
+  {
+    id: 'camera_input',
+    name: 'Camera Input',
+    description: 'Images you share or capture for analysis',
+    category: 'core_user_data',
+    enabled: false,
+    requiresPermission: true,
+    serviceName: 'cameraInputService',
+    contextFunction: 'getImageAnalysis',
+  },
+  {
+    id: 'prosody_analysis',
+    name: 'Voice Tone Analysis',
+    description: 'Emotional patterns detected from how you speak (not what you say)',
+    category: 'communication_style',
+    enabled: true,
+    requiresPermission: true,
+    serviceName: 'prosodyExtractionService',
+    contextFunction: 'getProsodicFeaturesForLLM',
+  },
+
   // === CONTEXT & MEMORIES ===
   {
     id: 'memory_tiers',
@@ -168,6 +209,15 @@ export const DEFAULT_DATA_SOURCES: DataSource[] = [
     serviceName: 'aiAccountabilityService',
     contextFunction: 'getAccountabilityContextForCoach',
   },
+  {
+    id: 'games_progress',
+    name: 'Games Progress',
+    description: 'Therapeutic games played and progress',
+    category: 'tracking',
+    enabled: true,
+    serviceName: 'gamesService',
+    contextFunction: 'getGameStatsForLLM',
+  },
 
   // === HEALTH ===
   {
@@ -209,6 +259,37 @@ export const DEFAULT_DATA_SOURCES: DataSource[] = [
     requiresPermission: true,
     serviceName: 'calendarService',
     contextFunction: 'getCalendarContextForClaude',
+  },
+
+  // === LOCATION ===
+  {
+    id: 'location_context',
+    name: 'Location Context',
+    description: 'General location (home, work, traveling) for context',
+    category: 'location',
+    enabled: false,
+    requiresPermission: true,
+    serviceName: 'locationContextService',
+    contextFunction: 'getLocationContextForLLM',
+  },
+  {
+    id: 'time_zone',
+    name: 'Time Zone',
+    description: 'Your local time for scheduling and context',
+    category: 'location',
+    enabled: true,
+    serviceName: 'timeContextService',
+    contextFunction: 'getTimeContextForLLM',
+  },
+  {
+    id: 'weather_mood',
+    name: 'Weather Context',
+    description: 'Local weather that might affect mood',
+    category: 'location',
+    enabled: false,
+    requiresPermission: true,
+    serviceName: 'weatherService',
+    contextFunction: 'getWeatherContextForLLM',
   },
 
   // === SOCIAL ===
@@ -279,6 +360,35 @@ export const DEFAULT_DATA_SOURCES: DataSource[] = [
     serviceName: 'safeguardService',
     contextFunction: 'checkSafeguards',
   },
+
+  // === DIAGNOSTICS ===
+  {
+    id: 'app_usage',
+    name: 'App Usage Patterns',
+    description: 'When and how often you use the app',
+    category: 'diagnostics',
+    enabled: true,
+    serviceName: 'appUsageService',
+    contextFunction: 'getUsagePatternForLLM',
+  },
+  {
+    id: 'notification_response',
+    name: 'Notification Response',
+    description: 'How you respond to reminders and check-ins',
+    category: 'diagnostics',
+    enabled: true,
+    serviceName: 'notificationTrackingService',
+    contextFunction: 'getNotificationPatternForLLM',
+  },
+  {
+    id: 'session_context',
+    name: 'Session Context',
+    description: 'Current app session state and navigation',
+    category: 'diagnostics',
+    enabled: true,
+    serviceName: 'sessionContextService',
+    contextFunction: 'getSessionContextForLLM',
+  },
 ];
 
 // ============================================
@@ -292,6 +402,7 @@ export const CATEGORY_LABELS: Record<AccessCategory, string> = {
   health: 'Health Data',
   calendar: 'Calendar',
   social: 'Social',
+  location: 'Location & Environment',
   therapeutic: 'Therapeutic Tools',
   communication_style: 'Communication Style',
   diagnostics: 'Diagnostics',

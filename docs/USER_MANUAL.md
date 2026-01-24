@@ -15,18 +15,22 @@ A complete guide to all features and functionality in Mood Leaf.
 7. [Life Context System](#life-context-system)
 8. [HealthKit Integration](#healthkit-integration)
 9. [Patterns & Insights](#patterns--insights)
-10. [Notifications](#notifications)
-11. [Settings & Personalization](#settings--personalization)
-12. [Privacy & Security](#privacy--security)
-13. [Slash Commands](#slash-commands)
-14. [Skills & Exercises](#skills--exercises)
-15. [Mindful Games](#mindful-games)
-16. [Collection System](#collection-system)
-17. [Food Tracking](#food-tracking)
-18. [Skills Tab](#skills-tab)
-19. [Premium Features](#premium-features)
-20. [AI Accountability Features](#ai-accountability-features)
-21. [Troubleshooting](#troubleshooting)
+10. [Seeds Tab](#seeds-tab)
+11. [Notifications](#notifications)
+12. [Settings & Personalization](#settings--personalization)
+13. [Privacy & Security](#privacy--security)
+14. [Slash Commands](#slash-commands)
+15. [Skills & Exercises](#skills--exercises)
+16. [Therapeutic Games](#therapeutic-games)
+17. [Collection System](#collection-system)
+18. [Food Tracking](#food-tracking)
+19. [Skills Tab](#skills-tab)
+20. [Premium Features](#premium-features)
+21. [AI Accountability Features](#ai-accountability-features)
+22. [AI Data Access Settings](#ai-data-access-settings)
+23. [Diagnostics & Self-Test](#diagnostics--self-test)
+24. [How Your Coach Learns to Understand You](#how-your-coach-learns-to-understand-you)
+25. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -1179,49 +1183,143 @@ Skills have rarity levels that unlock as you use the app:
 
 ---
 
-## Mindful Games
+## Therapeutic Games
 
-Games designed to calm, ground, and build skills — not to addict.
+Games designed to calm, ground, and build skills — not to addict. All games have a retro pixel aesthetic and are paced for wellness, not engagement.
+
+### Why These Games Are Different
+
+Unlike commercial games designed to maximize screen time:
+- **No timers** - Take as long as you need
+- **No points pressure** - Progress is personal
+- **No ads or distractions** - Just you and the experience
+- **Genuine therapeutic benefit** - Each game serves a purpose
+- **Retro aesthetic** - Calming pixel art, not overstimulating
 
 ### Game Categories
 
-| Category | Purpose |
-|----------|---------|
-| 🦶 **Grounding** | Anchor to the present |
-| 🌊 **Calming** | Reduce anxiety |
-| 🧠 **Skill Building** | Build capabilities |
-| 🔘 **Fidget** | Quick relief |
+| Category | Purpose | Games |
+|----------|---------|-------|
+| 🎯 **Focus** | Sharpen attention and concentration | 4 games |
+| 🌍 **Grounding** | Connect with the present moment | 4 games |
+| 🌊 **Relaxation** | Calm your mind and body | 4 games |
+| 📚 **Knowledge** | Learn about emotions and coping | 4 games |
+| 🦉 **Wisdom** | Gain perspective and insight | 4 games |
+| 🧩 **Logic (Therapeutic)** | Restructure thoughts through puzzles | 10 games |
+| 🎮 **Logic (Classic)** | Brain training classics at calming pace | 4 games |
 
-### Available Games
+### Focus Games 🎯
 
-**Grounding Games:**
-- 🫧 Breathing Bubble - Pop bubbles by breathing
-- 🔍 Grounding Quest - Find items around you
-- 📷 I Spy AI* - Camera finds objects for scavenger hunt
-- 🎯 Color Finder* - Find 5 blue things, 4 red...
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **Pixel Hunt** | Find subtle differences in two retro scenes | Attention to detail |
+| **Pattern Lock** | Remember and repeat growing sequences (like Simon) | Working memory |
+| **Word Stream** | Tap target words as they scroll, ignore distractors | Selective attention |
+| **Color Sort** | Categorize falling items by color/shape | Processing speed |
 
-**Calming Games:**
-- 🎨 Color Sort - Sort objects by color
-- 🧩 Calm Puzzles - Jigsaw with nature images
-- 🖍️ Mood Coloring - Color mandalas
-- ✨ Flow Drawing - Draw with flowing particles
+### Grounding Games 🌍
 
-**Classic Games (Mindful Versions):**
-- 🐍 Mindful Snake - Slow, with calming music
-- 🧱 Zen Blocks - Tetris with no game over
-- 🔢 Calm Sudoku - Hints and no timer
-- 🏓 Gentle Pong - Slow motion
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **5-4-3-2-1 Quest** | Gamified sensory grounding - RPG quest style | Present-moment awareness |
+| **Body Map** | Tap where you feel tension, watch it dissolve | Body awareness |
+| **Earth Touch** | Haptic rhythm game - feel the beat through vibrations | Embodiment |
+| **Anchor Drop** | Visualization - guide anchor down to present moment | Grounding |
 
-**Fidget Tools:**
-- 🔘 Fidget Pad - Sliders, switches, dials
-- 🔵 Bubble Wrap - Endless popping
-- 🌀 Fidget Spinner - Watch it spin
+### Relaxation Games 🌊
 
-*Premium features
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **Breath Waves** | Guide a pixel boat with your breath | Breath regulation |
+| **Cloud Garden** | Slow-paced planting, watch things grow | Patience, nurturing |
+| **Rain Window** | Watch/interact with rain on pixel window | Ambient calm |
+| **Star Connect** | Slowly connect stars to make constellations | Meditative focus |
+
+### Knowledge Games 📚
+
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **Emotion Explorer** | Identify emotions from scenarios (choose-your-adventure) | Emotional literacy |
+| **Coping Cards** | Match situations to healthy coping strategies | Coping skill knowledge |
+| **Thought Bubbles** | Identify cognitive distortions, pop unhelpful thoughts | Distortion recognition |
+| **Body Signals** | Learn what physical sensations mean emotionally | Interoceptive awareness |
+
+### Wisdom Games 🦉
+
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **Perspective Shift** | See same scenario from different viewpoints | Cognitive flexibility |
+| **Future Self** | Make choices, see long-term pixel consequences | Consequence awareness |
+| **Values Quest** | Prioritize values in different scenarios | Values clarification |
+| **The Pause** | Practice STOP technique - freeze-frame puzzle | Impulse control |
+
+### Logic Games - Therapeutic 🧩
+
+These games help restructure thinking patterns through puzzles:
+
+| Game | What You Do | Mental Benefit |
+|------|-------------|----------------|
+| **Thought Maze** | Navigate by answering "is this thought helpful?" | Cognitive restructuring |
+| **Chain Reaction** | Connect cause → effect → feeling → behavior | Understanding patterns |
+| **Odd One Out** | Find the unhelpful thought among helpful ones | Spotting distortions |
+| **Logic Gates** | If/then puzzles about emotions and responses | Conditional thinking |
+| **Sequence Builder** | Put coping steps in the right order | Problem-solving |
+| **Balance Scale** | Weigh evidence for/against a worry | CBT evidence gathering |
+| **Path Finder** | Choose paths based on values, see outcomes | Decision making |
+| **Pattern Breaker** | Identify and break repeating unhelpful patterns | Habit awareness |
+| **Reframe Puzzle** | Rearrange word tiles to turn negative → positive | Cognitive reframing |
+| **What Comes Next?** | Predict next step in emotional sequences | Emotional intelligence |
+
+### Logic Games - Classic 🎮
+
+Classic brain training at a calming pace:
+
+| Game | What You Do | Style |
+|------|-------------|-------|
+| **Pixel Sudoku** | Classic sudoku, no timer, calming pace | Minimalist 8-bit |
+| **Nonogram** | Picture logic puzzles - reveal pixel art | Grid reveal |
+| **Minesweeper Zen** | Slow-paced minesweeper, no timer | Classic Windows |
+| **Tower of Hanoi** | Move discs between towers - builds patience | Medieval pixel |
+
+### Fidget Tools 🔘
+
+Quick tactile relief for restless moments:
+
+| Tool | What It Does |
+|------|--------------|
+| **Fidget Pad** | Sliders, switches, buttons with satisfying haptics |
+| **Bubble Wrap** | Endless bubble popping with vibration feedback |
+| **Kinetic Sand** | Satisfying digital sand simulation |
+| **Water Ripples** | Touch to create calming ripples |
+
+### Game Progress
+
+Your game activity is tracked privately:
+- **Times played** - How often you use each game
+- **Total time** - Time spent across all games
+- **Day streak** - Consecutive days of game play
+- **Favorites** - Games you play most
+
+Your AI coach can see your game progress (if enabled in AI Data Access) and might:
+- Suggest games that match your current mood
+- Celebrate consistent use of therapeutic games
+- Notice which categories help you most
 
 ### Accessing Games
 
-Type `/games` in chat or tap the **Skills** button and look for the games section.
+**Method 1: Slash Commands**
+```
+/games - Browse all therapeutic games
+/fidget - Open fidget pad directly
+/snake - Mindful snake
+/pong - Gentle pong
+```
+
+**Method 2: Skills Tab**
+Tap Skills → scroll to Games section → tap any game
+
+**Method 3: Ask Your Coach**
+"I need something calming" - Coach will suggest appropriate games
 
 ---
 
@@ -1759,6 +1857,125 @@ All accountability data stays on your device:
 - Contacts go to YOUR address book
 - Drink pacing sessions stored locally
 - No data is sent to external servers
+
+---
+
+## AI Data Access Settings
+
+Control exactly what information your AI coach can use. You're in charge.
+
+### Finding AI Data Access
+
+Go to **Settings** > **AI Data Access** to see all data sources your coach can use.
+
+### Master Toggle
+
+At the top, there's a master switch for "AI Coach Access":
+- **ON** - Your coach uses your data to personalize conversations
+- **OFF** - Your coach becomes generic, no personalization at all
+
+When OFF, your coach won't know anything about you - conversations will be like talking to a stranger.
+
+### Data Categories
+
+Your data is organized into categories. Each can be toggled independently:
+
+| Category | What It Includes | Default |
+|----------|------------------|---------|
+| **Core User Data** | Your preferences, cognitive profile, tone settings | ON |
+| **Context & Memories** | Conversation memories, life context, psychological profile | ON |
+| **Tracking & Logging** | Quick logs, journal entries, lifestyle patterns, game progress | ON |
+| **Health Data** | HealthKit data, sleep, heart rate (requires permission) | OFF |
+| **Calendar** | Upcoming events, schedule context (requires permission) | OFF |
+| **Location & Environment** | Time zone, weather, general location | Mixed |
+| **Social** | Social connection patterns | ON |
+| **Therapeutic** | Exposure therapy progress, active skills, achievements | ON |
+| **Communication Style** | How you communicate, adaptive style | ON |
+| **Diagnostics** | App usage patterns, session context | ON |
+
+### Input Channels
+
+These control what INPUT methods your coach can use:
+
+| Input | What It Does | Default |
+|-------|--------------|---------|
+| **Chat Conversations** | Your chat messages | ON |
+| **Voice Input** | Speech-to-text from voice messages | ON |
+| **Camera Input** | Images you share for analysis | OFF |
+| **Voice Tone Analysis** | Emotional patterns from how you speak | ON |
+
+### Required Sources
+
+Two sources cannot be disabled:
+- **Core Principles** - Safety rules and ethical guidelines
+- **Crisis Safeguards** - Crisis detection and safety responses
+
+These ensure your coach always responds safely.
+
+### Privacy Note
+
+At the bottom of the screen, you'll see a reminder:
+
+> All your data stays on your device. When you chat with the coach, only conversation context is sent to Claude's API — and it's never stored. Toggling sources off here means that data won't be included in coach conversations.
+
+---
+
+## Diagnostics & Self-Test
+
+Test your data connections and view logs for troubleshooting.
+
+### Finding Diagnostics
+
+Go to **Settings** > **Diagnostics** to run tests and view logs.
+
+### Running Self-Tests
+
+Tap **Run All Tests** to test every data source:
+
+| Status | Meaning | Color |
+|--------|---------|-------|
+| ✅ Passed | Source is working correctly | Green |
+| ❌ Failed | Source has an error | Red |
+| ⚠️ Warning | Needs attention (e.g., permission required) | Orange |
+| ⏭️ Skipped | No test available for this source | Gray |
+
+### Understanding Results
+
+After running tests, you'll see:
+- **Summary** - "12 passed, 2 warnings, 1 failed"
+- **Each source** with its status and details
+- **Response time** - How fast each source responded
+
+### What Gets Tested
+
+Each data source is tested to verify:
+- The service file exists
+- The function can be called
+- Data can be retrieved (or error is captured)
+- Permissions are granted (if required)
+
+### Diagnostic Logs
+
+Expand the **Diagnostic Logs** section to see detailed logs:
+
+| Log Level | What It Means |
+|-----------|---------------|
+| **INFO** | Normal operation |
+| **WARN** | Something to check |
+| **ERROR** | Something failed |
+
+### Log Actions
+
+- **Copy Logs** - Copy all diagnostic logs to clipboard (for sharing with support)
+- **Clear Logs** - Delete all diagnostic logs
+
+### When to Use Diagnostics
+
+Run diagnostics if:
+- Your coach seems to be missing context
+- A feature isn't working as expected
+- You granted a permission but it's not being used
+- You want to verify everything is connected
 
 ---
 
