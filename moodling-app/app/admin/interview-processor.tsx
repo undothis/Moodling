@@ -68,6 +68,21 @@ interface BatchQueueItem {
   error?: string;
 }
 
+// Checkpoint for resume functionality
+interface BatchCheckpoint {
+  timestamp: string;
+  queue: BatchQueueItem[];
+  currentChannelIndex: number;
+  currentVideoIndex: number;
+  videosPerChannel: number;
+  totalInsights: number;
+  totalVideosProcessed: number;
+  totalSkipped: number;
+  log: string[];
+}
+
+const BATCH_CHECKPOINT_KEY = 'moodling_batch_checkpoint';
+
 // Recommended channels to pre-load
 // Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
 // embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware
@@ -286,7 +301,76 @@ export default function InterviewProcessorScreen() {
 
   useEffect(() => {
     loadData();
+    // Check for saved checkpoint on mount
+    checkForSavedCheckpoint();
   }, [loadData]);
+
+  // Checkpoint state
+  const [savedCheckpoint, setSavedCheckpoint] = useState<BatchCheckpoint | null>(null);
+
+  // Check for saved checkpoint
+  const checkForSavedCheckpoint = async () => {
+    try {
+      const checkpointStr = await AsyncStorage.getItem(BATCH_CHECKPOINT_KEY);
+      if (checkpointStr) {
+        const checkpoint: BatchCheckpoint = JSON.parse(checkpointStr);
+        setSavedCheckpoint(checkpoint);
+      }
+    } catch (error) {
+      console.error('Failed to load checkpoint:', error);
+    }
+  };
+
+  // Save checkpoint
+  const saveCheckpoint = async (
+    queue: BatchQueueItem[],
+    channelIndex: number,
+    videoIndex: number,
+    videosPerChannel: number,
+    totalInsights: number,
+    totalVideosProcessed: number,
+    totalSkipped: number,
+    log: string[]
+  ) => {
+    const checkpoint: BatchCheckpoint = {
+      timestamp: new Date().toISOString(),
+      queue,
+      currentChannelIndex: channelIndex,
+      currentVideoIndex: videoIndex,
+      videosPerChannel,
+      totalInsights,
+      totalVideosProcessed,
+      totalSkipped,
+      log,
+    };
+    await AsyncStorage.setItem(BATCH_CHECKPOINT_KEY, JSON.stringify(checkpoint));
+  };
+
+  // Clear checkpoint
+  const clearCheckpoint = async () => {
+    await AsyncStorage.removeItem(BATCH_CHECKPOINT_KEY);
+    setSavedCheckpoint(null);
+  };
+
+  // Resume from checkpoint
+  const resumeFromCheckpoint = () => {
+    if (!savedCheckpoint) return;
+
+    // Restore state
+    setBatchQueue(savedCheckpoint.queue);
+    setProcessingLog(savedCheckpoint.log);
+    setBatchVideosPerChannel(savedCheckpoint.videosPerChannel.toString());
+    setBatchProgress({
+      currentChannelIndex: savedCheckpoint.currentChannelIndex,
+      totalChannels: savedCheckpoint.queue.length,
+      totalInsights: savedCheckpoint.totalInsights,
+      totalVideosProcessed: savedCheckpoint.totalVideosProcessed,
+      totalSkipped: savedCheckpoint.totalSkipped,
+    });
+
+    // Start processing from checkpoint
+    startBatchProcessingFromCheckpoint(savedCheckpoint);
+  };
 
   // Add log message
   const addLog = (message: string) => {
@@ -674,11 +758,237 @@ export default function InterviewProcessorScreen() {
   };
 
   // Stop batch processing
-  const handleStopBatch = () => {
+  const handleStopBatch = async () => {
     batchProcessingRef.current = false;
     batchPausedRef.current = false;
     setBatchPaused(false);
-    addLog('⏹ Stopping batch processing...');
+    addLog('⏹ Stopping batch processing... (checkpoint saved)');
+    // Checkpoint is saved automatically during processing
+  };
+
+  // Discard checkpoint and start fresh
+  const handleDiscardCheckpoint = async () => {
+    await clearCheckpoint();
+    addLog('🗑 Checkpoint discarded. Ready to start fresh.');
+  };
+
+  // Start batch processing from checkpoint
+  const startBatchProcessingFromCheckpoint = async (checkpoint: BatchCheckpoint) => {
+    if (!apiKey) {
+      Alert.alert('API Key Required', 'Please set your Claude API key in Settings → AI Coaching');
+      return;
+    }
+
+    const numVideos = checkpoint.videosPerChannel;
+    setBatchProcessing(true);
+    batchProcessingRef.current = true;
+    batchPausedRef.current = false;
+
+    addLog(`\n🔄 RESUMING from checkpoint (saved ${new Date(checkpoint.timestamp).toLocaleString()})`);
+    addLog(`Resuming at channel ${checkpoint.currentChannelIndex + 1}/${checkpoint.queue.length}`);
+
+    let totalInsightsAllChannels = checkpoint.totalInsights;
+    let totalVideosAllChannels = checkpoint.totalVideosProcessed;
+    let totalSkippedAllChannels = checkpoint.totalSkipped;
+
+    // Start from saved channel index
+    for (let channelIndex = checkpoint.currentChannelIndex; channelIndex < checkpoint.queue.length && batchProcessingRef.current; channelIndex++) {
+      // Check for pause
+      while (batchPausedRef.current && batchProcessingRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (!batchProcessingRef.current) break;
+
+      const queueItem = checkpoint.queue[channelIndex];
+
+      // Skip already completed channels
+      if (queueItem.status === 'completed' || queueItem.status === 'skipped') {
+        continue;
+      }
+
+      const channelInfo = queueItem.channel;
+
+      addLog(`\n[${channelIndex + 1}/${checkpoint.queue.length}] Processing: ${'name' in channelInfo ? channelInfo.name : channelInfo.name}`);
+
+      // Update queue item status
+      setBatchQueue(prev => prev.map((item, i) =>
+        i === channelIndex ? { ...item, status: 'processing' } : item
+      ));
+
+      setBatchProgress(prev => ({
+        ...prev,
+        currentChannelIndex: channelIndex + 1,
+      }));
+
+      try {
+        // Get channel
+        let channel: CuratedChannel;
+
+        if ('handle' in channelInfo) {
+          const rec = channelInfo as typeof RECOMMENDED_CHANNELS[0];
+          const url = `https://www.youtube.com/@${rec.handle}`;
+
+          if (rec.channelId) {
+            await addCuratedChannel(url, rec.channelId, rec.name, rec.category, rec.trust, rec.description);
+          } else {
+            const result = await fetchChannelVideos(url, 1);
+            if (result.error || !result.channelId) {
+              throw new Error(result.error || 'Could not get channel ID');
+            }
+            await addCuratedChannel(url, result.channelId, rec.name, rec.category, rec.trust, rec.description);
+          }
+
+          const updatedChannels = await getCuratedChannels();
+          channel = updatedChannels.find(c => c.name === rec.name)!;
+
+          if (!channel) {
+            throw new Error('Channel was not added properly');
+          }
+        } else {
+          channel = channelInfo as CuratedChannel;
+        }
+
+        // Fetch videos
+        addLog(`  Fetching ${numVideos} videos...`);
+        const { videos, error } = await fetchChannelVideos(channel.url, numVideos);
+
+        if (error) {
+          throw new Error(error);
+        }
+
+        if (videos.length === 0) {
+          addLog(`  ⚠ No videos found, skipping`);
+          setBatchQueue(prev => prev.map((item, i) =>
+            i === channelIndex ? { ...item, status: 'skipped', error: 'No videos found' } : item
+          ));
+          continue;
+        }
+
+        addLog(`  Found ${videos.length} videos`);
+
+        let channelInsights = 0;
+        let channelVideosProcessed = 0;
+        let channelSkipped = 0;
+
+        // Determine starting video index (for resumed channel)
+        const startVideoIndex = (channelIndex === checkpoint.currentChannelIndex)
+          ? checkpoint.currentVideoIndex
+          : 0;
+
+        // Process each video
+        for (let i = startVideoIndex; i < videos.length && batchProcessingRef.current; i++) {
+          while (batchPausedRef.current && batchProcessingRef.current) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          if (!batchProcessingRef.current) {
+            // Save checkpoint before exiting
+            await saveCheckpoint(
+              batchQueue, channelIndex, i, numVideos,
+              totalInsightsAllChannels + channelInsights,
+              totalVideosAllChannels + channelVideosProcessed,
+              totalSkippedAllChannels + channelSkipped,
+              processingLog
+            );
+            break;
+          }
+
+          const video = videos[i];
+          addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
+
+          const { transcript, error: transcriptError } = await fetchVideoTranscript(video.videoId);
+
+          if (transcriptError || !transcript) {
+            addLog(`      ⚠ No transcript, skipping`);
+            channelSkipped++;
+            continue;
+          }
+
+          const { insights, error: extractError } = await extractInsightsWithClaude(
+            transcript,
+            video.title,
+            video.videoId,
+            channel.name,
+            ['emotional_struggles', 'humor_wit', 'companionship', 'vulnerability', 'growth_moments'],
+            apiKey
+          );
+
+          if (extractError) {
+            addLog(`      ⚠ Extraction error: ${extractError}`);
+            channelSkipped++;
+            continue;
+          }
+
+          addLog(`      ✓ ${insights.length} insights`);
+          channelInsights += insights.length;
+          channelVideosProcessed++;
+
+          if (insights.length > 0) {
+            await savePendingInsights(insights);
+          }
+
+          await markVideoProcessed(video.videoId);
+
+          // Save checkpoint after each video
+          await saveCheckpoint(
+            batchQueue, channelIndex, i + 1, numVideos,
+            totalInsightsAllChannels + channelInsights,
+            totalVideosAllChannels + channelVideosProcessed,
+            totalSkippedAllChannels + channelSkipped,
+            processingLog
+          );
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        totalInsightsAllChannels += channelInsights;
+        totalVideosAllChannels += channelVideosProcessed;
+        totalSkippedAllChannels += channelSkipped;
+
+        setBatchQueue(prev => prev.map((item, i) =>
+          i === channelIndex ? {
+            ...item,
+            status: 'completed',
+            videosProcessed: channelVideosProcessed,
+            insightsFound: channelInsights,
+          } : item
+        ));
+
+        setBatchProgress(prev => ({
+          ...prev,
+          totalInsights: totalInsightsAllChannels,
+          totalVideosProcessed: totalVideosAllChannels,
+          totalSkipped: totalSkippedAllChannels,
+        }));
+
+        addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
+
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        addLog(`  ❌ Error: ${errorMsg}`);
+
+        setBatchQueue(prev => prev.map((item, i) =>
+          i === channelIndex ? { ...item, status: 'failed', error: errorMsg } : item
+        ));
+      }
+
+      if (channelIndex < checkpoint.queue.length - 1 && batchProcessingRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    // Clear checkpoint on completion
+    await clearCheckpoint();
+
+    addLog(`\n✅ Batch processing complete!`);
+    addLog(`Total: ${totalInsightsAllChannels} insights from ${totalVideosAllChannels} videos`);
+    addLog(`Skipped: ${totalSkippedAllChannels} videos (no transcript)`);
+
+    setBatchProcessing(false);
+    batchProcessingRef.current = false;
+
+    loadData();
   };
 
   // Start batch processing
@@ -796,7 +1106,17 @@ export default function InterviewProcessorScreen() {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
 
-          if (!batchProcessingRef.current) break;
+          if (!batchProcessingRef.current) {
+            // Save checkpoint before exiting
+            await saveCheckpoint(
+              batchQueue, channelIndex, i, numVideos,
+              totalInsightsAllChannels + channelInsights,
+              totalVideosAllChannels + channelVideosProcessed,
+              totalSkippedAllChannels + channelSkipped,
+              processingLog
+            );
+            break;
+          }
 
           const video = videos[i];
           addLog(`    [${i + 1}/${videos.length}] ${video.title.slice(0, 40)}...`);
@@ -835,6 +1155,15 @@ export default function InterviewProcessorScreen() {
           }
 
           await markVideoProcessed(video.videoId);
+
+          // Save checkpoint after each video
+          await saveCheckpoint(
+            batchQueue, channelIndex, i + 1, numVideos,
+            totalInsightsAllChannels + channelInsights,
+            totalVideosAllChannels + channelVideosProcessed,
+            totalSkippedAllChannels + channelSkipped,
+            processingLog
+          );
 
           // Small delay
           await new Promise(resolve => setTimeout(resolve, 1000));
@@ -877,6 +1206,9 @@ export default function InterviewProcessorScreen() {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
+
+    // Clear checkpoint on completion
+    await clearCheckpoint();
 
     addLog(`\n✅ Batch processing complete!`);
     addLog(`Total: ${totalInsightsAllChannels} insights from ${totalVideosAllChannels} videos`);
@@ -1171,16 +1503,42 @@ export default function InterviewProcessorScreen() {
             </View>
           )}
 
+          {/* Resume from checkpoint banner */}
+          {savedCheckpoint && !batchProcessing && (
+            <View style={[styles.card, { borderLeftWidth: 4, borderLeftColor: '#FF9800', marginBottom: 12 }]}>
+              <Text style={[styles.cardTitle, { color: '#FF9800' }]}>📋 Saved Progress Found</Text>
+              <Text style={{ color: colors.text, marginBottom: 8 }}>
+                Stopped at: Channel {savedCheckpoint.currentChannelIndex + 1}/{savedCheckpoint.queue.length}{'\n'}
+                Saved: {new Date(savedCheckpoint.timestamp).toLocaleString()}{'\n'}
+                Progress: {savedCheckpoint.totalInsights} insights from {savedCheckpoint.totalVideosProcessed} videos
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  style={[styles.processButton, { backgroundColor: '#4CAF50', flex: 1 }]}
+                  onPress={resumeFromCheckpoint}
+                >
+                  <Text style={styles.processButtonText}>▶ Resume</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.processButton, { backgroundColor: '#F44336', flex: 1 }]}
+                  onPress={handleDiscardCheckpoint}
+                >
+                  <Text style={styles.processButtonText}>🗑 Discard</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           {/* Start/Stop/Pause buttons */}
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
             {!batchProcessing ? (
               <Pressable
                 style={[styles.processButton, { backgroundColor: colors.tint, flex: 1 }]}
                 onPress={handleStartBatchProcessing}
-                disabled={batchQueue.length === 0}
+                disabled={batchQueue.length === 0 || !!savedCheckpoint}
               >
                 <Text style={styles.processButtonText}>
-                  Start Batch ({batchQueue.filter(q => q.status === 'pending').length})
+                  {savedCheckpoint ? 'Resume or Discard First' : `Start Batch (${batchQueue.filter(q => q.status === 'pending').length})`}
                 </Text>
               </Pressable>
             ) : (
