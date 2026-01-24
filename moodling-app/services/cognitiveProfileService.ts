@@ -107,6 +107,33 @@ export type StructurePreference =
 export type SensitivityLevel = 'highly_sensitive' | 'moderate' | 'low_sensitivity';
 
 /**
+ * Emotional regulation style
+ * How someone manages/regulates their emotional state
+ */
+export type RegulationStyle =
+  | 'internal_self_regulated'  // Can self-soothe, internal coping skills
+  | 'internal_developing'      // Building internal skills but still learning
+  | 'external_dependent'       // Relies on external sources (people, substances, activities)
+  | 'external_healthy'         // Uses healthy external supports (exercise, social, nature)
+  | 'mixed_adaptive'           // Uses both internal and external flexibly
+  | 'dysregulated';            // Struggles with regulation, easily overwhelmed
+
+/**
+ * Primary external regulation sources
+ */
+export type ExternalRegulationSource =
+  | 'social_connection'    // Needs to talk to someone
+  | 'physical_activity'    // Exercise, movement
+  | 'nature_outdoors'      // Being outside, fresh air
+  | 'substances'           // Alcohol, food, substances
+  | 'media_distraction'    // TV, phone, games
+  | 'creative_expression'  // Art, music, writing
+  | 'spiritual_practice'   // Prayer, meditation, ritual
+  | 'work_productivity'    // Throwing self into work
+  | 'shopping_acquisition' // Buying things
+  | 'sleep_avoidance';     // Going to sleep to escape
+
+/**
  * Mental imagery ability (visualization)
  * Aphantasia spectrum - crucial for coaching techniques
  */
@@ -286,6 +313,13 @@ export interface CognitiveProfile {
   emotionalProcessing: EmotionalProcessing;
   sensitivityLevel: SensitivityLevel;
   emotionalIntelligence: 'high' | 'moderate' | 'developing';
+
+  // Regulation
+  regulationStyle: RegulationStyle;
+  primaryExternalRegulation: ExternalRegulationSource | null;
+  secondaryExternalRegulation: ExternalRegulationSource | null;
+  canSelfSoothe: boolean;
+  regulationAwareness: 'high' | 'moderate' | 'low'; // How aware of own patterns
 
   // Communication
   communicationStyle: CommunicationStyle;
@@ -917,6 +951,126 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     ],
     measures: ['sensitivityLevel', 'emotionalIntelligence'],
     adaptiveDepth: 'basic'
+  },
+
+  // ========== EMOTIONAL REGULATION ==========
+  {
+    id: 'regulation_style',
+    text: "When you're upset or overwhelmed, how do you typically calm down?",
+    subtext: "There's no wrong answer - we all have different ways of coping.",
+    type: 'choice',
+    options: [
+      {
+        value: 'self_soothe',
+        label: "I can usually calm myself down internally - breathing, self-talk, waiting it out",
+        indicates: { regulationStyle: 'internal_self_regulated', canSelfSoothe: true }
+      },
+      {
+        value: 'learning',
+        label: "I'm working on it - sometimes I can, sometimes I can't",
+        indicates: { regulationStyle: 'internal_developing', canSelfSoothe: false }
+      },
+      {
+        value: 'need_external',
+        label: "I usually need something external - talking to someone, going for a walk, distraction",
+        indicates: { regulationStyle: 'external_healthy', canSelfSoothe: false }
+      },
+      {
+        value: 'depends',
+        label: "It really depends on what's happening - I use different things",
+        indicates: { regulationStyle: 'mixed_adaptive', canSelfSoothe: true }
+      },
+      {
+        value: 'struggle',
+        label: "I often feel overwhelmed and don't know what to do",
+        indicates: { regulationStyle: 'dysregulated', canSelfSoothe: false }
+      }
+    ],
+    measures: ['regulationStyle', 'canSelfSoothe'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'regulation_go_to',
+    text: "What's your go-to when you need to feel better?",
+    subtext: "Be honest - no judgment here. Understanding your patterns helps us support you.",
+    type: 'choice',
+    options: [
+      {
+        value: 'talk',
+        label: "Talking to someone I trust",
+        indicates: { primaryExternalRegulation: 'social_connection' }
+      },
+      {
+        value: 'move',
+        label: "Moving my body - exercise, walk, yoga",
+        indicates: { primaryExternalRegulation: 'physical_activity' }
+      },
+      {
+        value: 'outside',
+        label: "Getting outside, fresh air, nature",
+        indicates: { primaryExternalRegulation: 'nature_outdoors' }
+      },
+      {
+        value: 'distraction',
+        label: "TV, phone, scrolling, games - something to take my mind off it",
+        indicates: { primaryExternalRegulation: 'media_distraction' }
+      },
+      {
+        value: 'create',
+        label: "Creating something - writing, art, music, cooking",
+        indicates: { primaryExternalRegulation: 'creative_expression' }
+      },
+      {
+        value: 'work',
+        label: "Throwing myself into work or being productive",
+        indicates: { primaryExternalRegulation: 'work_productivity' }
+      },
+      {
+        value: 'food_drink',
+        label: "Food, drink, or something to take the edge off",
+        indicates: { primaryExternalRegulation: 'substances' }
+      },
+      {
+        value: 'sleep',
+        label: "Going to sleep - just shutting down",
+        indicates: { primaryExternalRegulation: 'sleep_avoidance' }
+      },
+      {
+        value: 'internal',
+        label: "I mostly handle things internally without needing external stuff",
+        indicates: { primaryExternalRegulation: null }
+      }
+    ],
+    measures: ['primaryExternalRegulation'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['regulation_style']
+  },
+
+  {
+    id: 'regulation_awareness',
+    text: "How aware are you of your own emotional patterns?",
+    type: 'choice',
+    options: [
+      {
+        value: 'very_aware',
+        label: "Very - I know my triggers, warning signs, and what helps",
+        indicates: { regulationAwareness: 'high' }
+      },
+      {
+        value: 'somewhat',
+        label: "Somewhat - I'm learning to notice patterns",
+        indicates: { regulationAwareness: 'moderate' }
+      },
+      {
+        value: 'not_really',
+        label: "Not really - emotions often catch me by surprise",
+        indicates: { regulationAwareness: 'low' }
+      }
+    ],
+    measures: ['regulationAwareness'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['regulation_style']
   },
 
   // ========== STRUCTURE PREFERENCE ==========
@@ -1591,6 +1745,12 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   emotionalProcessing: 'integrated',
   sensitivityLevel: 'moderate',
   emotionalIntelligence: 'moderate',
+  // Regulation (default to developing internal skills)
+  regulationStyle: 'mixed_adaptive',
+  primaryExternalRegulation: null,
+  secondaryExternalRegulation: null,
+  canSelfSoothe: true,
+  regulationAwareness: 'moderate',
   communicationStyle: 'collaborative',
   prefersWrittenOrSpoken: 'either',
   needsTimeToRespond: false,

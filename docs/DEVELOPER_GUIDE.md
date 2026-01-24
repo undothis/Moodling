@@ -6859,6 +6859,238 @@ const STORAGE_KEYS = {
 
 ---
 
+## Prosody Extraction System
+
+The prosody extraction system analyzes vocal characteristics from audio to train the aliveness system and understand user communication patterns.
+
+### What is Prosody?
+
+**Prosody** is the "music" of speech - the patterns of rhythm, stress, timing, and pitch that convey meaning beyond words. It includes:
+
+| Term | Definition | Example |
+|------|------------|---------|
+| **Prosody** | Overall patterns of rhythm, stress, and intonation | The "music" of speech |
+| **Meter** | Systematic patterns of stressed/unstressed syllables | Iambs, trochees |
+| **Rhythm** | Overall flow of sound (may be irregular) | Staccato, legato |
+| **Cadence** | Natural modulation, rise/fall at phrase boundaries | Falling at end of statements |
+| **Intonation** | How pitch rises and falls | Rising for questions |
+| **Tempo** | Speed and pacing of speech | WPM, acceleration |
+| **Suprasegmentals** | Features extending over multiple sounds | Pitch, length, emphasis |
+| **Scansion** | Analysis of metrical structure | Marking stressed syllables |
+
+### Service: `prosodyExtractionService.ts`
+
+```typescript
+import {
+  extractProsodyFromAudio,
+  extractProsodyFromTranscript,
+  classifyInterview,
+  calculateInterviewStatistics,
+  ProsodyExtraction,
+  InterviewStatistics,
+} from '@/services/prosodyExtractionService';
+```
+
+### Feature Categories
+
+#### 1. Prosodic Features (`ProsodicFeatures`)
+
+| Feature | Interface | What It Measures |
+|---------|-----------|------------------|
+| **Meter** | `MeterAnalysis` | Regularity, dominant foot (iamb, trochee, dactyl, anapest, spondee), beats per phrase, scansion pattern |
+| **Rhythm** | `RhythmAnalysis` | Flow type (steady_stream, staccato, legato, syncopated, fragmented, building, winding_down), breathing pattern, phrase length |
+| **Cadence** | `CadenceAnalysis` | Terminal patterns (falling, rising, level, fall_rise, rise_fall), phrase endings, naturalness, lilt |
+| **Tempo** | `TempoAnalysis` | WPM, syllables/sec, variability, acceleration (stable, accelerating, decelerating, erratic) |
+| **Intonation** | `IntonationAnalysis` | Contour type (animated, moderate, flat, erratic, sagging, rising_tendency), pitch variance, flatness |
+| **Pitch Range** | `PitchRangeAnalysis` | F0 average, min/max, register (very_low to very_high) |
+| **Stress** | `StressAnalysis` | Emphasis style (natural, emphatic, understated, dramatic, uniform), frequency, intensity |
+| **Emphasis** | `EmphasisAnalysis` | Keyword highlighting, contrast level, emotional weight |
+
+#### 2. Voice Quality Features (`VoiceQualityFeatures`)
+
+| Feature | Interface | What It Measures |
+|---------|-----------|------------------|
+| **Volume** | `VolumeAnalysis` | Level (whisper to shouting), dB average/peak, **evenness** (0-1), **trajectory** (stable, sagging_down, building_up, oscillating, erratic) |
+| **Dynamic Range** | `DynamicRangeAnalysis` | Loud/soft contrast, compression level, expressive contrast |
+| **Texture** | `VoiceTextureAnalysis` | Clarity, breathiness, raspiness, nasality, **tightness** (constricted throat), warmth |
+| **Stability** | `VoiceStabilityAnalysis` | Jitter, shimmer, **tremor** (nervousness, emotional, fatigue, medical), **voice breaks** |
+| **Voice Breaks** | `VoiceBreakAnalysis` | Frequency, types: pitch_break, glottal_stop, **sob_break**, gasp, **squeak**, **choke** |
+| **Resonance** | `ResonanceAnalysis` | Placement (chest, throat, head, nasal, balanced), fullness, harmonic richness |
+
+#### 3. Emotional Features (`EmotionalFeatures`)
+
+| Feature | Type | What It Measures |
+|---------|------|------------------|
+| **Primary Emotion** | `EmotionalState` | 25+ states categorized by valence/arousal |
+| **Intensity** | `0-1` | Strength of emotional expression |
+| **Valence** | `-1 to 1` | Negative to positive |
+| **Arousal** | `0-1` | Calm to activated |
+| **Distress Markers** | `DistressMarkers` | Crying, choking, hyperventilation, voice breaking, squealing, suppressed sobs |
+| **Engagement Markers** | `EngagementMarkers` | Attentiveness, enthusiasm, authenticity, connection-seeking, withdrawal |
+
+### Emotional States
+
+```typescript
+type EmotionalState =
+  // Negative high arousal
+  | 'anger' | 'fear' | 'anxiety' | 'frustration' | 'panic' | 'distress'
+  // Negative low arousal
+  | 'sadness' | 'grief' | 'depression' | 'exhaustion' | 'hopelessness' | 'resignation'
+  // Positive high arousal
+  | 'joy' | 'excitement' | 'enthusiasm' | 'passion' | 'triumph'
+  // Positive low arousal
+  | 'calm' | 'contentment' | 'peace' | 'relief' | 'tenderness'
+  // Neutral/Mixed
+  | 'neutral' | 'contemplative' | 'curious' | 'uncertain' | 'vulnerable';
+```
+
+### Distress Detection
+
+Critical for safety and support:
+
+```typescript
+interface DistressMarkers {
+  crying: {
+    present: boolean;
+    type: 'none' | 'tears_in_voice' | 'sniffling' | 'soft_crying' | 'sobbing' | 'wailing';
+    intensity: number;  // 0-1
+  };
+  choking: {
+    present: boolean;
+    type: 'none' | 'mild_catch' | 'gulping' | 'gasping' | 'full_choke';
+    frequency: number;  // Per minute
+    recovery: 'quick' | 'slow' | 'prolonged';
+  };
+  hyperventilation: boolean;
+  voiceBreaking: boolean;
+  squealing: boolean;      // High-pitched escape under stress
+  suppressedSobs: boolean;
+  forcedComposure: number; // 0-1, trying to hide distress
+}
+```
+
+### Volume Trajectory
+
+Tracks how volume changes over time:
+
+```typescript
+type VolumeTrajectory =
+  | 'stable'         // Consistent volume
+  | 'sagging_down'   // Volume dropping (fatigue, giving up, sadness)
+  | 'building_up'    // Volume increasing (engagement, anger, enthusiasm)
+  | 'oscillating'    // Up and down waves
+  | 'erratic';       // Unpredictable (distress, dysregulation)
+```
+
+### Interview Classification
+
+```typescript
+type InterviewType =
+  | 'therapeutic'         // Processing emotions
+  | 'coaching'            // Goal-oriented
+  | 'educational'         // Teaching
+  | 'journalistic'        // Information gathering
+  | 'casual_chat'         // Friendly conversation
+  | 'intimate_share'      // Vulnerable disclosure
+  | 'expert_discussion'   // Technical
+  | 'storytelling'        // Narrative
+  | 'conflict_resolution' // Working through disagreement
+  | 'celebration'         // Positive sharing
+  | 'crisis_support';     // Acute distress
+```
+
+### Statistics & Rating
+
+```typescript
+interface InterviewRating {
+  overall: number;          // 1-5
+  prosodyRichness: number;  // Variety of prosodic features
+  emotionalRange: number;   // Breadth of emotions shown
+  authenticity: number;     // Genuine vs. performative
+  trainingValue: number;    // Usefulness for AI training
+  notes: string;
+}
+```
+
+### Metrical Foot Types
+
+For analyzing speech rhythm patterns:
+
+| Foot | Pattern | Sound | Speech Quality |
+|------|---------|-------|----------------|
+| **Iamb** | u / | da-DUM | Natural conversational flow |
+| **Trochee** | / u | DUM-da | Commanding, emphatic |
+| **Dactyl** | / u u | DUM-da-da | Flowing, lyrical |
+| **Anapest** | u u / | da-da-DUM | Building momentum |
+| **Spondee** | / / | DUM-DUM | Emphatic, heavy |
+
+### Extraction Pipeline
+
+#### Backend Processing (for Interviews)
+
+```
+Audio File
+    ↓
+Backend Service (Python)
+    ├── librosa (audio features)
+    ├── praat-parselmouth (pitch/formants)
+    ├── opensmile (acoustic features)
+    └── whisper (transcription)
+    ↓
+Prosody Features (JSON)
+    ↓
+Classification & Statistics
+    ↓
+Training Data Storage
+```
+
+#### On-Device Processing (for Live Chat)
+
+```typescript
+interface BasicAudioMetrics {
+  averageVolume: number;
+  volumeVariance: number;
+  speechRate: number;
+  pauseFrequency: number;
+}
+```
+
+### Usage Examples
+
+```typescript
+// Extract from audio
+const extractions = await extractProsodyFromAudio(audioUri, {
+  segmentDuration: 30,
+  speakerDiarization: true,
+});
+
+// Check for distress
+for (const e of extractions) {
+  if (e.emotional.distressMarkers.choking.present) {
+    console.log('Choking detected - potential distress');
+  }
+  if (e.voiceQuality.volume.trajectory === 'sagging_down') {
+    console.log('Volume sagging - possible fatigue or sadness');
+  }
+}
+
+// Classify interview
+const classification = classifyInterview(extractions);
+
+// Calculate training statistics
+const stats = calculateInterviewStatistics('INT-001', 'User Interview', extractions);
+console.log(`Training value: ${stats.rating.trainingValue}/5`);
+```
+
+### Integration with Aliveness System
+
+Prosody extraction feeds the aliveness service:
+
+1. **Training**: Process interviews → Extract prosody → Build training data → Learn patterns
+2. **Runtime**: Detect user signals → Adapt coach responses → Match or complement energy
+
+---
+
 ## Future Enhancements
 
 ### Planned Features

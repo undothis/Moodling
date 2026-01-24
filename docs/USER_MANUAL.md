@@ -1762,6 +1762,49 @@ All accountability data stays on your device:
 
 ---
 
+## How Your Coach Learns to Understand You
+
+### What is "Prosody"? (Simple Explanation)
+
+When you talk, it's not just the WORDS that matter—it's HOW you say them.
+
+Think about it: "I'm fine" can mean very different things depending on how someone says it!
+
+- **Fast and high-pitched** = probably stressed
+- **Slow and quiet** = probably sad or tired
+- **Voice getting quieter over time** = maybe giving up
+- **Voice cracking** = holding back tears
+
+All these clues in your voice have a fancy name: **prosody**. It's like the music of your voice.
+
+### Why Does This Matter?
+
+Your AI coach listens for these clues to understand how you're REALLY feeling—not just what you say, but how you say it.
+
+If you're talking really fast and sound stressed, your coach will slow down and help you feel calm.
+
+If you sound quiet and tired, your coach won't overwhelm you with lots of questions.
+
+It's like how a good friend notices when something's wrong, even if you say "I'm fine."
+
+### What Your Coach Listens For
+
+| What Your Voice Does | What It Might Mean |
+|---------------------|-------------------|
+| Getting **faster** | Stressed or excited |
+| Getting **slower** | Tired or sad |
+| Getting **quieter** | Giving up or withdrawn |
+| **Voice cracking** | Holding back tears |
+| **Can't get words out** | Overwhelmed |
+| **Flat** (no ups and downs) | Maybe feeling numb |
+| **Up and down a lot** | Full of feeling! |
+
+### Your Privacy
+
+Even when understanding how you talk, everything stays on YOUR device. No one else hears you. The coach just learns to respond in a way that feels right for you.
+
+---
+
 ## Troubleshooting
 
 ### Chat Not Working

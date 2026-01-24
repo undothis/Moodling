@@ -385,6 +385,122 @@ The adaptive aliveness system runs automatically during voice and text conversat
 
 ---
 
+## Prosody Extraction for Training
+
+**Prosody** is the "music" of speech—the rhythm, pitch, pace, and emotional texture that tells us how someone is really feeling, often more than their words.
+
+### Why Extract Prosody?
+
+When processing interviews for training, we don't just want WHAT someone said—we want HOW they said it:
+
+- Did their voice **sag down** when talking about their job? (hopelessness)
+- Did they **choke up** when mentioning family? (suppressed emotion)
+- Did their pace **accelerate** when anxious? (dysregulation)
+- Did volume stay **even** or become **erratic**? (emotional stability)
+
+This data teaches the coach to recognize emotional states and respond appropriately.
+
+### Key Prosody Terms
+
+| Term | What It Means | What To Listen For |
+|------|---------------|-------------------|
+| **Prosody** | The overall "music" of speech | Rhythm + pitch + stress patterns |
+| **Cadence** | The natural rise and fall of voice | Falling at statements, rising at questions |
+| **Meter** | Regular rhythmic pattern | Stressed/unstressed syllables |
+| **Intonation** | Pitch movement | High when excited, flat when depressed |
+| **Tempo** | Speed of speech | Fast = anxious, slow = sad/tired |
+| **Scansion** | Analyzing the rhythm pattern | Marking stressed beats |
+
+### Features We Extract
+
+#### Voice Quality
+
+| Feature | What It Tells Us |
+|---------|-----------------|
+| **Volume Evenness** | Stable (regulated) vs. erratic (dysregulated) |
+| **Volume Trajectory** | **Sagging down** (giving up, sadness) vs **building up** (anger, excitement) |
+| **Flatness** | Low pitch variance = depression, disengagement |
+| **Tremor/Shakiness** | Fear, anxiety, crying, distress |
+| **Tightness** | Constricted throat = stress, holding back |
+| **Breathiness** | Vulnerability, exhaustion, intimacy |
+
+#### Distress Markers
+
+| Marker | Description | What It Indicates |
+|--------|-------------|-------------------|
+| **Choking** | Voice catches, can't get words out | Overwhelmed, suppressed emotion |
+| **Squealing** | High-pitched escape | Acute distress |
+| **Voice Breaking** | Pitch cracks | Emotional overload |
+| **Crying** | Tears in voice, sniffling, sobbing | Grief, relief, joy |
+| **Gasping** | Can't get breath | Panic, hyperventilation |
+
+#### Emotional States
+
+From prosody, we can detect 25+ emotional states:
+
+**Negative High Energy**: anger, fear, anxiety, frustration, panic, distress
+**Negative Low Energy**: sadness, grief, depression, exhaustion, hopelessness
+**Positive High Energy**: joy, excitement, enthusiasm, passion, triumph
+**Positive Low Energy**: calm, contentment, peace, relief, tenderness
+**Mixed**: contemplative, curious, uncertain, vulnerable
+
+### Interview Statistics
+
+For each processed interview, we calculate:
+
+```
+📊 Interview Statistics
+├── Prosody Richness (1-5): How varied the vocal features are
+├── Emotional Range (1-5): How many different emotions appear
+├── Authenticity (1-5): Genuine vs. performative
+├── Training Value (1-5): How useful for training the AI
+├── Distress Occurrences: Count of choking, crying, breaks
+└── Volume Trajectory: Stable? Sagging? Building?
+```
+
+### Interview Type Classification
+
+Interviews are automatically classified:
+
+| Type | Description |
+|------|-------------|
+| **Therapeutic** | Processing emotions, deep sharing |
+| **Coaching** | Goal-oriented, motivational |
+| **Crisis Support** | Acute distress, needing grounding |
+| **Casual Chat** | Light conversation |
+| **Intimate Share** | Vulnerable disclosure |
+| **Storytelling** | Narrative, recounting experiences |
+| **Celebration** | Positive sharing, wins |
+
+### Using Prosody Data
+
+When reviewing interviews in the Training Admin:
+
+1. **High Training Value** (4-5): Rich prosodic variety, authentic emotion, useful patterns
+2. **Medium Training Value** (3): Some useful features but limited range
+3. **Low Training Value** (1-2): Flat, scripted, or too short to extract patterns
+
+Focus on HIGH training value interviews for building the coach's emotional intelligence.
+
+### Extraction Pipeline
+
+```
+Interview Audio
+       ↓
+[Backend Service]
+  ├── Whisper (transcription with timestamps)
+  ├── librosa (audio features)
+  └── praat (pitch/formant analysis)
+       ↓
+Prosody Features (JSON)
+       ↓
+Classification + Statistics
+       ↓
+Training Data Storage
+```
+
+---
+
 ## Insight Scoring System
 
 When insights are processed through the Interview Processor (YouTube harvester), they're automatically scored across **5 dimensions**. This helps filter quality training data.
