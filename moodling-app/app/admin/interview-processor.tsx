@@ -423,14 +423,17 @@ export default function InterviewProcessorScreen() {
     });
 
     addLog(`Starting processing for ${selectedChannel.name}...`);
-    addLog(`Fetching ${numVideos} videos...`);
+    addLog(`Fetching ${numVideos} videos (this may take up to 30s)...`);
 
     try {
       // Fetch videos
       const { videos, error } = await fetchChannelVideos(selectedChannel.url, numVideos);
 
       if (error) {
-        addLog(`Error: ${error}`);
+        addLog(`Error fetching videos: ${error}`);
+        if (error.includes('Network') || error.includes('aborted')) {
+          addLog(`💡 Tip: Check your internet connection or try again in a minute`);
+        }
         setProgressState(prev => ({ ...prev, phase: 'error' }));
         setProcessing(false);
         return;
