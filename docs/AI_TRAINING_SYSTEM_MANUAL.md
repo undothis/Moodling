@@ -370,11 +370,54 @@ The system uses Claude API to analyze transcripts and extract meaningful insight
 
 **1. Categories Define What to Look For**
 
-When you set up a channel, you select categories like:
-- `emotional_processing` - How to handle emotions
-- `relationship_dynamics` - Relationship patterns and advice
-- `therapeutic_techniques` - Specific therapy methods
-- `communication_skills` - How to communicate better
+When you set up a channel, you select from 27 categories across 5 domains:
+
+**Pain Domain (Understanding Suffering)**
+| Category | Description |
+|----------|-------------|
+| `emotional_struggles` | How people experience difficult emotions |
+| `coping_strategies` | What people do to get through hard times |
+| `what_helps_hurts` | Specific things that help or make things worse |
+| `vulnerability` | Moments of openness and raw honesty |
+| `mental_health_patterns` | Recurring mental health experiences |
+| `trauma_recovery` | How people heal from difficult experiences |
+
+**Joy Domain (Understanding Happiness)**
+| Category | Description |
+|----------|-------------|
+| `humor_wit` | How people use humor to connect and cope |
+| `joy_celebration` | What brings genuine happiness |
+| `excitement_passion` | What people get excited about |
+| `playfulness` | Lighthearted moments and fun |
+| `gratitude_appreciation` | What people are thankful for |
+
+**Connection Domain (Understanding Relationships)**
+| Category | Description |
+|----------|-------------|
+| `companionship` | Being with others, shared presence |
+| `friendship_dynamics` | How friendships work |
+| `romantic_love` | Romantic relationship patterns |
+| `family_bonds` | Family relationship dynamics |
+| `belonging_community` | Feeling part of something larger |
+| `loneliness_isolation` | Experiences of disconnection |
+
+**Growth Domain (Understanding Development)**
+| Category | Description |
+|----------|-------------|
+| `self_discovery` | Learning about oneself |
+| `growth_moments` | Turning points and breakthroughs |
+| `life_lessons` | Wisdom gained from experience |
+| `wisdom_perspective` | Insights about life, often from age/experience |
+| `meaning_purpose` | What gives life meaning |
+
+**Authenticity Domain (Understanding Humanness)**
+| Category | Description |
+|----------|-------------|
+| `real_quotes` | Actual words people use to describe experiences |
+| `contradictions_complexity` | When people hold conflicting views |
+| `messy_middle` | In-progress struggles, not neat resolutions |
+| `uncomfortable_truths` | Hard realities people acknowledge |
+| `beautiful_imperfection` | Embracing flaws and limitations |
 
 **2. The Prompt Instructs Claude**
 
