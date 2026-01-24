@@ -61,10 +61,14 @@ import {
   validateCoachResponse,
   validateAgainstTenets,
   detectExplicitRequests,
+} from './corePrincipleKernel';
+import {
   detectUserAlivenessSignals,
   getAlivenessDirectiveForLLM,
+  getAlivenessContextForLLM,
+  isAlivenessEnabled,
   UserAlivenessSignals,
-} from './corePrincipleKernel';
+} from './alivenessService';
 import {
   shouldCoachGlow,
   getNextCelebration,
@@ -1106,6 +1110,21 @@ CONVERSATION STYLE DIRECTIVES (for this specific response):
 ${controllerModifiers}`;
   }
 
+  // Add aliveness qualities context (what makes responses feel alive)
+  try {
+    const alivenessEnabled = await isAlivenessEnabled();
+    if (alivenessEnabled) {
+      const alivenessContext = await getAlivenessContextForLLM();
+      if (alivenessContext) {
+        systemPrompt = `${systemPrompt}
+
+${alivenessContext}`;
+      }
+    }
+  } catch (error) {
+    console.log('Could not get aliveness context:', error);
+  }
+
   // Detect user's aliveness signals and generate adaptive response directive
   // This analyzes HOW the user is communicating (pace, intensity, stress) and tells
   // Claude how to adapt its response style to bring balance
@@ -1115,7 +1134,7 @@ ${controllerModifiers}`;
       message,
       context.audioMetrics // Optional: from voice chat
     );
-    alivenessDirective = getAlivenessDirectiveForLLM(alivenessSignals);
+    alivenessDirective = await getAlivenessDirectiveForLLM(alivenessSignals);
     console.log('[Aliveness] Detected signals:', alivenessSignals);
   } catch (error) {
     console.log('Could not detect aliveness signals:', error);
