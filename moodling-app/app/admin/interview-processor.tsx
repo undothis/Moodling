@@ -47,6 +47,8 @@ import {
   markVideoProcessed,
   getQualityStats,
   updateQualityStats,
+  resetAllInterviewData,
+  clearProcessedVideos,
   CuratedChannel,
   ProcessingJob,
   ExtractedInsight,
@@ -883,6 +885,64 @@ export default function InterviewProcessorScreen() {
           More data = better results.
         </Text>
       </View>
+
+      {/* Reset Section */}
+      <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>Reset Options</Text>
+
+        <Pressable
+          style={[styles.dangerButton, { borderColor: '#FF6B6B' }]}
+          onPress={() => {
+            Alert.alert(
+              'Clear Processed Videos',
+              'This will allow all videos to be re-processed. Channels and insights will be preserved.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  onPress: async () => {
+                    await clearProcessedVideos();
+                    Alert.alert('Done', 'Processed videos list cleared');
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Text style={{ color: '#FF6B6B' }}>Clear Processed Videos (Re-harvest)</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.dangerButton, { borderColor: '#FF4444', marginTop: 12 }]}
+          onPress={() => {
+            Alert.alert(
+              'Reset All Data',
+              'This will clear ALL channels, insights, and stats. This cannot be undone!',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Reset Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    const result = await resetAllInterviewData();
+                    await loadData();
+                    Alert.alert(
+                      'Reset Complete',
+                      `Channels: ${result.channelsCleared ? '✓' : '✗'}\n` +
+                      `Queue: ${result.queueCleared ? '✓' : '✗'}\n` +
+                      `Insights: ${result.insightsCleared ? '✓' : '✗'}\n` +
+                      `Videos: ${result.videosCleared ? '✓' : '✗'}\n` +
+                      `Stats: ${result.statsCleared ? '✓' : '✗'}`
+                    );
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Text style={{ color: '#FF4444', fontWeight: '600' }}>⚠️ Reset All Data</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 
@@ -1088,6 +1148,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 6,
     paddingVertical: 8,
+    alignItems: 'center',
+  },
+  dangerButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
   modalOverlay: {

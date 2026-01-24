@@ -1648,6 +1648,80 @@ export async function updateQualityStats(updates: Partial<QualityStats>): Promis
   await AsyncStorage.setItem(STORAGE_KEYS.QUALITY_STATS, JSON.stringify(updated));
 }
 
+/**
+ * Reset all interview processor data
+ * Use this to start fresh with channels and insights
+ */
+export async function resetAllInterviewData(): Promise<{
+  channelsCleared: boolean;
+  queueCleared: boolean;
+  insightsCleared: boolean;
+  videosCleared: boolean;
+  statsCleared: boolean;
+}> {
+  const result = {
+    channelsCleared: false,
+    queueCleared: false,
+    insightsCleared: false,
+    videosCleared: false,
+    statsCleared: false,
+  };
+
+  try {
+    // Clear curated channels
+    await AsyncStorage.removeItem(STORAGE_KEYS.CURATED_CHANNELS);
+    result.channelsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear channels:', e);
+  }
+
+  try {
+    // Clear processing queue
+    await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSING_QUEUE);
+    result.queueCleared = true;
+  } catch (e) {
+    console.error('Failed to clear queue:', e);
+  }
+
+  try {
+    // Clear pending and approved insights
+    await AsyncStorage.removeItem(STORAGE_KEYS.PENDING_INSIGHTS);
+    await AsyncStorage.removeItem(STORAGE_KEYS.APPROVED_INSIGHTS);
+    await AsyncStorage.removeItem(STORAGE_KEYS.INSIGHT_HASHES);
+    result.insightsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear insights:', e);
+  }
+
+  try {
+    // Clear processed videos tracking
+    await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSED_VIDEOS);
+    result.videosCleared = true;
+  } catch (e) {
+    console.error('Failed to clear videos:', e);
+  }
+
+  try {
+    // Reset quality stats
+    await AsyncStorage.removeItem(STORAGE_KEYS.QUALITY_STATS);
+    result.statsCleared = true;
+  } catch (e) {
+    console.error('Failed to clear stats:', e);
+  }
+
+  console.log('[YouTubeProcessor] Reset complete:', result);
+  return result;
+}
+
+/**
+ * Clear only processed videos (allows re-processing)
+ * Use this to re-harvest from channels without removing the channels themselves
+ */
+export async function clearProcessedVideos(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEYS.PROCESSED_VIDEOS);
+  console.log('[YouTubeProcessor] Processed videos list cleared - all videos can be re-processed');
+}
+
 // ============================================
 // EXPORTS
 // ============================================
@@ -1700,6 +1774,10 @@ export default {
   // Quality stats
   getQualityStats,
   updateQualityStats,
+
+  // Reset functions
+  resetAllInterviewData,
+  clearProcessedVideos,
 
   // Constants
   EXTRACTION_CATEGORIES,
