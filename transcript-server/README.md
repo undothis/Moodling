@@ -66,6 +66,15 @@ curl -X POST http://localhost:3333/batch-transcripts \
   -d '{"videoIds": ["video1", "video2"]}'
 ```
 
+### POST /claude-extract
+Proxy Claude API calls for insight extraction (React Native can't call external APIs directly).
+
+```bash
+curl -X POST http://localhost:3333/claude-extract \
+  -H "Content-Type: application/json" \
+  -d '{"transcript": "...", "videoTitle": "...", "videoId": "...", "channelName": "...", "categories": [...], "apiKey": "sk-..."}'
+```
+
 ## Troubleshooting
 
 **"yt-dlp not found"?**
