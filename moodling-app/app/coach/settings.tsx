@@ -413,49 +413,67 @@ export default function CoachSettingsScreen() {
           <Text style={[styles.nameHint, { color: colors.textSecondary, marginBottom: 12 }]}>
             Choose which set of names feels right for you
           </Text>
-          <View style={[styles.segmentedControl, { backgroundColor: colors.border }]}>
-            {(['classic', 'alternative'] as NameStyle[]).map((style) => {
+          <View style={styles.nameStyleGrid}>
+            {(['classic', 'alternative', 'feminine', 'custom'] as NameStyle[]).map((style) => {
               const isSelected = settings.nameStyle === style;
               const styleInfo = NAME_STYLE_LABELS[style];
               return (
                 <Pressable
                   key={style}
                   style={[
-                    styles.segment,
-                    { flex: 1 },
-                    isSelected && { backgroundColor: colors.tint },
+                    styles.nameStyleOption,
+                    { backgroundColor: colors.border },
+                    isSelected && { backgroundColor: colors.tint, borderColor: colors.tint },
                   ]}
                   onPress={() => updateSettings({ nameStyle: style })}
                 >
                   <Text
                     style={[
-                      styles.segmentText,
+                      styles.nameStyleLabel,
                       { color: isSelected ? '#fff' : colors.text },
                     ]}
                   >
                     {styleInfo.label}
                   </Text>
+                  <Text
+                    style={[
+                      styles.nameStyleDesc,
+                      { color: isSelected ? 'rgba(255,255,255,0.8)' : colors.textSecondary },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {style === 'custom' ? 'Enter your own' : styleInfo.description.split(',').slice(0, 3).join(', ')}
+                  </Text>
                 </Pressable>
               );
             })}
           </View>
-          <View style={styles.namePreviewContainer}>
-            <Text style={[styles.namePreviewLabel, { color: colors.textSecondary }]}>
-              Preview:
-            </Text>
-            <View style={styles.namePreviewRow}>
-              {Object.entries(NAME_VARIANTS).slice(0, 4).map(([persona, names]) => (
-                <View key={persona} style={[styles.namePreviewChip, { backgroundColor: colors.border }]}>
-                  <Text style={[styles.namePreviewText, { color: colors.text }]}>
-                    {names[settings.nameStyle || 'classic']}
-                  </Text>
-                </View>
-              ))}
-              <Text style={[styles.namePreviewMore, { color: colors.textSecondary }]}>
-                +3 more
+          {settings.nameStyle !== 'custom' && (
+            <View style={styles.namePreviewContainer}>
+              <Text style={[styles.namePreviewLabel, { color: colors.textSecondary }]}>
+                Preview:
+              </Text>
+              <View style={styles.namePreviewRow}>
+                {Object.entries(NAME_VARIANTS).slice(0, 4).map(([persona, names]) => (
+                  <View key={persona} style={[styles.namePreviewChip, { backgroundColor: colors.border }]}>
+                    <Text style={[styles.namePreviewText, { color: colors.text }]}>
+                      {names[settings.nameStyle || 'classic']}
+                    </Text>
+                  </View>
+                ))}
+                <Text style={[styles.namePreviewMore, { color: colors.textSecondary }]}>
+                  +3 more
+                </Text>
+              </View>
+            </View>
+          )}
+          {settings.nameStyle === 'custom' && (
+            <View style={styles.namePreviewContainer}>
+              <Text style={[styles.namePreviewLabel, { color: colors.textSecondary }]}>
+                Use the "Custom Name" field above to set your guide's name
               </Text>
             </View>
-          </View>
+          )}
         </View>
 
         {/* Persona Selection */}
@@ -952,6 +970,26 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  nameStyleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  nameStyleOption: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  nameStyleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  nameStyleDesc: {
+    fontSize: 11,
   },
   toggleRow: {
     flexDirection: 'row',

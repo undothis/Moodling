@@ -151,6 +151,16 @@ How you relate to plans and organization.
 
 ## Adaptive Onboarding
 
+### UX Features
+
+**Question Progress Indicator:**
+- Shows "Question X of Y" at the top of the cognitive onboarding screen
+- Updates dynamically as the user progresses through questions
+- Helps users understand how far along they are in the process
+- Back navigation correctly decrements the question number
+
+### Adaptive Behavior
+
 The onboarding adapts to the user:
 
 **High self-awareness signals:**
@@ -286,3 +296,28 @@ A new scoring dimension:
 | `cognitiveProfileService.ts` | Profile types, onboarding, adaptations |
 | `conversationController.ts` | Uses profile to shape responses |
 | `claudeAPIService.ts` | Injects profile context into prompts |
+| `llamaIntegrationService.ts` | Injects profile context for Llama (same as Claude) |
+| `app/cognitive-onboarding/index.tsx` | Onboarding UI with question progress |
+
+## LLM Integration
+
+Both Claude and Llama receive cognitive profile context via `getCognitiveProfileContextForLLM()`:
+
+```typescript
+// From cognitiveProfileService.ts
+export async function getCognitiveProfileContextForLLM(): Promise<string> {
+  const profile = await getCognitiveProfile();
+  if (!profile) return '';
+
+  // Returns neurological adaptation instructions like:
+  // "NEVER use visualization" for aphantasia users
+  // "visual metaphors work very well" for hyperphantasia users
+}
+```
+
+**Critical for:**
+- Aphantasia users: Coach never suggests "picture this" or "visualize"
+- Hypophantasia users: Coach uses multi-sensory alternatives
+- Hyperphantasia users: Coach leverages rich visual metaphors
+
+This ensures the coach never suggests techniques that won't work for the user's neurology.

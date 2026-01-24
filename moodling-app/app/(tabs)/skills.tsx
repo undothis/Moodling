@@ -76,6 +76,28 @@ const DEDICATED_ROUTES: Record<string, string> = {
   radical_acceptance: '/skills/radical-acceptance',
   human_design: '/skills/human-design',
   astrology_basics: '/skills/astrology',
+  // Breathing skills -> Launch breathing orb directly
+  box_breathing: '/games/breathing-orb',
+  physiological_sigh: '/games/breathing-orb',
+  '478_breathing': '/games/breathing-orb',
+  // Audio skills -> Audio player
+  sleep_stories: '/skills/sleep-stories',
+  old_time_radio: '/skills/old-time-radio',
+  // Accountability skills
+  drink_pacing: '/skills/drink-pacing',
+  habit_timer: '/skills/habit-timer',
+  // Conversation practice skills
+  conversation_practice: '/skills/conversation-practice',
+  asking_for_raise: '/skills/conversation-practice?scenario=asking_for_raise',
+  setting_boundaries: '/skills/conversation-practice?scenario=setting_boundaries',
+  ending_relationship: '/skills/conversation-practice?scenario=ending_relationship',
+  confronting_friend: '/skills/conversation-practice?scenario=confronting_friend',
+  telling_parents: '/skills/conversation-practice?scenario=telling_parents',
+  job_interview: '/skills/conversation-practice?scenario=job_interview',
+  apologizing: '/skills/conversation-practice?scenario=apologizing',
+  asking_for_help: '/skills/conversation-practice?scenario=asking_for_help',
+  giving_feedback: '/skills/conversation-practice?scenario=giving_feedback',
+  nvc_practice: '/skills/conversation-practice?scenario=nvc_practice',
 };
 
 // Get route for any skill - dedicated or dynamic

@@ -806,6 +806,66 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
       },
     ],
   },
+  {
+    id: 'seeds',
+    emoji: '🌱',
+    title: 'Seeds Tab',
+    content: 'The Seeds tab is where you discover patterns about yourself. We call them "seeds" because insights grow stronger over time, just like plants.',
+    subsections: [
+      {
+        title: 'Finding the Seeds Tab',
+        content: 'Look for the 🌰 or 🌱 icon in the bottom navigation bar (between Skills and Insights). When new patterns are discovered, you\'ll see a glowing green badge.',
+      },
+      {
+        title: 'Growth Stages',
+        content: 'Each insight has a growth stage showing how established the pattern is:\n\n🌰 Sprouting — Just noticed this pattern, needs more data\n🌱 Growing — Pattern is becoming clearer\n🌿 Flourishing — Strong, consistent pattern\n🌳 Rooted — Core understanding about yourself',
+      },
+      {
+        title: 'Pattern Categories',
+        content: 'Seeds can discover many types of patterns:\n\n🌊 Cycles — Recurring patterns (weekly mood dips, monthly rhythms)\n🔗 Connections — How things relate (sleep → mood, food → energy)\n💪 Activities — What activities help or hurt\n🌙 Sleep — Sleep patterns affecting your wellbeing\n🌅 Time — When you feel best during the day\n🏔 Environment — How places affect your mood\n🌀 Momentum — Streak effects and habits\n🌧 Triggers — What triggers certain moods\n💫 Recovery — What helps you bounce back\n🦋 Body-Mind — Physical-emotional connections\n🌱 Growth — Your progress over time\n⚠️ Warnings — Early warning signs',
+      },
+      {
+        title: 'Responding to Seeds',
+        content: 'You can react to any insight:\n\n🌱 "This resonates" — The pattern feels accurate\n🤔 "I\'ll watch for this" — You\'re curious to observe\n🍂 "Not quite right" — Doesn\'t match your experience\n\nYour reactions help Mood Leaf learn what insights are meaningful to you.',
+      },
+      {
+        title: 'Data Sources',
+        content: 'Mood Leaf analyzes data from multiple sources:\n\n• Twigs (Mood Logs) — Mood ratings, notes, tags\n• Coach Conversations — Topics discussed, themes\n• Calendar Events — Meeting frequency, event types\n• Health Data — Sleep, steps, heart rate\n• Weather — Temperature, conditions, sunlight\n\nAll analysis runs locally on your device.',
+      },
+      {
+        title: 'Your Guide Knows Your Seeds',
+        content: 'Your AI guide is aware of your discovered patterns and may mention relevant insights in conversation, celebrate positive patterns you\'ve developed, or reference your data when offering suggestions.',
+      },
+    ],
+  },
+  {
+    id: 'accountability',
+    emoji: '📋',
+    title: 'AI Accountability Features',
+    content: 'Mood Leaf\'s AI can help hold you accountable by automatically creating trackers, reminders, and alerts based on your conversations. The system is supportive, not preachy—it adapts to your comfort level.',
+    subsections: [
+      {
+        title: 'How It Works',
+        content: 'When you mention goals or habits in conversation, the AI can offer to:\n\n• Create Twigs (Quick Logs) — Track habits you want to build or break\n• Create Calendar Events — Set reminders in your phone\'s calendar\n• Create Contacts — Save people to your address book\n• Set Limit Alerts — Get notified when approaching/exceeding limits\n• Drink Pacing — Help pace drinking at social events',
+      },
+      {
+        title: 'Setting Limits',
+        content: 'Example: "I want to limit my coffee to 4 cups a day"\n\nThe AI can create a Coffee tracker with a limit of 4 per day and alert you when approaching your limit.\n\nStatus alerts:\n• Approaching — "Heads up: You\'re at 3/4 coffees today"\n• Reached — "You\'ve reached your coffee limit. Nice awareness!"\n• Exceeded — "That\'s 5 coffees today - 1 over your goal. No judgment, just data."',
+      },
+      {
+        title: 'Drink Pacing',
+        content: 'A harm reduction tool for pacing alcohol at social events.\n\nHow to use:\n1. Open Skills → Drink Pacing or say "I want to pace my drinking tonight"\n2. Set your interval (how often to be reminded)\n3. Set your max drinks (optional)\n4. Name your event (optional)\n5. Tap "Start Pacing"\n\nYour phone vibrates when it\'s time for your next drink. Tap "Log a Drink" each time you have one.',
+      },
+      {
+        title: 'Adaptive Accountability',
+        content: 'The system adapts to your preferences:\n\n• Off — Coach never mentions limits\n• Gentle — Only mentions if you significantly exceed limits\n• Moderate — Normal check-ins when approaching limits\n• Proactive — Active check-ins and progress updates\n\nChange on-the-fly:\n• "Stop reminding me about coffee" → Pauses coffee reminders\n• "Don\'t hold me accountable today" → Pauses all for today\n• "Be more strict with me" → Increases intensity',
+      },
+      {
+        title: 'Privacy',
+        content: 'All accountability data stays on your device:\n• Twigs and entries stored locally\n• Calendar events go to YOUR calendar\n• Contacts go to YOUR address book\n• No data sent to external servers',
+      },
+    ],
+  },
 ];
 
 // ============================================

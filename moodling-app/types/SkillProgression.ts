@@ -37,7 +37,8 @@ export type SkillCategory =
   | 'games'
   | 'crisis'
   | 'body'
-  | 'discovery';
+  | 'discovery'
+  | 'conversation_practice';
 
 export interface Skill {
   id: string;
@@ -539,6 +540,24 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isPremium: true,
     isUnlocked: false,
     previewText: 'Track and protect your emotional energy',
+  },
+  {
+    id: 'drink_pacing',
+    name: 'Drink Pacing Timer',
+    description: 'Harm reduction tool - set intervals and get reminders to pace yourself',
+    category: 'self_care',
+    emoji: '🍷',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'habit_timer',
+    name: 'Habit Timer',
+    description: 'Custom pacing timers for any habit - coffee, snacks, medication, breaks',
+    category: 'self_care',
+    emoji: '⏱️',
+    isPremium: false,
+    isUnlocked: true,
   },
 
   // ==================== RELATIONSHIPS ====================
@@ -1115,6 +1134,113 @@ export const AVAILABLE_SKILLS: Skill[] = [
     isUnlocked: true,
   },
 
+  // ==================== CONVERSATION PRACTICE ====================
+  {
+    id: 'conversation_practice',
+    name: 'Practice Conversations',
+    description: 'Role-play difficult conversations with AI coaching and feedback',
+    category: 'conversation_practice',
+    emoji: '🎭',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'asking_for_raise',
+    name: 'Asking for a Raise',
+    description: 'Practice negotiating your salary with confidence',
+    category: 'conversation_practice',
+    emoji: '💰',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'setting_boundaries',
+    name: 'Setting Boundaries',
+    description: 'Practice saying no and establishing healthy limits',
+    category: 'conversation_practice',
+    emoji: '🚧',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'ending_relationship',
+    name: 'Ending a Relationship',
+    description: 'Practice having a compassionate breakup conversation',
+    category: 'conversation_practice',
+    emoji: '💔',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'compassion',
+    requiredLevel: 2,
+  },
+  {
+    id: 'confronting_friend',
+    name: 'Confronting a Friend',
+    description: 'Practice addressing conflict with someone you care about',
+    category: 'conversation_practice',
+    emoji: '🤝',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'telling_parents',
+    name: 'Telling Family News',
+    description: 'Practice sharing difficult or big news with family',
+    category: 'conversation_practice',
+    emoji: '👨‍👩‍👧',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'job_interview',
+    name: 'Job Interview Prep',
+    description: 'Practice common interview questions and scenarios',
+    category: 'conversation_practice',
+    emoji: '💼',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'apologizing',
+    name: 'Making an Apology',
+    description: 'Practice delivering a genuine, accountable apology',
+    category: 'conversation_practice',
+    emoji: '🙏',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'asking_for_help',
+    name: 'Asking for Help',
+    description: 'Practice reaching out when you need support',
+    category: 'conversation_practice',
+    emoji: '🆘',
+    isPremium: false,
+    isUnlocked: true,
+  },
+  {
+    id: 'giving_feedback',
+    name: 'Giving Feedback',
+    description: 'Practice delivering constructive criticism kindly',
+    category: 'conversation_practice',
+    emoji: '📝',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'wisdom',
+    requiredLevel: 2,
+  },
+  {
+    id: 'nvc_practice',
+    name: 'Nonviolent Communication',
+    description: 'Practice Marshall Rosenberg\'s NVC - observations, feelings, needs, requests',
+    category: 'conversation_practice',
+    emoji: '🕊️',
+    isPremium: false,
+    isUnlocked: false,
+    requiredAttribute: 'compassion',
+    requiredLevel: 3,
+  },
+
   // ==================== SELF-DISCOVERY ====================
   {
     id: 'human_design',
@@ -1310,4 +1436,5 @@ export const SKILL_CATEGORIES: Record<SkillCategory, { name: string; emoji: stri
   crisis: { name: 'Crisis Tools', emoji: '🆘', color: '#EF4444' },
   body: { name: 'Body-Based', emoji: '🫀', color: '#EC4899' },
   discovery: { name: 'Self-Discovery', emoji: '🔮', color: '#A855F7' },
+  conversation_practice: { name: 'Practice Talks', emoji: '🎭', color: '#F59E0B' },
 };

@@ -700,6 +700,95 @@ Phase 5: Self-improving loop
 
 ---
 
+## Frequently Asked Questions
+
+### "Do I need to install Llama to start training?"
+
+**No.** The current training workflow does NOT require Llama to be installed.
+
+Here's how the system works:
+
+1. **Interview Processor** uses **Claude API** (cloud-based) to extract insights from YouTube videos
+2. **Training Admin** stores insights locally on your device
+3. **Version Control** manages training data versions
+
+**Llama is only needed for the FUTURE phase** when you want to run a local AI model on-device. That phase is not yet implemented.
+
+**Current workflow:**
+```
+YouTube Videos → Claude API extracts insights → Stored locally → Used in prompts
+```
+
+**Future workflow (not implemented yet):**
+```
+Stored insights → Export to JSON → Fine-tune Llama with LoRA → Run local model
+```
+
+### "Where is the Version Control UI?"
+
+Go to: **Settings → Developer Tools → Version Control**
+
+If you don't see it, make sure you've pulled the latest code and rebuilt the app:
+```bash
+git pull origin <your-branch>
+npx expo start --clear
+```
+
+### "What is the Seeds tab?"
+
+The **Seeds tab** is where users see pattern insights discovered from their data. Insights are presented as "seeds" that grow over time:
+
+| Stage | Icon | Meaning |
+|-------|------|---------|
+| Sprouting | 🌰 | Just noticed, needs more data |
+| Growing | 🌱 | Pattern becoming clearer |
+| Flourishing | 🌿 | Strong, consistent pattern |
+| Rooted | 🌳 | Core understanding |
+
+**Where**: Main tab bar (between Skills and Insights)
+
+### "How does the app discover insights?"
+
+The app analyzes multiple data sources to find patterns:
+
+1. **Twigs/Quick Logs** - Mood entries and notes
+2. **Coach Conversations** - Topics and themes discussed
+3. **Calendar Events** - Schedule patterns (with permission)
+4. **Contacts** - Social interaction patterns (with permission)
+5. **Location** - Movement patterns (with permission)
+6. **Screen Time** - Digital habits (with permission)
+7. **Health Data** - Sleep, steps, heart rate (with permission)
+8. **Weather** - Environmental correlations
+
+All analysis runs locally by default (no API needed).
+
+### "What's the difference between Seeds and Insights tabs?"
+
+| Seeds Tab | Insights Tab |
+|-----------|--------------|
+| Nature-based UI with growth metaphor | Charts and data visualizations |
+| Pattern discoveries about YOU | Statistics and trends |
+| Reactions (🌱 🤔 🍂) to mark relevance | Graphs of mood over time |
+| Coach can reference these naturally | Reference data for self-analysis |
+
+Both help users understand themselves - Seeds focuses on discoveries, Insights focuses on data.
+
+### "How do I add training insights vs. user insights?"
+
+**Training Insights** (for AI learning):
+- Added via Training Admin
+- Shape how the AI responds to ALL users
+- Example: "Users with anxiety prefer body-based techniques"
+
+**User Insights** (Seeds):
+- Discovered automatically from user data
+- Personal patterns for ONE user
+- Example: "You sleep better after evening walks"
+
+They're separate systems with different purposes.
+
+---
+
 ## Troubleshooting
 
 ### "Buttons don't work"

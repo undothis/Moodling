@@ -63,6 +63,10 @@ import {
   TTSSettings,
   VoiceGender,
 } from '@/services/textToSpeechService';
+import {
+  createTestAchievement,
+  clearAllAchievements,
+} from '@/services/achievementNotificationService';
 
 /**
  * Settings Tab - Configuration & Privacy
@@ -121,6 +125,11 @@ export default function SettingsScreen() {
   const [ttsApiKeyInput, setTtsApiKeyInput] = useState('');
   const [isTesting, setIsTesting] = useState(false);
 
+  // YouTube API state (for Interview Processor)
+  const [youtubeApiKeyConfigured, setYoutubeApiKeyConfigured] = useState(false);
+  const [showYoutubeApiKeyInput, setShowYoutubeApiKeyInput] = useState(false);
+  const [youtubeApiKeyInput, setYoutubeApiKeyInput] = useState('');
+
   // Load settings on mount
   useEffect(() => {
     loadSettings();
@@ -168,6 +177,10 @@ export default function SettingsScreen() {
       setTtsSettings(loadedTtsSettings);
       const hasTtsKey = await hasTTSAPIKey();
       setTtsApiKeyConfigured(hasTtsKey);
+
+      // Load YouTube API key status
+      const youtubeKey = await AsyncStorage.getItem('youtube_api_key');
+      setYoutubeApiKeyConfigured(!!youtubeKey);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -384,6 +397,46 @@ export default function SettingsScreen() {
       console.error('TTS test error:', error);
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  // Handle YouTube API key save
+  const handleSaveYoutubeApiKey = async () => {
+    if (!youtubeApiKeyInput.trim()) return;
+
+    try {
+      await AsyncStorage.setItem('youtube_api_key', youtubeApiKeyInput.trim());
+      setYoutubeApiKeyConfigured(true);
+      setShowYoutubeApiKeyInput(false);
+      setYoutubeApiKeyInput('');
+    } catch (error) {
+      console.error('Failed to save YouTube API key:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to save YouTube API key');
+      } else {
+        Alert.alert('Error', 'Failed to save YouTube API key');
+      }
+    }
+  };
+
+  // Handle YouTube API key removal
+  const handleRemoveYoutubeApiKey = async () => {
+    const confirm = Platform.OS === 'web'
+      ? window.confirm('Remove your YouTube API key?')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Remove YouTube API Key',
+            'Remove your YouTube API key? Video stats enrichment will be disabled.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Remove', style: 'destructive', onPress: () => resolve(true) },
+            ]
+          );
+        });
+
+    if (confirm) {
+      await AsyncStorage.removeItem('youtube_api_key');
+      setYoutubeApiKeyConfigured(false);
     }
   };
 
@@ -1466,6 +1519,123 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
+        {/* YouTube API Key (optional for Interview Processor) */}
+        <Text style={[styles.apiDescription, { color: colors.textSecondary }]}>
+          Optional: Add YouTube Data API key for enhanced video sampling (popularity, engagement stats).
+        </Text>
+
+        {youtubeApiKeyConfigured ? (
+          <View style={styles.apiConfigured}>
+            <View style={styles.apiStatusRow}>
+              <Text style={styles.apiStatusIcon}>✓</Text>
+              <Text style={[styles.apiStatusText, { color: colors.text }]}>
+                YouTube API key configured
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.removeApiButton, { borderColor: colors.error }]}
+              onPress={handleRemoveYoutubeApiKey}
+            >
+              <Text style={[styles.removeApiButtonText, { color: colors.error }]}>
+                Remove YouTube API key
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.apiNotConfigured}>
+            {!showYoutubeApiKeyInput ? (
+              <TouchableOpacity
+                style={[styles.addApiButton, { backgroundColor: colors.tint }]}
+                onPress={() => setShowYoutubeApiKeyInput(true)}
+              >
+                <Text style={styles.addApiButtonText}>
+                  Add YouTube API Key (Optional)
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.apiInputContainer}>
+                <TextInput
+                  style={[styles.apiInput, {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  }]}
+                  placeholder="AIza..."
+                  placeholderTextColor={colors.textMuted}
+                  value={youtubeApiKeyInput}
+                  onChangeText={setYoutubeApiKeyInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                />
+                <View style={styles.apiInputButtons}>
+                  <TouchableOpacity
+                    style={[styles.apiSaveButton, { backgroundColor: colors.tint }]}
+                    onPress={handleSaveYoutubeApiKey}
+                    disabled={!youtubeApiKeyInput.trim()}
+                  >
+                    <Text style={styles.apiSaveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.apiCancelButton}
+                    onPress={() => {
+                      setShowYoutubeApiKeyInput(false);
+                      setYoutubeApiKeyInput('');
+                    }}
+                  >
+                    <Text style={[styles.apiCancelButtonText, { color: colors.textMuted }]}>
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.apiHint, { color: colors.textMuted }]}>
+              Get your API key from{' '}
+              <Text style={{ color: colors.tint }}>console.cloud.google.com</Text>
+              {'\n'}Enable "YouTube Data API v3" in your project
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.faqDivider} />
+
+        {/* Test Achievement Notification */}
+        <View style={styles.devTestSection}>
+          <Text style={[styles.devTestLabel, { color: colors.textSecondary }]}>
+            Test Notifications
+          </Text>
+          <View style={styles.devTestButtons}>
+            <TouchableOpacity
+              style={[styles.devTestButton, { backgroundColor: colors.tint }]}
+              onPress={async () => {
+                await createTestAchievement();
+                if (Platform.OS === 'web') {
+                  window.alert('Test achievement created! Check the Coach tab for a glow.');
+                } else {
+                  Alert.alert('Test Achievement Created', 'Check the Coach tab for a golden glow notification!');
+                }
+              }}
+            >
+              <Text style={styles.devTestButtonText}>Test Achievement Glow</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.devTestButton, { backgroundColor: colors.border }]}
+              onPress={async () => {
+                await clearAllAchievements();
+                if (Platform.OS === 'web') {
+                  window.alert('All achievements cleared.');
+                } else {
+                  Alert.alert('Cleared', 'All test achievements have been cleared.');
+                }
+              }}
+            >
+              <Text style={[styles.devTestButtonText, { color: colors.text }]}>Clear Achievements</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <TouchableOpacity
           style={[styles.faqItem, { backgroundColor: colors.background }]}
           onPress={() => router.push('/simulator')}
@@ -1500,6 +1670,22 @@ export default function SettingsScreen() {
 
         <TouchableOpacity
           style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/coach-diagnostics')}
+        >
+          <Text style={styles.faqEmoji}>🔧</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Coach Diagnostics
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Test all Coach services and contexts
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
           onPress={() => router.push('/admin/interview-processor')}
         >
           <Text style={styles.faqEmoji}>🎬</Text>
@@ -1509,6 +1695,22 @@ export default function SettingsScreen() {
             </Text>
             <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
               Harvest insights from YouTube channels
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/version-control')}
+        >
+          <Text style={styles.faqEmoji}>🔄</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              Version Control
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Model versions, rollback, deployment gates
             </Text>
           </View>
           <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
@@ -2032,6 +2234,34 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
     marginTop: 4,
+  },
+  devTestSection: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 10,
+  },
+  devTestLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  devTestButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  devTestButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  devTestButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fff',
   },
   // TTS styles
   ttsSettingRow: {

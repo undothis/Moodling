@@ -97,12 +97,14 @@ export default function RootLayout() {
     const inGuide = segments[0] === 'guide';
     const inCoach = segments[0] === 'coach';
     const inTabs = segments[0] === '(tabs)';
+    const inQuickLogs = segments[0] === 'quick-logs';
+    const inSettings = segments[0] === 'settings';
+    const inAdmin = segments[0] === 'admin';
 
-    // Only redirect TO onboarding if needed and not already in:
-    // - Onboarding screens (onboarding, cognitive-onboarding)
-    // - Post-onboarding screens (guide, coach)
-    // - Main app tabs (once user reaches tabs, never redirect back)
-    if (needsOnboarding && !inOnboarding && !inCognitiveOnboarding && !inGuide && !inCoach && !inTabs) {
+    // Only redirect TO onboarding if needed and not already in exempt routes
+    // Exempt routes: onboarding screens, post-onboarding screens, main app tabs, and utility screens
+    const isExempt = inOnboarding || inCognitiveOnboarding || inGuide || inCoach || inTabs || inQuickLogs || inSettings || inAdmin;
+    if (needsOnboarding && !isExempt) {
       router.replace('/onboarding');
     }
   }, [isLoading, needsOnboarding, segments]);

@@ -18,6 +18,14 @@ import { getLifeContextForClaude } from './lifeContextService';
 import { getHealthContextForClaude, isHealthKitEnabled } from './healthKitService';
 import { getCorrelationSummaryForClaude } from './healthInsightService';
 import { getLogsContextForClaude, getDetailedLogsContextForClaude } from './quickLogsService';
+import {
+  getAccountabilityContextForCoach,
+  shouldMentionLimits,
+  getAccountabilityPreferencesContext,
+} from './aiAccountabilityService';
+import { getDrinkPacingContextForCoach } from './drinkPacingService';
+import { getHabitContextForCoach } from './habitTimerService';
+import { getSkillRecommendationsForCoach } from './skillRecommendationService';
 import { psychAnalysisService } from './psychAnalysisService';
 import {
   getCoachSettings,
@@ -57,6 +65,12 @@ import {
   getAlivenessDirectiveForLLM,
   UserAlivenessSignals,
 } from './corePrincipleKernel';
+import {
+  shouldCoachGlow,
+  getNextCelebration,
+  markAsCelebrated,
+  generateCelebrationMessage,
+} from './achievementNotificationService';
 
 // Storage keys
 const API_KEY_STORAGE = 'moodling_claude_api_key';
@@ -149,31 +163,15 @@ interface ClaudeAPIResponse {
   };
 }
 
-/**
- * Crisis detection keywords
- * If detected, skip Claude and provide crisis resources
- */
-const CRISIS_KEYWORDS = [
-  'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
-  'hurt myself', 'self-harm', 'self harm', 'cutting myself',
-  'don\'t want to live', 'better off dead', 'no reason to live',
-];
-
-/**
- * Crisis response - always provide resources
- */
-const CRISIS_RESPONSE: AIResponse = {
-  text: `I hear that you're going through something really difficult. Your safety matters.
-
-If you're in crisis, please reach out:
-• **988 Suicide & Crisis Lifeline**: Call or text 988
-• **Crisis Text Line**: Text HOME to 741741
-• **International Association for Suicide Prevention**: https://www.iasp.info/resources/Crisis_Centres/
-
-You don't have to face this alone. A trained counselor can help right now.`,
-  source: 'crisis',
-  cost: 0,
-};
+// Safeguard service handles all safety detection
+import { checkSafeguards, SafeguardResult } from './safeguardService';
+import {
+  getCoachStylePromptSection,
+  getPersonaStylePromptSection,
+  validateCoachStyle,
+  cleanStyleViolations,
+} from './coachStyleService';
+import type { CoachPersona } from './coachPersonalityService';
 
 /**
  * Build the Mood Leaf system prompt
@@ -182,7 +180,8 @@ You don't have to face this alone. A trained counselor can help right now.`,
 function buildSystemPrompt(
   userContext: string,
   toneInstruction: string,
-  personalityPrompt?: string
+  personalityPrompt?: string,
+  activePersona?: CoachPersona
 ): string {
   // Use coach personality if available, otherwise default Mood Leaf identity
   const identity = personalityPrompt
@@ -286,6 +285,52 @@ HEALTH DATA AWARENESS:
 - If sleep was poor, gently acknowledge it might affect how they're feeling
 - If activity is low, you might gently suggest movement as self-care (not prescription)
 
+ACCOUNTABILITY AWARENESS (Twigs with Limits):
+- If accountability data shows limits, be aware of the user's goals without being preachy
+- If they've exceeded a limit: Be supportive, not judgmental. "I notice you're over your coffee limit today - no judgment, just data. How are you feeling?"
+- If they're approaching a limit: Gently note it. "You're at 3/4 coffees - just a heads up."
+- If they ask about their limits/habits, reference the specific data
+- Help them reflect on patterns: "You've hit your coffee limit 3 days this week - what's going on?"
+- NEVER shame or guilt-trip - accountability is about awareness, not punishment
+- Celebrate awareness: "I like that you're tracking this - awareness is the first step"
+- If they seem stressed about exceeding: "Tomorrow's a fresh start. One day over your limit doesn't undo your progress."
+
+ADAPTING ACCOUNTABILITY TO USER COMFORT:
+- If user says things like "stop reminding me", "don't hold me accountable", "leave me alone about this":
+  * Acknowledge their request warmly: "Got it! I'll back off on the accountability for now."
+  * Let them know they can change it: "Just let me know when you want me to start checking in again."
+  * ACTUALLY reduce accountability mentions in subsequent responses
+
+- If user says "pause accountability for today" or "I don't need this today":
+  * Respond: "No problem - I'll pause the reminders for today. Tomorrow's a fresh start."
+  * Don't mention any limits for the rest of the conversation
+
+- If user says "be more/less strict" or "hold me more/less accountable":
+  * Acknowledge: "I hear you - I'll adjust my approach."
+  * Adapt your accountability mentions accordingly
+
+- IMPORTANT: Periodically (every few conversations where accountability comes up), ask:
+  * "How's the accountability feeling? Too much? Too little? Just right?"
+  * Only ask if it feels natural in the conversation, not forced
+
+- User preferences about accountability intensity are included in the context. RESPECT THEM.
+  * 'off' = Never mention limits
+  * 'gentle' = Only mention significant issues, very softly
+  * 'moderate' = Normal accountability
+  * 'proactive' = User wants active check-ins
+
+SKILLS & TOOLS AWARENESS:
+- The app has a Skills toolkit with breathing exercises, grounding techniques, conversation practice, drink pacing, habit timers, etc.
+- If skill recommendations appear in your context, these are tools that might help with what the user is discussing
+- TIMING IS CRITICAL: Be a listener FIRST. Let them feel heard before suggesting anything.
+- Only mention skills after you've validated their feelings and they seem receptive to suggestions
+- Frame skills as options, not prescriptions: "When you're ready, there's something in the Skills section called X that might help..."
+- If they're just venting, don't suggest skills at all. Sometimes people just need to be heard.
+- If they explicitly ask for help or say "what can I do?", that's a green light to suggest a skill
+- Conversation practice skills let them roleplay hard conversations before having them in real life
+- Drink pacing helps them pace drinking at social events - it's harm reduction, not judgment
+- Habit timer helps build or track habits with customizable reminders
+
 CORRELATION INSIGHTS:
 - Help users connect the dots: journal entries + mood + health metrics
 - Point out patterns: "You've mentioned feeling better on days you walk - your body might be telling you something"
@@ -339,7 +384,8 @@ RESPONSE GUIDELINES:
 - One question at most per response
 - Focus on their immediate experience, not hypotheticals
 - Avoid advice that starts with "You should" - prefer "Some people find it helps to..." or "What if you tried..."
-- If they share something positive, celebrate it genuinely without overdoing it`;
+- If they share something positive, celebrate it genuinely without overdoing it
+${activePersona ? getPersonaStylePromptSection(activePersona) : getCoachStylePromptSection()}`;
 }
 
 /**
@@ -411,13 +457,7 @@ function buildMessages(
   return messages;
 }
 
-/**
- * Check if message contains crisis keywords
- */
-function detectCrisis(message: string): boolean {
-  const lower = message.toLowerCase();
-  return CRISIS_KEYWORDS.some(keyword => lower.includes(keyword));
-}
+// Crisis and violence detection now handled by safeguardService
 
 /**
  * Calculate cost from token usage
@@ -697,27 +737,60 @@ export async function sendMessage(
   message: string,
   context: ConversationContext
 ): Promise<AIResponse> {
-  // Check for crisis first
-  if (detectCrisis(message)) {
-    return CRISIS_RESPONSE;
-  }
+  // Top-level try/catch to catch ANY error and provide meaningful feedback
+  try {
+    console.log('[ClaudeAPI] sendMessage called with message length:', message?.length || 0);
 
-  // Get API key
-  const apiKey = await getAPIKey();
-  if (!apiKey) {
-    return {
-      text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
-      source: 'fallback',
-      cost: 0,
-    };
-  }
+    // Check for safety concerns (self-harm, violence, etc.)
+    let safeguardCheck;
+    try {
+      safeguardCheck = checkSafeguards(message);
+    } catch (safeguardError) {
+      console.error('[ClaudeAPI] Safeguard check failed:', safeguardError);
+      safeguardCheck = { triggered: false };
+    }
 
-  // Get tone preferences
-  const tonePrefs = context.toneStyles ?? (await getTonePreferences()).selectedStyles;
-  const toneInstruction = getToneInstruction(tonePrefs);
+    if (safeguardCheck.triggered && safeguardCheck.response) {
+      return {
+        text: safeguardCheck.response.text,
+        source: 'crisis',
+        cost: 0,
+      };
+    }
+
+    // Get API key
+    const apiKey = await getAPIKey();
+    if (!apiKey) {
+      console.log('[ClaudeAPI] No API key found');
+      return {
+        text: "I'd like to chat with you, but I need an API key to be set up first. You can add one in Settings.",
+        source: 'fallback',
+        cost: 0,
+      };
+    }
+    console.log('[ClaudeAPI] API key found, length:', apiKey.length);
+
+  // Get tone preferences (with fallback to prevent API failure)
+  let tonePrefs = context.toneStyles;
+  if (!tonePrefs) {
+    try {
+      const prefs = await getTonePreferences();
+      tonePrefs = prefs.selectedStyles;
+    } catch (error) {
+      console.log('Could not load tone preferences:', error);
+      tonePrefs = ['balanced']; // Default fallback
+    }
+  }
+  let toneInstruction = 'Be warm, supportive, and empathetic';
+  try {
+    toneInstruction = getToneInstruction(tonePrefs);
+  } catch (toneError) {
+    console.log('[ClaudeAPI] Tone instruction failed, using default:', toneError);
+  }
 
   // Get coach personality settings
   let personalityPrompt: string | undefined;
+  let activePersona: CoachPersona | undefined;
   try {
     const coachSettings = await getCoachSettings();
 
@@ -725,7 +798,7 @@ export async function sendMessage(
     const timeOfDay = getCurrentTimeOfDay();
     const detectedMood = detectMoodFromMessage(message);
 
-    const activePersona = getAdaptivePersona(coachSettings, {
+    activePersona = getAdaptivePersona(coachSettings, {
       timeOfDay,
       detectedMood,
       userMessage: message,
@@ -743,9 +816,28 @@ export async function sendMessage(
 
   // Build context and prompt
   // Combine: rich user context (Unit 18B) + lifetime context + health context + conversation context
-  const conversationContext = buildConversationContext(context);
-  const richContext = await getContextForClaude();
-  const lifeContext = await getLifeContextForClaude();
+  let conversationContext = 'No additional context available.';
+  try {
+    conversationContext = buildConversationContext(context);
+  } catch (contextError) {
+    console.log('[ClaudeAPI] Build conversation context failed:', contextError);
+  }
+
+  // Get rich user context (must be wrapped in try/catch to prevent full API failure)
+  let richContext = '';
+  try {
+    richContext = await getContextForClaude();
+  } catch (error) {
+    console.log('Could not load rich user context:', error);
+  }
+
+  // Get life context (must be wrapped in try/catch to prevent full API failure)
+  let lifeContext = '';
+  try {
+    lifeContext = await getLifeContextForClaude();
+  } catch (error) {
+    console.log('Could not load life context:', error);
+  }
 
   // Get health context if HealthKit is enabled
   let healthContext = '';
@@ -826,8 +918,14 @@ export async function sendMessage(
   }
 
   // Track this user message in session memory
-  const userMood = detectUserMood(message);
-  const userEnergy = detectUserEnergy(message);
+  let userMood = 'neutral';
+  let userEnergy = 'medium';
+  try {
+    userMood = detectUserMood(message);
+    userEnergy = detectUserEnergy(message);
+  } catch (moodError) {
+    console.log('[ClaudeAPI] Mood/energy detection failed:', moodError);
+  }
   try {
     await addMessageToSession('user', message, userMood, userEnergy);
     const topics = extractTopics(message);
@@ -854,12 +952,96 @@ export async function sendMessage(
     console.log('Could not load social connection context:', error);
   }
 
+  // Get user name for personalized address
+  let userNameContext = '';
+  let userName = '';
+  try {
+    const coachSettings = await getCoachSettings();
+    if (coachSettings.userName && coachSettings.userName.trim()) {
+      userName = coachSettings.userName.trim();
+      userNameContext = `USER'S NAME: ${userName} (use this name naturally in conversation when appropriate, but don't overuse it)`;
+    }
+  } catch (error) {
+    console.log('Could not load user name:', error);
+  }
+
+  // Check for achievements to celebrate
+  let achievementContext = '';
+  let pendingAchievement: any = null;
+  try {
+    const shouldGlow = await shouldCoachGlow();
+    if (shouldGlow) {
+      const celebration = await getNextCelebration();
+      if (celebration) {
+        pendingAchievement = celebration;
+        const celebrationMsg = generateCelebrationMessage(celebration);
+        achievementContext = `CELEBRATION OPPORTUNITY: You have something exciting to share with the user!
+${celebrationMsg}
+
+When appropriate in your response (ideally near the beginning), warmly share this with the user. Make it feel natural, not forced. Example: "Oh, before we dive in - ${celebration.title.toLowerCase()}! ${celebration.description}"`;
+      }
+    }
+  } catch (error) {
+    console.log('Could not load achievement context:', error);
+  }
+
+  // Get accountability context (limits, tracked items, AI-created twigs, preferences)
+  let accountabilityContext = '';
+  let shouldMentionAccountability = false;
+  try {
+    const [baseContext, prefsContext, limitCheck, drinkPacingContext, habitContext] = await Promise.all([
+      getAccountabilityContextForCoach(),
+      getAccountabilityPreferencesContext(),
+      shouldMentionLimits(),
+      getDrinkPacingContextForCoach(),
+      getHabitContextForCoach(),
+    ]);
+
+    accountabilityContext = `${prefsContext}\n\n${baseContext}`;
+    shouldMentionAccountability = limitCheck.shouldMention;
+
+    if (shouldMentionAccountability && limitCheck.context) {
+      accountabilityContext = `${accountabilityContext}\n\nCRITICAL ACCOUNTABILITY NOTE:\n${limitCheck.context}`;
+    }
+
+    // Add drink pacing context if active
+    if (drinkPacingContext) {
+      accountabilityContext = `${accountabilityContext}\n\n${drinkPacingContext}`;
+    }
+
+    // Add habit timer context if any active habits
+    if (habitContext) {
+      accountabilityContext = `${accountabilityContext}\n\n${habitContext}`;
+    }
+  } catch (error) {
+    console.log('Could not load accountability context:', error);
+  }
+
+  // Get skill recommendations based on user's message
+  let skillRecommendationsContext = '';
+  try {
+    // Determine time of day
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+
+    skillRecommendationsContext = getSkillRecommendationsForCoach(
+      message,
+      context.mood,
+      timeOfDay
+    );
+  } catch (error) {
+    console.log('Could not load skill recommendations:', error);
+  }
+
   // Assemble full context with ALL data sources:
-  // Order: cognitive profile (how they think), social connection health, memory context,
-  // lifetime overview, psych profile, chronotype/travel, calendar, health + correlations,
-  // detailed tracking logs, lifestyle factors, exposure progress, recent journals,
+  // Order: user name (for personalization), achievements to celebrate, cognitive profile,
+  // social connection health, memory context, lifetime overview, psych profile,
+  // chronotype/travel, calendar, health + correlations, detailed tracking logs,
+  // lifestyle factors, exposure progress, recent journals, accountability (limits),
   // user preferences, then current conversation
   const contextParts = [
+    userNameContext,     // User's name for personalized address
+    achievementContext,  // Achievements to celebrate (insights, skill completions)
     cognitiveProfileContext, // How this person thinks/learns (from onboarding)
     socialConnectionContext, // Social connection health (isolation risk, connection quality)
     memoryContext,       // Tiered memory (what we know about this person)
@@ -873,6 +1055,8 @@ export async function sendMessage(
     lifestyleContext,    // Lifestyle factors (caffeine, alcohol, outdoor, social time)
     exposureContext,     // Social exposure ladder progress
     journalContext,      // Recent journal entries (what user actually wrote)
+    accountabilityContext, // Accountability limits and tracking
+    skillRecommendationsContext, // Skills that might help with current situation
     richContext,         // User preferences and mood trends
     conversationContext  // Current conversation context
   ].filter(Boolean);
@@ -906,7 +1090,7 @@ export async function sendMessage(
   }
 
   // Build system prompt with coach personality, skill modes, and controller directives
-  const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt);
+  const baseSystemPrompt = buildSystemPrompt(fullContext, toneInstruction, personalityPrompt, activePersona);
   let systemPrompt = baseSystemPrompt;
 
   // Add coach mode additions
@@ -943,7 +1127,14 @@ ${controllerModifiers}`;
 ${alivenessDirective}`;
   }
 
-  const messages = buildMessages(message, context.recentMessages);
+  let messages;
+  try {
+    messages = buildMessages(message, context.recentMessages || []);
+  } catch (buildMsgError) {
+    console.error('[ClaudeAPI] buildMessages failed:', buildMsgError);
+    // Fallback to just the user's message
+    messages = [{ role: 'user', content: message }];
+  }
 
   const request: ClaudeRequest = {
     model: CLAUDE_CONFIG.model,
@@ -952,7 +1143,13 @@ ${alivenessDirective}`;
     messages,
   };
 
+  console.log('[ClaudeAPI] Making API request to:', CLAUDE_CONFIG.baseURL);
+  console.log('[ClaudeAPI] Using model:', CLAUDE_CONFIG.model);
+  console.log('[ClaudeAPI] System prompt length:', systemPrompt?.length || 0);
+  console.log('[ClaudeAPI] Messages count:', messages?.length || 0);
+
   try {
+
     const response = await fetch(CLAUDE_CONFIG.baseURL, {
       method: 'POST',
       headers: {
@@ -964,13 +1161,39 @@ ${alivenessDirective}`;
       body: JSON.stringify(request),
     });
 
+    console.log('[ClaudeAPI] Response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Claude API error:', response.status, errorText);
+      console.error('[ClaudeAPI] API error:', response.status, errorText);
+
+      // Provide more specific error messages
+      if (response.status === 401) {
+        return {
+          text: "My API key seems to be invalid. Could you check it in Settings?",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
+      if (response.status === 429) {
+        return {
+          text: "I'm getting rate limited - let's wait a moment and try again.",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
+      if (response.status === 400) {
+        return {
+          text: "Something went wrong with my request. Let me try a simpler response - what's on your mind?",
+          source: 'fallback' as const,
+          cost: 0,
+        };
+      }
       throw new Error(`API error: ${response.status}`);
     }
 
     const data: ClaudeAPIResponse = await response.json();
+    console.log('[ClaudeAPI] Got response, tokens:', data.usage?.input_tokens, '/', data.usage?.output_tokens);
 
     // Track cost
     await recordUsage(
@@ -985,7 +1208,14 @@ ${alivenessDirective}`;
       CLAUDE_CONFIG.model
     );
 
-    const responseText = data.content[0]?.text ?? '';
+    let responseText = data.content[0]?.text ?? '';
+
+    // Validate and clean coach style (remove any roleplay markers or robotic phrases that slipped through)
+    const styleViolations = validateCoachStyle(responseText);
+    if (styleViolations.length > 0) {
+      console.log('[ClaudeAPI] Style violations detected:', styleViolations.map(v => v.ruleId));
+      responseText = cleanStyleViolations(responseText);
+    }
 
     // Score the exchange in background (for human-ness training data)
     // This runs async - doesn't block the response
@@ -1019,6 +1249,16 @@ ${alivenessDirective}`;
       console.log('[CoreKernel] Explicit requests detected:', explicitRequests);
     }
 
+    // Mark achievement as celebrated (if we had one to share)
+    if (pendingAchievement) {
+      try {
+        await markAsCelebrated(pendingAchievement.id);
+        console.log('[Achievement] Marked as celebrated:', pendingAchievement.title);
+      } catch (err) {
+        console.log('Achievement marking error (non-blocking):', err);
+      }
+    }
+
     // Validate response against Core Principle Kernel tenets
     // This ensures ALL AI responses abide by the kernel
     // Note: Explicit requests allow overriding neurological accommodations
@@ -1043,12 +1283,24 @@ ${alivenessDirective}`;
       inputTokens: data.usage.input_tokens,
       outputTokens: data.usage.output_tokens,
     };
-  } catch (error) {
-    console.error('Claude API request failed:', error);
+  } catch (apiError) {
+    console.error('[ClaudeAPI] API request failed:', apiError);
 
-    // Fallback response
+    // Fallback response for API errors
     return {
       text: "I'm having trouble connecting right now. How about we try again in a moment?",
+      source: 'fallback',
+      cost: 0,
+    };
+  }
+
+  } catch (topLevelError: unknown) {
+    // This catches ANY unexpected error in the entire sendMessage function
+    console.error('[ClaudeAPI] CRITICAL: Unexpected error in sendMessage:', topLevelError);
+    console.error('[ClaudeAPI] Error stack:', topLevelError instanceof Error ? topLevelError.stack : 'No stack');
+
+    return {
+      text: "Something unexpected happened. I'm still here - what's on your mind?",
       source: 'fallback',
       cost: 0,
     };

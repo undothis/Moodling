@@ -144,29 +144,8 @@ export default function CoachTabScreen() {
   // Typing animation
   const typingAnim = useRef(new Animated.Value(0)).current;
 
-  // Load pending voice message on focus
-  useFocusEffect(
-    useCallback(() => {
-      const loadPendingVoice = async () => {
-        try {
-          const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
-          if (pending) {
-            // Clear the pending message
-            await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
-            // Set it in the input and auto-send
-            setInputText(pending);
-            // Auto-send after a short delay so user sees it
-            setTimeout(() => {
-              handleSend(pending);
-            }, 300);
-          }
-        } catch (error) {
-          console.error('Failed to load pending voice message:', error);
-        }
-      };
-      loadPendingVoice();
-    }, [])
-  );
+  // Ref for handleSend - initialized as null, updated after handleSend is defined
+  const handleSendRef = useRef<((text?: string) => Promise<void>) | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -245,41 +224,54 @@ export default function CoachTabScreen() {
         return;
       }
 
-      // Build conversation history
+      // Build conversation history (ChatMessage type needs timestamp as string)
       const history: ChatMessage[] = messages
         .filter((m) => m.source === 'user' || m.source === 'claudeAPI')
         .slice(-10)
         .map((m) => ({
           role: m.source === 'user' ? 'user' : 'assistant',
           content: m.text,
+          timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
         }));
 
       // Send to Claude
+      console.log('[Coach] Sending message to Claude API...');
       const response: AIResponse = await sendMessage(messageText, {
-        conversationHistory: history,
+        recentMessages: history,
         toneStyles,
-        coachSettings: coachSettings || undefined,
       });
+      console.log('[Coach] Got response, source:', response.source, 'text length:', response.text?.length || 0);
 
+      // Check if we got a real response
+      if (!response.text || response.text.length === 0) {
+        console.error('[Coach] Empty response from API');
+        throw new Error('Empty response from API');
+      }
+
+      // Add AI message
       const aiMessage: DisplayMessage = {
         id: `ai_${Date.now()}`,
         text: response.text,
-        source: response.source === 'crisis' ? 'crisis' : 'claudeAPI',
+        source: response.source === 'crisis' ? 'crisis' : (response.source === 'fallback' ? 'fallback' : 'claudeAPI'),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // TTS if enabled
-      const ttsSettings = await getTTSSettings();
-      if (ttsSettings.enabled) {
-        speakCoachResponse(response.text);
+      // TTS if enabled (in separate try/catch so it doesn't break the response)
+      try {
+        const ttsSettings = await getTTSSettings();
+        if (ttsSettings.enabled) {
+          speakCoachResponse(response.text);
+        }
+      } catch (ttsError) {
+        console.log('[Coach] TTS error (non-blocking):', ttsError);
       }
     } catch (error) {
-      console.error('Failed to send message:', error);
-      const fallback = getFallbackResponse(messageText);
+      console.error('[Coach] Failed to send message:', error);
+      const fallbackText = getFallbackResponse();
       const fallbackMessage: DisplayMessage = {
         id: `fallback_${Date.now()}`,
-        text: fallback.text,
+        text: fallbackText,
         source: 'fallback',
         timestamp: new Date(),
       };
@@ -288,6 +280,74 @@ export default function CoachTabScreen() {
       setIsLoading(false);
     }
   };
+
+  // Keep handleSendRef updated with latest handleSend
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  });
+
+  // Track voice params from tab bar navigation
+  const { voiceMessage, voiceTimestamp } = useLocalSearchParams<{
+    context?: string;
+    voiceMessage?: string;
+    voiceTimestamp?: string;
+  }>();
+  const lastVoiceTimestamp = useRef<string | null>(null);
+
+  // Function to send a voice message
+  const sendVoiceMessage = useCallback((message: string) => {
+    console.log('[Coach] Sending voice message:', message);
+    setInputText(message);
+    // Auto-send with retry mechanism for race condition
+    const attemptSend = (retries: number) => {
+      setTimeout(() => {
+        if (handleSendRef.current) {
+          console.log('[Coach] Calling handleSend with voice message');
+          handleSendRef.current(message);
+        } else if (retries > 0) {
+          console.log('[Coach] Waiting for handleSendRef...', retries);
+          attemptSend(retries - 1);
+        } else {
+          console.error('[Coach] handleSendRef timeout');
+        }
+      }, 50);
+    };
+    attemptSend(15);
+  }, []);
+
+  // Function to load pending voice message from AsyncStorage (backup method)
+  const loadAndSendPendingVoice = useCallback(async () => {
+    try {
+      const pending = await AsyncStorage.getItem(PENDING_COACH_MESSAGE_KEY);
+      console.log('[Coach] Checking AsyncStorage for pending voice:', pending ? 'found' : 'none');
+      if (pending) {
+        await AsyncStorage.removeItem(PENDING_COACH_MESSAGE_KEY);
+        await AsyncStorage.removeItem(`${PENDING_COACH_MESSAGE_KEY}_timestamp`);
+        sendVoiceMessage(pending);
+      }
+    } catch (error) {
+      console.error('Failed to load pending voice message:', error);
+    }
+  }, [sendVoiceMessage]);
+
+  // Handle voice message from navigation params (primary method - more reliable)
+  useEffect(() => {
+    if (voiceMessage && voiceTimestamp && voiceTimestamp !== lastVoiceTimestamp.current) {
+      lastVoiceTimestamp.current = voiceTimestamp;
+      console.log('[Coach] Got voiceMessage from params:', voiceMessage);
+      sendVoiceMessage(voiceMessage);
+    }
+  }, [voiceMessage, voiceTimestamp, sendVoiceMessage]);
+
+  // Also check AsyncStorage on focus (backup for already-mounted screens)
+  useFocusEffect(
+    useCallback(() => {
+      // Only check AsyncStorage if no param message (avoid double-send)
+      if (!voiceMessage) {
+        loadAndSendPendingVoice();
+      }
+    }, [voiceMessage, loadAndSendPendingVoice])
+  );
 
   const renderMessage = (message: DisplayMessage) => {
     const isUser = message.source === 'user';
@@ -339,6 +399,19 @@ export default function CoachTabScreen() {
           <Ionicons name="settings-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
+
+      {/* API Key Warning */}
+      {!hasKey && (
+        <TouchableOpacity
+          style={[styles.apiWarning, { backgroundColor: '#FFF3CD' }]}
+          onPress={() => router.push('/(tabs)/settings')}
+        >
+          <Ionicons name="warning-outline" size={18} color="#856404" />
+          <Text style={styles.apiWarningText}>
+            API key needed for AI responses. Tap to configure in Settings.
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Messages */}
       <ScrollView
@@ -466,5 +539,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+  },
+  apiWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  apiWarningText: {
+    flex: 1,
+    color: '#856404',
+    fontSize: 13,
   },
 });

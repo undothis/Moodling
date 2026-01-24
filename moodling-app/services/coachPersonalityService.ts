@@ -39,7 +39,7 @@ export type CoachPersona =
 // No gender labels - just "Style A" and "Style B" (or descriptive names).
 // ============================================
 
-export type NameStyle = 'classic' | 'alternative';
+export type NameStyle = 'classic' | 'alternative' | 'feminine' | 'custom';
 
 export const NAME_STYLE_LABELS: Record<NameStyle, { label: string; description: string }> = {
   classic: {
@@ -50,17 +50,25 @@ export const NAME_STYLE_LABELS: Record<NameStyle, { label: string; description: 
     label: 'Earth Names',
     description: 'Cole, Blaze, Wade, Leo, River, Stone, Forrest',
   },
+  feminine: {
+    label: 'Flower Names',
+    description: 'Ivy, Aurora, Sage, Stella, Sierra, Ember, Violet',
+  },
+  custom: {
+    label: 'Your Own Name',
+    description: 'Choose any name you want for your guide',
+  },
 };
 
 // Alternative names for each persona (same personality, different name)
-export const NAME_VARIANTS: Record<CoachPersona, { classic: string; alternative: string }> = {
-  clover: { classic: 'Clover', alternative: 'Cole' },
-  spark: { classic: 'Spark', alternative: 'Blaze' },
-  willow: { classic: 'Willow', alternative: 'Wade' },
-  luna: { classic: 'Luna', alternative: 'Leo' },
-  ridge: { classic: 'Ridge', alternative: 'River' },
-  flint: { classic: 'Flint', alternative: 'Stone' },
-  fern: { classic: 'Fern', alternative: 'Forrest' },
+export const NAME_VARIANTS: Record<CoachPersona, { classic: string; alternative: string; feminine: string }> = {
+  clover: { classic: 'Clover', alternative: 'Cole', feminine: 'Ivy' },
+  spark: { classic: 'Spark', alternative: 'Blaze', feminine: 'Aurora' },
+  willow: { classic: 'Willow', alternative: 'Wade', feminine: 'Sage' },
+  luna: { classic: 'Luna', alternative: 'Leo', feminine: 'Stella' },
+  ridge: { classic: 'Ridge', alternative: 'River', feminine: 'Sierra' },
+  flint: { classic: 'Flint', alternative: 'Stone', feminine: 'Ember' },
+  fern: { classic: 'Fern', alternative: 'Forrest', feminine: 'Violet' },
 };
 
 /**
@@ -75,6 +83,14 @@ export function getAllNameOptions(): { style: NameStyle; names: string[] }[] {
     {
       style: 'alternative',
       names: Object.values(NAME_VARIANTS).map(v => v.alternative),
+    },
+    {
+      style: 'feminine',
+      names: Object.values(NAME_VARIANTS).map(v => v.feminine),
+    },
+    {
+      style: 'custom',
+      names: [], // Custom names are entered by user
     },
   ];
 }
@@ -286,6 +302,9 @@ export interface CoachSettings {
   // Primary persona selection
   selectedPersona: CoachPersona;
 
+  // User's preferred name/nickname (what coach calls them)
+  userName?: string;
+
   // Name style preference (classic or alternative names)
   // This applies to ALL coaches - switches between name sets
   nameStyle: NameStyle;
@@ -326,13 +345,18 @@ export interface CoachSettings {
  * Priority: custom name > name variant > default persona name
  */
 export function getCoachDisplayName(settings: CoachSettings): string {
-  // Custom name takes highest priority
+  // Custom name takes highest priority (or if style is 'custom')
   if (settings.customName && settings.customName.trim()) {
     return settings.customName.trim();
   }
 
-  // Use name variant based on style preference
+  // If style is 'custom' but no custom name set, fall back to classic
   const style = settings.nameStyle || 'classic';
+  if (style === 'custom') {
+    return NAME_VARIANTS[settings.selectedPersona].classic;
+  }
+
+  // Use name variant based on style preference
   return NAME_VARIANTS[settings.selectedPersona][style];
 }
 
@@ -998,6 +1022,17 @@ export interface OnboardingQuestion {
 
 export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
   {
+    id: 'user_name',
+    question: "What should I call you?",
+    subtitle: "A name, nickname, or whatever feels right",
+    type: 'text',
+    textConfig: {
+      placeholder: "Your name or nickname...",
+      maxLength: 30,
+    },
+    hint: "Your guide will use this when talking to you. You can change it anytime.",
+  },
+  {
     id: 'current_state',
     question: "What brings you to Mood Leaf?",
     subtitle: "Select all that apply",
@@ -1028,6 +1063,12 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
         emoji: '🌍',
         label: 'Earth Names',
         description: 'Cole, Blaze, Wade, Leo, River, Stone, Forrest'
+      },
+      {
+        id: 'custom',
+        emoji: '✏️',
+        label: 'I\'ll name them myself',
+        description: 'Give your guide a custom name'
       },
     ],
   },

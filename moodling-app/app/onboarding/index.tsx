@@ -20,6 +20,9 @@ import {
   ScrollView,
   Animated,
   useColorScheme,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,6 +51,7 @@ export default function OnboardingScreen() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [customCoachName, setCustomCoachName] = useState('');
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -117,13 +121,24 @@ export default function OnboardingScreen() {
       // Get chronotype from schedule preference (defaults to 'normal')
       const chronotype = (answers.schedule_preference as Chronotype) || 'normal';
 
-      // Get name style preference (defaults to 'classic')
-      const nameStyle = (answers.name_style as NameStyle) || 'classic';
+      // Get name style preference (defaults to 'classic' if 'custom' was selected)
+      const nameStyleAnswer = answers.name_style as string;
+      const nameStyle: NameStyle = nameStyleAnswer === 'custom' ? 'classic' : (nameStyleAnswer as NameStyle) || 'classic';
+
+      // Get custom coach name if user chose to name their guide
+      const customCoachName = nameStyleAnswer === 'custom'
+        ? (answers.custom_coach_name as string)?.trim()
+        : undefined;
+
+      // Get user's name (optional)
+      const userName = (answers.user_name as string)?.trim() || undefined;
 
       // Save settings
       await saveCoachSettings({
         selectedPersona: recommendedPersona,
+        userName, // User's preferred name/nickname
         nameStyle, // User's preferred name style for coaches
+        customName: customCoachName, // Custom name for the coach (overrides persona name)
         detailedSettings: {
           ...getSettingsForPersona(recommendedPersona),
           ...detailedSettings,
@@ -158,6 +173,11 @@ export default function OnboardingScreen() {
       ...prev,
       [currentQuestion.id]: optionId,
     }));
+
+    // If selecting "custom" for name_style, don't auto-advance - wait for name input
+    if (currentQuestion.id === 'name_style' && optionId === 'custom') {
+      return;
+    }
 
     // Auto-advance after short delay to show selection
     setIsTransitioning(true);
@@ -259,8 +279,78 @@ export default function OnboardingScreen() {
           style={styles.optionsScroll}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.optionsContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          {question.type === 'slider' && question.sliderConfig ? (
+          {question.type === 'text' && question.textConfig ? (
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
+                ]}
+                placeholder={question.textConfig.placeholder}
+                placeholderTextColor={colors.textMuted}
+                value={(selectedValue as string) || ''}
+                onChangeText={(text) => {
+                  setAnswers((prev) => ({
+                    ...prev,
+                    [question.id]: text,
+                  }));
+                }}
+                maxLength={question.textConfig.maxLength}
+                autoFocus={currentStep === 0}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (selectedValue && (selectedValue as string).trim()) {
+                    handleNext();
+                  }
+                }}
+              />
+              <Pressable
+                style={[
+                  styles.textContinueButton,
+                  {
+                    backgroundColor: selectedValue && (selectedValue as string).trim()
+                      ? colors.tint
+                      : colors.border,
+                  },
+                ]}
+                onPress={handleNext}
+                disabled={!selectedValue || !(selectedValue as string).trim()}
+              >
+                <Text
+                  style={[
+                    styles.textContinueText,
+                    {
+                      color: selectedValue && (selectedValue as string).trim()
+                        ? '#fff'
+                        : colors.textMuted,
+                    },
+                  ]}
+                >
+                  Continue
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.skipNameButton}
+                onPress={() => {
+                  setAnswers((prev) => ({
+                    ...prev,
+                    [question.id]: '',
+                  }));
+                  handleNext();
+                }}
+              >
+                <Text style={[styles.skipNameText, { color: colors.textMuted }]}>
+                  Skip for now
+                </Text>
+              </Pressable>
+            </View>
+          ) : question.type === 'slider' && question.sliderConfig ? (
             <View style={styles.sliderContainer}>
               {question.sliderConfig.labels.map((label, index) => {
                 const isSelected = selectedValue === index.toString();
@@ -352,6 +442,71 @@ export default function OnboardingScreen() {
               );
             })
           )}
+
+          {/* Custom coach name input - shown when "custom" is selected for name_style */}
+          {question.id === 'name_style' && selectedValue === 'custom' && (
+            <View style={styles.customNameContainer}>
+              <TextInput
+                style={[
+                  styles.customNameInput,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    color: colors.text,
+                    borderColor: colors.tint,
+                  },
+                ]}
+                placeholder="Enter a name for your guide..."
+                placeholderTextColor={colors.textMuted}
+                value={customCoachName}
+                onChangeText={setCustomCoachName}
+                maxLength={20}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (customCoachName.trim()) {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      custom_coach_name: customCoachName.trim(),
+                    }));
+                    handleNext();
+                  }
+                }}
+              />
+              <Pressable
+                style={[
+                  styles.customNameButton,
+                  {
+                    backgroundColor: customCoachName.trim()
+                      ? colors.tint
+                      : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  if (customCoachName.trim()) {
+                    setAnswers((prev) => ({
+                      ...prev,
+                      custom_coach_name: customCoachName.trim(),
+                    }));
+                    handleNext();
+                  }
+                }}
+                disabled={!customCoachName.trim()}
+              >
+                <Text
+                  style={[
+                    styles.customNameButtonText,
+                    {
+                      color: customCoachName.trim()
+                        ? '#fff'
+                        : colors.textMuted,
+                    },
+                  ]}
+                >
+                  Continue
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </ScrollView>
 
         {question.hint && (
@@ -383,6 +538,9 @@ export default function OnboardingScreen() {
     >
       {/* Progress bar */}
       <View style={styles.progressContainer}>
+        <Text style={[styles.stepCounter, { color: colors.textSecondary }]}>
+          {currentStep + 1} of {ONBOARDING_QUESTIONS.length}
+        </Text>
         <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
           <View
             style={[
@@ -450,6 +608,11 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  stepCounter: {
+    fontSize: 14,
+    fontWeight: '500',
+    minWidth: 55,
   },
   questionContainer: {
     flex: 1,
@@ -552,5 +715,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  textInputContainer: {
+    gap: 16,
+  },
+  textInput: {
+    fontSize: 18,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    textAlign: 'center',
+  },
+  textContinueButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  textContinueText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  skipNameButton: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  skipNameText: {
+    fontSize: 15,
+  },
+  customNameContainer: {
+    marginTop: 16,
+    gap: 12,
+  },
+  customNameInput: {
+    fontSize: 18,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    textAlign: 'center',
+  },
+  customNameButton: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  customNameButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
 });

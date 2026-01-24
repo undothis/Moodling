@@ -1,6 +1,30 @@
 /**
  * Llama Integration Service
  *
+ * ⚠️  THIS IS THE TARGET PRODUCTION MODEL - CLAUDE IS TEMPORARY  ⚠️
+ *
+ * Any changes made to claudeAPIService.ts MUST be mirrored here.
+ * See docs/COACH_ARCHITECTURE.md for the service parity checklist.
+ *
+ * TODO: Services to integrate (match claudeAPIService.ts):
+ * - [ ] coachPersonalityService (personas, adaptive mode)
+ * - [ ] memoryTierService (conversation memory)
+ * - [ ] userContextService (user profile)
+ * - [ ] lifeContextService (life situation)
+ * - [ ] quickLogsService (twigs data)
+ * - [ ] healthKitService (health data)
+ * - [ ] calendarService (calendar events)
+ * - [ ] drinkPacingService (drink tracking)
+ * - [ ] habitTimerService (custom habit pacing)
+ * - [ ] skillRecommendationService (skill suggestions based on context) - SERVICE READY: comprehensive phrase mappings added, timing guidance included
+ * - [ ] coachModeService (skill modes)
+ * - [ ] safeguardService (safety checks)
+ * - [x] cognitiveProfileService (cognitive patterns) - INTEGRATED: getCognitiveProfileContextForLLM included in prompt
+ * - [ ] socialConnectionHealthService (social context)
+ * - [ ] exposureLadderService (anxiety exposure)
+ * - [ ] patternService (lifestyle factors)
+ * - [ ] tonePreferencesService (tone settings)
+ *
  * Manages the integration between the app's middleware layer and the
  * Llama LLM kernel. This service acts as the bridge between your
  * training data pipeline and the actual AI model.
@@ -51,6 +75,11 @@ import {
   detectExplicitRequests,
   PROGRAM_LEVEL_TENETS,
 } from './corePrincipleKernel';
+import {
+  cleanStyleViolations,
+  validateCoachStyle,
+} from './coachStyleService';
+import { getCognitiveProfileContextForLLM } from './cognitiveProfileService';
 
 // ============================================
 // TYPES
@@ -166,6 +195,15 @@ CONVERSATION STYLE:
 - Share perspective without preaching
 - Validate feelings without empty platitudes
 - Remember: companionship matters as much as advice
+- 2-4 sentences usually, one question max
+- Sound like a friend, not a documentation system
+
+CRITICAL STYLE RULES (ALWAYS follow these):
+- NEVER use asterisk actions (*speaks softly*, *nods*, etc.) - just speak
+- NEVER describe your tone in third person ("responds warmly") - just respond
+- NEVER repeat back or summarize what they just asked - just answer
+- NEVER announce your support ("I'm here to listen", "I'm here for you", "here without judgment", "your feelings are valid", "you're not alone") - SHOW it through your responses
+- Start naturally like a friend would, not with robotic summaries
 
 WHAT TO AVOID:
 - Don't be relentlessly positive - sometimes things are hard
@@ -173,6 +211,7 @@ WHAT TO AVOID:
 - Don't use therapy-speak or clinical language
 - Don't make assumptions - ask clarifying questions
 - Don't minimize emotions - sit with them
+- Don't announce you're supportive - just BE supportive
 
 You draw on insights from real human experiences to understand the nuance of emotions, relationships, and personal growth. Respond as a real friend would - with warmth, honesty, and genuine care.`;
 
@@ -184,18 +223,34 @@ You draw on insights from real human experiences to understand the nuance of emo
  * Format a conversation for Llama inference
  * This is where the app controls what reaches the kernel
  * IMPORTANT: Includes Core Principle Kernel tenets that CANNOT be violated
+ * IMPORTANT: Includes cognitive profile context for neurological adaptations (aphantasia, etc.)
  */
-export function formatPromptForLlama(
+export async function formatPromptForLlama(
   context: ConversationContext,
   userMessage: string
-): string {
+): Promise<string> {
   // Get Core Principle Kernel context - MUST be included in every prompt
   // This ensures Llama, like Claude, abides by the kernel
   const principleContext = getPrincipleContextForLLM();
 
+  // Get cognitive profile context - CRITICAL for neurological adaptations
+  // This tells the model about aphantasia, internal monologue, etc.
+  // so it never suggests visualization to users who can't visualize
+  let cognitiveProfileContext = '';
+  try {
+    cognitiveProfileContext = await getCognitiveProfileContextForLLM();
+  } catch (error) {
+    console.log('[Llama] Could not load cognitive profile context:', error);
+  }
+
   let systemPrompt = `${MOODPRINT_SYSTEM_PROMPT}
 
 ${principleContext}`;
+
+  // Add cognitive profile context (neurological adaptations)
+  if (cognitiveProfileContext) {
+    systemPrompt += `\n\n${cognitiveProfileContext}`;
+  }
 
   // Inject relevant insights if available
   if (context.relevantInsights && context.relevantInsights.length > 0) {
@@ -340,22 +395,27 @@ export async function exportTrainingData(
 
 /**
  * Create an ideal response based on insight
+ * IMPORTANT: All training outputs are cleaned to prevent the model learning bad patterns
  */
 function createIdealResponse(insight: any): string {
   const warmth = insight.warmthLevel || 'warm';
   const examples = insight.exampleResponses || [];
 
+  let response: string;
+
   if (examples.length > 0) {
-    return examples[0]; // Use the pre-crafted example
+    response = examples[0]; // Use the pre-crafted example
+  } else {
+    // Generate based on coaching implication
+    const implication = insight.coachingImplication || '';
+
+    // Don't use "I'm here if you want to talk" - that's the pattern we're avoiding
+    response = `That sounds really ${insight.emotionalTone || 'challenging'}. ${implication}`;
   }
 
-  // Generate based on coaching implication
-  const implication = insight.coachingImplication || '';
-  const tone = warmth === 'deeply_warm' ? 'gentle and caring' :
-               warmth === 'warm' ? 'supportive and understanding' :
-               'straightforward but kind';
-
-  return `That sounds really ${insight.emotionalTone || 'challenging'}. ${implication} I'm here if you want to talk more about it.`;
+  // Clean any robotic patterns from training data
+  // This prevents the model from learning phrases we don't want
+  return cleanStyleViolations(response);
 }
 
 /**
@@ -366,7 +426,10 @@ function createQuoteBasedResponse(insight: any): string {
   if (quotes.length === 0) return createIdealResponse(insight);
 
   const quote = quotes[0];
-  return `I've heard someone describe it like this: "${quote}" Does that resonate with how you're feeling?`;
+  const response = `Someone described it like this: "${quote}" Does that resonate?`;
+
+  // Clean any robotic patterns from training data
+  return cleanStyleViolations(response);
 }
 
 /**
@@ -376,7 +439,10 @@ function createAntiPatternTeaching(insight: any): string {
   const antiPatterns = insight.antiPatterns || [];
   if (antiPatterns.length === 0) return 'Focus on listening rather than fixing.';
 
-  return `Avoid these responses:\n${antiPatterns.map((a: string) => `- ${a}`).join('\n')}\n\nInstead, focus on: ${insight.coachingImplication || 'genuine presence and validation.'}`;
+  const response = `Avoid these responses:\n${antiPatterns.map((a: string) => `- ${a}`).join('\n')}\n\nInstead, focus on: ${insight.coachingImplication || 'genuine presence.'}`;
+
+  // Clean any robotic patterns from training data
+  return cleanStyleViolations(response);
 }
 
 /**
@@ -474,8 +540,8 @@ export async function runInference(request: InferenceRequest): Promise<Inference
   const config = await getLlamaConfig();
   const startTime = Date.now();
 
-  // Format the prompt
-  const formattedPrompt = formatPromptForLlama(request.context, request.prompt);
+  // Format the prompt (async to load cognitive profile context)
+  const formattedPrompt = await formatPromptForLlama(request.context, request.prompt);
 
   // TODO: Actual Llama inference
   // This would use a binding like:
@@ -514,6 +580,18 @@ export async function runInference(request: InferenceRequest): Promise<Inference
     }
   } catch (err) {
     console.log('Llama tenet validation error (non-blocking):', err);
+  }
+
+  // Clean style violations (remove robotic phrases, roleplay markers, etc.)
+  // Same cleaning as Claude - ensures consistent output quality
+  try {
+    const styleViolations = validateCoachStyle(placeholderResponse.content);
+    if (styleViolations.length > 0) {
+      console.log('[Llama] Style violations detected:', styleViolations.map(v => v.ruleId));
+      placeholderResponse.content = cleanStyleViolations(placeholderResponse.content);
+    }
+  } catch (err) {
+    console.log('Llama style validation error (non-blocking):', err);
   }
 
   // Log inference stats

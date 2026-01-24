@@ -21,6 +21,152 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+// ============================================
+// CORS PROXIES FOR WEB (Multiple fallbacks)
+// ============================================
+
+/**
+ * List of CORS proxies to try (in order of reliability)
+ * Having multiple proxies helps when one is rate-limited or down
+ */
+const CORS_PROXIES = [
+  // Format: [prefix, suffix, needsEncoding]
+  { prefix: 'https://api.allorigins.win/raw?url=', suffix: '', encode: true },
+  { prefix: 'https://corsproxy.io/?', suffix: '', encode: true },
+  { prefix: 'https://api.codetabs.com/v1/proxy?quest=', suffix: '', encode: true },
+  { prefix: 'https://thingproxy.freeboard.io/fetch/', suffix: '', encode: false },
+];
+
+let currentProxyIndex = 0;
+let lastProxyRotation = 0;
+const PROXY_ROTATION_INTERVAL = 60000; // Rotate proxy every minute if issues
+
+/**
+ * Get CORS proxy URL with automatic rotation on failures
+ */
+function getCorsProxyUrl(url: string, forceRotate = false): string {
+  if (Platform.OS !== 'web') {
+    return url;
+  }
+
+  // Rotate proxy if forced or if it's been a while
+  const now = Date.now();
+  if (forceRotate || (now - lastProxyRotation > PROXY_ROTATION_INTERVAL)) {
+    currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
+    lastProxyRotation = now;
+  }
+
+  const proxy = CORS_PROXIES[currentProxyIndex];
+  const encodedUrl = proxy.encode ? encodeURIComponent(url) : url;
+  return `${proxy.prefix}${encodedUrl}${proxy.suffix}`;
+}
+
+/**
+ * Try fetching with multiple CORS proxies until one works
+ */
+async function fetchWithProxyFallback(
+  url: string,
+  options: RequestInit = {},
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let proxyAttempt = 0; proxyAttempt < CORS_PROXIES.length; proxyAttempt++) {
+    const proxyIndex = (currentProxyIndex + proxyAttempt) % CORS_PROXIES.length;
+    const proxy = CORS_PROXIES[proxyIndex];
+    const encodedUrl = proxy.encode ? encodeURIComponent(url) : url;
+    const proxyUrl = Platform.OS === 'web'
+      ? `${proxy.prefix}${encodedUrl}${proxy.suffix}`
+      : url;
+
+    // Retry with exponential backoff
+    for (let retry = 0; retry < maxRetries; retry++) {
+      try {
+        if (retry > 0) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = Math.pow(2, retry) * 1000;
+          console.log(`[YouTube] Retry ${retry + 1}/${maxRetries} after ${delay}ms delay...`);
+          await sleep(delay);
+        }
+
+        const response = await fetch(proxyUrl, {
+          ...options,
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
+
+        if (response.ok) {
+          // Success - remember this proxy worked
+          currentProxyIndex = proxyIndex;
+          return response;
+        }
+
+        // If we get a 429 (rate limited), try next proxy immediately
+        if (response.status === 429) {
+          console.log(`[YouTube] Proxy ${proxyIndex} rate limited, trying next...`);
+          break; // Move to next proxy
+        }
+
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.log(`[YouTube] Fetch attempt failed:`, lastError.message);
+      }
+    }
+
+    // If we're on web and this proxy failed, try the next one
+    if (Platform.OS === 'web') {
+      console.log(`[YouTube] Proxy ${proxyIndex} exhausted, trying next proxy...`);
+    } else {
+      break; // On native, no point trying different "proxies"
+    }
+  }
+
+  throw lastError || new Error('All fetch attempts failed');
+}
+
+/**
+ * Sleep helper for delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Rate limiter to avoid triggering bot detection
+ */
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests
+
+async function rateLimit(): Promise<void> {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    console.log(`[YouTube] Rate limiting: waiting ${waitTime}ms...`);
+    await sleep(waitTime);
+  }
+  lastRequestTime = Date.now();
+}
+
+// ============================================
+// INVIDIOUS INSTANCES (for reliable transcript fetching)
+// ============================================
+
+/**
+ * List of public Invidious instances for transcript fetching
+ * These provide CORS-friendly API access to YouTube captions
+ * Ordered by reliability (most reliable first)
+ */
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.nerdvpn.de',
+  'https://yt.artemislena.eu',
+  'https://invidious.privacyredirect.com',
+  'https://invidious.slipfox.xyz',
+  'https://vid.puffyan.us',
+];
 
 // ============================================
 // STORAGE KEYS
@@ -34,6 +180,7 @@ const STORAGE_KEYS = {
   CURATED_CHANNELS: 'moodleaf_curated_channels',
   INSIGHT_HASHES: 'moodleaf_insight_hashes', // For deduplication
   QUALITY_STATS: 'moodleaf_quality_stats',
+  PROCESSED_CHANNELS_HISTORY: 'moodleaf_processed_channels_history', // Track batch processing history
 };
 
 // ============================================
@@ -118,6 +265,7 @@ export type ChannelCategory =
   | 'elderly_wisdom'
   | 'vulnerability_authenticity'
   | 'joy_celebration'
+  | 'addiction_recovery'
   | 'general_human_insight';
 
 export interface ProcessingJob {
@@ -146,32 +294,67 @@ export interface ProcessingJob {
 // ============================================
 
 export type InsightExtractionCategory =
-  // Understanding Pain
+  // Understanding Pain & Struggle
   | 'emotional_struggles'
   | 'coping_strategies'
   | 'what_helps_hurts'
   | 'vulnerability'
   | 'mental_health_patterns'
   | 'trauma_recovery'
-  // Understanding Joy
+  | 'shame_guilt'
+  | 'anger_frustration'
+  | 'grief_loss'
+  | 'fear_anxiety'
+  | 'depression_hopelessness'
+  // Understanding Joy & Flourishing
   | 'humor_wit'
   | 'joy_celebration'
   | 'excitement_passion'
   | 'playfulness'
   | 'gratitude_appreciation'
-  // Understanding Connection
+  | 'contentment_peace'
+  | 'hope_optimism'
+  | 'pride_accomplishment'
+  | 'awe_wonder'
+  // Understanding Connection & Relationships
   | 'companionship'
   | 'friendship_dynamics'
   | 'romantic_love'
   | 'family_bonds'
   | 'belonging_community'
   | 'loneliness_isolation'
-  // Understanding Growth
+  | 'parenting'
+  | 'boundaries'
+  | 'conflict_repair'
+  | 'trust_betrayal'
+  | 'communication_patterns'
+  | 'caregiving'
+  // Understanding Growth & Development
   | 'self_discovery'
   | 'growth_moments'
   | 'life_lessons'
   | 'wisdom_perspective'
   | 'meaning_purpose'
+  | 'regret_forgiveness'
+  | 'life_transitions'
+  | 'identity_formation'
+  | 'values_beliefs'
+  | 'decision_making'
+  // Body & Physical Experience
+  | 'aging_mortality'
+  | 'body_health'
+  | 'rest_burnout'
+  | 'embodied_emotion'
+  | 'neurodivergent_experience'
+  | 'sleep_energy'
+  | 'addiction_recovery'
+  // Context & Identity
+  | 'cultural_identity'
+  | 'spirituality_faith'
+  | 'work_career'
+  | 'money_scarcity'
+  | 'gender_sexuality'
+  | 'creativity_expression'
   // Human Authenticity
   | 'real_quotes'
   | 'contradictions_complexity'
@@ -455,7 +638,7 @@ export const EXTRACTION_CATEGORIES: {
   label: string;
   description: string;
   promptHint: string;
-  domain: 'pain' | 'joy' | 'connection' | 'growth' | 'authenticity';
+  domain: 'pain' | 'joy' | 'connection' | 'growth' | 'authenticity' | 'body' | 'context';
 }[] = [
   // === UNDERSTANDING PAIN ===
   {
@@ -700,6 +883,249 @@ export const EXTRACTION_CATEGORIES: {
     promptHint: 'Look for descriptions of companionship that doesn\'t demand focus - a pet breathing nearby, someone in the room while you work, presence without performance.',
     domain: 'aliveness' as any,
   },
+
+  // === ADDITIONAL PAIN CATEGORIES ===
+  {
+    value: 'shame_guilt',
+    label: 'Shame & Guilt',
+    description: 'The weight of shame vs. guilt',
+    promptHint: 'Find how people describe shame (I am bad) vs guilt (I did bad). How do these emotions block or motivate change?',
+    domain: 'pain',
+  },
+  {
+    value: 'anger_frustration',
+    label: 'Anger & Frustration',
+    description: 'Healthy and unhealthy anger',
+    promptHint: 'Look for how people express, suppress, or channel anger. What does healthy anger look like? When is it protective?',
+    domain: 'pain',
+  },
+  {
+    value: 'grief_loss',
+    label: 'Grief & Loss',
+    description: 'Processing death, endings, letting go',
+    promptHint: 'Find how people grieve - not just death but any significant loss. The waves, the unexpected triggers, the gradual integration.',
+    domain: 'pain',
+  },
+  {
+    value: 'fear_anxiety',
+    label: 'Fear & Anxiety',
+    description: 'Specific fears and anxiety patterns',
+    promptHint: 'Capture the texture of fear and anxiety - physical sensations, thought patterns, what makes it better or worse.',
+    domain: 'pain',
+  },
+  {
+    value: 'depression_hopelessness',
+    label: 'Depression & Hopelessness',
+    description: 'When nothing seems worth it',
+    promptHint: 'Find honest descriptions of depression and hopelessness. What helps? What doesn\'t? What does it actually feel like inside?',
+    domain: 'pain',
+  },
+
+  // === ADDITIONAL JOY CATEGORIES ===
+  {
+    value: 'contentment_peace',
+    label: 'Contentment & Peace',
+    description: 'Quiet satisfaction, being enough',
+    promptHint: 'Look for peaceful moments - not excitement but quiet contentment. The feeling of "this is good" without needing more.',
+    domain: 'joy',
+  },
+  {
+    value: 'hope_optimism',
+    label: 'Hope & Optimism',
+    description: 'What keeps people going',
+    promptHint: 'Find what sustains hope, especially after hardship. Realistic optimism, not toxic positivity.',
+    domain: 'joy',
+  },
+  {
+    value: 'pride_accomplishment',
+    label: 'Pride & Accomplishment',
+    description: 'Healthy pride in achievements',
+    promptHint: 'Capture healthy pride - owning accomplishments without arrogance. The satisfaction of doing something hard.',
+    domain: 'joy',
+  },
+  {
+    value: 'awe_wonder',
+    label: 'Awe & Wonder',
+    description: 'Transcendent moments',
+    promptHint: 'Find moments of awe - nature, art, human connection, spiritual experiences. What makes people feel small in a good way?',
+    domain: 'joy',
+  },
+
+  // === ADDITIONAL CONNECTION CATEGORIES ===
+  {
+    value: 'parenting',
+    label: 'Parenting',
+    description: 'The experience of raising children',
+    promptHint: 'Capture parenting experiences - the love, frustration, worry, joy. What surprises parents? What do they wish they\'d known?',
+    domain: 'connection',
+  },
+  {
+    value: 'boundaries',
+    label: 'Boundaries',
+    description: 'Setting limits, protecting energy',
+    promptHint: 'Find how people set and maintain boundaries. The guilt, the relief, the learning process. What makes healthy boundaries?',
+    domain: 'connection',
+  },
+  {
+    value: 'conflict_repair',
+    label: 'Conflict & Repair',
+    description: 'How people fight and make up',
+    promptHint: 'Look for conflict patterns and repair attempts. What helps people reconnect after rupture? What makes fights productive?',
+    domain: 'connection',
+  },
+  {
+    value: 'trust_betrayal',
+    label: 'Trust & Betrayal',
+    description: 'Building and breaking trust',
+    promptHint: 'Find insights about trust - how it\'s built, how it\'s broken, whether it can be rebuilt. The experience of betrayal.',
+    domain: 'connection',
+  },
+  {
+    value: 'communication_patterns',
+    label: 'Communication Patterns',
+    description: 'How people actually talk',
+    promptHint: 'Capture communication insights - what works, what doesn\'t. Listening skills, expressing needs, navigating difficult conversations.',
+    domain: 'connection',
+  },
+  {
+    value: 'caregiving',
+    label: 'Caregiving',
+    description: 'Taking care of others',
+    promptHint: 'Find experiences of caregiving - for aging parents, sick partners, children with needs. The invisible labor and its emotional toll.',
+    domain: 'connection',
+  },
+
+  // === ADDITIONAL GROWTH CATEGORIES ===
+  {
+    value: 'regret_forgiveness',
+    label: 'Regret & Forgiveness',
+    description: 'Processing past choices, letting go',
+    promptHint: 'Find how people process regret and work toward forgiveness - of self and others. What helps people let go?',
+    domain: 'growth',
+  },
+  {
+    value: 'life_transitions',
+    label: 'Life Transitions',
+    description: 'Major changes (divorce, moving, career)',
+    promptHint: 'Capture experiences of major life transitions - endings, beginnings, the disorientation in between.',
+    domain: 'growth',
+  },
+  {
+    value: 'identity_formation',
+    label: 'Identity Formation',
+    description: 'Who am I? Who am I becoming?',
+    promptHint: 'Find identity questions and discoveries. How do people figure out who they are? What shapes identity?',
+    domain: 'growth',
+  },
+  {
+    value: 'values_beliefs',
+    label: 'Values & Beliefs',
+    description: 'What people believe and why',
+    promptHint: 'Capture how values form and change. What do people really believe vs. what they think they should believe?',
+    domain: 'growth',
+  },
+  {
+    value: 'decision_making',
+    label: 'Decision Making',
+    description: 'How people make hard choices',
+    promptHint: 'Find how people make difficult decisions - the process, the doubt, the aftermath. What helps with impossible choices?',
+    domain: 'growth',
+  },
+
+  // === BODY & PHYSICAL EXPERIENCE ===
+  {
+    value: 'aging_mortality',
+    label: 'Aging & Mortality',
+    description: 'Growing old, facing death',
+    promptHint: 'Capture wisdom about aging and mortality. What changes with age? How do people face death? What do elders wish they\'d known?',
+    domain: 'body',
+  },
+  {
+    value: 'body_health',
+    label: 'Body & Health',
+    description: 'Physical health, chronic illness, disability',
+    promptHint: 'Find the mind-body connection - how physical health affects emotions, living with chronic conditions, body image.',
+    domain: 'body',
+  },
+  {
+    value: 'rest_burnout',
+    label: 'Rest & Burnout',
+    description: 'Exhaustion, recovery, permission to stop',
+    promptHint: 'Capture experiences of burnout and recovery. What does real rest look like? How do people give themselves permission to stop?',
+    domain: 'body',
+  },
+  {
+    value: 'embodied_emotion',
+    label: 'Embodied Emotion',
+    description: 'How emotions feel in the body',
+    promptHint: 'Find how emotions manifest physically - the knot in the stomach, the weight on the chest. Body-based wisdom.',
+    domain: 'body',
+  },
+  {
+    value: 'neurodivergent_experience',
+    label: 'Neurodivergent Experience',
+    description: 'ADHD, autism, etc. lived experience',
+    promptHint: 'Capture lived experience of neurodivergence - not clinical descriptions but what it actually feels like inside.',
+    domain: 'body',
+  },
+  {
+    value: 'sleep_energy',
+    label: 'Sleep & Energy',
+    description: 'Sleep patterns, energy management',
+    promptHint: 'Find insights about sleep and energy - what helps, what hurts, the relationship between rest and wellbeing.',
+    domain: 'body',
+  },
+  {
+    value: 'addiction_recovery',
+    label: 'Addiction & Recovery',
+    description: 'Substance and behavioral patterns',
+    promptHint: 'Capture compassionate insights about addiction - the patterns, the recovery process, what actually helps. No shame.',
+    domain: 'body',
+  },
+
+  // === CONTEXT & IDENTITY ===
+  {
+    value: 'cultural_identity',
+    label: 'Cultural Identity',
+    description: 'Immigration, cultural belonging',
+    promptHint: 'Find experiences of cultural identity - navigating multiple cultures, belonging, the immigrant experience, heritage.',
+    domain: 'context',
+  },
+  {
+    value: 'spirituality_faith',
+    label: 'Spirituality & Faith',
+    description: 'Religious/spiritual experiences',
+    promptHint: 'Capture spiritual experiences broadly - organized religion, personal spirituality, doubt, transcendence, meaning-making.',
+    domain: 'context',
+  },
+  {
+    value: 'work_career',
+    label: 'Work & Career',
+    description: 'Job stress, career identity, purpose at work',
+    promptHint: 'Find work-life insights - career stress, finding purpose in work, work-life balance, identity tied to profession.',
+    domain: 'context',
+  },
+  {
+    value: 'money_scarcity',
+    label: 'Money & Scarcity',
+    description: 'Financial stress, abundance mindset',
+    promptHint: 'Capture the emotional side of money - scarcity mindset, financial anxiety, relationship with money, enough-ness.',
+    domain: 'context',
+  },
+  {
+    value: 'gender_sexuality',
+    label: 'Gender & Sexuality',
+    description: 'LGBTQ+ experiences, gender identity',
+    promptHint: 'Find lived experiences of gender and sexuality - coming out, identity discovery, navigating the world, community.',
+    domain: 'context',
+  },
+  {
+    value: 'creativity_expression',
+    label: 'Creativity & Expression',
+    description: 'Art, music, writing as healing',
+    promptHint: 'Capture creativity as emotional outlet - how art heals, creative blocks, the joy of making, expression as processing.',
+    domain: 'context',
+  },
 ];
 
 // ============================================
@@ -721,6 +1147,7 @@ export const CHANNEL_CATEGORIES: {
   { value: 'elderly_wisdom', label: 'Elderly Wisdom', description: 'Older generations sharing life perspective' },
   { value: 'vulnerability_authenticity', label: 'Vulnerability & Authenticity', description: 'Raw, honest content about being human' },
   { value: 'joy_celebration', label: 'Joy & Celebration', description: 'Positive experiences, celebration, happiness' },
+  { value: 'addiction_recovery', label: 'Addiction & Recovery', description: 'Compassionate, trauma-informed addiction recovery content' },
   { value: 'general_human_insight', label: 'General Human Insight', description: 'Mixed content with human insight value' },
 ];
 
@@ -782,66 +1209,110 @@ export function extractChannelInfo(url: string): { type: 'channel' | 'user' | 'h
 
 /**
  * Fetch video list from a YouTube channel using RSS feed
+ * @param knownChannelId - If provided, skip channel ID resolution and use this directly
  */
 export async function fetchChannelVideos(
   channelUrl: string,
-  maxVideos: number = 20
+  maxVideos: number = 20,
+  knownChannelId?: string
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
+  console.log('[YouTubeService] fetchChannelVideos called with:', channelUrl, 'knownChannelId:', knownChannelId);
+
   const channelInfo = extractChannelInfo(channelUrl);
+  console.log('[YouTubeService] Extracted channel info:', JSON.stringify(channelInfo));
 
   if (!channelInfo) {
-    return { videos: [], channelName: '', channelId: '', error: 'Invalid YouTube channel URL' };
+    console.error('[YouTubeService] ERR_INVALID_URL: Could not parse URL');
+    return { videos: [], channelName: '', channelId: '', error: '[ERR_INVALID_URL] Invalid YouTube channel URL. Supported formats: youtube.com/@handle, youtube.com/channel/UC..., youtube.com/c/name' };
   }
 
   try {
     let feedUrl: string;
-    let channelId = channelInfo.id;
+    let channelId = knownChannelId || channelInfo.id;
 
-    if (channelInfo.type === 'channel') {
+    // If we have a known channel ID, use it directly (skip resolution)
+    if (knownChannelId) {
+      console.log('[YouTubeService] Using pre-populated channel ID:', knownChannelId);
+      feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${knownChannelId}`;
+    } else if (channelInfo.type === 'channel') {
       feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelInfo.id}`;
     } else {
       // For handles, try to resolve to channel ID
       // First attempt: fetch channel page and extract ID
       try {
-        const pageResponse = await fetch(`https://www.youtube.com/@${channelInfo.id}`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        await rateLimit();
+        console.log('[YouTube] Fetching channel page for:', channelInfo.id);
+        const channelPageUrl = `https://www.youtube.com/@${channelInfo.id}`;
+        console.log('[YouTube] Using URL with proxy fallback...');
+        const pageResponse = await fetchWithProxyFallback(channelPageUrl, {
+          headers: Platform.OS === 'web' ? {} : {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
           },
         });
-        const pageHtml = await pageResponse.text();
-        const channelIdMatch = pageHtml.match(/"channelId":"(UC[^"]+)"/);
-        if (channelIdMatch) {
-          channelId = channelIdMatch[1];
-          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-        } else {
+        console.log('[YouTube] Page response status:', pageResponse.status);
+
+        if (!pageResponse.ok) {
+          console.error('[YouTubeService] ERR_HTTP_STATUS: Page fetch failed with status:', pageResponse.status);
           return {
             videos: [],
             channelName: channelInfo.id,
             channelId: '',
-            error: `Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
+            error: `[ERR_HTTP_${pageResponse.status}] YouTube returned status ${pageResponse.status}. Try refreshing or check your connection.`,
           };
         }
-      } catch {
+
+        const pageHtml = await pageResponse.text();
+        console.log('[YouTube] Page HTML length:', pageHtml.length);
+
+        const channelIdMatch = pageHtml.match(/"channelId":"(UC[^"]+)"/);
+        if (channelIdMatch) {
+          channelId = channelIdMatch[1];
+          console.log('[YouTube] Found channel ID:', channelId);
+          feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+        } else {
+          console.log('[YouTube] Could not find channelId in page HTML');
+          // Try alternative patterns
+          const altMatch = pageHtml.match(/channel_id=([^"&]+)/);
+          if (altMatch) {
+            channelId = altMatch[1];
+            console.log('[YouTube] Found channel ID via alt pattern:', channelId);
+            feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+          } else {
+            console.error('[YouTubeService] ERR_NO_CHANNEL_ID: Could not find channelId in page HTML');
+            return {
+              videos: [],
+              channelName: channelInfo.id,
+              channelId: '',
+              error: `[ERR_NO_CHANNEL_ID] Could not resolve channel ID for @${channelInfo.id}. Try using the channel ID format (youtube.com/channel/UC...)`,
+            };
+          }
+        }
+      } catch (fetchError) {
+        console.error('[YouTubeService] ERR_NETWORK:', fetchError);
         return {
           videos: [],
           channelName: channelInfo.id,
           channelId: '',
-          error: `Could not resolve channel. Try the channel ID format.`,
+          error: `[ERR_NETWORK] Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}. Check your connection.`,
         };
       }
     }
 
-    // Fetch RSS feed
-    const response = await fetch(feedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    // Fetch RSS feed with rate limiting and proxy fallback
+    await rateLimit();
+    console.log('[YouTubeService] Fetching RSS feed:', feedUrl);
+    const response = await fetchWithProxyFallback(feedUrl, {
+      headers: Platform.OS === 'web' ? {} : {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Accept': 'application/xml,text/xml,*/*;q=0.8',
       },
     });
+    console.log('[YouTubeService] RSS feed response status:', response.status);
     if (!response.ok) {
-      throw new Error(`Failed to fetch channel feed: ${response.status}`);
+      console.error('[YouTubeService] ERR_RSS_FETCH: Failed to fetch RSS feed');
+      throw new Error(`[ERR_RSS_${response.status}] Failed to fetch channel feed: ${response.status}`);
     }
 
     const xmlText = await response.text();
@@ -875,13 +1346,15 @@ export async function fetchChannelVideos(
     // Randomly select if we have more than needed
     const selectedVideos = selectRandomVideos(videos, maxVideos);
 
+    console.log('[YouTubeService] SUCCESS: Found', selectedVideos.length, 'videos for channel', channelName, '(', channelId, ')');
     return { videos: selectedVideos, channelName, channelId };
   } catch (error) {
+    console.error('[YouTubeService] ERR_UNKNOWN:', error);
     return {
       videos: [],
       channelName: '',
       channelId: '',
-      error: error instanceof Error ? error.message : 'Failed to fetch channel videos',
+      error: `[ERR_UNKNOWN] ${error instanceof Error ? error.message : 'Failed to fetch channel videos'}`,
     };
   }
 }
@@ -1181,11 +1654,13 @@ export async function enrichVideosWithStats(
  * Fetch channel videos with smart sampling
  * Enhanced version that supports popularity-based selection
  * Default strategy: 'balanced' (40% popular + 40% recent + 20% random)
+ * @param knownChannelId - If provided, skip channel ID resolution and use this directly
  */
 export async function fetchChannelVideosWithSampling(
   channelUrl: string,
   options: Partial<SamplingOptions> = {},
-  youtubeApiKey?: string
+  youtubeApiKey?: string,
+  knownChannelId?: string
 ): Promise<{ videos: YouTubeVideo[]; channelName: string; channelId: string; error?: string }> {
   // Merge with defaults
   const mergedOptions = {
@@ -1194,7 +1669,7 @@ export async function fetchChannelVideosWithSampling(
   };
 
   // First, fetch all available videos from RSS
-  const result = await fetchChannelVideos(channelUrl, mergedOptions.maxVideos * 3);
+  const result = await fetchChannelVideos(channelUrl, mergedOptions.maxVideos * 3, knownChannelId);
 
   if (result.error || result.videos.length === 0) {
     return result;
@@ -1228,31 +1703,738 @@ function decodeXMLEntities(text: string): string {
 }
 
 /**
- * Fetch transcript for a YouTube video
+ * Fetch transcript via YouTube InnerTube API
+ * This is the most reliable method as it's what YouTube itself uses
  */
-export async function fetchVideoTranscript(
-  videoId: string
+async function fetchTranscriptViaInnerTube(
+  videoId: string,
+  logger?: (msg: string) => void
 ): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  const log = (msg: string) => {
+    console.log(msg);
+    if (logger) logger(msg);
+  };
+
   try {
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const response = await fetch(videoUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    // Rate limit to avoid bot detection
+    await rateLimit();
+
+    // Step 1: Get video page to extract caption track info
+    const videoPageUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    log(`    Fetching YouTube page...`);
+    const pageResponse = await fetchWithProxyFallback(videoPageUrl, {
+      headers: Platform.OS === 'web' ? {} : {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
       },
     });
 
+    if (!pageResponse.ok) {
+      log(`    Page fetch failed: ${pageResponse.status}`);
+      return { transcript: '', segments: [], error: `[ERR_PAGE_FETCH] Video page returned ${pageResponse.status}` };
+    }
+
+    const html = await pageResponse.text();
+    log(`    Got HTML (${html.length} chars)`);
+
+    // Extract caption tracks from ytInitialPlayerResponse
+    // YouTube changes their format often - try multiple patterns
+    // NOTE: Using [\s\S] instead of . with /s flag for React Native compatibility
+
+    // Check if ytInitialPlayerResponse exists at all
+    const hasPlayerResponse = html.includes('ytInitialPlayerResponse');
+    const hasCaptions = html.includes('captionTracks');
+    log(`    ytInitialPlayerResponse: ${hasPlayerResponse ? 'YES' : 'NO'}, captionTracks: ${hasCaptions ? 'YES' : 'NO'}`);
+
+    // Pattern 1: var ytInitialPlayerResponse = {...};
+    let playerResponseMatch = html.match(/var\s+ytInitialPlayerResponse\s*=\s*(\{[\s\S]+?\});\s*(?:var|let|const|<\/script>)/);
+    if (playerResponseMatch) {
+      log(`    Pattern 1 matched!`);
+    }
+
+    if (!playerResponseMatch) {
+      // Pattern 2: ytInitialPlayerResponse = {...}; (without var)
+      playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*(\{[\s\S]+?\});\s*(?:var|let|const|if|<\/script>)/);
+      if (playerResponseMatch) {
+        log(`    Pattern 2 matched!`);
+      }
+    }
+
+    if (!playerResponseMatch) {
+      // Pattern 3: Try a more greedy match - find the opening brace and parse until valid JSON
+      const startIndex = html.indexOf('ytInitialPlayerResponse');
+      if (startIndex !== -1) {
+        const afterEquals = html.indexOf('=', startIndex);
+        if (afterEquals !== -1) {
+          const braceStart = html.indexOf('{', afterEquals);
+          if (braceStart !== -1) {
+            // Try to find matching closing brace by counting
+            let depth = 0;
+            let endIndex = braceStart;
+            for (let i = braceStart; i < html.length && i < braceStart + 500000; i++) {
+              if (html[i] === '{') depth++;
+              if (html[i] === '}') depth--;
+              if (depth === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+            if (endIndex > braceStart) {
+              const jsonStr = html.substring(braceStart, endIndex);
+              try {
+                JSON.parse(jsonStr); // Validate it's valid JSON
+                playerResponseMatch = [null, jsonStr];
+                log(`    Pattern 3 (brace counting) matched! JSON: ${jsonStr.length} chars`);
+              } catch (e) {
+                log(`    Pattern 3 extracted ${jsonStr.length} chars but invalid JSON`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!playerResponseMatch) {
+      // Pattern 4: Try extracting from script tag with JSON.parse
+      const scriptMatch = html.match(/ytInitialPlayerResponse\s*=\s*JSON\.parse\s*\(\s*'([\s\S]+?)'\s*\)/);
+      if (scriptMatch) {
+        try {
+          const decoded = scriptMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+          playerResponseMatch = [null, decoded];
+          log(`    Pattern 4 (JSON.parse) matched!`);
+        } catch {
+          log(`    Pattern 4 decode failed`);
+        }
+      }
+    }
+
+    if (!playerResponseMatch) {
+      // Pattern 5: Last resort - look for captionTracks directly in the HTML
+      const captionTracksMatch = html.match(/"captionTracks"\s*:\s*(\[[\s\S]*?\])\s*[,}]/);
+      if (captionTracksMatch) {
+        try {
+          const tracks = JSON.parse(captionTracksMatch[1]);
+          log(`    Pattern 5: Found ${tracks.length} caption tracks directly`);
+          if (tracks && tracks.length > 0) {
+            // Create a minimal playerResponse structure
+            playerResponseMatch = [null, JSON.stringify({ captions: { playerCaptionsTracklistRenderer: { captionTracks: tracks } } })];
+          }
+        } catch (e) {
+          log(`    Pattern 5 JSON parse failed`);
+        }
+      }
+    }
+
+    if (!playerResponseMatch) {
+      // Debug info
+      if (!hasPlayerResponse) {
+        log(`    ✗ No patterns matched - ytInitialPlayerResponse not in HTML`);
+      } else {
+        log(`    ✗ No patterns matched - ytInitialPlayerResponse exists but couldn't extract`);
+      }
+      return { transcript: '', segments: [], error: 'Could not find player response or captions in page' };
+    }
+
+    let playerResponse: any;
+    try {
+      playerResponse = JSON.parse(playerResponseMatch[1]);
+    } catch (e) {
+      log(`    ✗ Failed to parse player response JSON`);
+      return { transcript: '', segments: [], error: 'Failed to parse player response' };
+    }
+
+    const captions = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!captions || captions.length === 0) {
+      log(`    ✗ No captions in player response`);
+      return { transcript: '', segments: [], error: 'No captions available for this video' };
+    }
+
+    log(`    Found ${captions.length} caption tracks`);
+
+    // Find English captions (prefer non-auto-generated)
+    let selectedCaption = captions.find(
+      (c: any) => c.languageCode === 'en' && c.kind !== 'asr'
+    );
+    if (!selectedCaption) {
+      selectedCaption = captions.find(
+        (c: any) => c.languageCode === 'en' || c.languageCode?.startsWith('en')
+      );
+    }
+    if (!selectedCaption && captions.length > 0) {
+      selectedCaption = captions[0];
+      log(`    Using non-English caption: ${selectedCaption.languageCode}`);
+    }
+
+    if (!selectedCaption || !selectedCaption.baseUrl) {
+      return { transcript: '', segments: [], error: 'No usable caption track found' };
+    }
+
+    // Step 2: Fetch the caption content
+    // IMPORTANT: Use baseUrl EXACTLY as YouTube provides - don't modify params!
+    const captionUrl = selectedCaption.baseUrl;
+
+    // Rate limit before caption fetch
+    await rateLimit();
+
+    let captionData = '';
+
+    // Log URL for debugging (truncated)
+    const urlPreview = captionUrl.length > 80 ? captionUrl.substring(0, 80) + '...' : captionUrl;
+    log(`    Caption URL: ${urlPreview}`);
+
+    // Try direct fetch with full browser headers
+    try {
+      const directResponse = await fetch(captionUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/xml, application/xml, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://www.youtube.com/',
+          'Origin': 'https://www.youtube.com',
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (directResponse.ok) {
+        captionData = await directResponse.text();
+        if (captionData.length > 0) {
+          log(`    ✓ Direct fetch: ${captionData.length} chars`);
+        }
+      } else {
+        log(`    Direct fetch HTTP ${directResponse.status}`);
+      }
+    } catch (err) {
+      log(`    Direct fetch failed: ${err instanceof Error ? err.message : err}`);
+    }
+
+    // If direct fetch failed, try through CORS proxies
+    if (captionData.length === 0) {
+      log(`    Trying proxies...`);
+      for (const proxy of CORS_PROXIES) {
+        if (captionData.length > 0) break;
+        try {
+          // Use URL exactly - some proxies work better without encoding
+          const proxyUrl = proxy.encode
+            ? `${proxy.prefix}${encodeURIComponent(captionUrl)}${proxy.suffix}`
+            : `${proxy.prefix}${captionUrl}${proxy.suffix}`;
+
+          const proxyResponse = await fetch(proxyUrl, {
+            headers: {
+              'Accept': 'text/xml, application/xml, */*',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (proxyResponse.ok) {
+            captionData = await proxyResponse.text();
+            if (captionData.length > 0) {
+              log(`    ✓ Proxy success: ${captionData.length} chars`);
+            }
+          }
+        } catch (proxyErr) {
+          // Try next proxy silently
+        }
+      }
+    }
+
+    if (captionData.length === 0) {
+      log(`    ✗ Could not fetch caption content`);
+      return { transcript: '', segments: [], error: 'Could not fetch caption content' };
+    }
+
+    // Try to parse as JSON3 format
+    if (captionData.startsWith('{')) {
+      try {
+        const json = JSON.parse(captionData);
+        const events = json.events || [];
+        const segments: TranscriptSegment[] = [];
+
+        for (const event of events) {
+          if (event.segs) {
+            const text = event.segs.map((s: any) => s.utf8 || '').join('').trim();
+            if (text) {
+              segments.push({
+                text,
+                start: (event.tStartMs || 0) / 1000,
+                duration: (event.dDurationMs || 0) / 1000,
+              });
+            }
+          }
+        }
+
+        if (segments.length > 0) {
+          const transcript = segments.map(s => s.text).join(' ');
+          log(`    ✓ Parsed ${segments.length} segments`);
+          return { transcript, segments };
+        }
+      } catch (e) {
+        log(`    JSON3 parse failed, trying XML`);
+      }
+    }
+
+    // Fall back to XML parsing
+    return parseTranscriptXml(captionData);
+
+  } catch (error) {
+    log(`    ✗ InnerTube error: ${error}`);
+    return {
+      transcript: '',
+      segments: [],
+      error: error instanceof Error ? error.message : 'InnerTube fetch failed',
+    };
+  }
+}
+
+/**
+ * Fetch transcript via Invidious API (fallback method)
+ * Note: Many Invidious instances have caption issues due to YouTube rate limiting
+ */
+async function fetchTranscriptViaInvidious(
+  videoId: string
+): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  console.log(`[Transcript] Trying Invidious API for video: ${videoId}`);
+
+  // Shuffle instances to distribute load
+  const shuffledInstances = [...INVIDIOUS_INSTANCES].sort(() => Math.random() - 0.5);
+
+  for (const instance of shuffledInstances) {
+    try {
+      await rateLimit();
+
+      // First, get the list of available captions
+      const captionsUrl = `${instance}/api/v1/captions/${videoId}`;
+      console.log(`[Transcript] Trying instance: ${instance}`);
+
+      const captionsResponse = await fetch(captionsUrl, {
+        signal: AbortSignal.timeout(8000), // 8 second timeout
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!captionsResponse.ok) {
+        console.log(`[Transcript] Instance ${instance} returned ${captionsResponse.status}`);
+        continue;
+      }
+
+      const captionsData = await captionsResponse.json();
+      console.log(`[Transcript] Found ${captionsData.captions?.length || 0} caption tracks`);
+
+      if (!captionsData.captions || captionsData.captions.length === 0) {
+        console.log(`[Transcript] No captions available for this video`);
+        return {
+          transcript: '',
+          segments: [],
+          error: 'No captions available for this video',
+        };
+      }
+
+      // Find English captions (prefer manual over auto-generated)
+      let selectedCaption = captionsData.captions.find(
+        (c: any) => c.language_code === 'en' && !c.label.toLowerCase().includes('auto')
+      );
+
+      // Fall back to any English captions
+      if (!selectedCaption) {
+        selectedCaption = captionsData.captions.find(
+          (c: any) => c.language_code === 'en' || c.language_code?.startsWith('en-')
+        );
+      }
+
+      // Fall back to first available caption
+      if (!selectedCaption && captionsData.captions.length > 0) {
+        selectedCaption = captionsData.captions[0];
+        console.log(`[Transcript] Using non-English caption: ${selectedCaption.language_code}`);
+      }
+
+      if (!selectedCaption) {
+        continue;
+      }
+
+      // Fetch the actual caption content
+      const captionContentUrl = `${instance}${selectedCaption.url}`;
+      console.log(`[Transcript] Fetching caption content from: ${captionContentUrl}`);
+
+      const contentResponse = await fetch(captionContentUrl, {
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!contentResponse.ok) {
+        console.log(`[Transcript] Failed to fetch caption content: ${contentResponse.status}`);
+        continue;
+      }
+
+      const captionText = await contentResponse.text();
+      console.log(`[Transcript] Got caption text (${captionText.length} chars)`);
+
+      // Parse the caption format (Invidious returns VTT or SRV3 format)
+      const result = parseInvidiousCaptions(captionText);
+
+      if (result.transcript) {
+        console.log(`[Transcript] Successfully parsed ${result.segments.length} segments`);
+        return result;
+      }
+    } catch (error) {
+      console.log(`[Transcript] Instance ${instance} failed:`, error);
+      continue;
+    }
+  }
+
+  return {
+    transcript: '',
+    segments: [],
+    error: 'All Invidious instances failed',
+  };
+}
+
+/**
+ * Parse Invidious caption formats (VTT or XML)
+ */
+function parseInvidiousCaptions(
+  captionText: string
+): { transcript: string; segments: TranscriptSegment[]; error?: string } {
+  const segments: TranscriptSegment[] = [];
+
+  // Try VTT format first
+  if (captionText.includes('WEBVTT')) {
+    const vttRegex = /(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})\s*\n([\s\S]*?)(?=\n\n|\n\d{2}:\d{2}|$)/g;
+    let match;
+
+    while ((match = vttRegex.exec(captionText)) !== null) {
+      const startTime = parseVttTimestamp(match[1]);
+      const endTime = parseVttTimestamp(match[2]);
+      const text = match[3]
+        .replace(/<[^>]+>/g, '') // Remove HTML tags
+        .replace(/\n/g, ' ')
+        .trim();
+
+      if (text) {
+        segments.push({
+          text,
+          start: startTime,
+          duration: endTime - startTime,
+        });
+      }
+    }
+  }
+
+  // Try XML format
+  if (segments.length === 0) {
+    const xmlResult = parseTranscriptXml(captionText);
+    if (xmlResult.segments.length > 0) {
+      return xmlResult;
+    }
+  }
+
+  // Try SRV3 format (used by some captions)
+  if (segments.length === 0) {
+    const srv3Regex = /<p t="(\d+)" d="(\d+)"[^>]*>([\s\S]*?)<\/p>/g;
+    let match;
+
+    while ((match = srv3Regex.exec(captionText)) !== null) {
+      const startMs = parseInt(match[1]);
+      const durationMs = parseInt(match[2]);
+      const text = decodeXMLEntities(match[3])
+        .replace(/<[^>]+>/g, '')
+        .trim();
+
+      if (text) {
+        segments.push({
+          text,
+          start: startMs / 1000,
+          duration: durationMs / 1000,
+        });
+      }
+    }
+  }
+
+  // Try simple text format (one line per segment)
+  if (segments.length === 0 && captionText.length > 100 && !captionText.includes('<')) {
+    // Plain text format - split into sentences
+    const sentences = captionText.split(/[.!?]+/).filter(s => s.trim());
+    let currentTime = 0;
+
+    for (const sentence of sentences) {
+      const text = sentence.trim();
+      if (text.length > 10) {
+        segments.push({
+          text,
+          start: currentTime,
+          duration: 5, // Estimated
+        });
+        currentTime += 5;
+      }
+    }
+  }
+
+  if (segments.length === 0) {
+    return {
+      transcript: '',
+      segments: [],
+      error: 'Could not parse caption format',
+    };
+  }
+
+  const transcript = segments.map(s => s.text).join(' ');
+  return { transcript, segments };
+}
+
+/**
+ * Parse VTT timestamp to seconds
+ */
+function parseVttTimestamp(timestamp: string): number {
+  const parts = timestamp.split(':');
+  if (parts.length === 3) {
+    const hours = parseInt(parts[0]);
+    const minutes = parseInt(parts[1]);
+    const seconds = parseFloat(parts[2]);
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+  return 0;
+}
+
+/**
+ * Try to fetch transcript via YouTube's timedtext API
+ * This is more reliable than scraping the video page
+ */
+async function fetchTranscriptViaApi(
+  videoId: string
+): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  await rateLimit();
+
+  const manualUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=srv3`;
+  console.log(`[Transcript] Trying timedtext API (manual captions)...`);
+
+  try {
+    const response = await fetchWithProxyFallback(manualUrl, {}, 2);
+
+    if (response.ok) {
+      const xmlText = await response.text();
+      if (xmlText && xmlText.length > 100) {
+        return parseTranscriptXml(xmlText);
+      }
+    }
+  } catch (e) {
+    console.log(`[Transcript] Manual caption fetch failed:`, e);
+  }
+
+  // Try auto-generated captions
+  await rateLimit();
+  const autoUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=srv3`;
+  console.log(`[Transcript] Trying timedtext API (auto-generated captions)...`);
+
+  try {
+    const autoResponse = await fetchWithProxyFallback(autoUrl, {}, 2);
+
+    if (autoResponse.ok) {
+      const xmlText = await autoResponse.text();
+      if (xmlText && xmlText.length > 100) {
+        return parseTranscriptXml(xmlText);
+      }
+    }
+  } catch (e) {
+    console.log(`[Transcript] Auto caption fetch failed:`, e);
+  }
+
+  return {
+    transcript: '',
+    segments: [],
+    error: '[ERR_TIMEDTEXT_API] Timedtext API returned no usable captions',
+  };
+}
+
+/**
+ * Parse transcript XML into segments and full text
+ */
+function parseTranscriptXml(
+  xmlText: string
+): { transcript: string; segments: TranscriptSegment[]; error?: string } {
+  if (!xmlText || xmlText.length < 50) {
+    return {
+      transcript: '',
+      segments: [],
+      error: 'Empty or invalid transcript XML',
+    };
+  }
+
+  const segments: TranscriptSegment[] = [];
+
+  // Try parsing srv3 format (newer)
+  const srv3Regex = /<p t="(\d+)" d="(\d+)"[^>]*>([^<]*)<\/p>/g;
+  let match;
+  let foundSrv3 = false;
+
+  while ((match = srv3Regex.exec(xmlText)) !== null) {
+    foundSrv3 = true;
+    const startMs = parseInt(match[1]);
+    const durationMs = parseInt(match[2]);
+    const text = decodeXMLEntities(match[3]).trim();
+
+    if (text) {
+      segments.push({
+        text,
+        start: startMs / 1000,
+        duration: durationMs / 1000,
+      });
+    }
+  }
+
+  // Try parsing older format if srv3 didn't work
+  if (!foundSrv3) {
+    const oldRegex = /<text start="([^"]+)" dur="([^"]+)"[^>]*>([^<]*)<\/text>/g;
+    while ((match = oldRegex.exec(xmlText)) !== null) {
+      const text = decodeXMLEntities(match[3]).trim();
+      if (text) {
+        segments.push({
+          text,
+          start: parseFloat(match[1]),
+          duration: parseFloat(match[2]),
+        });
+      }
+    }
+  }
+
+  if (segments.length === 0) {
+    return {
+      transcript: '',
+      segments: [],
+      error: 'Could not parse transcript segments',
+    };
+  }
+
+  const transcript = segments.map(s => s.text).join(' ');
+  console.log(`[Transcript] Parsed ${segments.length} segments, ${transcript.length} chars`);
+
+  return { transcript, segments };
+}
+
+/**
+ * Fetch transcript for a YouTube video
+ * Tries multiple methods in order of reliability:
+ * 1. InnerTube API (what YouTube itself uses - most reliable)
+ * 2. YouTube timedtext API
+ * 3. Invidious API (often rate-limited)
+ * 4. Direct YouTube page scraping
+ */
+// Local transcript server URL - run transcript-server locally
+// For iOS Simulator: use localhost
+// For real iOS device: use your computer's IP (e.g., http://192.168.1.100:3333)
+const TRANSCRIPT_SERVER_URL = 'http://127.0.0.1:3333';
+
+export async function fetchVideoTranscript(
+  videoId: string,
+  logger?: (msg: string) => void
+): Promise<{ transcript: string; segments: TranscriptSegment[]; error?: string }> {
+  const log = (msg: string) => {
+    console.log(msg);
+    if (logger) logger(msg);
+  };
+  log(`[Transcript] Fetching transcript for video: ${videoId}`);
+
+  // Try Method 0: Local transcript server (most reliable - bypasses YouTube blocks)
+  try {
+    log(`  → Trying local server (${TRANSCRIPT_SERVER_URL})...`);
+    const serverResponse = await fetch(`${TRANSCRIPT_SERVER_URL}/transcript?v=${videoId}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (serverResponse.ok) {
+      const data = await serverResponse.json();
+      if (data.transcript && data.transcript.length > 100) {
+        log(`  ✓ Got transcript via local server (${data.transcript.length} chars)`);
+        return {
+          transcript: data.transcript,
+          segments: data.segments || [],
+        };
+      }
+      log(`  ✗ Server returned empty transcript`);
+    } else {
+      const errorData = await serverResponse.json().catch(() => ({}));
+      log(`  ✗ Server error: ${errorData.error || `HTTP ${serverResponse.status}`}`);
+    }
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    if (errMsg.includes('Network request failed') || errMsg.includes('Load failed') || errMsg.includes('fetch')) {
+      log(`  ✗ Cannot connect to transcript server!`);
+      log(`    Make sure you ran: cd transcript-server && npm install && npm start`);
+      log(`    If on real device, update TRANSCRIPT_SERVER_URL to your computer's IP`);
+    } else {
+      log(`  ✗ Server error: ${errMsg}`);
+    }
+  }
+
+  // Try Method 1: InnerTube API (fallback - often blocked on native)
+  try {
+    log(`  → Trying InnerTube API...`);
+    const innerTubeResult = await fetchTranscriptViaInnerTube(videoId, logger);
+    if (innerTubeResult.transcript && innerTubeResult.transcript.length > 100) {
+      log(`  ✓ Got transcript via InnerTube (${innerTubeResult.transcript.length} chars)`);
+      return innerTubeResult;
+    }
+    if (innerTubeResult.error === 'No captions available for this video') {
+      log(`  ✗ No captions available for this video`);
+      return innerTubeResult;
+    }
+    log(`  ✗ InnerTube returned no usable transcript`);
+  } catch (error) {
+    log(`  ✗ InnerTube failed: ${error}`);
+  }
+
+  // Try Method 2: YouTube timedtext API
+  try {
+    log(`  → Trying timedtext API...`);
+    const transcriptApiResult = await fetchTranscriptViaApi(videoId);
+    if (transcriptApiResult.transcript) {
+      log(`  ✓ Got transcript via timedtext API (${transcriptApiResult.transcript.length} chars)`);
+      return transcriptApiResult;
+    }
+    log(`  ✗ Timedtext API returned no transcript`);
+  } catch (error) {
+    log(`  ✗ Timedtext API failed: ${error}`);
+  }
+
+  // Try Method 3: Invidious API (often rate-limited but worth trying)
+  try {
+    log(`  → Trying Invidious API...`);
+    const invidiousResult = await fetchTranscriptViaInvidious(videoId);
+    if (invidiousResult.transcript && invidiousResult.transcript.length > 100) {
+      log(`  ✓ Got transcript via Invidious (${invidiousResult.transcript.length} chars)`);
+      return invidiousResult;
+    }
+    log(`  ✗ Invidious returned no usable transcript`);
+  } catch (error) {
+    log(`  ✗ Invidious failed: ${error}`);
+  }
+
+  // Try Method 4: Direct YouTube page scraping (last resort)
+  try {
+    await rateLimit();
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    log(`  → Trying direct page scrape...`);
+
+    const response = await fetchWithProxyFallback(videoUrl, {
+      headers: Platform.OS === 'web' ? {} : {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+      },
+    }, 2);
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch video page: ${response.status}`);
+      throw new Error(`[ERR_PAGE_SCRAPE] Video page returned ${response.status}`);
     }
 
     const html = await response.text();
+    log(`  Got HTML (${html.length} chars), searching for captions...`);
 
     // Look for captions in the page data
     const captionMatch = html.match(/"captionTracks":\s*(\[[\s\S]*?\])/);
 
     if (!captionMatch) {
+      // Check if it's a proxy error page
+      if (html.includes('error') || html.length < 1000) {
+        console.log(`[Transcript] Proxy may have returned error page`);
+      }
       return {
         transcript: '',
         segments: [],
@@ -1567,26 +2749,27 @@ export async function extractInsightsWithClaude(
     return { insights: [], error: 'Transcript too short to analyze' };
   }
 
-  const prompt = buildExtractionPrompt(transcript, videoTitle, channelName, categories);
-
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Route through local server (React Native can't call external APIs reliably)
+    const response = await fetch(`${TRANSCRIPT_SERVER_URL}/claude-extract`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+        transcript,
+        videoTitle,
+        videoId,
+        channelName,
+        categories,
+        apiKey,
       }),
+      signal: AbortSignal.timeout(120000), // 2 min timeout for Claude
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      throw new Error(errorData.error || `Server error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -2013,6 +3196,65 @@ export async function clearProcessedVideos(): Promise<void> {
 }
 
 // ============================================
+// PROCESSED CHANNELS HISTORY
+// Tracks which channels have been batch processed
+// ============================================
+
+export interface ProcessedChannelRecord {
+  channelId: string;
+  channelName: string;
+  handle?: string;
+  processedAt: string;
+  videosProcessed: number;
+  insightsExtracted: number;
+  insightsApproved: number;
+  avgQualityScore: number;
+  lastVideoDate?: string; // To know where we left off
+}
+
+export async function getProcessedChannelsHistory(): Promise<ProcessedChannelRecord[]> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export async function addProcessedChannelRecord(record: ProcessedChannelRecord): Promise<void> {
+  const history = await getProcessedChannelsHistory();
+
+  // Check if channel already exists - update instead of duplicate
+  const existingIndex = history.findIndex(h => h.channelId === record.channelId);
+
+  if (existingIndex !== -1) {
+    // Update existing record with cumulative stats
+    const existing = history[existingIndex];
+    history[existingIndex] = {
+      ...record,
+      videosProcessed: existing.videosProcessed + record.videosProcessed,
+      insightsExtracted: existing.insightsExtracted + record.insightsExtracted,
+      insightsApproved: existing.insightsApproved + record.insightsApproved,
+      avgQualityScore: (existing.avgQualityScore + record.avgQualityScore) / 2,
+      processedAt: record.processedAt, // Update to latest
+    };
+  } else {
+    history.push(record);
+  }
+
+  await AsyncStorage.setItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY, JSON.stringify(history));
+}
+
+export async function isChannelProcessed(channelId: string): Promise<{
+  processed: boolean;
+  record?: ProcessedChannelRecord;
+}> {
+  const history = await getProcessedChannelsHistory();
+  const record = history.find(h => h.channelId === channelId);
+  return { processed: !!record, record };
+}
+
+export async function clearProcessedChannelsHistory(): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY, JSON.stringify([]));
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 
@@ -2068,6 +3310,12 @@ export default {
   // Reset functions
   resetAllInterviewData,
   clearProcessedVideos,
+
+  // Processed channels history
+  getProcessedChannelsHistory,
+  addProcessedChannelRecord,
+  isChannelProcessed,
+  clearProcessedChannelsHistory,
 
   // Constants
   EXTRACTION_CATEGORIES,

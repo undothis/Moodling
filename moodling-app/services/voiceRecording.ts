@@ -70,6 +70,8 @@ class VoiceRecordingService {
   private recognition: SpeechRecognition | null = null;
   private callback: VoiceRecordingCallback | null = null;
   private finalTranscript: string = '';
+  private interimTranscript: string = '';
+  private isCurrentlyRecording: boolean = false;
 
   /**
    * Check if voice recording is supported on this platform
@@ -102,6 +104,7 @@ class VoiceRecordingService {
     this.recognition.lang = 'en-US';
 
     this.recognition.onstart = () => {
+      this.isCurrentlyRecording = true;
       this.callback?.({ isRecording: true, error: null });
     };
 
@@ -118,6 +121,9 @@ class VoiceRecordingService {
           interimTranscript += result[0].transcript;
         }
       }
+
+      // Always track the latest interim for fallback
+      this.interimTranscript = interimTranscript || this.interimTranscript;
 
       this.callback?.({
         transcript: finalTranscript.trim(),
@@ -149,6 +155,7 @@ class VoiceRecordingService {
     };
 
     this.recognition.onend = () => {
+      this.isCurrentlyRecording = false;
       this.callback?.({ isRecording: false });
     };
 
@@ -161,6 +168,7 @@ class VoiceRecordingService {
   start(callback: VoiceRecordingCallback): boolean {
     this.callback = callback;
     this.finalTranscript = '';
+    this.interimTranscript = '';
 
     if (!this.isSupported()) {
       callback({
@@ -193,6 +201,41 @@ class VoiceRecordingService {
     } catch (error) {
       // Ignore errors when stopping
     }
+  }
+
+  /**
+   * Start recording with options (alias for VoiceEnabledTabBar compatibility)
+   */
+  async startRecording(options?: {
+    onInterimResult?: (text: string) => void;
+    onFinalResult?: (text: string) => void;
+    onStateChange?: (state: VoiceRecordingState | 'error') => void;
+  }): Promise<boolean> {
+    return this.start((state) => {
+      if (state.error) {
+        options?.onStateChange?.('error');
+      }
+      if (state.interimTranscript) {
+        options?.onInterimResult?.(state.interimTranscript);
+      }
+      if (state.transcript) {
+        options?.onFinalResult?.(state.transcript);
+      }
+    });
+  }
+
+  /**
+   * Stop recording and return transcript (alias for VoiceEnabledTabBar compatibility)
+   * Uses interim transcript as fallback if no finalized text available
+   */
+  async stopRecording(): Promise<{ transcript: string } | null> {
+    this.stop();
+    // Wait a brief moment for any final results
+    await new Promise(resolve => setTimeout(resolve, 100));
+    // Use final transcript, fall back to interim if needed
+    const transcript = this.finalTranscript.trim() || this.interimTranscript.trim();
+    console.log('[VoiceRecording] stopRecording - final:', this.finalTranscript, 'interim:', this.interimTranscript, 'returning:', transcript);
+    return { transcript };
   }
 
   /**

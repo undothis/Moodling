@@ -2,24 +2,70 @@
 
 ## Overview
 
-The MoodLeaf AI Training System is designed to create a specialized, human-like AI companion by fine-tuning a local LLM (Llama 3.2) on curated human experience data. This manual covers every component of the system.
+The MoodLeaf AI Training System is designed to create a specialized, human-like AI companion by training on curated human experience data. This manual covers every component of the system.
+
+### Do I Need Llama Installed?
+
+**No, not for the current workflow.**
+
+| Task | Requires Llama? | What It Uses |
+|------|-----------------|--------------|
+| Import insights manually | No | Local storage |
+| Harvest from YouTube channels | No | **Claude API** |
+| Review and approve insights | No | Local storage |
+| Version control & rollback | No | Local storage |
+| Export training data | No | Local JSON |
+| **Fine-tune local model** | **Yes** | Llama 3.2 + LoRA |
+
+**Current Phase:** The app uses Claude API for insight extraction and coaching. All training data is stored locally and used to enhance prompts.
+
+**Future Phase (not yet implemented):** Once you have enough data (500+ scored examples, 50+ insights), you can export and fine-tune a local Llama model for on-device coaching.
+
+---
+
+## Quick Start: Transcript Server
+
+**Before processing YouTube channels, set up the transcript server:**
+
+### 1. Install yt-dlp (one time)
+```bash
+brew install yt-dlp
+```
+
+### 2. Start the server
+```bash
+cd transcript-server
+npm install   # only first time
+npm start
+```
+
+Keep this terminal open while processing. The server runs on `http://localhost:3333`.
+
+**Why?** YouTube blocks direct transcript requests from mobile apps. The server uses yt-dlp (the gold standard for YouTube extraction) to reliably fetch transcripts.
+
+### Updating yt-dlp
+YouTube changes frequently. Keep yt-dlp updated:
+```bash
+brew upgrade yt-dlp
+```
 
 ---
 
 ## Table of Contents
 
 1. [System Architecture](#1-system-architecture)
-2. [Core Principle Kernel](#2-core-principle-kernel) ⭐ **NEW**
+2. [Core Principle Kernel](#2-core-principle-kernel)
 3. [Data Collection Pipeline](#3-data-collection-pipeline)
 4. [Quality Control System](#4-quality-control-system)
-5. [Advanced Research Methods](#5-advanced-research-methods)
-6. [Model Version Control](#6-model-version-control)
+5. [Model Version Control](#5-model-version-control) ⭐ **Admin UI Available**
+6. [Advanced Research Methods](#6-advanced-research-methods)
 7. [Data Persistence & Backup](#7-data-persistence--backup)
 8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
 9. [Llama Integration](#9-llama-integration)
 10. [Status Monitoring](#10-status-monitoring)
-11. [Best Practices](#11-best-practices)
-12. [Troubleshooting](#12-troubleshooting)
+11. [Admin Interfaces Reference](#11-admin-interfaces-reference) ⭐ **NEW**
+12. [Best Practices](#12-best-practices)
+13. [Troubleshooting](#13-troubleshooting)
 
 ---
 
@@ -31,10 +77,10 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              USER INTERFACE                                  │
 │                                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────────────┐ │
-│  │ Interview      │  │ Training Admin │  │ Status Indicator               │ │
-│  │ Processor      │  │ (Manual Entry) │  │ (Persistent)                   │ │
-│  └───────┬────────┘  └───────┬────────┘  └───────────────────────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  ┌─────────────────┐  ┌──────────┐ │
+│  │ Interview      │  │ Training Admin │  │ Version Control │  │ Status   │ │
+│  │ Processor      │  │ (Manual Entry) │  │ (Rollback/Gates)│  │ Indicator│ │
+│  └───────┬────────┘  └───────┬────────┘  └────────┬────────┘  └──────────┘ │
 └──────────┼───────────────────┼──────────────────────────────────────────────┘
            │                   │
            ▼                   ▼
@@ -311,12 +357,157 @@ The kernel ensures that no matter which model powers the coach, the core philoso
 
 3. **Insight Extraction**
    - Claude analyzes transcript for human insights
-   - 27 extraction categories across 5 domains:
-     - **Pain** (struggles, coping, trauma)
-     - **Joy** (humor, celebration, playfulness)
-     - **Connection** (companionship, love, belonging)
-     - **Growth** (wisdom, self-discovery, lessons)
-     - **Authenticity** (real quotes, contradictions, messy middle)
+   - 60 extraction categories across 7 domains:
+     - **Pain** (struggles, coping, trauma, shame, grief, anxiety, depression)
+     - **Joy** (humor, celebration, playfulness, gratitude, hope, awe)
+     - **Connection** (companionship, love, belonging, parenting, caregiving, conflict)
+     - **Growth** (wisdom, self-discovery, lessons, identity, life transitions)
+     - **Body** (aging, health, burnout, neurodivergence, sleep, addiction recovery)
+     - **Context** (culture, spirituality, work, money, gender/sexuality, creativity)
+     - **Authenticity** (real quotes, contradictions, messy middle, uncomfortable truths)
+
+#### How Insight Extraction Works
+
+The system uses Claude API to analyze transcripts and extract meaningful insights. Here's the process:
+
+**1. Categories Define What to Look For**
+
+When you set up a channel, you select from 60 categories across 7 domains:
+
+**Pain Domain (11 categories)**
+| Category | Description |
+|----------|-------------|
+| `emotional_struggles` | How people experience difficult emotions |
+| `coping_strategies` | What people do to get through hard times |
+| `what_helps_hurts` | Specific things that help or make things worse |
+| `vulnerability` | Moments of openness and raw honesty |
+| `mental_health_patterns` | Recurring mental health experiences |
+| `trauma_recovery` | How people heal from difficult experiences |
+| `shame_guilt` | Experiences of shame and guilt |
+| `anger_frustration` | How anger manifests and is processed |
+| `grief_loss` | Experiences of loss and grieving |
+| `fear_anxiety` | Fear and anxiety experiences |
+| `depression_hopelessness` | Depression and feelings of hopelessness |
+
+**Joy Domain (9 categories)**
+| Category | Description |
+|----------|-------------|
+| `humor_wit` | How people use humor to connect and cope |
+| `joy_celebration` | What brings genuine happiness |
+| `excitement_passion` | What people get excited about |
+| `playfulness` | Lighthearted moments and fun |
+| `gratitude_appreciation` | What people are thankful for |
+| `contentment_peace` | Experiences of calm satisfaction |
+| `hope_optimism` | Hope and positive outlook |
+| `pride_accomplishment` | Pride in achievements |
+| `awe_wonder` | Experiences of awe and wonder |
+
+**Connection Domain (12 categories)**
+| Category | Description |
+|----------|-------------|
+| `companionship` | Being with others, shared presence |
+| `friendship_dynamics` | How friendships work |
+| `romantic_love` | Romantic relationship patterns |
+| `family_bonds` | Family relationship dynamics |
+| `belonging_community` | Feeling part of something larger |
+| `loneliness_isolation` | Experiences of disconnection |
+| `parenting` | Parenting experiences and challenges |
+| `boundaries` | Setting and maintaining boundaries |
+| `conflict_repair` | How conflicts are resolved and relationships repaired |
+| `trust_betrayal` | Trust building and betrayal experiences |
+| `communication_patterns` | How people communicate in relationships |
+| `caregiving` | Caring for others (elderly, sick, etc.) |
+
+**Growth Domain (10 categories)**
+| Category | Description |
+|----------|-------------|
+| `self_discovery` | Learning about oneself |
+| `growth_moments` | Turning points and breakthroughs |
+| `life_lessons` | Wisdom gained from experience |
+| `wisdom_perspective` | Insights about life, often from age/experience |
+| `meaning_purpose` | What gives life meaning |
+| `regret_forgiveness` | Processing regret and forgiving |
+| `life_transitions` | Major life changes (divorce, job loss, moving) |
+| `identity_formation` | How people form their sense of self |
+| `values_beliefs` | Core values and belief systems |
+| `decision_making` | How people make important decisions |
+
+**Body Domain (7 categories)**
+| Category | Description |
+|----------|-------------|
+| `aging_mortality` | Aging experiences and mortality awareness |
+| `body_health` | Body image, chronic illness, physical health |
+| `rest_burnout` | Rest, exhaustion, and burnout patterns |
+| `embodied_emotion` | How emotions manifest in the body |
+| `neurodivergent_experience` | ADHD, autism, and other neurodivergent experiences |
+| `sleep_energy` | Sleep patterns and energy management |
+| `addiction_recovery` | Addiction experiences and recovery |
+
+**Context Domain (6 categories)**
+| Category | Description |
+|----------|-------------|
+| `cultural_identity` | Cultural background and identity |
+| `spirituality_faith` | Spiritual and religious experiences |
+| `work_career` | Work life, career changes, professional identity |
+| `money_scarcity` | Financial stress and abundance |
+| `gender_sexuality` | Gender identity and sexuality experiences |
+| `creativity_expression` | Creative expression and artistic pursuits |
+
+**Authenticity Domain (5 categories)**
+| Category | Description |
+|----------|-------------|
+| `real_quotes` | Actual words people use to describe experiences |
+| `contradictions_complexity` | When people hold conflicting views |
+| `messy_middle` | In-progress struggles, not neat resolutions |
+| `uncomfortable_truths` | Hard realities people acknowledge |
+| `beautiful_imperfection` | Embracing flaws and limitations |
+
+**2. The Prompt Instructs Claude**
+
+The transcript server sends a structured prompt to Claude:
+
+```
+Analyze this transcript from "[video title]" by [channel name]
+and extract valuable insights.
+
+CATEGORIES TO EXTRACT:
+- emotional_processing: How to process emotions...
+- relationship_dynamics: Relationship patterns...
+
+TRANSCRIPT:
+[first 15,000 chars of transcript]
+
+Extract 3-8 high-quality insights. For each provide:
+1. A clear, actionable title
+2. The full insight text (2-4 sentences)
+3. Which category it belongs to
+4. Quality score (0-100)
+5. Safety score (0-100)
+6. Confidence level (0-1)
+```
+
+**3. Claude Analyzes and Returns Structured JSON**
+
+Claude reads the transcript, identifies meaningful therapeutic/coaching wisdom, and returns insights like:
+
+```json
+{
+  "title": "Validate before solving",
+  "insight": "When someone shares a problem, acknowledge their feelings before offering solutions. This builds trust and shows you understand.",
+  "category": "communication_skills",
+  "qualityScore": 92,
+  "safetyScore": 98,
+  "confidence": 0.9
+}
+```
+
+**4. Quality Filtering**
+
+After extraction, insights are filtered:
+- Low quality scores (<60) are rejected
+- Low safety scores (<80) are flagged for review
+- Duplicates are detected via content hashing
+- All remaining insights go to the pending queue for human review
 
 4. **Quality Filtering**
    - Minimum quality score: 60
@@ -330,15 +521,35 @@ The kernel ensures that no matter which model powers the coach, the core philoso
    - Human approves or rejects
    - Approved insights become training data
 
+6. **Bulk Approval Options**
+   The Review tab provides several ways to efficiently approve insights:
+
+   | Method | Description |
+   |--------|-------------|
+   | **Individual** | Tap checkboxes to select specific insights, then "Approve Selected" |
+   | **Select All** | Select/deselect all pending insights at once |
+   | **Auto 90%+** | Auto-approve all insights with quality ≥90% AND safety ≥95% |
+   | **Auto 85%+** | Auto-approve all insights with quality ≥85% AND safety ≥95% |
+   | **Auto 80%+** | Auto-approve all insights with quality ≥80% AND safety ≥95% |
+
+   **Safety Requirements:** Auto-approve only works on insights that:
+   - Meet the quality threshold
+   - Have safety score ≥95%
+   - Are NOT flagged for human review
+
+   **Best Practice:** Use 90%+ auto-approve for trusted channels, spot-check a few, then manually review lower-scored insights.
+
 #### Categories Explained
 
-| Domain | Categories | Purpose |
-|--------|-----------|---------|
-| Pain | emotional_struggles, coping_strategies, what_helps_hurts, vulnerability, mental_health_patterns, trauma_recovery | Understand suffering |
-| Joy | humor_wit, joy_celebration, excitement_passion, playfulness, gratitude_appreciation | Understand happiness |
-| Connection | companionship, friendship_dynamics, romantic_love, family_bonds, belonging_community, loneliness_isolation | Understand relationships |
-| Growth | self_discovery, growth_moments, life_lessons, wisdom_perspective, meaning_purpose | Understand development |
-| Authenticity | real_quotes, contradictions_complexity, messy_middle, uncomfortable_truths, beautiful_imperfection | Understand humanness |
+| Domain | Count | Categories | Purpose |
+|--------|-------|-----------|---------|
+| Pain | 11 | emotional_struggles, coping_strategies, what_helps_hurts, vulnerability, mental_health_patterns, trauma_recovery, shame_guilt, anger_frustration, grief_loss, fear_anxiety, depression_hopelessness | Understand suffering |
+| Joy | 9 | humor_wit, joy_celebration, excitement_passion, playfulness, gratitude_appreciation, contentment_peace, hope_optimism, pride_accomplishment, awe_wonder | Understand happiness |
+| Connection | 12 | companionship, friendship_dynamics, romantic_love, family_bonds, belonging_community, loneliness_isolation, parenting, boundaries, conflict_repair, trust_betrayal, communication_patterns, caregiving | Understand relationships |
+| Growth | 10 | self_discovery, growth_moments, life_lessons, wisdom_perspective, meaning_purpose, regret_forgiveness, life_transitions, identity_formation, values_beliefs, decision_making | Understand development |
+| Body | 7 | aging_mortality, body_health, rest_burnout, embodied_emotion, neurodivergent_experience, sleep_energy, addiction_recovery | Understand physical experience |
+| Context | 6 | cultural_identity, spirituality_faith, work_career, money_scarcity, gender_sexuality, creativity_expression | Understand life context |
+| Authenticity | 5 | real_quotes, contradictions_complexity, messy_middle, uncomfortable_truths, beautiful_imperfection | Understand humanness |
 
 ### 2.2 Manual Entry
 
@@ -388,12 +599,14 @@ Score: % of insights with cross-source validation
 
 #### Category Balance
 ```
-Target distribution by domain:
-- Pain: 20%
-- Joy: 20%
-- Connection: 25%
-- Growth: 20%
-- Authenticity: 15%
+Target distribution by domain (7 domains):
+- Pain: 18%
+- Joy: 15%
+- Connection: 20%
+- Growth: 17%
+- Body: 12%
+- Context: 10%
+- Authenticity: 8%
 
 Status: under (<50% of target), balanced, over (>150% of target)
 ```
@@ -633,13 +846,36 @@ const report = await generateResearchQualityReport();
 
 ## 5. Model Version Control
 
-### 11.1 Overview
+### 5.1 Overview
 
 **Service**: `modelVersionControlService.ts`
+**Admin UI**: Settings → Developer Tools → Version Control
 
 Git-style version control for AI models. Every training creates a new version that can be tracked, tested, and rolled back.
 
-### 11.2 Version Lifecycle
+### 5.2 Version Control Admin UI
+
+**Location**: Settings → Developer Tools → "Version Control"
+
+The Version Control Admin provides a visual interface for managing model versions:
+
+#### Tabs
+
+| Tab | Purpose |
+|-----|---------|
+| **Versions** | View all model versions, their status, and quality scores |
+| **Rollback Log** | History of all rollback operations with reasons |
+| **Gates** | Configure deployment safety gates (human approval, quality thresholds) |
+
+#### Actions Available
+
+- **View Version Details**: Tap any version to see metadata, training data used, quality metrics
+- **Stage Version**: Move a version to staging for testing
+- **Promote to Production**: Deploy a staged version to production (requires gates to pass)
+- **Rollback**: Revert to a previous version with a required reason
+- **Configure Gates**: Set deployment requirements (human approval, min quality score, A/B testing)
+
+### 5.3 Version Lifecycle
 
 ```
 ┌─────────┐      ┌─────────┐      ┌─────────┐      ┌─────────┐
@@ -1074,25 +1310,113 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 10. Best Practices
+## 11. Admin Interfaces Reference
 
-### 11.1 Data Collection
+All admin tools are accessible from **Settings → Developer Tools**.
+
+### 11.1 Available Admin Screens
+
+| Screen | Path | Purpose |
+|--------|------|---------|
+| **Training Admin** | `/admin/training` | Import insights, review pending, export data |
+| **Interview Processor** | `/admin/interview-processor` | YouTube channel harvesting, video processing |
+| **Version Control** | `/admin/version-control` | Model versions, rollback, deployment gates |
+| **Simulator Mode** | `/simulator` | Test AI adaptation with different profiles |
+
+### 11.2 Training Admin (`/admin/training`)
+
+**Tabs:**
+- **Import**: Single or batch import of insights (JSON format)
+- **Insights**: Review pending insights, approve/reject
+- **Export**: Export all training data as JSON
+
+**Use When:** You have interview insights or manual observations to add to training data.
+
+### 11.3 Interview Processor (`/admin/interview-processor`)
+
+**Tabs:**
+- **Channels**: Add and manage YouTube channels to harvest
+- **Batch**: Process multiple channels with resume/checkpoint support
+- **Process**: Process individual channels one at a time
+- **Review**: Review, approve, or reject extracted insights
+- **Stats**: View quality statistics and processing history
+
+**Features:**
+- Add YouTube channels (supports @handle, /channel/, /c/ formats)
+- Configure trust levels and categories
+- Process videos to extract insights via Claude
+- Smart sampling strategies (popular, recent, balanced)
+- **Batch processing with resume**: Save progress and resume interrupted batches
+- **Bulk approve**: Select multiple insights and approve/reject in bulk
+- **Auto-approve by quality**: Automatically approve insights meeting quality thresholds (90%+, 85%+, 80%+)
+- **Rate limiting**: Built-in delays to prevent IP bans
+
+**Recommended Channels:**
+Pre-configured channels organized by extraction dimensions:
+- Emotional Experience (awe, joy, love, vulnerability, fear, grief, calm)
+- Cognitive Patterns (ambiguity, learning, decision-making)
+- Existential Themes (meaning, mortality, identity, values)
+- Relational Dynamics (attachment, conflict, boundaries, caregiving)
+- Symbolic Expression (dreams, creativity, narrative)
+- Life Context (work, money, culture, aging)
+- Embodied Experience (body, health, neurodivergence)
+
+**Use When:** You want to harvest human insights from therapy/coaching YouTube channels.
+
+**Note:** Uses Claude API for insight extraction. Requires local transcript server running on port 3333. No Llama installation required.
+
+### 11.4 Version Control (`/admin/version-control`)
+
+**Tabs:**
+- **Versions**: View all model versions with quality scores and status
+- **Rollback Log**: History of rollback operations with reasons
+- **Gates**: Configure deployment safety requirements
+
+**Actions:**
+- View version details (metadata, training data, metrics)
+- Stage versions for testing
+- Promote staged versions to production
+- Rollback to previous versions (with required reason)
+- Configure deployment gates (human approval, min quality, A/B testing)
+
+**Use When:** You need to manage model versions, rollback after quality drops, or configure safety gates.
+
+### 11.5 How to Access
+
+```
+Settings
+  └── [scroll down]
+      └── Developer Tools
+          ├── Simulator Mode
+          ├── Training Admin
+          ├── Interview Processor
+          └── Version Control  ← NEW
+```
+
+---
+
+## 12. Best Practices
+
+### 12.1 Data Collection
 
 **DO:**
 - Curate channels with diverse perspectives
-- Balance across all 5 domains (pain, joy, connection, growth, authenticity)
+- Balance across all 7 domains (pain, joy, connection, growth, body, context, authenticity)
 - Review pending insights regularly
 - Reject low-quality or harmful content
 - Add channels gradually, monitor impact
+- Use auto-approve (90%+) for trusted, high-quality channels
+- Spot-check a sample of auto-approved insights
 
 **DON'T:**
-- Bulk approve without review
+- Auto-approve without spot-checking at least some insights
 - Over-rely on one channel or source
 - Ignore pending queue
 - Skip safety score reviews
 - Add channels without categorization
+- Use lower auto-approve thresholds (80%+) without careful review
 
-### 11.2 Quality Maintenance
+### 12.2 Quality Maintenance
 
 **Weekly:**
 - Review quality metrics
@@ -1106,7 +1430,7 @@ View recent activity by tapping the status indicator.
 - Review flagged sources
 - Update training data export
 
-### 11.3 Version Control
+### 12.3 Version Control
 
 **Before Training:**
 1. Export current training data
@@ -1126,7 +1450,7 @@ View recent activity by tapping the status indicator.
 3. Review suspected data
 4. Either rollback or remove bad data and retrain
 
-### 11.4 Backup Strategy
+### 12.4 Backup Strategy
 
 **Development:**
 - Use `devQuickSave()` before major changes
@@ -1140,9 +1464,9 @@ View recent activity by tapping the status indicator.
 
 ---
 
-## 11. Troubleshooting
+## 13. Troubleshooting
 
-### 11.1 Common Issues
+### 13.1 Common Issues
 
 #### "Import button does nothing"
 The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then scroll down to click "Import Insight".
@@ -1152,6 +1476,26 @@ The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then
 - Transcript may be too short (<100 chars)
 - API key may be invalid
 - Video content may not contain relevant insights
+
+#### "No transcript available" (YouTube Processing)
+The transcript extraction uses multiple regex patterns to find `ytInitialPlayerResponse` in the YouTube page. If all videos show "No transcript available":
+
+**Debugging Steps:**
+1. Check the logs - extensive logging has been added at each extraction step:
+   - `[Transcript] HTML contains 'ytInitialPlayerResponse': true/false`
+   - `[Transcript] HTML contains 'captionTracks': true/false`
+   - `[Transcript] Pattern 1/2/3/4/5: MATCHED or no match`
+
+2. **React Native Compatibility:** The regex uses `[\s\S]` instead of the `/s` dotall flag for React Native JS engine compatibility
+
+3. **Five Extraction Patterns Tried:**
+   - Pattern 1: `var ytInitialPlayerResponse = {...}`
+   - Pattern 2: `ytInitialPlayerResponse = {...}` (without var)
+   - Pattern 3: Brace-counting approach (most robust)
+   - Pattern 4: `JSON.parse(...)` wrapper
+   - Pattern 5: Direct `captionTracks` extraction
+
+4. If debug snippet shows ytInitialPlayerResponse exists but no pattern matches, YouTube may have changed their format - check the HTML structure
 
 #### "Model quality degraded"
 1. Check `trainingDataImpactService.ts` for problem data
@@ -1167,7 +1511,7 @@ The Import tab is a FORM. Fill in Title, Insight, and Coaching Implication, then
 #### "Can't find Developer Tools"
 Settings → scroll past Privacy → Developer Tools (near bottom)
 
-### 11.2 Emergency Rollback
+### 13.2 Emergency Rollback
 
 ```typescript
 import { rollback, getProductionVersion } from './modelVersionControlService';
@@ -1181,7 +1525,7 @@ if (lastGood) {
 }
 ```
 
-### 11.3 Data Recovery
+### 13.3 Data Recovery
 
 ```typescript
 import { recoverFromBackup, getBackupInfo } from './dataPersistenceService';
@@ -1197,7 +1541,7 @@ await recoverFromBackup();
 await recoverFromBackup('2026-01-20T10:00:00Z');
 ```
 
-### 11.4 Debugging Quality Issues
+### 13.4 Debugging Quality Issues
 
 ```typescript
 import { calculateAllQualityMetrics, getQualityRecommendations } from './trainingQualityService';
@@ -1222,10 +1566,164 @@ console.log('Problem Insights:', problems);
 
 ---
 
-## Appendix A: Service File Reference
+## Appendix A: Insight System (Seeds Tab)
+
+### Overview
+
+The Insight Service (`insightService.ts`) discovers patterns from user data and surfaces them as "insights" that help users understand themselves. These insights are displayed in the **Seeds tab**, using a nature metaphor where insights "grow" as they strengthen.
+
+**Location**: Seeds tab in main navigation (🌰/🌱 icon)
+
+### The Seeds Tab
+
+The Seeds tab presents insights as growing seeds that develop over time:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SEEDS TAB                                       │
+│                                                                              │
+│  "Your insights are like seeds - they grow stronger with time and data"     │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  GROWTH STAGES                                                          ││
+│  │                                                                          ││
+│  │  🌰 Sprouting    First noticed, needs more data                         ││
+│  │  🌱 Growing      Pattern becoming clearer                               ││
+│  │  🌿 Flourishing  Strong pattern, consistent over time                   ││
+│  │  🌳 Rooted       Deeply established, core understanding                 ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────┐│
+│  │  CATEGORY FILTERS (Nature icons)                                        ││
+│  │                                                                          ││
+│  │  🌊 Cycles      🔗 Connections   💪 Activities   🌙 Sleep               ││
+│  │  🌅 Time        🏔 Environment   🌀 Momentum     🌧 Triggers            ││
+│  │  💫 Recovery    🦋 Body-Mind     🪨 Avoidance    🌱 Growth              ││
+│  │  ⚠️ Warnings    💬 Self-Talk                                            ││
+│  └─────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### New Seeds Indicator
+
+When new insights are discovered, the Seeds tab icon glows with a gentle pulsing animation:
+- Badge shows count of new insights (up to 9+)
+- Glow uses green (#4CAF50) to match the nature theme
+- New insights are marked as viewed when the user opens the Seeds tab
+
+### How It Works
+
+```
+User Data Sources
+        ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DATA INPUTS                                                                 │
+│                                                                              │
+│  📝 Twigs/Quick Logs      User mood entries and notes                       │
+│  💬 Coach Conversations   Topics discussed with AI coach                    │
+│  📅 Calendar Events       Schedule patterns (with permission)               │
+│  👥 Contacts              Social interaction patterns (with permission)     │
+│  📍 Location              Movement and place patterns (with permission)     │
+│  📱 Screen Time           Digital habit patterns (with permission)          │
+│  ❤️ Health Data           Sleep, steps, heart rate (with permission)        │
+│  🌤 Weather               Environmental correlations                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+        ↓
+    Pattern Detection
+        ↓
+   ┌────────────────────────────────────────┐
+   │  HEURISTIC (Default)                   │
+   │  • 100% local, no API needed           │
+   │  • 20+ built-in pattern templates      │
+   │  • Statistical correlations            │
+   │  • Multi-source analysis               │
+   └────────────────────────────────────────┘
+        ↓ (optional, with consent)
+   ┌────────────────────────────────────────┐
+   │  LLM ANALYSIS (Future: Llama)          │
+   │  • Deeper pattern recognition          │
+   │  • Complex multi-variable correlations │
+   │  • Natural language insight generation │
+   └────────────────────────────────────────┘
+        ↓
+    Insights Discovered (Seeds)
+        ↓
+    Shown in Seeds Tab + Coach Can Mention
+```
+
+### Insight Categories
+
+| Category | Icon | Description | Example |
+|----------|------|-------------|---------|
+| `correlation` | 🔗 | X correlates with Y | "Junk food → harder periods" |
+| `trigger` | 🌧 | What triggers moods | "Meetings trigger anxiety" |
+| `recovery` | 💫 | What helps bounce back | "Walking helps after stress" |
+| `cycle` | 🌊 | Recurring patterns | "Weekly mood dips on Sundays" |
+| `social` | 🔗 | Relationship effects | "Isolation → mood drop" |
+| `activity` | 💪 | Activity-mood links | "Exercise lifts mood" |
+| `sleep` | 🌙 | Sleep patterns | "< 6 hours → focus problems" |
+| `time_of_day` | 🌅 | Time-based patterns | "You're a morning person" |
+| `environment` | 🏔 | Location effects | "Outdoors improves mood" |
+| `momentum` | 🌀 | Streak effects | "Stopping meditation → off track" |
+| `avoidance` | 🪨 | Avoidance patterns | "No outside → more Netflix" |
+| `self_talk` | 💬 | Internal dialogue | "Negative self-talk → low days" |
+| `body_mind` | 🦋 | Physical-emotional | "Caffeine → anxiety" |
+| `warning_sign` | ⚠️ | Early warnings | "Mood trending down" |
+| `growth` | 🌱 | Progress recognition | "Mood improved this quarter" |
+
+### Insight Strength (Growth Stages)
+
+Insights grow stronger as more data supports them:
+
+| Strength | Visual | Meaning | Data Confidence |
+|----------|--------|---------|-----------------|
+| `emerging` | 🌰 Sprouting | Just noticed | Low (needs more data) |
+| `developing` | 🌱 Growing | Pattern forming | Medium |
+| `established` | 🌿 Flourishing | Consistent pattern | High |
+| `strong` | 🌳 Rooted | Core understanding | Very high |
+
+### User Reactions
+
+Users can respond to insights with nature-themed reactions:
+- 🌱 "This resonates" - Insight feels accurate
+- 🤔 "I'll watch for this" - Curious to observe
+- 🍂 "Not quite right" - Doesn't match experience
+
+Reactions help the system learn which insights are valuable.
+
+### Coach Integration
+
+The coach is automatically aware of insights and can:
+- Mention insights naturally in conversation
+- Congratulate users on positive patterns
+- Reference evidence when giving advice
+
+```typescript
+// Coach gets insight context in system prompt
+const context = await getInsightContextForCoach();
+
+// Check if coach should congratulate
+const insight = await shouldCongratulateOnInsight();
+if (insight) {
+  const message = generateInsightCongratulations(insight);
+}
+```
+
+### Privacy Modes
+
+| Mode | Data Stays Local | Requires API | Depth |
+|------|------------------|--------------|-------|
+| Heuristic (Default) | ✅ Yes | No | Good |
+| Claude API | ❌ No (opt-in) | Yes | Deep |
+| Llama (Future) | ✅ Yes | No | Deep |
+
+---
+
+## Appendix B: Service File Reference
 
 | File | Purpose |
 |------|---------|
+| `insightService.ts` | Pattern discovery, insight management, coach integration |
 | `youtubeProcessorService.ts` | YouTube harvesting, transcript extraction, Claude insight extraction |
 | `trainingQualityService.ts` | Semantic dedup, balance, freshness, diversity, curriculum |
 | `advancedResearchService.ts` | Contrastive examples, persona diversity, bias detection, contradiction detection, evidence grading, sentiment analysis, response simulation, expert queue, synthetic augmentation |
@@ -1235,8 +1733,14 @@ console.log('Problem Insights:', problems);
 | `llamaIntegrationService.ts` | LLM integration, prompt formatting, export |
 | `trainingStatusService.ts` | Real-time status, activity logging, alerts |
 | `TrainingStatusIndicator.tsx` | Persistent UI indicator component |
-| `aiAccountabilityService.ts` | AI auto-creation of Twigs, calendar events, contacts, limit alerts |
+| `aiAccountabilityService.ts` | AI auto-creation of Twigs, calendar events, contacts, limit alerts, adaptive accountability preferences |
+| `accountabilityService.ts` | Skill practice tracking, streaks, achievements, coach skill suggestions |
+| `drinkPacingService.ts` | Harm reduction drink pacing with timed reminders |
 | `quickLogsService.ts` | Twig/Quick Log management with limit support |
+| `achievementNotificationService.ts` | Achievement tracking, tab glow notifications, celebration messages |
+| `safeguardService.ts` | Safety detection (self-harm, violence, abuse), crisis resources |
+| `llmProviderService.ts` | Multi-platform LLM abstraction (Claude, Llama, Apple, Android, Windows) |
+| `insightFeedbackService.ts` | Insight feedback collection, anonymous upload, training data export |
 
 ---
 
@@ -1274,6 +1778,21 @@ console.log('Problem Insights:', problems);
 | `moodleaf_accountability_goals` | Accountability | User accountability goals |
 | `moodleaf_limit_alerts` | Accountability | Limit-based alert configurations |
 | `moodleaf_ai_created_items` | Accountability | Items created by AI from conversation |
+| `moodleaf_accountability_prefs` | Accountability | User's accountability intensity preferences (off/gentle/moderate/proactive) |
+| `moodleaf_drink_pacing_session` | Drink Pacing | Active drink pacing session |
+| `moodleaf_pending_achievements` | Achievements | Achievements awaiting celebration |
+| `moodleaf_achievement_settings` | Achievements | Glow and notification preferences |
+| `moodleaf_safeguard_log` | Safeguards | Anonymized safety event log |
+| `moodleaf_safeguard_config` | Safeguards | Additional keyword configuration |
+| `moodleaf_llm_provider_config` | LLM Provider | Provider selection and configuration |
+| `moodleaf_insight_feedback` | Feedback | User feedback on insights |
+| `moodleaf_feedback_upload_consent` | Feedback | User consent for anonymous upload |
+| `moodleaf_pending_feedback_uploads` | Feedback | Queue of feedback awaiting upload |
+| `moodleaf_drink_pacing_history` | Drink Pacing | Past pacing session summaries |
+| `moodleaf_drink_pacing_prefs` | Drink Pacing | Default interval, max drinks, vibrate-only settings |
+| `moodleaf_skill_practice` | Skill Tracking | Skill practice log entries |
+| `moodleaf_skill_streaks` | Skill Tracking | Current and longest streaks per skill |
+| `moodleaf_skill_achievements` | Skill Tracking | Unlocked skill achievements |
 
 ---
 

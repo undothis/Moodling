@@ -23,6 +23,7 @@ import {
   useColorScheme,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
@@ -35,6 +36,12 @@ import {
   logEntry,
   isCompletedToday,
 } from '@/services/quickLogsService';
+import {
+  onTwigLogged,
+  getLimitAlerts,
+  LimitAlert,
+  sendLimitAlertNotification,
+} from '@/services/aiAccountabilityService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,6 +54,7 @@ interface QuickLogWithStatus extends QuickLog {
   todayCount: number;
   isCompleted: boolean;
   streak: LogStreak | null;
+  limitAlert?: LimitAlert; // If this twig has a limit configured
 }
 
 export function QuickLogsOverlay({ visible, onClose }: QuickLogsOverlayProps) {
@@ -67,13 +75,15 @@ export function QuickLogsOverlay({ visible, onClose }: QuickLogsOverlayProps) {
     try {
       setLoading(true);
       const quickLogs = await getQuickLogs();
+      const limitAlerts = await getLimitAlerts();
       const logsWithStatus: QuickLogWithStatus[] = [];
 
       for (const log of quickLogs) {
         const todayCount = await getTodayCount(log.id);
         const isCompleted = await isCompletedToday(log.id);
         const streak = await getStreak(log.id);
-        logsWithStatus.push({ ...log, todayCount, isCompleted, streak });
+        const limitAlert = limitAlerts.find(a => a.twigId === log.id && a.isActive);
+        logsWithStatus.push({ ...log, todayCount, isCompleted, streak, limitAlert });
       }
 
       setLogs(logsWithStatus);
@@ -130,18 +140,44 @@ export function QuickLogsOverlay({ visible, onClose }: QuickLogsOverlayProps) {
       // Log the entry
       await logEntry(log.id);
 
+      const newCount = log.todayCount + 1;
+
       // Update local state
       setLogs((prev) =>
         prev.map((l) =>
           l.id === log.id
             ? {
                 ...l,
-                todayCount: l.todayCount + 1,
+                todayCount: newCount,
                 isCompleted: true,
               }
             : l
         )
       );
+
+      // Check if this twig has a limit and show alert if needed
+      if (log.limitAlert) {
+        const result = await onTwigLogged(log.id);
+        if (result?.shouldAlert && result.alertMessage) {
+          // Determine alert style based on status
+          const alertTitle = result.status === 'exceeded'
+            ? `${log.emoji} Over Limit`
+            : result.status === 'reached'
+              ? `${log.emoji} Limit Reached`
+              : `${log.emoji} Heads Up`;
+
+          // Show in-app alert
+          Alert.alert(alertTitle, result.alertMessage, [{ text: 'Got it' }]);
+
+          // Also send notification for when app is backgrounded
+          await sendLimitAlertNotification(
+            log.name,
+            newCount,
+            log.limitAlert.maxLimit,
+            result.status!
+          );
+        }
+      }
 
       // Brief visual feedback
       setTimeout(() => setTappedId(null), 300);
@@ -215,48 +251,88 @@ export function QuickLogsOverlay({ visible, onClose }: QuickLogsOverlayProps) {
           </View>
         ) : (
           <View style={styles.grid}>
-            {logs.map((log) => (
-              <TouchableOpacity
-                key={log.id}
-                style={[
-                  styles.logButton,
-                  {
-                    backgroundColor: log.isCompleted
-                      ? colors.success + '20'
-                      : colors.card,
-                    borderColor: log.isCompleted ? colors.success : colors.border,
-                  },
-                  tappedId === log.id && styles.logButtonTapped,
-                ]}
-                onPress={() => handleLogTap(log)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.logEmoji}>{log.emoji}</Text>
-                <Text
-                  style={[styles.logName, { color: colors.text }]}
-                  numberOfLines={1}
+            {logs.map((log) => {
+              // Determine badge color based on limit status
+              const hasLimit = !!log.limitAlert;
+              const limitReached = hasLimit && log.todayCount >= log.limitAlert!.maxLimit;
+              const limitApproaching = hasLimit && log.todayCount >= Math.floor(log.limitAlert!.maxLimit * 0.75);
+              const limitExceeded = hasLimit && log.todayCount > log.limitAlert!.maxLimit;
+
+              const badgeColor = limitExceeded
+                ? '#F44336' // Red for exceeded
+                : limitReached
+                  ? '#FF9800' // Orange for reached
+                  : limitApproaching
+                    ? '#FFC107' // Yellow for approaching
+                    : colors.success; // Green for normal
+
+              return (
+                <TouchableOpacity
+                  key={log.id}
+                  style={[
+                    styles.logButton,
+                    {
+                      backgroundColor: limitExceeded
+                        ? '#F4433615'
+                        : limitReached
+                          ? '#FF980015'
+                          : log.isCompleted
+                            ? colors.success + '20'
+                            : colors.card,
+                      borderColor: limitExceeded
+                        ? '#F44336'
+                        : limitReached
+                          ? '#FF9800'
+                          : log.isCompleted
+                            ? colors.success
+                            : colors.border,
+                    },
+                    tappedId === log.id && styles.logButtonTapped,
+                  ]}
+                  onPress={() => handleLogTap(log)}
+                  activeOpacity={0.7}
                 >
-                  {log.name}
-                </Text>
-                {log.todayCount > 0 && (
-                  <View
-                    style={[
-                      styles.countBadge,
-                      { backgroundColor: colors.success },
-                    ]}
+                  <Text style={styles.logEmoji}>{log.emoji}</Text>
+                  <Text
+                    style={[styles.logName, { color: colors.text }]}
+                    numberOfLines={1}
                   >
-                    <Text style={styles.countText}>
-                      {log.todayCount}
-                    </Text>
-                  </View>
-                )}
-                {log.streak && log.streak.currentStreak > 1 && (
-                  <Text style={[styles.streakText, { color: colors.textMuted }]}>
-                    {log.streak.currentStreak} day streak
+                    {log.name}
                   </Text>
-                )}
-              </TouchableOpacity>
-            ))}
+
+                  {/* Show limit progress or simple count */}
+                  {hasLimit ? (
+                    <View
+                      style={[
+                        styles.limitBadge,
+                        { backgroundColor: badgeColor },
+                      ]}
+                    >
+                      <Text style={styles.limitText}>
+                        {log.todayCount}/{log.limitAlert!.maxLimit}
+                      </Text>
+                    </View>
+                  ) : log.todayCount > 0 ? (
+                    <View
+                      style={[
+                        styles.countBadge,
+                        { backgroundColor: colors.success },
+                      ]}
+                    >
+                      <Text style={styles.countText}>
+                        {log.todayCount}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {log.streak && log.streak.currentStreak > 1 && (
+                    <Text style={[styles.streakText, { color: colors.textMuted }]}>
+                      {log.streak.currentStreak} day streak
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -347,6 +423,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  limitBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    minWidth: 28,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  limitText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
   streakText: {
     fontSize: 9,

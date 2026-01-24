@@ -171,7 +171,9 @@ export function VoiceEnabledTabBar({
 
         try {
           const result = await voiceRecording.stopRecording();
-          const finalTranscript = result?.transcript || overlay.transcript;
+          // Use result transcript, then overlay transcript as fallbacks
+          const finalTranscript = result?.transcript?.trim() || overlay.transcript?.trim() || '';
+          console.log('[VoiceTabBar] Recording stopped, result:', result?.transcript, 'overlay:', overlay.transcript, 'final:', finalTranscript);
 
           // Store pending message for the target screen
           if (finalTranscript.trim()) {
@@ -179,7 +181,12 @@ export function VoiceEnabledTabBar({
               routeName === 'coach'
                 ? PENDING_COACH_MESSAGE_KEY
                 : PENDING_JOURNAL_MESSAGE_KEY;
+            console.log('[VoiceTabBar] Saving to AsyncStorage:', storageKey);
+
+            // Add timestamp to force re-reads even on same screen
+            const timestampKey = `${storageKey}_timestamp`;
             await AsyncStorage.setItem(storageKey, finalTranscript);
+            await AsyncStorage.setItem(timestampKey, Date.now().toString());
 
             // Haptic success feedback
             if (Platform.OS !== 'web') {
@@ -187,10 +194,25 @@ export function VoiceEnabledTabBar({
             }
           }
 
-          // Navigate to target
+          // Navigate to target with voice message as param
+          // This is more reliable than AsyncStorage for immediate navigation
           const tabIndex = state.routes.findIndex((r) => r.name === routeName);
+
           if (tabIndex !== -1) {
-            navigation.navigate(routeName);
+            // Always pass the voice message and timestamp as params for reliability
+            if (finalTranscript.trim()) {
+              console.log('[VoiceTabBar] Navigating to', routeName, 'with voiceMessage param');
+              navigation.navigate({
+                name: routeName,
+                params: {
+                  voiceMessage: finalTranscript.trim(),
+                  voiceTimestamp: Date.now()
+                },
+                merge: true,
+              } as any);
+            } else {
+              navigation.navigate(routeName);
+            }
           }
         } catch (error) {
           console.error('Failed to stop recording:', error);

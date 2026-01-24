@@ -1201,6 +1201,175 @@ registerCommand({
   },
 });
 
+// Individual game commands
+registerCommand({
+  name: 'snake',
+  aliases: ['mindful_snake'],
+  description: 'Play mindful snake',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🐍 Opening Mindful Snake...\n\n_Classic snake, but slower and calmer._',
+    navigateTo: '/games/snake',
+  }),
+});
+
+registerCommand({
+  name: 'pong',
+  aliases: ['gentle_pong'],
+  description: 'Play gentle pong',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🏓 Opening Gentle Pong...\n\n_Slow-motion pong with relaxing visuals._',
+    navigateTo: '/games/pong',
+  }),
+});
+
+registerCommand({
+  name: 'asteroids',
+  aliases: ['space'],
+  description: 'Play asteroids',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🌌 Opening Asteroids...\n\n_Classic space shooter, calming edition._',
+    navigateTo: '/games/asteroids',
+  }),
+});
+
+registerCommand({
+  name: 'breakout',
+  aliases: ['bricks', 'arkanoid'],
+  description: 'Play breakout',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🧱 Opening Breakout...\n\n_Satisfying brick-breaking action._',
+    navigateTo: '/games/breakout',
+  }),
+});
+
+registerCommand({
+  name: '2048',
+  aliases: ['puzzle'],
+  description: 'Play 2048',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🔢 Opening 2048...\n\n_Slide and merge numbers to reach 2048._',
+    navigateTo: '/games/2048',
+  }),
+});
+
+registerCommand({
+  name: 'memory',
+  aliases: ['match', 'pairs'],
+  description: 'Play memory match',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🃏 Opening Memory Match...\n\n_Find matching pairs to train your memory._',
+    navigateTo: '/games/memory-match',
+  }),
+});
+
+registerCommand({
+  name: 'bubbles',
+  aliases: ['bubblewrap'],
+  description: 'Pop bubble wrap',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🫧 Opening Bubble Wrap...\n\n_Endless popping satisfaction._',
+    navigateTo: '/games/bubble-wrap',
+  }),
+});
+
+registerCommand({
+  name: 'sand',
+  aliases: ['kinetic'],
+  description: 'Play with kinetic sand',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🏖️ Opening Kinetic Sand...\n\n_Satisfying sand simulation._',
+    navigateTo: '/games/kinetic-sand',
+  }),
+});
+
+registerCommand({
+  name: 'rain',
+  aliases: ['window', 'raindrops'],
+  description: 'Watch rain on window',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🌧️ Opening Rain on Window...\n\n_Calming rain drops on glass._',
+    navigateTo: '/games/rain-on-window',
+  }),
+});
+
+registerCommand({
+  name: 'kaleidoscope',
+  aliases: ['kscope'],
+  description: 'View kaleidoscope patterns',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🔮 Opening Kaleidoscope...\n\n_Mesmerizing symmetrical patterns._',
+    navigateTo: '/games/kaleidoscope',
+  }),
+});
+
+registerCommand({
+  name: 'maze',
+  aliases: ['mazewalker'],
+  description: 'Walk through mazes',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🧩 Opening Maze Walker...\n\n_Navigate peaceful mazes._',
+    navigateTo: '/games/maze-walker',
+  }),
+});
+
+registerCommand({
+  name: 'untangle',
+  aliases: ['knots'],
+  description: 'Untangle the knots',
+  category: 'skill',
+  requiresPremium: false,
+  handler: async () => ({
+    type: 'navigation',
+    success: true,
+    message: '🪢 Opening Untangle...\n\n_Solve the puzzle by untangling lines._',
+    navigateTo: '/games/untangle',
+  }),
+});
+
 // ============================================
 // TEACHING COMMANDS
 // ============================================

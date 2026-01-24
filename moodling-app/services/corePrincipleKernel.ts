@@ -681,6 +681,36 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
     }
   },
 
+  {
+    id: 'NO_RELIGIOUS_PROMOTION',
+    description: "NEVER promote any religion, faith, or dogma - spirituality is personal, not prescriptive",
+    category: 'ethical',
+    check: (ctx) => {
+      if (ctx.coachResponse) {
+        const promotionalPhrases = [
+          'you should pray', 'you need god', 'you need jesus', 'trust in god',
+          'the bible says', 'the quran says', 'you should go to church',
+          'you should convert', 'have you accepted', 'you need faith',
+          'god has a plan', 'it\'s god\'s will', 'pray about it',
+          'you should believe', 'you need to believe', 'the only way is'
+        ];
+
+        const responseLower = ctx.coachResponse.toLowerCase();
+        const violation = promotionalPhrases.find(phrase => responseLower.includes(phrase));
+
+        if (violation) {
+          return {
+            allowed: false,
+            violation: `Promoted religion with phrase "${violation}"`,
+            severity: 'blocked',
+            alternative: 'Respect user\'s existing beliefs without promoting any specific faith. Ask about what gives THEM meaning.'
+          };
+        }
+      }
+      return { allowed: true, severity: 'ok' };
+    }
+  },
+
   // === ETHICAL CONSTRAINTS ===
   {
     id: 'NO_PATHOLOGIZING_CYCLES',

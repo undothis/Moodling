@@ -30,6 +30,7 @@ import {
   getNextOnboardingQuestion,
   recordOnboardingAnswer,
   completeOnboarding,
+  getOnboardingProgressInfo,
   OnboardingQuestion,
 } from '@/services/cognitiveProfileService';
 
@@ -41,8 +42,9 @@ export default function CognitiveOnboardingScreen() {
   const insets = useSafeAreaInsets();
 
   const [currentQuestion, setCurrentQuestion] = useState<OnboardingQuestion | null>(null);
-  const [questionCount, setQuestionCount] = useState(0);
-  const [totalEstimate, setTotalEstimate] = useState(8);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [questionNumber, setQuestionNumber] = useState(1);
+  const [totalQuestions, setTotalQuestions] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -61,11 +63,16 @@ export default function CognitiveOnboardingScreen() {
   const loadNextQuestion = async () => {
     setIsLoading(true);
     try {
+      // Update progress info
+      const progressInfo = await getOnboardingProgressInfo();
+      setProgressPercent(progressInfo.progressPercent);
+      setQuestionNumber(progressInfo.answeredCount + 1);
+      setTotalQuestions(progressInfo.totalAtCurrentDepth);
+
       const question = await getNextOnboardingQuestion();
       if (question) {
         setCurrentQuestion(question);
         setSelectedAnswer(null);
-        setQuestionCount(prev => prev + 1);
       } else {
         // No more questions - complete and go straight to coach chat
         await completeOnboarding();
@@ -134,12 +141,12 @@ export default function CognitiveOnboardingScreen() {
     }, 300);
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
     if (questionHistory.length === 0 || isTransitioning) return;
 
     setIsTransitioning(true);
 
-    animateTransition('back', () => {
+    animateTransition('back', async () => {
       // Pop the last question from history
       const newHistory = [...questionHistory];
       const previousQuestion = newHistory.pop();
@@ -154,7 +161,10 @@ export default function CognitiveOnboardingScreen() {
       if (previousQuestion) {
         setCurrentQuestion(previousQuestion);
         setSelectedAnswer(null);
-        setQuestionCount(prev => prev - 1);
+        // Update progress (will be slightly lower going back)
+        const progressInfo = await getOnboardingProgressInfo();
+        setProgressPercent(Math.max(0, progressInfo.progressPercent - 5)); // Approximate back
+        setQuestionNumber(prev => Math.max(1, prev - 1));
       }
     });
   };
@@ -163,8 +173,6 @@ export default function CognitiveOnboardingScreen() {
     await completeOnboarding();
     router.replace('/coach');
   };
-
-  const progress = questionCount / totalEstimate;
 
   if (isLoading && !currentQuestion) {
     return (
@@ -196,7 +204,7 @@ export default function CognitiveOnboardingScreen() {
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: colors.tint },
+                { width: `${Math.min(progressPercent, 100)}%`, backgroundColor: colors.tint },
               ]}
             />
           </View>
@@ -208,13 +216,15 @@ export default function CognitiveOnboardingScreen() {
         </Pressable>
       </View>
 
-      {/* Intro text */}
+      {/* Question counter and intro */}
       <View style={styles.introContainer}>
-        <Text style={[styles.introEmoji]}>
-          {questionCount === 1 ? '🌱' : '💭'}
-        </Text>
+        {totalQuestions > 0 && (
+          <Text style={[styles.questionCounter, { color: colors.text }]}>
+            Question {questionNumber} of {totalQuestions}
+          </Text>
+        )}
         <Text style={[styles.introText, { color: colors.textSecondary }]}>
-          {questionCount === 1
+          {progressPercent < 10
             ? "Let's discover how your mind works"
             : 'Take your time with this'}
         </Text>
@@ -356,9 +366,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
   },
-  introEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
+  questionCounter: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   introText: {
     fontSize: 14,
