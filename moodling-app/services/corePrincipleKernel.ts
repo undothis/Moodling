@@ -124,6 +124,271 @@ export const DEFAULT_ALIVENESS_QUALITIES = {
 // Mutable version that can be updated/fine-tuned
 export let ALIVENESS_QUALITIES = { ...DEFAULT_ALIVENESS_QUALITIES };
 
+// ============================================
+// ADAPTIVE ALIVENESS
+// Detect user's aliveness patterns and respond dynamically
+// ============================================
+
+/**
+ * Detected aliveness signals from user's speech/text
+ */
+export interface UserAlivenessSignals {
+  // Speech patterns (from voice chat)
+  speechRate?: 'rapid' | 'normal' | 'slow';
+  pauseFrequency?: 'none' | 'few' | 'frequent';
+  volumeLevel?: 'loud' | 'moderate' | 'quiet';
+  pitchVariability?: 'monotone' | 'varied' | 'erratic';
+
+  // Text patterns (from typed messages)
+  messageLength?: 'terse' | 'moderate' | 'verbose';
+  punctuationDensity?: 'sparse' | 'normal' | 'heavy'; // !!! or ... indicates intensity
+  responseLatency?: 'instant' | 'normal' | 'delayed'; // How fast they respond
+
+  // Emotional indicators
+  emotionalIntensity?: 'low' | 'moderate' | 'high';
+  stressIndicators?: string[];
+
+  // Raw metrics (if available from audio)
+  wordsPerMinute?: number;
+  averagePauseDuration?: number;
+  volumeVariability?: number;
+}
+
+/**
+ * Coaching response directive based on user's aliveness
+ */
+export interface AlivenessResponseDirective {
+  // How the coach should respond
+  recommendedPace: 'slower' | 'match' | 'faster';
+  recommendedLength: 'brief' | 'moderate' | 'elaborate';
+  recommendedTone: 'grounding' | 'matching' | 'energizing';
+
+  // Specific behaviors
+  shouldPauseBeforeResponding: boolean;
+  shouldAcknowledgeFirst: boolean;
+  shouldUseShortSentences: boolean;
+  shouldAddBreathingSpace: boolean;
+
+  // Coaching rationale
+  rationale: string;
+  userState: string;
+}
+
+/**
+ * Detect user's aliveness patterns from their input
+ * Call this before generating a response
+ */
+export function detectUserAlivenessSignals(
+  userMessage: string,
+  audioMetrics?: {
+    wordsPerMinute?: number;
+    pauseCount?: number;
+    averageVolume?: number;
+    duration?: number;
+  }
+): UserAlivenessSignals {
+  const signals: UserAlivenessSignals = {};
+
+  // Analyze text patterns
+  if (userMessage) {
+    const wordCount = userMessage.split(/\s+/).length;
+    const charCount = userMessage.length;
+
+    // Message length
+    if (wordCount < 10) {
+      signals.messageLength = 'terse';
+    } else if (wordCount < 50) {
+      signals.messageLength = 'moderate';
+    } else {
+      signals.messageLength = 'verbose';
+    }
+
+    // Punctuation density (stress indicator)
+    const exclamations = (userMessage.match(/!/g) || []).length;
+    const ellipses = (userMessage.match(/\.\.\./g) || []).length;
+    const questionMarks = (userMessage.match(/\?/g) || []).length;
+    const capsWords = (userMessage.match(/\b[A-Z]{2,}\b/g) || []).length;
+
+    const punctuationIntensity = exclamations + ellipses + questionMarks * 0.5 + capsWords * 2;
+    if (punctuationIntensity > 5) {
+      signals.punctuationDensity = 'heavy';
+      signals.emotionalIntensity = 'high';
+    } else if (punctuationIntensity > 2) {
+      signals.punctuationDensity = 'normal';
+      signals.emotionalIntensity = 'moderate';
+    } else {
+      signals.punctuationDensity = 'sparse';
+      signals.emotionalIntensity = 'low';
+    }
+
+    // Stress indicators from text
+    const stressIndicators: string[] = [];
+    if (exclamations > 2) stressIndicators.push('multiple_exclamations');
+    if (capsWords > 0) stressIndicators.push('caps_emphasis');
+    if (ellipses > 1) stressIndicators.push('trailing_thoughts');
+    if (userMessage.includes('!!!')) stressIndicators.push('high_intensity');
+    if (/\bi('m| am) (so |really |very )?(stressed|anxious|overwhelmed|panicking)/i.test(userMessage)) {
+      stressIndicators.push('explicit_stress');
+    }
+    signals.stressIndicators = stressIndicators;
+  }
+
+  // Analyze audio metrics if available
+  if (audioMetrics) {
+    // Speech rate
+    if (audioMetrics.wordsPerMinute) {
+      signals.wordsPerMinute = audioMetrics.wordsPerMinute;
+      if (audioMetrics.wordsPerMinute > 180) {
+        signals.speechRate = 'rapid';
+      } else if (audioMetrics.wordsPerMinute < 100) {
+        signals.speechRate = 'slow';
+      } else {
+        signals.speechRate = 'normal';
+      }
+    }
+
+    // Pause frequency
+    if (audioMetrics.pauseCount !== undefined && audioMetrics.duration) {
+      const pausesPerMinute = (audioMetrics.pauseCount / audioMetrics.duration) * 60;
+      signals.averagePauseDuration = audioMetrics.duration / Math.max(1, audioMetrics.pauseCount);
+      if (pausesPerMinute < 2) {
+        signals.pauseFrequency = 'none';
+      } else if (pausesPerMinute < 6) {
+        signals.pauseFrequency = 'few';
+      } else {
+        signals.pauseFrequency = 'frequent';
+      }
+    }
+
+    // Volume level
+    if (audioMetrics.averageVolume !== undefined) {
+      if (audioMetrics.averageVolume > 70) {
+        signals.volumeLevel = 'loud';
+      } else if (audioMetrics.averageVolume < 30) {
+        signals.volumeLevel = 'quiet';
+      } else {
+        signals.volumeLevel = 'moderate';
+      }
+    }
+  }
+
+  return signals;
+}
+
+/**
+ * Generate coaching response directive based on user's aliveness signals
+ * This tells the coach HOW to respond to bring balance
+ */
+export function generateAlivenessDirective(
+  signals: UserAlivenessSignals
+): AlivenessResponseDirective {
+  const directive: AlivenessResponseDirective = {
+    recommendedPace: 'match',
+    recommendedLength: 'moderate',
+    recommendedTone: 'matching',
+    shouldPauseBeforeResponding: false,
+    shouldAcknowledgeFirst: false,
+    shouldUseShortSentences: false,
+    shouldAddBreathingSpace: false,
+    rationale: '',
+    userState: 'neutral',
+  };
+
+  // Detect user state and generate appropriate response strategy
+  const stressLevel = (signals.stressIndicators?.length || 0) +
+    (signals.speechRate === 'rapid' ? 2 : 0) +
+    (signals.emotionalIntensity === 'high' ? 2 : 0) +
+    (signals.volumeLevel === 'loud' ? 1 : 0) +
+    (signals.pauseFrequency === 'none' ? 1 : 0);
+
+  // HIGH STRESS: User is rapid, intense, no pauses
+  if (stressLevel >= 4 || signals.speechRate === 'rapid') {
+    directive.userState = 'activated/stressed';
+    directive.recommendedPace = 'slower';
+    directive.recommendedLength = 'brief';
+    directive.recommendedTone = 'grounding';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = true;
+    directive.shouldAddBreathingSpace = true;
+    directive.rationale = 'User is speaking rapidly/intensely. Slow down to help ground them. Use shorter sentences with pauses.';
+  }
+  // LOW ENERGY: User is slow, quiet, minimal
+  else if (signals.speechRate === 'slow' || signals.volumeLevel === 'quiet' || signals.messageLength === 'terse') {
+    directive.userState = 'low-energy/withdrawn';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'brief';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = true;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User seems low-energy or withdrawn. Match their pace, don\'t overwhelm with words. Be present without pushing.';
+  }
+  // VERBOSE/PROCESSING: User is talking a lot, thinking out loud
+  else if (signals.messageLength === 'verbose' && signals.pauseFrequency === 'frequent') {
+    directive.userState = 'processing/exploratory';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'moderate';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = true;
+    directive.shouldAcknowledgeFirst = true;
+    directive.shouldUseShortSentences = false;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User is processing out loud. Give them space, acknowledge what they\'re saying, don\'t rush to solutions.';
+  }
+  // NEUTRAL: User is in normal state
+  else {
+    directive.userState = 'neutral/balanced';
+    directive.recommendedPace = 'match';
+    directive.recommendedLength = 'moderate';
+    directive.recommendedTone = 'matching';
+    directive.shouldPauseBeforeResponding = false;
+    directive.shouldAcknowledgeFirst = false;
+    directive.shouldUseShortSentences = false;
+    directive.shouldAddBreathingSpace = false;
+    directive.rationale = 'User is in a balanced state. Match their energy and flow naturally.';
+  }
+
+  return directive;
+}
+
+/**
+ * Get aliveness context for LLM prompt
+ * Include this in the system prompt to guide response style
+ */
+export function getAlivenessDirectiveForLLM(
+  signals: UserAlivenessSignals
+): string {
+  const directive = generateAlivenessDirective(signals);
+
+  const parts: string[] = [];
+  parts.push('=== ADAPTIVE RESPONSE DIRECTIVE (Based on User\'s Current State) ===\n');
+  parts.push(`User appears: ${directive.userState}`);
+  parts.push(`Recommended pace: ${directive.recommendedPace.toUpperCase()}`);
+  parts.push(`Response length: ${directive.recommendedLength}`);
+  parts.push(`Tone: ${directive.recommendedTone}`);
+  parts.push('');
+
+  if (directive.shouldPauseBeforeResponding) {
+    parts.push('• Start with a brief acknowledgment before responding');
+  }
+  if (directive.shouldAcknowledgeFirst) {
+    parts.push('• Acknowledge what they said/felt before adding anything');
+  }
+  if (directive.shouldUseShortSentences) {
+    parts.push('• Use SHORT sentences. Break up your response. Create breathing room.');
+  }
+  if (directive.shouldAddBreathingSpace) {
+    parts.push('• Add natural pauses in your response (use line breaks between thoughts)');
+  }
+
+  parts.push('');
+  parts.push(`WHY: ${directive.rationale}`);
+
+  return parts.join('\n');
+}
+
 export const PROGRAM_LEVEL_TENETS = {
   // Growth & Change
   AWARENESS_PRECEDES_CHANGE:
@@ -1745,5 +2010,68 @@ export default {
   addCustomAlivenessQuality,
   removeCustomAlivenessQuality,
   getAlivenessQualities,
-  resetAlivenessQualitiesToDefaults
+  resetAlivenessQualitiesToDefaults,
+
+  // Adaptive aliveness (real-time response to user)
+  detectUserAlivenessSignals,
+  generateAlivenessDirective,
+  getAlivenessDirectiveForLLM,
+  testAdaptiveAliveness
 };
+
+// ============================================
+// TEST FUNCTION FOR ADAPTIVE ALIVENESS
+// ============================================
+
+/**
+ * Test the adaptive aliveness detection with sample inputs
+ * Call this from admin/debug to verify the system works
+ */
+export function testAdaptiveAliveness(): {
+  testCases: {
+    input: string;
+    audioMetrics?: { wordsPerMinute?: number; pauseCount?: number; averageVolume?: number; duration?: number };
+    signals: ReturnType<typeof detectUserAlivenessSignals>;
+    directive: ReturnType<typeof generateAlivenessDirective>;
+  }[];
+} {
+  const testCases = [
+    // Test 1: Rapid stressed user
+    {
+      input: "I can't do this anymore!!! Everything is falling apart and I don't know what to do and my boss is being IMPOSSIBLE and I haven't slept!!!",
+      audioMetrics: { wordsPerMinute: 200, pauseCount: 1, averageVolume: 80, duration: 15 },
+    },
+    // Test 2: Low energy user
+    {
+      input: "tired",
+      audioMetrics: { wordsPerMinute: 80, pauseCount: 3, averageVolume: 25, duration: 5 },
+    },
+    // Test 3: Processing/exploratory user
+    {
+      input: "I've been thinking about this a lot... like, I'm not sure if it's the right thing to do, but maybe... I don't know. Part of me thinks yes but then there's this other part that's like, wait, is this really what I want? And then I start second-guessing myself and I just... I don't know if this makes sense but...",
+      audioMetrics: { wordsPerMinute: 130, pauseCount: 12, averageVolume: 50, duration: 30 },
+    },
+    // Test 4: Neutral/balanced user
+    {
+      input: "I had a good day today. Went for a walk and did some reading.",
+      audioMetrics: { wordsPerMinute: 120, pauseCount: 3, averageVolume: 50, duration: 8 },
+    },
+    // Test 5: Text-only stressed (no audio)
+    {
+      input: "WHY does this keep happening?! I'm so frustrated!!! Nothing works!!!",
+    },
+  ];
+
+  return {
+    testCases: testCases.map(tc => {
+      const signals = detectUserAlivenessSignals(tc.input, tc.audioMetrics);
+      const directive = generateAlivenessDirective(signals);
+      return {
+        input: tc.input,
+        audioMetrics: tc.audioMetrics,
+        signals,
+        directive,
+      };
+    }),
+  };
+}

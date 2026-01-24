@@ -53,6 +53,9 @@ import {
   validateCoachResponse,
   validateAgainstTenets,
   detectExplicitRequests,
+  detectUserAlivenessSignals,
+  getAlivenessDirectiveForLLM,
+  UserAlivenessSignals,
 } from './corePrincipleKernel';
 
 // Storage keys
@@ -104,6 +107,14 @@ export interface ConversationContext {
   lastNightSleep?: number;
   recentMessages: ChatMessage[];
   toneStyles?: ToneStyle[];
+
+  // Audio metrics from voice chat (for adaptive aliveness)
+  audioMetrics?: {
+    wordsPerMinute?: number;
+    pauseCount?: number;
+    averageVolume?: number;
+    duration?: number;
+  };
 }
 
 /**
@@ -909,6 +920,27 @@ export async function sendMessage(
 
 CONVERSATION STYLE DIRECTIVES (for this specific response):
 ${controllerModifiers}`;
+  }
+
+  // Detect user's aliveness signals and generate adaptive response directive
+  // This analyzes HOW the user is communicating (pace, intensity, stress) and tells
+  // Claude how to adapt its response style to bring balance
+  let alivenessDirective = '';
+  try {
+    const alivenessSignals = detectUserAlivenessSignals(
+      message,
+      context.audioMetrics // Optional: from voice chat
+    );
+    alivenessDirective = getAlivenessDirectiveForLLM(alivenessSignals);
+    console.log('[Aliveness] Detected signals:', alivenessSignals);
+  } catch (error) {
+    console.log('Could not detect aliveness signals:', error);
+  }
+
+  if (alivenessDirective) {
+    systemPrompt = `${systemPrompt}
+
+${alivenessDirective}`;
   }
 
   const messages = buildMessages(message, context.recentMessages);

@@ -313,6 +313,78 @@ The goal is finding the balance where the coach feels like a thoughtful friend s
 
 ---
 
+## Adaptive Aliveness (Real-Time Response)
+
+Aliveness isn't just static guidelines—the coach actively **detects** the user's communication patterns and **adapts** its response to bring balance.
+
+### The Principle
+
+If someone is speaking rapidly (stress), the coach slows down to ground them.
+If someone is quiet and withdrawn, the coach matches them—doesn't overwhelm.
+If someone is processing out loud, the coach gives space—doesn't rush to fix.
+
+### What Gets Detected
+
+**From Voice Chat:**
+- Speech rate (words per minute)
+- Pause frequency
+- Volume level
+- Pitch variability
+
+**From Text:**
+- Message length (terse vs verbose)
+- Punctuation intensity (!!!  vs ...)
+- Stress keywords
+- Response latency
+
+### Adaptive Response Strategies
+
+| User State | Coach Response |
+|------------|----------------|
+| **Rapid/Stressed** | Slow down, brief responses, short sentences, breathing space |
+| **Low-energy/Withdrawn** | Match pace, brief, don't push, be present |
+| **Processing/Exploratory** | Give space, acknowledge, don't rush to solutions |
+| **Neutral/Balanced** | Match energy, flow naturally |
+
+### Example: Rapid Stressed User
+
+```
+User (rapid, loud, no pauses):
+"I can't do this anymore everything is falling apart and I don't know
+what to do and my boss is being impossible and I haven't slept and!!!"
+
+Coach (slowing down, grounding):
+"I hear you.
+
+That's a lot hitting at once.
+
+Let's take this one piece at a time.
+
+What feels most pressing right now?"
+```
+
+Notice: Short sentences. Line breaks. Acknowledgment first. No solutions yet.
+
+### Example: Low-Energy User
+
+```
+User (quiet, terse):
+"tired"
+
+Coach (matching, not pushing):
+"Yeah.
+
+What kind of tired?"
+```
+
+Notice: Brief. Doesn't overwhelm. Just present.
+
+### Integration
+
+The adaptive aliveness system runs automatically during voice and text conversations. It analyzes the user's input before generating each response and adjusts the coaching style accordingly.
+
+---
+
 ## Insight Scoring System
 
 When insights are processed through the Interview Processor (YouTube harvester), they're automatically scored across **5 dimensions**. This helps filter quality training data.
