@@ -4157,6 +4157,54 @@ Supports temporary switch with `--temp` flag: `/flint --temp`
 
 Skills are upgradeable capabilities that enhance how the coach interacts with users. Built for real-world skill transfer, not app dependency.
 
+### Skills Tab vs Coach Execution
+
+The Skills Tab serves as a **catalog/menu** for discovery, while **actual skill execution happens with the Coach**:
+
+| Component | Purpose |
+|-----------|---------|
+| **Skills Tab** | Browse available skills, read descriptions, see previews |
+| **Coach** | Guided execution, voice narration, inline overlays |
+
+**Skill Execution Categories:**
+
+| Skill Type | Execution Location |
+|------------|-------------------|
+| Breathing (box, 4-7-8, physiological sigh) | Transparent overlay in coach chat |
+| Grounding (5-4-3-2-1, ladder) | Overlay in coach chat |
+| Conversation Practice (all scenarios) | Direct roleplay with coach |
+| Games/Distraction | Navigate to game screen |
+| Reference (safety plan, etc.) | Navigate to dedicated screen |
+
+**Skill Overlay Architecture:**
+```typescript
+// When skill triggered in chat:
+interface SkillOverlayProps {
+  skillId: string;
+  onComplete: () => void;
+  onDismiss: () => void;
+  coachMessages: string[];  // Coach guidance appears in overlay
+}
+
+// Overlay renders over chat with transparency
+// Chat remains visible behind (grounding)
+// Coach can send messages that appear in overlay
+// Works with voice conversation mode
+```
+
+**Conversation Practice with Coach:**
+```typescript
+// No separate screen - coach becomes roleplay partner
+interface RoleplayMode {
+  scenario: string;        // e.g., 'asking_for_raise'
+  coachRole: string;       // e.g., 'your manager'
+  userGoal: string;        // e.g., 'request a salary increase'
+  feedbackMode: boolean;   // Coach can break character to give tips
+}
+
+// Coach stays in character, provides feedback, offers retries
+```
+
 ### Architecture
 
 **Files:**
@@ -4899,6 +4947,50 @@ SUPPORTED_LANGUAGES: LanguageOption[]
 // 4. Coach responds with TTS
 // 5. Auto-listen resumes (if enabled)
 ```
+
+### Continuous Voice Conversation Mode
+
+When `autoListen` and `speakResponses` are both enabled, the system enters a natural conversation flow:
+
+```
+TAP RECORD
+    ↓
+User speaks → [silence] → Auto-send
+    ↓
+Coach responds (text + TTS)
+    ↓
+[TTS completes] → Auto-record starts
+    ↓
+User speaks again... (cycle continues)
+    ↓
+END TRIGGERS:
+  - Re-tap record button
+  - Say: "bye", "goodbye", "see ya", "that's all"
+  - Long silence timeout
+```
+
+**End Phrase Detection**:
+```typescript
+const END_PHRASES = [
+  'bye', 'goodbye', 'good bye', 'see ya', 'see you',
+  'that\'s all', 'thats all', 'i\'m done', 'im done',
+  'talk later', 'later', 'thanks bye', 'okay bye'
+];
+
+// In onMessageReady callback:
+const lowerMessage = message.toLowerCase().trim();
+if (END_PHRASES.some(phrase => lowerMessage.includes(phrase))) {
+  endConversation();
+  return;
+}
+```
+
+**Integration with Skill Overlays**:
+When the coach triggers a skill during voice conversation:
+1. Skill overlay appears (transparent, over chat)
+2. Coach voice continues guiding through the skill
+3. User can still speak ("this is helping", "slower please")
+4. Conversation continues naturally after skill completes
 
 **Coach Screen Integration** (`app/coach/index.tsx`):
 ```typescript

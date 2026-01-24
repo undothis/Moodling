@@ -259,6 +259,8 @@ Night Owl Response at 11pm:
 
 ## Voice Integration Flow
 
+### Basic Voice (Hold-to-Speak)
+
 ```
 +-------------------+
 |  HOLD Coach Tab   |
@@ -296,9 +298,181 @@ Night Owl Response at 11pm:
 +-------------------+
 ```
 
+### Continuous Voice Conversation Mode (NEW)
+
+When autosend is enabled, the coach becomes a real-time voice companion:
+
+```
++-------------------+
+|  TAP Record Btn   |
++--------+----------+
+         |
+         v
++-------------------+
+| Start Recording   |
+| User speaks...    |
++--------+----------+
+         |
+         v (silence detected)
++-------------------+
+| Auto-send message |
++--------+----------+
+         |
+         v
++-------------------+
+| Coach Response:   |
+| - Text in chat    |
+| - TTS speaks back |
++--------+----------+
+         |
+         v (TTS completes)
++-------------------+
+| Auto-start        |
+| recording again   |
+| (listening)       |
++--------+----------+
+         |
+    +----+----+
+    |         |
+    v         v
++-------+  +--------+
+| User  |  | User   |
+| speaks|  | says   |
+| again |  | "bye"  |
++---+---+  +---+----+
+    |          |
+    v          v
+[Continue]  [End Session]
+```
+
+**End Triggers:**
+- Re-tap record button
+- Say: "bye", "goodbye", "see ya", "that's all", etc.
+- Long silence timeout
+
+**Implementation Notes:**
+- Coach responses use Text-to-Speech (TTS)
+- Silence detection triggers auto-send
+- End phrases detected via keyword matching
+- Conversation feels like a phone call
+
 ## Coach Mode Integration (Skills)
 
-When a user starts a skill exercise, Coach enters a specialized mode:
+### Skills Tab Philosophy
+
+The Skills tab serves as a **menu/catalog** - showing available skills with descriptions and previews. However, **actual skill execution happens with the Coach**.
+
+```
++------------------+     +------------------+
+|   SKILLS TAB     |     |   COACH CHAT     |
+|   (Discovery)    |     |   (Execution)    |
++------------------+     +------------------+
+| - Browse skills  |     | - Guided by coach|
+| - Read descrip.  | --> | - Overlay in chat|
+| - Tap to start   |     | - Voice guidance |
+| - Preview only   |     | - Real practice  |
++------------------+     +------------------+
+```
+
+### Skill Execution Categories
+
+| Skill Type | Where/How It Executes |
+|------------|----------------------|
+| **Breathing** (box, 4-7-8, physiological sigh) | Transparent overlay in chat, coach guides via voice/text |
+| **Grounding** (5-4-3-2-1, ladder) | Overlay in chat, coach walks through steps |
+| **Conversation Practice** | Direct roleplay with coach (no separate screen) |
+| **Games/Distraction** | Navigate away, coach waits ("I'll be here when you're back") |
+| **Reference** (safety plan, support network) | Navigate to dedicated screen |
+
+### Coach-Guided Skills (Inline Overlay)
+
+When a skill like breathing is triggered, it appears as a **transparent overlay** on the chat:
+
+```
+┌─────────────────────────────────────┐
+│  Chat (dimmed/visible behind)       │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│  ░░┌─────────────────────────┐░░░░ │
+│  ░░│                         │░░░░ │
+│  ░░│    ◯  Breathing Orb     │░░░░ │
+│  ░░│    "Breathe in..."      │░░░░ │
+│  ░░│                         │░░░░ │
+│  ░░│  🌿 "You're doing great" │░░░░ │
+│  ░░│                         │░░░░ │
+│  ░░│      [ ✕ Close ]        │░░░░ │
+│  ░░└─────────────────────────┘░░░░ │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+└─────────────────────────────────────┘
+```
+
+**Benefits:**
+- Coach remains present during skill
+- Chat context visible (grounding)
+- Coach can send encouragement messages
+- Dismissing returns exactly to conversation
+- Works seamlessly with voice conversation mode
+
+**Trigger Methods:**
+- User says "show me breathing" / "help me breathe"
+- Coach suggests it and user agrees
+- User taps skill in Skills tab → opens in coach
+- Slash command: `/breathe`
+
+### Conversation Practice (Coach as Roleplay Partner)
+
+Conversation practice happens **directly with the coach** - no separate screen needed:
+
+```
+User: "I need to practice asking for a raise"
+         |
+         v
++-------------------+
+| Coach enters      |
+| ROLEPLAY MODE     |
++--------+----------+
+         |
+         v
+Coach: "I can help with that. I'll play your
+       manager. Take a moment to think about
+       what you want to say, then start
+       whenever you're ready."
+         |
+         v
+User: "Hi, do you have a minute?"
+         |
+         v
+Coach (as manager): "Sure, what's on your mind?"
+         |
+         v
+[Roleplay continues...]
+         |
+         v
+Coach (breaking character): "That was good.
+       You were clear and direct. Want to
+       try again or talk about how it felt?"
+```
+
+**Available Scenarios:**
+- Asking for a raise
+- Setting boundaries
+- Ending a relationship
+- Confronting a friend
+- Telling parents difficult news
+- Job interviews
+- Apologizing
+- Asking for help
+- Giving feedback
+- NVC (Nonviolent Communication) practice
+
+**Coach Roleplay Behaviors:**
+- Stays in character during practice
+- Can break character to give feedback
+- Adjusts difficulty based on user request
+- Offers to retry or debrief after
+
+### Legacy Skill Mode (Slash Commands)
+
+Still supported for explicit mode activation:
 
 ```
 User: /breathe 4-7-8
@@ -474,15 +648,21 @@ Every response is validated against immutable tenets:
 | `services/corePrincipleKernel.ts` | Immutable ethical tenets |
 | `services/aiAccountabilityService.ts` | Limit tracking, accountability context |
 | `services/drinkPacingService.ts` | Drink tracking, BAC estimation |
-| `services/coachModeService.ts` | Skill-based coach modes |
+| `services/coachModeService.ts` | Skill-based coach modes, roleplay modes |
 | `services/voiceRecording.ts` | Speech-to-text for voice input |
+| `services/textToSpeechService.ts` | TTS for coach voice responses (NEW) |
+| `services/continuousVoiceService.ts` | Auto-record, silence detection, end phrases (NEW) |
+| `services/skillOverlayService.ts` | Inline skill rendering in chat (NEW) |
 | `components/VoiceEnabledTabBar.tsx` | Hold-to-speak tab bar |
+| `components/SkillOverlay.tsx` | Transparent skill overlay component (NEW) |
+| `components/BreathingOrbCompact.tsx` | Compact breathing orb for overlay (NEW) |
 | `app/(tabs)/coach.tsx` | Coach screen UI |
+| `app/(tabs)/skills.tsx` | Skill catalog/menu (discovery only) |
 
 ## Data Flow Summary
 
 ```
-USER ACTION
+USER ACTION (text, voice, or skill request)
      |
      v
 +------------------------------------------+
@@ -493,13 +673,58 @@ USER ACTION
 |  3. Compress data (privacy + tokens)     |
 |  4. Select adaptive persona              |
 |  5. Build system prompt                  |
-|  6. Add skill modes if active            |
+|  6. Add skill/roleplay modes if active   |
 |  7. Call Claude API                      |
 |  8. Validate against tenets              |
 |  9. Score for human-ness                 |
 | 10. Return response to user              |
+| 11. If voice mode: TTS speaks response   |
+| 12. If continuous: auto-record again     |
+| 13. If skill triggered: show overlay     |
 |                                          |
 +------------------------------------------+
 ```
 
-The Coach is designed to feel like a trusted friend who remembers your history, respects your boundaries, and adapts to your needs - all while protecting your privacy through on-device processing and compression.
+### Voice Conversation Flow
+
+```
+USER SPEAKS
+     |
+     v
+[Silence detected] → Auto-send
+     |
+     v
+COACH RESPONDS
+     |
+     +--→ Text appears in chat
+     |
+     +--→ TTS speaks response
+     |
+     v
+[TTS complete] → Auto-record starts
+     |
+     v
+USER SPEAKS AGAIN (or says "bye" to end)
+```
+
+### Skill Overlay Flow
+
+```
+SKILL TRIGGERED (voice, text, or tap)
+     |
+     v
++------------------------------------------+
+|  Show transparent overlay in chat        |
+|  - Skill component renders (e.g., orb)   |
+|  - Coach messages appear in overlay      |
+|  - Voice guidance continues              |
++------------------------------------------+
+     |
+     v
+USER COMPLETES or DISMISSES
+     |
+     v
+Overlay closes → Conversation continues
+```
+
+The Coach is designed to feel like a trusted friend who remembers your history, respects your boundaries, and adapts to your needs - all while protecting your privacy through on-device processing and compression. With continuous voice and inline skills, the coach becomes a true companion you can talk to naturally.

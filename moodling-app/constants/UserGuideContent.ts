@@ -306,8 +306,20 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
     id: 'guide',
     emoji: '💬',
     title: 'Your AI Guide',
-    content: 'Your AI guide is available for coaching conversations whenever you need support or want to process something.',
+    content: 'Your AI guide is available for coaching conversations whenever you need support or want to process something. Talk via text or have a natural voice conversation.',
     subsections: [
+      {
+        title: 'Voice Conversation',
+        content: 'Tap the record button and just talk. With auto-send on, your guide responds with both text and voice—like a real conversation. Say "bye" or "see ya" when you\'re done, or tap the button again to end.',
+      },
+      {
+        title: 'Guided Skills',
+        content: 'When you need help with breathing, grounding, or other exercises, your guide walks you through them right in the conversation. A visual appears over the chat while your guide narrates—you never leave the conversation.',
+      },
+      {
+        title: 'Conversation Practice',
+        content: 'Need to rehearse a difficult conversation? Just ask. Your guide becomes the other person—your boss, a friend, a family member—and roleplays with you. They\'ll break character to give feedback and let you try again.',
+      },
       {
         title: 'The 7 Personas',
         content: '🍀 Clover - Warm, casual, relatable (your lucky friend)\n✨ Spark - Energetic, motivating, uplifting (your cheerleader)\n🌿 Willow - Calm, wise, reflective (the sage)\n🌙 Luna - Mindful, grounding, present (the mystic)\n⛰️ Ridge - Focused, goal-oriented, practical (the coach)\n🔥 Flint - Direct, honest, no-nonsense (straight shooter)\n🌱 Fern - Gentle, soft, nurturing (the nurturer)',
@@ -606,8 +618,16 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
     id: 'skills',
     emoji: '🎯',
     title: 'Skills & Exercises',
-    content: 'Skills are capabilities you develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. Each skill has a type and rarity, giving a collectible card game feel.',
+    content: 'Skills are capabilities you develop through practice. Unlike streaks that punish missed days, skills celebrate every attempt. The Skills tab shows what\'s available—your coach guides you through them.',
     subsections: [
+      {
+        title: 'Coach-Guided Skills',
+        content: 'Most skills happen right in your conversation with your guide. When you start a breathing exercise or grounding technique, it appears as an overlay while your coach walks you through it with voice or text guidance. You never leave the conversation.',
+      },
+      {
+        title: 'Conversation Practice',
+        content: 'Need to practice a difficult conversation? Your coach becomes your roleplay partner. Whether it\'s asking for a raise, setting boundaries, or confronting someone, your coach plays the other person and gives you feedback. No separate screen—just natural practice.',
+      },
       {
         title: 'Skill Types',
         content: '🌊 Calm — Breathing, relaxation\n🦶 Ground — Anchoring, presence\n🎯 Focus — Attention, concentration\n💪 Challenge — Thought work, CBT\n🤝 Connect — Social skills\n✨ Restore — Recovery, healing',
@@ -629,8 +649,8 @@ export const USER_MANUAL_CONTENT: ManualSection[] = [
         content: '🔍 Quick Body Scan — 2-minute check-in (/body)\n💆 Progressive Relaxation — Tense and release muscles\n🧠 Thought Record — CBT technique for negative thinking\n🎈 Thought Defusion — Create distance from thoughts',
       },
       {
-        title: 'Social Skills',
-        content: '🎉 Event Preparation — Mental rehearsal before events (/prep)\n💬 Conversation Starters — Practice social openers',
+        title: 'Social Skills & Roleplay',
+        content: '🎉 Event Preparation — Mental rehearsal before events (/prep)\n💬 Conversation Practice — Roleplay difficult conversations with your coach\n🗣️ Asking for a Raise — Practice with your coach as your manager\n🚧 Setting Boundaries — Practice saying no',
       },
       {
         title: 'Skill Progress',
