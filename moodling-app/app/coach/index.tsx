@@ -13,6 +13,7 @@ import {
   Animated,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -1004,27 +1005,34 @@ export default function CoachScreen() {
             />
           </TouchableOpacity>
 
-          {/* Voice Button */}
-          {voiceSupported && (
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <TouchableOpacity
-                style={[
-                  styles.voiceButton,
-                  {
-                    backgroundColor: voiceState === 'listening' ? colors.error : colors.border,
-                  },
-                ]}
-                onPress={handleVoicePress}
-                disabled={isLoading}
-              >
-                <Ionicons
-                  name={voiceState === 'listening' ? 'stop' : 'mic'}
-                  size={18}
-                  color={voiceState === 'listening' ? '#FFFFFF' : colors.text}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
+          {/* Voice Button - always show, will alert if unsupported */}
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                {
+                  backgroundColor: voiceState === 'listening' ? colors.error : colors.border,
+                },
+              ]}
+              onPress={() => {
+                if (!voiceSupported) {
+                  Alert.alert(
+                    'Voice Not Supported',
+                    'Speech recognition is not available on this device or browser. Try using Safari on iOS or Chrome on desktop.'
+                  );
+                  return;
+                }
+                handleVoicePress();
+              }}
+              disabled={isLoading}
+            >
+              <Ionicons
+                name={voiceState === 'listening' ? 'stop' : 'mic'}
+                size={18}
+                color={voiceState === 'listening' ? '#FFFFFF' : colors.text}
+              />
+            </TouchableOpacity>
+          </Animated.View>
 
           <TextInput
             style={[styles.input, { color: colors.text }]}
