@@ -1686,6 +1686,22 @@ export default function SettingsScreen() {
 
         <TouchableOpacity
           style={[styles.faqItem, { backgroundColor: colors.background }]}
+          onPress={() => router.push('/admin/access-registry')}
+        >
+          <Text style={styles.faqEmoji}>🔐</Text>
+          <View style={styles.faqContent}>
+            <Text style={[styles.faqTitle, { color: colors.text }]}>
+              AI Access Registry
+            </Text>
+            <Text style={[styles.faqSubtitle, { color: colors.textSecondary }]}>
+              Control what data AI can access
+            </Text>
+          </View>
+          <Text style={[styles.faqArrow, { color: colors.textMuted }]}>→</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.faqItem, { backgroundColor: colors.background }]}
           onPress={() => router.push('/admin/interview-processor')}
         >
           <Text style={styles.faqEmoji}>🎬</Text>
