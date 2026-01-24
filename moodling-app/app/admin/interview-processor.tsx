@@ -47,15 +47,24 @@ import {
   markVideoProcessed,
   getQualityStats,
   updateQualityStats,
+  getProcessedChannelsHistory,
+  addProcessedChannelRecord,
+  isChannelProcessed,
+  clearProcessedChannelsHistory,
   CuratedChannel,
   ProcessingJob,
   ExtractedInsight,
   ChannelCategory,
   InsightExtractionCategory,
   QualityStats,
+  ProcessedChannelRecord,
   CHANNEL_CATEGORIES,
   EXTRACTION_CATEGORIES,
 } from '@/services/youtubeProcessorService';
+import { exportAllData, devQuickSave } from '@/services/dataPersistenceService';
+
+// Auto-backup settings
+const AUTO_BACKUP_INTERVAL = 10; // Backup after every 10 approvals
 
 type Tab = 'channels' | 'batch' | 'process' | 'review' | 'stats';
 
@@ -346,6 +355,15 @@ export default function InterviewProcessorScreen() {
   const [selectedInsightIds, setSelectedInsightIds] = useState<Set<string>>(new Set());
   const [bulkApproving, setBulkApproving] = useState(false);
 
+  // Backup state
+  const [approvalsSinceBackup, setApprovalsSinceBackup] = useState(0);
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Review grouping state
+  const [expandedChannels, setExpandedChannels] = useState<Set<string>>(new Set());
+  const [groupByChannel, setGroupByChannel] = useState(true);
+
   // Stats state
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
 
@@ -369,15 +387,20 @@ export default function InterviewProcessorScreen() {
   const batchProcessingRef = useRef(false);
   const batchPausedRef = useRef(false);
 
+  // Processed channels history
+  const [processedChannelsHistory, setProcessedChannelsHistory] = useState<ProcessedChannelRecord[]>([]);
+  const [showProcessedHistory, setShowProcessedHistory] = useState(false);
+
   // Load data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [channelsData, pendingData, approvedData, statsData, storedApiKey, storedYoutubeKey] = await Promise.all([
+      const [channelsData, pendingData, approvedData, statsData, historyData, storedApiKey, storedYoutubeKey] = await Promise.all([
         getCuratedChannels(),
         getPendingInsights(),
         getApprovedInsights(),
         getQualityStats(),
+        getProcessedChannelsHistory(),
         AsyncStorage.getItem('moodling_claude_api_key'),
         AsyncStorage.getItem('youtube_api_key'),
       ]);
@@ -385,6 +408,7 @@ export default function InterviewProcessorScreen() {
       setPendingInsights(pendingData);
       setApprovedInsights(approvedData);
       setQualityStats(statsData);
+      setProcessedChannelsHistory(historyData);
       if (storedApiKey) setApiKey(storedApiKey);
       if (storedYoutubeKey) setYoutubeApiKey(storedYoutubeKey);
     } catch (error) {
@@ -1075,6 +1099,18 @@ export default function InterviewProcessorScreen() {
           totalSkipped: totalSkippedAllChannels,
         }));
 
+        // Save processed channel record to history (from checkpoint resume)
+        await addProcessedChannelRecord({
+          channelId: channel.channelId,
+          channelName: channel.name,
+          handle: 'handle' in channelInfo ? (channelInfo as typeof RECOMMENDED_CHANNELS[0]).handle : undefined,
+          processedAt: new Date().toISOString(),
+          videosProcessed: channelVideosProcessed,
+          insightsExtracted: channelInsights,
+          insightsApproved: 0,
+          avgQualityScore: 0,
+        });
+
         addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
 
       } catch (error) {
@@ -1303,6 +1339,18 @@ export default function InterviewProcessorScreen() {
           totalSkipped: totalSkippedAllChannels,
         }));
 
+        // Save processed channel record to history (from main batch)
+        await addProcessedChannelRecord({
+          channelId: channel.channelId,
+          channelName: channel.name,
+          handle: 'handle' in queueItem.channel ? (queueItem.channel as typeof RECOMMENDED_CHANNELS[0]).handle : undefined,
+          processedAt: new Date().toISOString(),
+          videosProcessed: channelVideosProcessed,
+          insightsExtracted: channelInsights,
+          insightsApproved: 0,
+          avgQualityScore: 0,
+        });
+
         addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
 
       } catch (error) {
@@ -1334,10 +1382,69 @@ export default function InterviewProcessorScreen() {
     loadData();
   };
 
+  // Auto-backup helper - runs after N approvals
+  const checkAndRunAutoBackup = async (newApprovals: number) => {
+    const total = approvalsSinceBackup + newApprovals;
+    setApprovalsSinceBackup(total);
+
+    if (total >= AUTO_BACKUP_INTERVAL) {
+      console.log(`[AutoBackup] Running backup after ${total} approvals...`);
+      try {
+        const result = await devQuickSave();
+        if (result.success) {
+          setApprovalsSinceBackup(0);
+          setLastBackupTime(new Date().toISOString());
+          console.log('[AutoBackup] Success:', result.message);
+        }
+      } catch (error) {
+        console.error('[AutoBackup] Failed:', error);
+      }
+    }
+  };
+
+  // Manual export handler
+  const handleExportBackup = async () => {
+    setExporting(true);
+    try {
+      const result = await exportAllData();
+      if (result.success) {
+        setLastBackupTime(new Date().toISOString());
+        setApprovalsSinceBackup(0);
+        Alert.alert('Export Complete', result.message);
+      } else {
+        Alert.alert('Export Failed', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Quick backup handler
+  const handleQuickBackup = async () => {
+    setExporting(true);
+    try {
+      const result = await devQuickSave();
+      if (result.success) {
+        setLastBackupTime(new Date().toISOString());
+        setApprovalsSinceBackup(0);
+        Alert.alert('Backup Complete', result.message);
+      } else {
+        Alert.alert('Backup Failed', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to backup data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Approve insight
   const handleApproveInsight = async (insight: ExtractedInsight) => {
     await approvePendingInsight(insight.id);
     await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + 1 });
+    await checkAndRunAutoBackup(1);
     loadData();
     setSelectedInsight(null);
   };
@@ -1387,6 +1494,7 @@ export default function InterviewProcessorScreen() {
         approvedCount++;
       }
       await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + approvedCount });
+      await checkAndRunAutoBackup(approvedCount);
       setSelectedInsightIds(new Set());
       loadData();
       Alert.alert('Success', `Approved ${approvedCount} insights`);
@@ -1460,6 +1568,7 @@ export default function InterviewProcessorScreen() {
                 await approvePendingInsight(insight.id);
               }
               await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + highQuality.length });
+              await checkAndRunAutoBackup(highQuality.length);
               setSelectedInsightIds(new Set());
               loadData();
               Alert.alert('Success', `Auto-approved ${highQuality.length} insights (≥${minQuality}%)`);
@@ -1950,6 +2059,75 @@ export default function InterviewProcessorScreen() {
           </View>
         ))}
 
+        {/* Processed Channels History */}
+        <Pressable
+          style={{ marginTop: 24 }}
+          onPress={() => setShowProcessedHistory(!showProcessedHistory)}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+              Previously Processed ({processedChannelsHistory.length})
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
+              {showProcessedHistory ? '▼' : '▶'}
+            </Text>
+          </View>
+        </Pressable>
+
+        {showProcessedHistory && processedChannelsHistory.length > 0 && (
+          <View style={{ marginTop: 8 }}>
+            {processedChannelsHistory
+              .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+              .map((record, index) => (
+              <View key={`${record.channelId}-${index}`} style={[styles.queueItem, { backgroundColor: colors.cardBackground }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.queueItemName, { color: colors.text }]}>{record.channelName}</Text>
+                  <Text style={[styles.queueItemMeta, { color: colors.textSecondary }]}>
+                    {record.videosProcessed} videos • {record.insightsExtracted} insights
+                  </Text>
+                  <Text style={[styles.queueItemMeta, { color: colors.textSecondary, fontSize: 10 }]}>
+                    Last: {new Date(record.processedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={[styles.trustBadge, { backgroundColor: '#4CAF5030' }]}>
+                  <Text style={{ color: '#4CAF50', fontSize: 11 }}>✓ Done</Text>
+                </View>
+              </View>
+            ))}
+
+            {processedChannelsHistory.length > 0 && (
+              <Pressable
+                style={[styles.bulkButton, { backgroundColor: '#F4433630', marginTop: 8, alignSelf: 'flex-start' }]}
+                onPress={() => {
+                  Alert.alert(
+                    'Clear History',
+                    'Clear all processed channels history? This does not delete any data, just the tracking history.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Clear',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await clearProcessedChannelsHistory();
+                          setProcessedChannelsHistory([]);
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={{ color: '#F44336', fontSize: 12 }}>Clear History</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {showProcessedHistory && processedChannelsHistory.length === 0 && (
+          <Text style={[styles.emptyText, { color: colors.textSecondary, marginTop: 8 }]}>
+            No channels processed yet. Process some channels to see history here.
+          </Text>
+        )}
+
         {/* Processing Log */}
         {processingLog.length > 0 && (
           <View style={[styles.card, { backgroundColor: colors.cardBackground, marginTop: 16 }]}>
@@ -2244,6 +2422,95 @@ export default function InterviewProcessorScreen() {
 
   const renderReviewTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      {/* BACKUP SECTION - Prominent at top */}
+      <View style={[styles.card, {
+        backgroundColor: '#FF980015',
+        borderWidth: 2,
+        borderColor: '#FF9800',
+        marginBottom: 16
+      }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <Text style={{ fontSize: 20, marginRight: 8 }}>💾</Text>
+          <Text style={[styles.cardTitle, { color: '#FF9800', marginBottom: 0, flex: 1 }]}>
+            Backup Your Data
+          </Text>
+          {approvalsSinceBackup > 0 && (
+            <View style={{ backgroundColor: '#FF980030', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+              <Text style={{ color: '#FF9800', fontSize: 11 }}>
+                {approvalsSinceBackup} since backup
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 12 }]}>
+          Auto-backup runs every {AUTO_BACKUP_INTERVAL} approvals. Export to save a permanent copy.
+        </Text>
+
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Pressable
+            style={[styles.processButton, {
+              backgroundColor: '#FF9800',
+              flex: 1,
+              opacity: exporting ? 0.6 : 1
+            }]}
+            onPress={handleQuickBackup}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>
+                ⚡ Quick Backup
+              </Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={[styles.processButton, {
+              backgroundColor: '#4CAF50',
+              flex: 1,
+              opacity: exporting ? 0.6 : 1
+            }]}
+            onPress={handleExportBackup}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>
+                📤 Export File
+              </Text>
+            )}
+          </Pressable>
+        </View>
+
+        {lastBackupTime && (
+          <Text style={[styles.helperText, { color: '#4CAF50', marginTop: 8, textAlign: 'center' }]}>
+            ✓ Last backup: {new Date(lastBackupTime).toLocaleTimeString()}
+          </Text>
+        )}
+
+        <Pressable
+          style={{ marginTop: 8 }}
+          onPress={() => {
+            Alert.alert(
+              'Storage Info',
+              'Data is stored in:\n\n' +
+              '• AsyncStorage (device internal)\n' +
+              '• Quick Backup: App Documents folder\n' +
+              '• Export File: Shareable JSON (save anywhere)\n\n' +
+              'Use "Export File" to save a copy you can access from your computer.',
+              [{ text: 'OK' }]
+            );
+          }}
+        >
+          <Text style={[styles.helperText, { color: colors.tint, textAlign: 'center', textDecorationLine: 'underline' }]}>
+            📁 Where is my data stored?
+          </Text>
+        </Pressable>
+      </View>
+
       {/* Stats Summary */}
       <View style={[styles.statsRow, { backgroundColor: colors.cardBackground }]}>
         <View style={styles.statBox}>
@@ -2347,16 +2614,166 @@ export default function InterviewProcessorScreen() {
         </View>
       )}
 
-      {/* Pending Insights */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        Pending Review ({pendingInsights.length})
-      </Text>
+      {/* Pending Insights Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+          Pending Review ({pendingInsights.length})
+        </Text>
+        <Pressable
+          style={[styles.bulkButton, { backgroundColor: colors.border }]}
+          onPress={() => setGroupByChannel(!groupByChannel)}
+        >
+          <Text style={{ color: colors.text, fontSize: 12 }}>
+            {groupByChannel ? '📁 By Channel' : '📋 Flat List'}
+          </Text>
+        </Pressable>
+      </View>
 
       {pendingInsights.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
           No insights pending review. Process some videos first!
         </Text>
+      ) : groupByChannel ? (
+        // GROUPED BY CHANNEL VIEW
+        (() => {
+          // Group insights by channel
+          const groupedByChannel: Record<string, ExtractedInsight[]> = {};
+          pendingInsights.forEach(insight => {
+            const channel = insight.channelName || 'Unknown Channel';
+            if (!groupedByChannel[channel]) {
+              groupedByChannel[channel] = [];
+            }
+            groupedByChannel[channel].push(insight);
+          });
+
+          // Sort channels by insight count (most first)
+          const sortedChannels = Object.keys(groupedByChannel).sort(
+            (a, b) => groupedByChannel[b].length - groupedByChannel[a].length
+          );
+
+          return sortedChannels.map(channelName => {
+            const channelInsights = groupedByChannel[channelName];
+            const isExpanded = expandedChannels.has(channelName);
+            const selectedInChannel = channelInsights.filter(i => selectedInsightIds.has(i.id)).length;
+            const avgQuality = Math.round(
+              channelInsights.reduce((sum, i) => sum + i.qualityScore, 0) / channelInsights.length
+            );
+
+            return (
+              <View key={channelName} style={{ marginBottom: 12 }}>
+                {/* Channel Header */}
+                <Pressable
+                  style={[styles.card, {
+                    backgroundColor: colors.cardBackground,
+                    borderLeftWidth: 4,
+                    borderLeftColor: colors.tint,
+                    marginBottom: 0,
+                    paddingVertical: 10,
+                  }]}
+                  onPress={() => {
+                    setExpandedChannels(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(channelName)) {
+                        newSet.delete(channelName);
+                      } else {
+                        newSet.add(channelName);
+                      }
+                      return newSet;
+                    });
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 2 }]}>
+                        {isExpanded ? '▼' : '▶'} {channelName}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                        {channelInsights.length} insights • Avg: {avgQuality}%
+                        {selectedInChannel > 0 && ` • ${selectedInChannel} selected`}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={[styles.bulkButton, { backgroundColor: '#4CAF5020' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        // Toggle select all in this channel
+                        const allSelected = channelInsights.every(i => selectedInsightIds.has(i.id));
+                        setSelectedInsightIds(prev => {
+                          const newSet = new Set(prev);
+                          channelInsights.forEach(i => {
+                            if (allSelected) {
+                              newSet.delete(i.id);
+                            } else {
+                              newSet.add(i.id);
+                            }
+                          });
+                          return newSet;
+                        });
+                      }}
+                    >
+                      <Text style={{ color: '#4CAF50', fontSize: 11 }}>
+                        {channelInsights.every(i => selectedInsightIds.has(i.id)) ? '☑ All' : '☐ All'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </Pressable>
+
+                {/* Expanded Insights */}
+                {isExpanded && channelInsights.map(insight => (
+                  <Pressable
+                    key={insight.id}
+                    style={[
+                      styles.insightCard,
+                      { backgroundColor: colors.cardBackground, marginLeft: 12, marginTop: 4 },
+                      selectedInsightIds.has(insight.id) && { borderColor: '#4CAF50', borderWidth: 2 }
+                    ]}
+                    onPress={() => setSelectedInsight(insight)}
+                    onLongPress={() => toggleInsightSelection(insight.id)}
+                  >
+                    <View style={styles.insightHeader}>
+                      <Pressable
+                        style={[
+                          styles.checkbox,
+                          { borderColor: colors.border },
+                          selectedInsightIds.has(insight.id) && { backgroundColor: '#4CAF50', borderColor: '#4CAF50' }
+                        ]}
+                        onPress={() => toggleInsightSelection(insight.id)}
+                      >
+                        {selectedInsightIds.has(insight.id) && (
+                          <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
+                        )}
+                      </Pressable>
+                      <Text style={[styles.insightTitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
+                        {insight.title}
+                      </Text>
+                      <View style={[
+                        styles.qualityBadge,
+                        { backgroundColor: insight.qualityScore >= 80 ? '#4CAF5030' : insight.qualityScore >= 60 ? '#FF980030' : '#F4433630' }
+                      ]}>
+                        <Text style={{
+                          color: insight.qualityScore >= 80 ? '#4CAF50' : insight.qualityScore >= 60 ? '#FF9800' : '#F44336',
+                          fontSize: 11
+                        }}>
+                          {insight.qualityScore}%
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.insightText, { color: colors.textSecondary, marginLeft: 28 }]} numberOfLines={2}>
+                      {insight.insight}
+                    </Text>
+                    {insight.needsHumanReview && (
+                      <View style={[styles.reviewFlag, { backgroundColor: '#FF980020', marginLeft: 28 }]}>
+                        <Text style={{ color: '#FF9800', fontSize: 11 }}>⚠ Needs careful review</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            );
+          });
+        })()
       ) : (
+        // FLAT LIST VIEW (original)
         pendingInsights.slice(0, 50).map(insight => (
           <Pressable
             key={insight.id}
@@ -2369,7 +2786,6 @@ export default function InterviewProcessorScreen() {
             onLongPress={() => toggleInsightSelection(insight.id)}
           >
             <View style={styles.insightHeader}>
-              {/* Checkbox */}
               <Pressable
                 style={[
                   styles.checkbox,
