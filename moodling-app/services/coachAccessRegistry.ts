@@ -514,6 +514,7 @@ export async function getSourcesByCategory(): Promise<Record<AccessCategory, Dat
     health: [],
     calendar: [],
     social: [],
+    location: [],
     therapeutic: [],
     communication_style: [],
     diagnostics: [],
