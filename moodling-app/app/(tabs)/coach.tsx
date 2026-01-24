@@ -140,6 +140,7 @@ export default function CoachTabScreen() {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const voiceControllerRef = useRef<VoiceChatController | null>(null);
 
   // Typing animation
   const typingAnim = useRef(new Animated.Value(0)).current;
@@ -162,9 +163,49 @@ export default function CoachTabScreen() {
       setCoachEmoji(getCoachEmoji(settings));
 
       setVoiceSupported(await isVoiceChatSupported());
+
+      // Initialize voice controller
+      const controller = new VoiceChatController({
+        onStateChange: (state) => setVoiceState(state),
+        onTranscriptUpdate: (transcript, isFinal) => {
+          if (isFinal) {
+            setInputText(prev => prev + transcript);
+            setInterimTranscript('');
+          } else {
+            setInterimTranscript(transcript);
+          }
+        },
+        onAutoSend: (transcript) => {
+          // Auto-send when silence detected (if enabled in settings)
+          if (transcript.trim()) {
+            handleSendRef.current?.(transcript);
+          }
+        },
+        onError: (error) => console.error('Voice error:', error),
+      });
+      await controller.initialize();
+      voiceControllerRef.current = controller;
     };
     loadSettings();
+
+    return () => {
+      voiceControllerRef.current?.stopListening();
+    };
   }, []);
+
+  // Toggle voice recording
+  const toggleVoiceRecording = useCallback(async () => {
+    if (!voiceControllerRef.current) return;
+
+    if (voiceState === 'idle') {
+      await voiceControllerRef.current.startListening();
+    } else {
+      const transcript = await voiceControllerRef.current.stopListening();
+      if (transcript.trim()) {
+        setInputText(prev => prev + transcript);
+      }
+    }
+  }, [voiceState]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -440,13 +481,32 @@ export default function CoachTabScreen() {
       <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TextInput
           style={[styles.input, { backgroundColor: colors.card, color: colors.text }]}
-          value={inputText}
+          value={voiceState === 'listening' ? inputText + interimTranscript : inputText}
           onChangeText={setInputText}
-          placeholder="Type a message..."
+          placeholder={voiceState === 'listening' ? 'Listening...' : 'Type a message...'}
           placeholderTextColor={colors.secondaryText}
           multiline
           maxLength={2000}
         />
+        {/* Voice record button */}
+        {voiceSupported && (
+          <TouchableOpacity
+            style={[
+              styles.voiceButton,
+              {
+                backgroundColor: voiceState === 'listening' ? colors.error : colors.card,
+              },
+            ]}
+            onPress={toggleVoiceRecording}
+            disabled={isLoading}
+          >
+            <Ionicons
+              name={voiceState === 'listening' ? 'stop' : 'mic'}
+              size={20}
+              color={voiceState === 'listening' ? '#fff' : colors.tint}
+            />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.sendButton, { backgroundColor: colors.tint }]}
           onPress={() => handleSend()}
@@ -533,6 +593,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  voiceButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
