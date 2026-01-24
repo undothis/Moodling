@@ -2486,6 +2486,25 @@ export default function InterviewProcessorScreen() {
             ✓ Last backup: {new Date(lastBackupTime).toLocaleTimeString()}
           </Text>
         )}
+
+        <Pressable
+          style={{ marginTop: 8 }}
+          onPress={() => {
+            Alert.alert(
+              'Storage Info',
+              'Data is stored in:\n\n' +
+              '• AsyncStorage (device internal)\n' +
+              '• Quick Backup: App Documents folder\n' +
+              '• Export File: Shareable JSON (save anywhere)\n\n' +
+              'Use "Export File" to save a copy you can access from your computer.',
+              [{ text: 'OK' }]
+            );
+          }}
+        >
+          <Text style={[styles.helperText, { color: colors.tint, textAlign: 'center', textDecorationLine: 'underline' }]}>
+            📁 Where is my data stored?
+          </Text>
+        </Pressable>
       </View>
 
       {/* Stats Summary */}
