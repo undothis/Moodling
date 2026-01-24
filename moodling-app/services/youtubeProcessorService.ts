@@ -1347,8 +1347,32 @@ async function fetchTranscriptViaInnerTube(
     // Rate limit before caption fetch
     await rateLimit();
 
+    // Log the caption URL for debugging (truncated)
+    const urlPreview = captionUrl.length > 100 ? captionUrl.substring(0, 100) + '...' : captionUrl;
+    log(`    Caption URL: ${urlPreview}`);
     log(`    Fetching caption content...`);
-    const captionResponse = await fetchWithProxyFallback(captionUrl, {}, 2);
+
+    // Try direct fetch first on native (caption URLs are already absolute)
+    let captionResponse: Response;
+    try {
+      captionResponse = await fetch(captionUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (directErr) {
+      log(`    Direct fetch failed, trying with proxy...`);
+      captionResponse = await fetchWithProxyFallback(captionUrl, {
+        headers: Platform.OS === 'web' ? {} : {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      }, 2);
+    }
     if (!captionResponse.ok) {
       log(`    ✗ Caption fetch failed: ${captionResponse.status}`);
       return { transcript: '', segments: [], error: `[ERR_CAPTION_FETCH] Caption request returned ${captionResponse.status}` };
