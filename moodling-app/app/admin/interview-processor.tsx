@@ -56,6 +56,10 @@ import {
   CHANNEL_CATEGORIES,
   EXTRACTION_CATEGORIES,
 } from '@/services/youtubeProcessorService';
+import { exportAllData, devQuickSave } from '@/services/dataPersistenceService';
+
+// Auto-backup settings
+const AUTO_BACKUP_INTERVAL = 10; // Backup after every 10 approvals
 
 type Tab = 'channels' | 'batch' | 'process' | 'review' | 'stats';
 
@@ -345,6 +349,11 @@ export default function InterviewProcessorScreen() {
   const [selectedInsight, setSelectedInsight] = useState<ExtractedInsight | null>(null);
   const [selectedInsightIds, setSelectedInsightIds] = useState<Set<string>>(new Set());
   const [bulkApproving, setBulkApproving] = useState(false);
+
+  // Backup state
+  const [approvalsSinceBackup, setApprovalsSinceBackup] = useState(0);
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // Stats state
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
@@ -1334,10 +1343,69 @@ export default function InterviewProcessorScreen() {
     loadData();
   };
 
+  // Auto-backup helper - runs after N approvals
+  const checkAndRunAutoBackup = async (newApprovals: number) => {
+    const total = approvalsSinceBackup + newApprovals;
+    setApprovalsSinceBackup(total);
+
+    if (total >= AUTO_BACKUP_INTERVAL) {
+      console.log(`[AutoBackup] Running backup after ${total} approvals...`);
+      try {
+        const result = await devQuickSave();
+        if (result.success) {
+          setApprovalsSinceBackup(0);
+          setLastBackupTime(new Date().toISOString());
+          console.log('[AutoBackup] Success:', result.message);
+        }
+      } catch (error) {
+        console.error('[AutoBackup] Failed:', error);
+      }
+    }
+  };
+
+  // Manual export handler
+  const handleExportBackup = async () => {
+    setExporting(true);
+    try {
+      const result = await exportAllData();
+      if (result.success) {
+        setLastBackupTime(new Date().toISOString());
+        setApprovalsSinceBackup(0);
+        Alert.alert('Export Complete', result.message);
+      } else {
+        Alert.alert('Export Failed', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Quick backup handler
+  const handleQuickBackup = async () => {
+    setExporting(true);
+    try {
+      const result = await devQuickSave();
+      if (result.success) {
+        setLastBackupTime(new Date().toISOString());
+        setApprovalsSinceBackup(0);
+        Alert.alert('Backup Complete', result.message);
+      } else {
+        Alert.alert('Backup Failed', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to backup data');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Approve insight
   const handleApproveInsight = async (insight: ExtractedInsight) => {
     await approvePendingInsight(insight.id);
     await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + 1 });
+    await checkAndRunAutoBackup(1);
     loadData();
     setSelectedInsight(null);
   };
@@ -1387,6 +1455,7 @@ export default function InterviewProcessorScreen() {
         approvedCount++;
       }
       await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + approvedCount });
+      await checkAndRunAutoBackup(approvedCount);
       setSelectedInsightIds(new Set());
       loadData();
       Alert.alert('Success', `Approved ${approvedCount} insights`);
@@ -1460,6 +1529,7 @@ export default function InterviewProcessorScreen() {
                 await approvePendingInsight(insight.id);
               }
               await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + highQuality.length });
+              await checkAndRunAutoBackup(highQuality.length);
               setSelectedInsightIds(new Set());
               loadData();
               Alert.alert('Success', `Auto-approved ${highQuality.length} insights (≥${minQuality}%)`);
@@ -2244,6 +2314,76 @@ export default function InterviewProcessorScreen() {
 
   const renderReviewTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      {/* BACKUP SECTION - Prominent at top */}
+      <View style={[styles.card, {
+        backgroundColor: '#FF980015',
+        borderWidth: 2,
+        borderColor: '#FF9800',
+        marginBottom: 16
+      }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <Text style={{ fontSize: 20, marginRight: 8 }}>💾</Text>
+          <Text style={[styles.cardTitle, { color: '#FF9800', marginBottom: 0, flex: 1 }]}>
+            Backup Your Data
+          </Text>
+          {approvalsSinceBackup > 0 && (
+            <View style={{ backgroundColor: '#FF980030', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+              <Text style={{ color: '#FF9800', fontSize: 11 }}>
+                {approvalsSinceBackup} since backup
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 12 }]}>
+          Auto-backup runs every {AUTO_BACKUP_INTERVAL} approvals. Export to save a permanent copy.
+        </Text>
+
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Pressable
+            style={[styles.processButton, {
+              backgroundColor: '#FF9800',
+              flex: 1,
+              opacity: exporting ? 0.6 : 1
+            }]}
+            onPress={handleQuickBackup}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>
+                ⚡ Quick Backup
+              </Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={[styles.processButton, {
+              backgroundColor: '#4CAF50',
+              flex: 1,
+              opacity: exporting ? 0.6 : 1
+            }]}
+            onPress={handleExportBackup}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>
+                📤 Export File
+              </Text>
+            )}
+          </Pressable>
+        </View>
+
+        {lastBackupTime && (
+          <Text style={[styles.helperText, { color: '#4CAF50', marginTop: 8, textAlign: 'center' }]}>
+            ✓ Last backup: {new Date(lastBackupTime).toLocaleTimeString()}
+          </Text>
+        )}
+      </View>
+
       {/* Stats Summary */}
       <View style={[styles.statsRow, { backgroundColor: colors.cardBackground }]}>
         <View style={styles.statBox}>
