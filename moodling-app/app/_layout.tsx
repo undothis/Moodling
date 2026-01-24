@@ -100,10 +100,11 @@ export default function RootLayout() {
     const inQuickLogs = segments[0] === 'quick-logs';
     const inSettings = segments[0] === 'settings';
     const inAdmin = segments[0] === 'admin';
+    const inGames = segments[0] === 'games';
 
     // Only redirect TO onboarding if needed and not already in exempt routes
-    // Exempt routes: onboarding screens, post-onboarding screens, main app tabs, and utility screens
-    const isExempt = inOnboarding || inCognitiveOnboarding || inGuide || inCoach || inTabs || inQuickLogs || inSettings || inAdmin;
+    // Exempt routes: onboarding screens, post-onboarding screens, main app tabs, utility screens, and games
+    const isExempt = inOnboarding || inCognitiveOnboarding || inGuide || inCoach || inTabs || inQuickLogs || inSettings || inAdmin || inGames;
     if (needsOnboarding && !isExempt) {
       router.replace('/onboarding');
     }
