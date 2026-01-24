@@ -47,12 +47,17 @@ import {
   markVideoProcessed,
   getQualityStats,
   updateQualityStats,
+  getProcessedChannelsHistory,
+  addProcessedChannelRecord,
+  isChannelProcessed,
+  clearProcessedChannelsHistory,
   CuratedChannel,
   ProcessingJob,
   ExtractedInsight,
   ChannelCategory,
   InsightExtractionCategory,
   QualityStats,
+  ProcessedChannelRecord,
   CHANNEL_CATEGORIES,
   EXTRACTION_CATEGORIES,
 } from '@/services/youtubeProcessorService';
@@ -378,15 +383,20 @@ export default function InterviewProcessorScreen() {
   const batchProcessingRef = useRef(false);
   const batchPausedRef = useRef(false);
 
+  // Processed channels history
+  const [processedChannelsHistory, setProcessedChannelsHistory] = useState<ProcessedChannelRecord[]>([]);
+  const [showProcessedHistory, setShowProcessedHistory] = useState(false);
+
   // Load data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [channelsData, pendingData, approvedData, statsData, storedApiKey, storedYoutubeKey] = await Promise.all([
+      const [channelsData, pendingData, approvedData, statsData, historyData, storedApiKey, storedYoutubeKey] = await Promise.all([
         getCuratedChannels(),
         getPendingInsights(),
         getApprovedInsights(),
         getQualityStats(),
+        getProcessedChannelsHistory(),
         AsyncStorage.getItem('moodling_claude_api_key'),
         AsyncStorage.getItem('youtube_api_key'),
       ]);
@@ -394,6 +404,7 @@ export default function InterviewProcessorScreen() {
       setPendingInsights(pendingData);
       setApprovedInsights(approvedData);
       setQualityStats(statsData);
+      setProcessedChannelsHistory(historyData);
       if (storedApiKey) setApiKey(storedApiKey);
       if (storedYoutubeKey) setYoutubeApiKey(storedYoutubeKey);
     } catch (error) {
@@ -1084,6 +1095,18 @@ export default function InterviewProcessorScreen() {
           totalSkipped: totalSkippedAllChannels,
         }));
 
+        // Save processed channel record to history (from checkpoint resume)
+        await addProcessedChannelRecord({
+          channelId: channel.channelId,
+          channelName: channel.name,
+          handle: 'handle' in channelInfo ? (channelInfo as typeof RECOMMENDED_CHANNELS[0]).handle : undefined,
+          processedAt: new Date().toISOString(),
+          videosProcessed: channelVideosProcessed,
+          insightsExtracted: channelInsights,
+          insightsApproved: 0,
+          avgQualityScore: 0,
+        });
+
         addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
 
       } catch (error) {
@@ -1311,6 +1334,18 @@ export default function InterviewProcessorScreen() {
           totalVideosProcessed: totalVideosAllChannels,
           totalSkipped: totalSkippedAllChannels,
         }));
+
+        // Save processed channel record to history (from main batch)
+        await addProcessedChannelRecord({
+          channelId: channel.channelId,
+          channelName: channel.name,
+          handle: 'handle' in queueItem.channel ? (queueItem.channel as typeof RECOMMENDED_CHANNELS[0]).handle : undefined,
+          processedAt: new Date().toISOString(),
+          videosProcessed: channelVideosProcessed,
+          insightsExtracted: channelInsights,
+          insightsApproved: 0,
+          avgQualityScore: 0,
+        });
 
         addLog(`  ✓ Channel complete: ${channelInsights} insights from ${channelVideosProcessed} videos`);
 
@@ -2019,6 +2054,75 @@ export default function InterviewProcessorScreen() {
             </Pressable>
           </View>
         ))}
+
+        {/* Processed Channels History */}
+        <Pressable
+          style={{ marginTop: 24 }}
+          onPress={() => setShowProcessedHistory(!showProcessedHistory)}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+              Previously Processed ({processedChannelsHistory.length})
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
+              {showProcessedHistory ? '▼' : '▶'}
+            </Text>
+          </View>
+        </Pressable>
+
+        {showProcessedHistory && processedChannelsHistory.length > 0 && (
+          <View style={{ marginTop: 8 }}>
+            {processedChannelsHistory
+              .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+              .map((record, index) => (
+              <View key={`${record.channelId}-${index}`} style={[styles.queueItem, { backgroundColor: colors.cardBackground }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.queueItemName, { color: colors.text }]}>{record.channelName}</Text>
+                  <Text style={[styles.queueItemMeta, { color: colors.textSecondary }]}>
+                    {record.videosProcessed} videos • {record.insightsExtracted} insights
+                  </Text>
+                  <Text style={[styles.queueItemMeta, { color: colors.textSecondary, fontSize: 10 }]}>
+                    Last: {new Date(record.processedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={[styles.trustBadge, { backgroundColor: '#4CAF5030' }]}>
+                  <Text style={{ color: '#4CAF50', fontSize: 11 }}>✓ Done</Text>
+                </View>
+              </View>
+            ))}
+
+            {processedChannelsHistory.length > 0 && (
+              <Pressable
+                style={[styles.bulkButton, { backgroundColor: '#F4433630', marginTop: 8, alignSelf: 'flex-start' }]}
+                onPress={() => {
+                  Alert.alert(
+                    'Clear History',
+                    'Clear all processed channels history? This does not delete any data, just the tracking history.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Clear',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await clearProcessedChannelsHistory();
+                          setProcessedChannelsHistory([]);
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={{ color: '#F44336', fontSize: 12 }}>Clear History</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {showProcessedHistory && processedChannelsHistory.length === 0 && (
+          <Text style={[styles.emptyText, { color: colors.textSecondary, marginTop: 8 }]}>
+            No channels processed yet. Process some channels to see history here.
+          </Text>
+        )}
 
         {/* Processing Log */}
         {processingLog.length > 0 && (

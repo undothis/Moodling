@@ -2824,6 +2824,65 @@ export async function updateQualityStats(updates: Partial<QualityStats>): Promis
 }
 
 // ============================================
+// PROCESSED CHANNELS HISTORY
+// Tracks which channels have been batch processed
+// ============================================
+
+export interface ProcessedChannelRecord {
+  channelId: string;
+  channelName: string;
+  handle?: string;
+  processedAt: string;
+  videosProcessed: number;
+  insightsExtracted: number;
+  insightsApproved: number;
+  avgQualityScore: number;
+  lastVideoDate?: string; // To know where we left off
+}
+
+export async function getProcessedChannelsHistory(): Promise<ProcessedChannelRecord[]> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export async function addProcessedChannelRecord(record: ProcessedChannelRecord): Promise<void> {
+  const history = await getProcessedChannelsHistory();
+
+  // Check if channel already exists - update instead of duplicate
+  const existingIndex = history.findIndex(h => h.channelId === record.channelId);
+
+  if (existingIndex !== -1) {
+    // Update existing record with cumulative stats
+    const existing = history[existingIndex];
+    history[existingIndex] = {
+      ...record,
+      videosProcessed: existing.videosProcessed + record.videosProcessed,
+      insightsExtracted: existing.insightsExtracted + record.insightsExtracted,
+      insightsApproved: existing.insightsApproved + record.insightsApproved,
+      avgQualityScore: (existing.avgQualityScore + record.avgQualityScore) / 2,
+      processedAt: record.processedAt, // Update to latest
+    };
+  } else {
+    history.push(record);
+  }
+
+  await AsyncStorage.setItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY, JSON.stringify(history));
+}
+
+export async function isChannelProcessed(channelId: string): Promise<{
+  processed: boolean;
+  record?: ProcessedChannelRecord;
+}> {
+  const history = await getProcessedChannelsHistory();
+  const record = history.find(h => h.channelId === channelId);
+  return { processed: !!record, record };
+}
+
+export async function clearProcessedChannelsHistory(): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.PROCESSED_CHANNELS_HISTORY, JSON.stringify([]));
+}
+
+// ============================================
 // EXPORTS
 // ============================================
 
@@ -2875,6 +2934,12 @@ export default {
   // Quality stats
   getQualityStats,
   updateQualityStats,
+
+  // Processed channels history
+  getProcessedChannelsHistory,
+  addProcessedChannelRecord,
+  isChannelProcessed,
+  clearProcessedChannelsHistory,
 
   // Constants
   EXTRACTION_CATEGORIES,
