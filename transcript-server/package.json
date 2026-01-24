@@ -1,0 +1,15 @@
+{
+  "name": "transcript-server",
+  "version": "1.0.0",
+  "description": "Local server to fetch YouTube transcripts for Mood Leaf",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "youtube-transcript": "^1.2.1"
+  }
+}

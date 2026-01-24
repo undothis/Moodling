@@ -1782,6 +1782,9 @@ function parseTranscriptXml(
  * 3. Invidious API (often rate-limited)
  * 4. Direct YouTube page scraping
  */
+// Local transcript server URL - run transcript-server locally
+const TRANSCRIPT_SERVER_URL = 'http://localhost:3333';
+
 export async function fetchVideoTranscript(
   videoId: string,
   logger?: (msg: string) => void
@@ -1792,7 +1795,35 @@ export async function fetchVideoTranscript(
   };
   log(`[Transcript] Fetching transcript for video: ${videoId}`);
 
-  // Try Method 1: InnerTube API (most reliable - what YouTube uses internally)
+  // Try Method 0: Local transcript server (most reliable - bypasses YouTube blocks)
+  try {
+    log(`  → Trying local server...`);
+    const serverResponse = await fetch(`${TRANSCRIPT_SERVER_URL}/transcript?v=${videoId}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (serverResponse.ok) {
+      const data = await serverResponse.json();
+      if (data.transcript && data.transcript.length > 100) {
+        log(`  ✓ Got transcript via local server (${data.transcript.length} chars)`);
+        return {
+          transcript: data.transcript,
+          segments: data.segments || [],
+        };
+      }
+    } else {
+      const errorData = await serverResponse.json().catch(() => ({}));
+      log(`  ✗ Local server: ${errorData.error || `HTTP ${serverResponse.status}`}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('fetch')) {
+      log(`  ✗ Local server not running (start with: cd transcript-server && npm start)`);
+    } else {
+      log(`  ✗ Local server error: ${error}`);
+    }
+  }
+
+  // Try Method 1: InnerTube API (fallback - often blocked on native)
   try {
     log(`  → Trying InnerTube API...`);
     const innerTubeResult = await fetchTranscriptViaInnerTube(videoId, logger);
