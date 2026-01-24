@@ -180,6 +180,7 @@ const STORAGE_KEYS = {
   CURATED_CHANNELS: 'moodleaf_curated_channels',
   INSIGHT_HASHES: 'moodleaf_insight_hashes', // For deduplication
   QUALITY_STATS: 'moodleaf_quality_stats',
+  PROCESSED_CHANNELS_HISTORY: 'moodleaf_processed_channels_history', // Track batch processing history
 };
 
 // ============================================
