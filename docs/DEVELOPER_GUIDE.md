@@ -2463,11 +2463,64 @@ interface CognitiveProfile {
   emotionalProcessing: 'feeler_first' | 'thinker_first' | 'integrated';
   sensitivityLevel: 'highly_sensitive' | 'moderate' | 'low';
   communicationStyle: 'direct' | 'reflective' | 'exploratory';
+
+  // Behavioral detection (not asked, observed)
+  decisionStyle: 'binary' | 'nuanced' | 'unknown';
 }
 
 // Storage
 const STORAGE_KEY = 'moodleaf_cognitive_profile';
 ```
+
+### Passive Behavioral Detection
+
+Some cognitive traits cannot be reliably measured through direct questions because users will mask their true nature:
+
+- **Binary thinkers** may answer "grey" to appear open-minded, flexible, accommodating
+- **Grey thinkers** may answer "binary" to appear confident, decisive, strong
+
+**Solution:** Observe behavior silently over 5-10 interactions. Never ask directly.
+
+#### Binary vs Nuanced Thinking
+
+| Trait | Binary Thinker | Nuanced/Grey Thinker |
+|-------|----------------|----------------------|
+| Decisions | Quick, definitive | Weighs options, slower |
+| Responses | Short, declarative | Longer, exploratory |
+| Emotions | Single label ("angry") | Mixed ("frustrated but relieved") |
+| Suggestions | "Yes" or "No" | "Maybe", "It depends" |
+| Questions | Rarely asks follow-ups | Asks clarifying questions |
+
+**Detection signals:**
+
+```typescript
+// Patterns that suggest binary thinking
+const binarySignals = [
+  shortResponseLength,        // < 20 words average
+  quickResponseTime,          // Fast replies
+  singleEmotionLabels,        // "I'm sad" not "I'm sad but also..."
+  decisiveLanguage,           // "I will", "I won't", "Definitely"
+  lowQuestionFrequency,       // Rarely asks "what do you mean?"
+];
+
+// Patterns that suggest nuanced thinking
+const nuancedSignals = [
+  longerResponses,            // > 50 words average
+  hedgingLanguage,            // "maybe", "kind of", "it depends"
+  multipleEmotions,           // "I feel X but also Y"
+  clarifyingQuestions,        // "What do you mean by...?"
+  exploratoryPhrases,         // "I'm not sure", "Let me think"
+];
+```
+
+**How coach adapts:**
+
+| User Style | Coach Behavior |
+|------------|----------------|
+| Binary | Give clear recommendations, decisive language, fewer options |
+| Nuanced | Present options, acknowledge complexity, help narrow down |
+
+**Important:** Never label the user. No scores shown. Coach just naturally adapts communication style based on observed patterns.
 
 **Adaptive behavior:** Questions adapt based on previous answers. If aphantasia detected, visualization questions are skipped.
 
