@@ -550,6 +550,13 @@ export default function CoachScreen() {
       }
     }
 
+    // Client-side skill close detection - close immediately without waiting for AI
+    const SKILL_CLOSE_PHRASES = ['close', 'stop', 'close the skill', 'close skill', 'done with', 'end the skill', 'end skill', 'stop the skill', 'im done', "i'm done", 'finished', 'close it', 'stop it'];
+    if (showSkillOverlay && SKILL_CLOSE_PHRASES.some(phrase => lowerMessage.includes(phrase))) {
+      setShowSkillOverlay(false);
+      setActiveSkillId(null);
+    }
+
     // Check if this is a slash command
     if (isSlashCommand(messageText)) {
       // Add user message showing the command
