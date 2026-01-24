@@ -16,6 +16,8 @@ import {
   useColorScheme,
   ActivityIndicator,
   RefreshControl,
+  Share,
+  Alert,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,7 +32,6 @@ import {
   getStatusEmoji,
 } from '@/services/diagnosticTestService';
 import { getLogStats, getLogs, LogEntry, clearLogs, exportLogs } from '@/services/loggingService';
-import * as Clipboard from 'expo-clipboard';
 
 export default function DiagnosticsScreen() {
   const colorScheme = useColorScheme();
@@ -70,12 +71,19 @@ export default function DiagnosticsScreen() {
     }
   };
 
-  // Copy logs to clipboard
-  const copyLogs = async () => {
-    const logsJson = exportLogs({ category: 'diagnostic' });
-    await Clipboard.setStringAsync(logsJson);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Share/export logs
+  const shareLogs = async () => {
+    try {
+      const logsJson = exportLogs({ category: 'diagnostic' });
+      await Share.share({
+        message: logsJson,
+        title: 'Diagnostic Logs',
+      });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share logs');
+    }
   };
 
   // Clear diagnostic logs
@@ -314,15 +322,15 @@ export default function DiagnosticsScreen() {
               <View style={styles.logActions}>
                 <TouchableOpacity
                   style={[styles.logActionButton, { backgroundColor: colors.border }]}
-                  onPress={copyLogs}
+                  onPress={shareLogs}
                 >
                   <Ionicons
-                    name={copied ? 'checkmark' : 'copy-outline'}
+                    name={copied ? 'checkmark' : 'share-outline'}
                     size={16}
                     color={colors.text}
                   />
                   <Text style={[styles.logActionText, { color: colors.text }]}>
-                    {copied ? 'Copied!' : 'Copy Logs'}
+                    {copied ? 'Shared!' : 'Share Logs'}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

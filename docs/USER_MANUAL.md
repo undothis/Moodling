@@ -1981,44 +1981,252 @@ Run diagnostics if:
 
 ## How Your Coach Learns to Understand You
 
-### What is "Prosody"? (Simple Explanation)
+### What is "Prosody"? (The Music of Your Voice!)
 
-When you talk, it's not just the WORDS that matter—it's HOW you say them.
+Imagine if words were just the lyrics to a song. **Prosody** is everything ELSE—the melody, the rhythm, the beat, the volume! It's what makes your voice sound happy, sad, excited, or tired.
 
-Think about it: "I'm fine" can mean very different things depending on how someone says it!
+When you talk, it's not just WHAT you say that matters—it's HOW you say it!
 
-- **Fast and high-pitched** = probably stressed
-- **Slow and quiet** = probably sad or tired
-- **Voice getting quieter over time** = maybe giving up
-- **Voice cracking** = holding back tears
+Think about it: "I'm fine" can mean very different things:
+- Said fast and high → "I'm actually stressed!"
+- Said slow and quiet → "I'm really sad..."
+- Said with a cracking voice → "I'm trying not to cry"
+- Said flat and bored → "I don't want to talk about it"
 
-All these clues in your voice have a fancy name: **prosody**. It's like the music of your voice.
+Your AI coach listens for ALL these clues to understand how you're really feeling.
 
-### Why Does This Matter?
+---
 
-Your AI coach listens for these clues to understand how you're REALLY feeling—not just what you say, but how you say it.
+### 🎵 Part 1: Rhythm & Beat (How Your Voice Dances)
 
-If you're talking really fast and sound stressed, your coach will slow down and help you feel calm.
+#### What is Rhythm in Speech?
 
-If you sound quiet and tired, your coach won't overwhelm you with lots of questions.
+Just like music has a beat, your voice has rhythm too! When you talk, some parts are **LOUD** and some are **quiet**, some are **long** and some are **short**.
 
-It's like how a good friend notices when something's wrong, even if you say "I'm fine."
+**Rhythm** = the pattern of strong and weak sounds in your speech
 
-### What Your Coach Listens For
+#### The Secret of "Metrical Feet" (Voice Beats!)
 
-| What Your Voice Does | What It Might Mean |
+Musicians count beats like "1-2-3-4". In speech, we have special patterns called **metrical feet**. Think of them like dance steps for your voice!
+
+| Foot Name | Pattern | Sounds Like | Example |
+|-----------|---------|-------------|---------|
+| **Iamb** | da-**DUM** | soft-LOUD | "to**DAY**", "a**LIVE**" |
+| **Trochee** | **DUM**-da | LOUD-soft | "**HAP**-py", "**PAN**-da" |
+| **Anapest** | da-da-**DUM** | soft-soft-LOUD | "in the **SKY**", "un-der-**STAND**" |
+| **Dactyl** | **DUM**-da-da | LOUD-soft-soft | "**BEAU**-ti-ful", "**EL**-e-phant" |
+| **Spondee** | **DUM**-**DUM** | LOUD-LOUD | "**HEART**-**BREAK**", "**SUN**-**SHINE**" |
+| **Pyrrhic** | da-da | soft-soft | "of the", "in a" |
+
+**Try it yourself!** Say "BEAU-ti-ful" and feel how the first part is STRONG and the rest is softer? That's a dactyl!
+
+#### What These Patterns Tell Your Coach
+
+| Pattern You Use Most | What It Might Mean |
 |---------------------|-------------------|
-| Getting **faster** | Stressed or excited |
-| Getting **slower** | Tired or sad |
-| Getting **quieter** | Giving up or withdrawn |
-| **Voice cracking** | Holding back tears |
-| **Can't get words out** | Overwhelmed |
-| **Flat** (no ups and downs) | Maybe feeling numb |
-| **Up and down a lot** | Full of feeling! |
+| Lots of **Iambs** (da-DUM da-DUM) | Speaking naturally, like normal conversation |
+| Lots of **Spondees** (DUM-DUM DUM-DUM) | Speaking with force, maybe upset or making a point |
+| Lots of **Pyrrhics** (da-da da-da) | Speaking quietly, maybe uncertain or shy |
+| **Irregular** (all mixed up) | Emotional, distressed, or thinking hard |
+| **Very regular** (perfect pattern) | Calm, rehearsed, or maybe hiding feelings |
 
-### Your Privacy
+---
 
-Even when understanding how you talk, everything stays on YOUR device. No one else hears you. The coach just learns to respond in a way that feels right for you.
+### 🎼 Part 2: Tempo (How Fast You Talk)
+
+#### Speed Categories
+
+| Speed | Words Per Minute | What It's Like |
+|-------|-----------------|----------------|
+| **Very Slow** | Less than 100 | Like... talking... very... carefully |
+| **Slow** | 100-130 | Relaxed, tired, or thoughtful |
+| **Moderate** | 130-160 | Normal talking speed |
+| **Fast** | 160-190 | Excited or a bit stressed |
+| **Very Fast** | More than 190 | Really excited, anxious, or rushing |
+
+#### Speed Changes (What They Mean)
+
+| How Speed Changes | What It Might Mean |
+|------------------|-------------------|
+| **Stable** | Feeling calm and steady |
+| **Speeding up** | Getting more excited or anxious |
+| **Slowing down** | Getting tired, sad, or more relaxed |
+| **Up and down** | Lots of different feelings |
+| **All over the place** | Confused, very emotional, or distressed |
+
+---
+
+### 🎶 Part 3: Cadence (The Ups and Downs of Your Voice)
+
+**Cadence** is how your voice goes UP and DOWN in pitch—like a melody!
+
+#### Types of Cadence
+
+| Type | What It Sounds Like | Example |
+|------|--------------------|---------|
+| **Declarative** | Voice goes DOWN at the end | "I went to the store." ⬇️ |
+| **Interrogative** | Voice goes UP at the end | "Did you go to the store?" ⬆️ |
+| **Exclamatory** | Big ups and downs! | "That's AMAZING!" ⬆️⬇️ |
+| **Flat** | Stays the same... | "whatever... I guess..." ➡️ |
+| **Uptalk** | Goes UP even for statements? | "So I went to the store?" ⬆️ (sounds uncertain) |
+
+#### What Cadence Tells Your Coach
+
+| How Your Voice Moves | What It Might Mean |
+|---------------------|-------------------|
+| Normal ups and downs | Feeling okay, engaged |
+| Very flat (no melody) | Feeling numb, depressed, or holding back |
+| Too much up and down | Very emotional, stressed, or dramatic |
+| Always going UP | Uncertain, seeking approval |
+| Voice getting lower over time | Energy draining, giving up |
+
+---
+
+### 🎤 Part 4: Voice Quality (How Your Voice Sounds)
+
+Your voice has a special "texture" or quality. It can change based on how you feel!
+
+| Voice Quality | What It Means | What It Might Show |
+|--------------|---------------|-------------------|
+| **Breathy** | Lots of air escaping | Intimate, tired, or seductive |
+| **Creaky** (vocal fry) | Low rumbling sound | Bored, tired, or trying to sound cool |
+| **Nasal** | Sound through your nose | Sick, complaining, or whiny |
+| **Clear** | Easy to understand | Confident, energetic |
+| **Shaky/Trembling** | Voice wobbles | Nervous, scared, or about to cry |
+| **Strained** | Sounds tight | Stressed, angry, or holding back tears |
+
+#### Volume Changes
+
+| Volume Pattern | What It Might Mean |
+|---------------|-------------------|
+| Staying loud | Confident, angry, or excited |
+| Staying quiet | Shy, sad, or tired |
+| Getting quieter over time | Energy fading, giving up |
+| Getting louder over time | Getting more emotional or confident |
+| Jumping around | Very emotional, distressed |
+
+---
+
+### 💬 Part 5: Communication Styles
+
+Everyone has their own special way of talking! Your coach learns YOUR style.
+
+| Style | What It's Like | Good For |
+|-------|---------------|----------|
+| **Warm & Supportive** | Friendly, encouraging, lots of "I understand" | Making people feel safe |
+| **Professional** | Calm, clear, balanced | Sharing information |
+| **Direct** | Straight to the point, honest | Getting things done |
+| **Soft & Nurturing** | Gentle, caring, patient | Supporting someone hurt |
+| **Energetic** | Excited, enthusiastic, fast! | Motivating and inspiring |
+| **Calm & Measured** | Slow, steady, peaceful | Helping someone stressed |
+| **Curious** | Lots of questions, interested | Exploring and learning |
+| **Guiding** | Like a teacher, wise | Helping someone learn |
+
+Your coach adapts to match YOUR style—if you're energetic, it won't be boring. If you're calm, it won't be hyper!
+
+---
+
+### 😢 Part 6: Distress Signals (When You're Upset)
+
+Your coach can recognize when you're having a hard time, even if you don't say it.
+
+#### Crying Signals
+
+| Type | What It Sounds Like |
+|------|-------------------|
+| **Tearful** | Voice getting wobbly, sniffling |
+| **Sniffling** | Nose sounds, catching breath |
+| **Sobbing** | Can't talk, big breaths |
+| **Suppressed** | Trying to hold it in, voice catches |
+| **Breakthrough** | Was holding it, then it all comes out |
+
+#### Voice Choking
+
+| Type | What Happens |
+|------|-------------|
+| **Mild catch** | Quick pause, swallow |
+| **Gulping** | Big swallow, trying to continue |
+| **Gasping** | Can't get enough air |
+| **Full choke** | Can't speak at all |
+
+#### Other Distress Signs
+
+| Sign | What It Might Mean |
+|------|-------------------|
+| **Voice trembling** | Very anxious or scared |
+| **Shallow quick breaths** | Panicking or very stressed |
+| **Long sighs** | Exhausted or giving up |
+| **Holding breath** | Bracing for something bad |
+| **Irregular breathing** | Trying to calm down |
+
+**When your coach notices these signs, it responds with extra care and gentleness.**
+
+---
+
+### 🧠 Part 7: How Your Coach Learns (Training)
+
+#### Where Does the Coach Learn?
+
+Your coach learns from real conversations between trained counselors and people they're helping. We use recordings (with permission!) to teach the AI what good support looks like.
+
+#### What the Coach Studies
+
+When learning from training recordings, the coach notices:
+
+1. **Both People's Voices**
+   - How the counselor talks (calm, warm, patient)
+   - How the person responds (what helps them feel better)
+
+2. **The "Dance" of Conversation**
+   - When to talk vs. when to listen
+   - How to ask good questions
+   - When to give advice vs. just support
+
+3. **Emotional Moments**
+   - What helps when someone is crying
+   - How to respond to anger
+   - Ways to help someone feel safe
+
+4. **What Works**
+   - Which responses help people open up
+   - Which responses make people feel heard
+   - What helps people feel better
+
+#### Privacy in Training
+
+- All training recordings come from people who said "yes, you can use this"
+- No names or personal details are kept
+- The AI learns PATTERNS, not specific people's stories
+- YOUR conversations are NEVER used to train anyone else's coach
+
+---
+
+### 📊 Part 8: What Your Coach Tracks About Your Voice
+
+Over time, your coach builds a picture of YOUR unique voice patterns:
+
+| What's Tracked | Why It Matters |
+|----------------|----------------|
+| Your normal speed | To notice when you're rushing (stressed) or dragging (tired) |
+| Your usual pitch | To notice when you're higher (anxious) or lower (sad) |
+| Your natural rhythm | To notice when something feels "off" |
+| Your speaking style | To match how YOU like to communicate |
+| Your emotional patterns | To learn what helps YOU feel better |
+
+**This creates a personalized understanding that's just for YOU.**
+
+---
+
+### 🔒 Your Privacy
+
+Even with all this voice understanding:
+
+- **Everything stays on YOUR device** — nothing goes to the cloud
+- **No one else can hear your recordings** — they're processed locally
+- **Your voice patterns aren't shared** — they're just for your coach
+- **You can turn off voice analysis anytime** — in Settings > AI Data Access
+
+Your coach learns to understand you better, but your privacy always comes first.
 
 ---
 
