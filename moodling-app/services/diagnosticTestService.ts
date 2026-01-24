@@ -59,8 +59,8 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Core User Data
   user_context: async () => {
     try {
-      const { getUserContext } = await import('./userContextService');
-      const context = await getUserContext();
+      const { buildUserContext } = await import('./userContextService');
+      const context = await buildUserContext();
       return { success: !!context, data: { hasContext: !!context } };
     } catch (e: any) {
       return { success: false, error: e.message };
@@ -69,9 +69,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   coach_personality: async () => {
     try {
-      const { getCoachPersonality } = await import('./coachPersonalityService');
-      const personality = await getCoachPersonality();
-      return { success: !!personality, data: { name: personality?.name || 'default' } };
+      const { getCoachSettings } = await import('./coachPersonalityService');
+      const settings = await getCoachSettings();
+      return { success: !!settings, data: { persona: settings?.persona || 'default' } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -161,9 +161,8 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   psych_analysis: async () => {
     try {
-      const { getPsychAnalysis } = await import('./psychAnalysisService');
-      const analysis = await getPsychAnalysis();
-      return { success: true, data: { hasAnalysis: !!analysis } };
+      const { psychAnalysisService } = await import('./psychAnalysisService');
+      return { success: !!psychAnalysisService, data: { serviceAvailable: true } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -172,9 +171,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Tracking
   quick_logs: async () => {
     try {
-      const { getRecentLogs } = await import('./quickLogsService');
-      const logs = await getRecentLogs(5);
-      return { success: true, data: { recentLogsCount: logs?.length || 0 } };
+      const { getQuickLogs } = await import('./quickLogsService');
+      const logs = await getQuickLogs();
+      return { success: true, data: { logsCount: logs?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -192,9 +191,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   lifestyle_patterns: async () => {
     try {
-      const { getPatterns } = await import('./patternService');
-      const patterns = await getPatterns();
-      return { success: true, data: { hasPatterns: !!patterns } };
+      const { getRecentSummaries } = await import('./patternService');
+      const summaries = await getRecentSummaries(7);
+      return { success: true, data: { summaryCount: summaries?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -202,9 +201,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   accountability: async () => {
     try {
-      const { getAccountabilityData } = await import('./aiAccountabilityService');
-      const data = await getAccountabilityData();
-      return { success: true, data: { hasData: !!data } };
+      const { getLimitAlerts } = await import('./aiAccountabilityService');
+      const alerts = await getLimitAlerts();
+      return { success: true, data: { alertCount: alerts?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -232,9 +231,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   health_correlations: async () => {
     try {
-      const { getCorrelations } = await import('./healthInsightService');
-      const correlations = await getCorrelations();
-      return { success: true, data: { hasCorrelations: !!correlations } };
+      const { getCorrelationHistory } = await import('./healthInsightService');
+      const correlations = await getCorrelationHistory();
+      return { success: true, data: { correlationCount: correlations?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -242,9 +241,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   chronotype: async () => {
     try {
-      const { getChronotype } = await import('./coachPersonalityService');
-      const chronotype = await getChronotype();
-      return { success: true, data: { chronotype: chronotype || 'not_set' } };
+      const { getCoachSettings } = await import('./coachPersonalityService');
+      const settings = await getCoachSettings();
+      return { success: true, data: { chronotype: settings?.chronotype || 'normal' } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -300,9 +299,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Therapeutic
   exposure_ladder: async () => {
     try {
-      const { getLadders } = await import('./exposureLadderService');
-      const ladders = await getLadders();
-      return { success: true, data: { ladderCount: ladders?.length || 0 } };
+      const { getCurrentLevel } = await import('./exposureLadderService');
+      const level = await getCurrentLevel();
+      return { success: true, data: { currentLevel: level || 1 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -310,9 +309,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   coach_mode: async () => {
     try {
-      const { getCurrentMode } = await import('./coachModeService');
-      const mode = await getCurrentMode();
-      return { success: true, data: { currentMode: mode || 'default' } };
+      const { getActiveCoachModes } = await import('./coachModeService');
+      const modes = await getActiveCoachModes();
+      return { success: true, data: { activeModes: modes?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -320,9 +319,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   achievements: async () => {
     try {
-      const { getAchievements } = await import('./achievementNotificationService');
-      const achievements = await getAchievements();
-      return { success: true, data: { achievementCount: achievements?.length || 0 } };
+      const { getPendingAchievements } = await import('./achievementNotificationService');
+      const achievements = await getPendingAchievements();
+      return { success: true, data: { pendingCount: achievements?.length || 0 } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -331,9 +330,9 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
   // Communication Style
   aliveness: async () => {
     try {
-      const { getAlivenessState } = await import('./alivenessService');
-      const state = await getAlivenessState();
-      return { success: true, data: { hasState: !!state } };
+      const { getAlivenessSettings } = await import('./alivenessService');
+      const settings = await getAlivenessSettings();
+      return { success: true, data: { enabled: settings?.enabled ?? false } };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -341,9 +340,11 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
 
   core_principles: async () => {
     try {
-      const { getPrinciples } = await import('./corePrincipleKernel');
-      const principles = await getPrinciples();
-      return { success: true, data: { principleCount: principles?.length || 0 } };
+      const { CORE_BELIEFS, PROGRAM_LEVEL_TENETS } = await import('./corePrincipleKernel');
+      return { success: true, data: {
+        hasCoreBeliefs: !!CORE_BELIEFS,
+        hasTenets: !!PROGRAM_LEVEL_TENETS
+      }};
     } catch (e: any) {
       return { success: false, error: e.message };
     }
