@@ -364,6 +364,65 @@ The kernel ensures that no matter which model powers the coach, the core philoso
      - **Growth** (wisdom, self-discovery, lessons)
      - **Authenticity** (real quotes, contradictions, messy middle)
 
+#### How Insight Extraction Works
+
+The system uses Claude API to analyze transcripts and extract meaningful insights. Here's the process:
+
+**1. Categories Define What to Look For**
+
+When you set up a channel, you select categories like:
+- `emotional_processing` - How to handle emotions
+- `relationship_dynamics` - Relationship patterns and advice
+- `therapeutic_techniques` - Specific therapy methods
+- `communication_skills` - How to communicate better
+
+**2. The Prompt Instructs Claude**
+
+The transcript server sends a structured prompt to Claude:
+
+```
+Analyze this transcript from "[video title]" by [channel name]
+and extract valuable insights.
+
+CATEGORIES TO EXTRACT:
+- emotional_processing: How to process emotions...
+- relationship_dynamics: Relationship patterns...
+
+TRANSCRIPT:
+[first 15,000 chars of transcript]
+
+Extract 3-8 high-quality insights. For each provide:
+1. A clear, actionable title
+2. The full insight text (2-4 sentences)
+3. Which category it belongs to
+4. Quality score (0-100)
+5. Safety score (0-100)
+6. Confidence level (0-1)
+```
+
+**3. Claude Analyzes and Returns Structured JSON**
+
+Claude reads the transcript, identifies meaningful therapeutic/coaching wisdom, and returns insights like:
+
+```json
+{
+  "title": "Validate before solving",
+  "insight": "When someone shares a problem, acknowledge their feelings before offering solutions. This builds trust and shows you understand.",
+  "category": "communication_skills",
+  "qualityScore": 92,
+  "safetyScore": 98,
+  "confidence": 0.9
+}
+```
+
+**4. Quality Filtering**
+
+After extraction, insights are filtered:
+- Low quality scores (<60) are rejected
+- Low safety scores (<80) are flagged for review
+- Duplicates are detected via content hashing
+- All remaining insights go to the pending queue for human review
+
 4. **Quality Filtering**
    - Minimum quality score: 60
    - Minimum specificity: 50
