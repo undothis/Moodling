@@ -357,12 +357,14 @@ The kernel ensures that no matter which model powers the coach, the core philoso
 
 3. **Insight Extraction**
    - Claude analyzes transcript for human insights
-   - 27 extraction categories across 5 domains:
-     - **Pain** (struggles, coping, trauma)
-     - **Joy** (humor, celebration, playfulness)
-     - **Connection** (companionship, love, belonging)
-     - **Growth** (wisdom, self-discovery, lessons)
-     - **Authenticity** (real quotes, contradictions, messy middle)
+   - 60 extraction categories across 7 domains:
+     - **Pain** (struggles, coping, trauma, shame, grief, anxiety, depression)
+     - **Joy** (humor, celebration, playfulness, gratitude, hope, awe)
+     - **Connection** (companionship, love, belonging, parenting, caregiving, conflict)
+     - **Growth** (wisdom, self-discovery, lessons, identity, life transitions)
+     - **Body** (aging, health, burnout, neurodivergence, sleep, addiction recovery)
+     - **Context** (culture, spirituality, work, money, gender/sexuality, creativity)
+     - **Authenticity** (real quotes, contradictions, messy middle, uncomfortable truths)
 
 #### How Insight Extraction Works
 
@@ -370,9 +372,9 @@ The system uses Claude API to analyze transcripts and extract meaningful insight
 
 **1. Categories Define What to Look For**
 
-When you set up a channel, you select from 27 categories across 5 domains:
+When you set up a channel, you select from 60 categories across 7 domains:
 
-**Pain Domain (Understanding Suffering)**
+**Pain Domain (11 categories)**
 | Category | Description |
 |----------|-------------|
 | `emotional_struggles` | How people experience difficult emotions |
@@ -381,8 +383,13 @@ When you set up a channel, you select from 27 categories across 5 domains:
 | `vulnerability` | Moments of openness and raw honesty |
 | `mental_health_patterns` | Recurring mental health experiences |
 | `trauma_recovery` | How people heal from difficult experiences |
+| `shame_guilt` | Experiences of shame and guilt |
+| `anger_frustration` | How anger manifests and is processed |
+| `grief_loss` | Experiences of loss and grieving |
+| `fear_anxiety` | Fear and anxiety experiences |
+| `depression_hopelessness` | Depression and feelings of hopelessness |
 
-**Joy Domain (Understanding Happiness)**
+**Joy Domain (9 categories)**
 | Category | Description |
 |----------|-------------|
 | `humor_wit` | How people use humor to connect and cope |
@@ -390,8 +397,12 @@ When you set up a channel, you select from 27 categories across 5 domains:
 | `excitement_passion` | What people get excited about |
 | `playfulness` | Lighthearted moments and fun |
 | `gratitude_appreciation` | What people are thankful for |
+| `contentment_peace` | Experiences of calm satisfaction |
+| `hope_optimism` | Hope and positive outlook |
+| `pride_accomplishment` | Pride in achievements |
+| `awe_wonder` | Experiences of awe and wonder |
 
-**Connection Domain (Understanding Relationships)**
+**Connection Domain (12 categories)**
 | Category | Description |
 |----------|-------------|
 | `companionship` | Being with others, shared presence |
@@ -400,8 +411,14 @@ When you set up a channel, you select from 27 categories across 5 domains:
 | `family_bonds` | Family relationship dynamics |
 | `belonging_community` | Feeling part of something larger |
 | `loneliness_isolation` | Experiences of disconnection |
+| `parenting` | Parenting experiences and challenges |
+| `boundaries` | Setting and maintaining boundaries |
+| `conflict_repair` | How conflicts are resolved and relationships repaired |
+| `trust_betrayal` | Trust building and betrayal experiences |
+| `communication_patterns` | How people communicate in relationships |
+| `caregiving` | Caring for others (elderly, sick, etc.) |
 
-**Growth Domain (Understanding Development)**
+**Growth Domain (10 categories)**
 | Category | Description |
 |----------|-------------|
 | `self_discovery` | Learning about oneself |
@@ -409,8 +426,34 @@ When you set up a channel, you select from 27 categories across 5 domains:
 | `life_lessons` | Wisdom gained from experience |
 | `wisdom_perspective` | Insights about life, often from age/experience |
 | `meaning_purpose` | What gives life meaning |
+| `regret_forgiveness` | Processing regret and forgiving |
+| `life_transitions` | Major life changes (divorce, job loss, moving) |
+| `identity_formation` | How people form their sense of self |
+| `values_beliefs` | Core values and belief systems |
+| `decision_making` | How people make important decisions |
 
-**Authenticity Domain (Understanding Humanness)**
+**Body Domain (7 categories)**
+| Category | Description |
+|----------|-------------|
+| `aging_mortality` | Aging experiences and mortality awareness |
+| `body_health` | Body image, chronic illness, physical health |
+| `rest_burnout` | Rest, exhaustion, and burnout patterns |
+| `embodied_emotion` | How emotions manifest in the body |
+| `neurodivergent_experience` | ADHD, autism, and other neurodivergent experiences |
+| `sleep_energy` | Sleep patterns and energy management |
+| `addiction_recovery` | Addiction experiences and recovery |
+
+**Context Domain (6 categories)**
+| Category | Description |
+|----------|-------------|
+| `cultural_identity` | Cultural background and identity |
+| `spirituality_faith` | Spiritual and religious experiences |
+| `work_career` | Work life, career changes, professional identity |
+| `money_scarcity` | Financial stress and abundance |
+| `gender_sexuality` | Gender identity and sexuality experiences |
+| `creativity_expression` | Creative expression and artistic pursuits |
+
+**Authenticity Domain (5 categories)**
 | Category | Description |
 |----------|-------------|
 | `real_quotes` | Actual words people use to describe experiences |
@@ -478,15 +521,35 @@ After extraction, insights are filtered:
    - Human approves or rejects
    - Approved insights become training data
 
+6. **Bulk Approval Options**
+   The Review tab provides several ways to efficiently approve insights:
+
+   | Method | Description |
+   |--------|-------------|
+   | **Individual** | Tap checkboxes to select specific insights, then "Approve Selected" |
+   | **Select All** | Select/deselect all pending insights at once |
+   | **Auto 90%+** | Auto-approve all insights with quality ≥90% AND safety ≥95% |
+   | **Auto 85%+** | Auto-approve all insights with quality ≥85% AND safety ≥95% |
+   | **Auto 80%+** | Auto-approve all insights with quality ≥80% AND safety ≥95% |
+
+   **Safety Requirements:** Auto-approve only works on insights that:
+   - Meet the quality threshold
+   - Have safety score ≥95%
+   - Are NOT flagged for human review
+
+   **Best Practice:** Use 90%+ auto-approve for trusted channels, spot-check a few, then manually review lower-scored insights.
+
 #### Categories Explained
 
-| Domain | Categories | Purpose |
-|--------|-----------|---------|
-| Pain | emotional_struggles, coping_strategies, what_helps_hurts, vulnerability, mental_health_patterns, trauma_recovery | Understand suffering |
-| Joy | humor_wit, joy_celebration, excitement_passion, playfulness, gratitude_appreciation | Understand happiness |
-| Connection | companionship, friendship_dynamics, romantic_love, family_bonds, belonging_community, loneliness_isolation | Understand relationships |
-| Growth | self_discovery, growth_moments, life_lessons, wisdom_perspective, meaning_purpose | Understand development |
-| Authenticity | real_quotes, contradictions_complexity, messy_middle, uncomfortable_truths, beautiful_imperfection | Understand humanness |
+| Domain | Count | Categories | Purpose |
+|--------|-------|-----------|---------|
+| Pain | 11 | emotional_struggles, coping_strategies, what_helps_hurts, vulnerability, mental_health_patterns, trauma_recovery, shame_guilt, anger_frustration, grief_loss, fear_anxiety, depression_hopelessness | Understand suffering |
+| Joy | 9 | humor_wit, joy_celebration, excitement_passion, playfulness, gratitude_appreciation, contentment_peace, hope_optimism, pride_accomplishment, awe_wonder | Understand happiness |
+| Connection | 12 | companionship, friendship_dynamics, romantic_love, family_bonds, belonging_community, loneliness_isolation, parenting, boundaries, conflict_repair, trust_betrayal, communication_patterns, caregiving | Understand relationships |
+| Growth | 10 | self_discovery, growth_moments, life_lessons, wisdom_perspective, meaning_purpose, regret_forgiveness, life_transitions, identity_formation, values_beliefs, decision_making | Understand development |
+| Body | 7 | aging_mortality, body_health, rest_burnout, embodied_emotion, neurodivergent_experience, sleep_energy, addiction_recovery | Understand physical experience |
+| Context | 6 | cultural_identity, spirituality_faith, work_career, money_scarcity, gender_sexuality, creativity_expression | Understand life context |
+| Authenticity | 5 | real_quotes, contradictions_complexity, messy_middle, uncomfortable_truths, beautiful_imperfection | Understand humanness |
 
 ### 2.2 Manual Entry
 
@@ -536,12 +599,14 @@ Score: % of insights with cross-source validation
 
 #### Category Balance
 ```
-Target distribution by domain:
-- Pain: 20%
-- Joy: 20%
-- Connection: 25%
-- Growth: 20%
-- Authenticity: 15%
+Target distribution by domain (7 domains):
+- Pain: 18%
+- Joy: 15%
+- Connection: 20%
+- Growth: 17%
+- Body: 12%
+- Context: 10%
+- Authenticity: 8%
 
 Status: under (<50% of target), balanced, over (>150% of target)
 ```
@@ -1269,15 +1334,36 @@ All admin tools are accessible from **Settings → Developer Tools**.
 
 ### 11.3 Interview Processor (`/admin/interview-processor`)
 
+**Tabs:**
+- **Channels**: Add and manage YouTube channels to harvest
+- **Batch**: Process multiple channels with resume/checkpoint support
+- **Process**: Process individual channels one at a time
+- **Review**: Review, approve, or reject extracted insights
+- **Stats**: View quality statistics and processing history
+
 **Features:**
 - Add YouTube channels (supports @handle, /channel/, /c/ formats)
 - Configure trust levels and categories
 - Process videos to extract insights via Claude
 - Smart sampling strategies (popular, recent, balanced)
+- **Batch processing with resume**: Save progress and resume interrupted batches
+- **Bulk approve**: Select multiple insights and approve/reject in bulk
+- **Auto-approve by quality**: Automatically approve insights meeting quality thresholds (90%+, 85%+, 80%+)
+- **Rate limiting**: Built-in delays to prevent IP bans
+
+**Recommended Channels:**
+Pre-configured channels organized by extraction dimensions:
+- Emotional Experience (awe, joy, love, vulnerability, fear, grief, calm)
+- Cognitive Patterns (ambiguity, learning, decision-making)
+- Existential Themes (meaning, mortality, identity, values)
+- Relational Dynamics (attachment, conflict, boundaries, caregiving)
+- Symbolic Expression (dreams, creativity, narrative)
+- Life Context (work, money, culture, aging)
+- Embodied Experience (body, health, neurodivergence)
 
 **Use When:** You want to harvest human insights from therapy/coaching YouTube channels.
 
-**Note:** Uses Claude API for insight extraction. No Llama installation required.
+**Note:** Uses Claude API for insight extraction. Requires local transcript server running on port 3333. No Llama installation required.
 
 ### 11.4 Version Control (`/admin/version-control`)
 
@@ -1315,17 +1401,20 @@ Settings
 
 **DO:**
 - Curate channels with diverse perspectives
-- Balance across all 5 domains (pain, joy, connection, growth, authenticity)
+- Balance across all 7 domains (pain, joy, connection, growth, body, context, authenticity)
 - Review pending insights regularly
 - Reject low-quality or harmful content
 - Add channels gradually, monitor impact
+- Use auto-approve (90%+) for trusted, high-quality channels
+- Spot-check a sample of auto-approved insights
 
 **DON'T:**
-- Bulk approve without review
+- Auto-approve without spot-checking at least some insights
 - Over-rely on one channel or source
 - Ignore pending queue
 - Skip safety score reviews
 - Add channels without categorization
+- Use lower auto-approve thresholds (80%+) without careful review
 
 ### 12.2 Quality Maintenance
 

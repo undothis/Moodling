@@ -88,97 +88,208 @@ const BATCH_CHECKPOINT_KEY = 'moodling_batch_checkpoint';
 // embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware
 // Channel IDs are pre-populated to avoid YouTube fetch failures
 const RECOMMENDED_CHANNELS = [
-  // === TIER 1: PERFECT ALIGNMENT ===
-  { name: 'Esther Perel', handle: 'estherperel', channelId: 'UCyktTJjKdR81Cv9sMXK5QCA', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Relationships as complex & contradictory. Never prescriptive. "Where Do We Begin"' },
-  { name: 'How to ADHD', handle: 'HowtoADHD', channelId: 'UC-nPM1_kSZf91ZGkcgy_95Q', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe - warm, non-judgmental, practical ADHD content' },
-  { name: 'The School of Life', handle: 'theschooloflife', channelId: 'UC7IcJI8PUf5Z3zKxnZvTBog', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Alain de Botton - philosophy for everyday emotional life' },
+  // ╔══════════════════════════════════════════════════════════════════════════════╗
+  // ║  ORGANIZED BY EXTRACTION DIMENSIONS - Human Experience Schema               ║
+  // ╚══════════════════════════════════════════════════════════════════════════════╝
 
-  // === TIER 2: STRONG ALIGNMENT ===
-  { name: 'The Moth', handle: 'TheMoth', channelId: 'UCkVMpFPDK1F67eCM60ICAVQ', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories told live - raw, unpolished, deeply human' },
-  { name: 'Therapy in a Nutshell', handle: 'TherapyinaNutshell', channelId: 'UCpuKvNRyiFKC4Cgz5bulHjg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed LMFT, evidence-based mental health education' },
-  { name: 'Kati Morton', handle: 'KatiMorton', channelId: 'UCzBYOHyEEzlkRdDOSobbpvw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist, personal + educational, accessible' },
-  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', channelId: 'UCVQXbB1rSYdPb2boNNpu3og', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda - licensed therapist + professor, nuanced' },
-  { name: 'Brené Brown', handle: 'BreneBrown', channelId: 'UCpLsVgZrECIhPdJJCxyNRlQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Vulnerability, shame research, authenticity' },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // EMOTIONAL EXPERIENCE
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  // === NEURODIVERGENCE ===
-  { name: 'Purple Ella', handle: 'PurpleElla', channelId: 'UCvj7WmANb1VdDwPv_L0D4ag', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism + ADHD, authentic lived experience' },
+  // --- Awe & Wonder ---
+  { name: 'The School of Life', handle: 'theschooloflife', channelId: 'UC7IcJI8PUf5Z3zKxnZvTBog', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Alain de Botton - philosophy for everyday emotional life, beauty in the mundane' },
+  { name: 'Shots of Awe', handle: 'ShotsOfAwe', channelId: 'UClYb9NpXnRemxYoWbcYANsA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Jason Silva - micro-documentaries on wonder, consciousness, transcendence' },
 
-  // === RELATIONSHIPS & CONNECTION ===
-  { name: 'The Gottman Institute', handle: 'gottmaninstitute', channelId: 'UCWxbz64r6vI7E2awwc8apLQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'John Gottman - research-based relationship insights, non-judgmental' },
-  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', channelId: 'UCGq-a57w-aPwyi3pW7XLiHw', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on mental health, failure, relationships' },
+  // --- Joy & Delight ---
+  { name: 'SoulPancake', handle: 'soulpancake', channelId: 'UCvddZU4j9oalKOxCJ0IuNyg', category: 'joy_celebration' as ChannelCategory, trust: 'high' as const, description: 'Uplifting content about human connection, joy, and meaning' },
+  { name: 'The Holderness Family', handle: 'TheHoldernessFamily', channelId: 'UCjMgq_nGK5dg6pVDvH5LW8Q', category: 'humor_comedy' as ChannelCategory, trust: 'medium' as const, description: 'Parenting humor, relatable family chaos, joy in imperfection' },
 
-  // === ELDERLY WISDOM ===
-  { name: 'StoryCorps', handle: 'storycorps', channelId: 'UCBYXhmHfUOpb9TYuPpVzFWA', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Ordinary people\'s stories, especially elderly wisdom, deeply human' },
+  // --- Playfulness & Spontaneity ---
+  { name: 'Yes Theory', handle: 'YesTheory', channelId: 'UCvK4bOhULCpmLabd2pDMtnA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Seek discomfort - embracing uncertainty, spontaneous connection, adventure' },
 
-  // === JOY & CELEBRATION ===
-  { name: 'SoulPancake', handle: 'soulpancake', channelId: 'UCvddZU4j9oalKOxCJ0IuNyg', category: 'joy_celebration' as ChannelCategory, trust: 'medium' as const, description: 'Uplifting content about human connection, joy, and meaning' },
+  // --- Gratitude & Appreciation ---
+  { name: 'StoryCorps', handle: 'storycorps', channelId: 'UCBYXhmHfUOpb9TYuPpVzFWA', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Ordinary people\'s stories - gratitude, love, appreciation for life' },
 
-  // === SCIENCE-BASED WELLBEING ===
-  { name: 'Andrew Huberman', handle: 'hubermanlab', channelId: 'UC2D2CMWXMOVWx7giW1n3LIg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Huberman Lab - neuroscience-based tools for mental health, sleep, focus, stress' },
+  // --- Love & Compassion ---
+  { name: 'Esther Perel', handle: 'estherperel', channelId: 'UCyktTJjKdR81Cv9sMXK5QCA', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Love as complex & contradictory. Never prescriptive. "Where Do We Begin"' },
+  { name: 'The Gottman Institute', handle: 'gottmaninstitute', channelId: 'UCWxbz64r6vI7E2awwc8apLQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'John Gottman - research-based love, compassion in relationships' },
+  { name: 'Tara Brach', handle: 'TaraBrach', channelId: 'UCxNFlBjJtHXLhHIkqxzJ7Tw', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Radical self-compassion, loving kindness, mindfulness' },
 
-  // === WOMEN'S EMOTIONAL HEALTH ===
-  { name: 'Mel Robbins', handle: 'melrobbins', channelId: 'UCk2U-Oqn7RXf-ydPqfSxG5g', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Motivation without toxic positivity, science-backed mindset tools' },
-  { name: 'Dr. Ramani', handle: 'DoctorRamani', channelId: 'UC9Qixc77KhCo88E5gMs-caQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Narcissistic abuse recovery, boundaries, healing from toxic relationships' },
+  // --- Vulnerability & Openness ---
+  { name: 'Brené Brown', handle: 'BreneBrown', channelId: 'UCpLsVgZrECIhPdJJCxyNRlQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Vulnerability research, courage, authenticity' },
+  { name: 'Diary of a CEO', handle: 'TheDiaryOfACEO', channelId: 'UCGq-a57w-aPwyi3pW7XLiHw', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deep conversations on failure, vulnerability, raw truth' },
+  { name: 'Lewis Howes', handle: 'LewisHowes', channelId: 'UCQjBpfPj72zwYFpS7U7gd_A', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s vulnerability, emotional openness' },
 
-  // === RELATIONSHIP HEALTH ===
-  { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', channelId: 'UCHQ4lSAu7jQXmVN3MPCPZGQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, relationship patterns, personal development' },
+  // --- Fear & Anxiety ---
+  { name: 'Therapy in a Nutshell', handle: 'TherapyinaNutshell', channelId: 'UCpuKvNRyiFKC4Cgz5bulHjg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed LMFT - anxiety, fear, evidence-based mental health' },
+  { name: 'Kati Morton', handle: 'KatiMorton', channelId: 'UCzBYOHyEEzlkRdDOSobbpvw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Licensed therapist - anxiety, fear, accessible mental health' },
+  { name: 'The Anxiety Guy', handle: 'TheAnxietyGuy', channelId: 'UCrJ9_a2zUNnVRvAq-OPuxgQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dennis Simsek - anxiety recovery, fear confrontation' },
 
-  // === COMMUNICATION & NVC ===
-  { name: 'NVC Marshall Rosenberg', handle: 'NonviolentCommunicationNVC', channelId: 'UC2iuX2CG6jgCgHVfMM7w3Yw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Marshall Rosenberg - Nonviolent Communication (NVC): observations, feelings, needs, requests' },
-  { name: 'Center for Nonviolent Communication', handle: 'CNVC', channelId: 'UCnYIS6HlFTpkNpkrXLvxOaw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Official CNVC channel - NVC training, workshops, compassionate communication' },
+  // --- Anger & Frustration ---
+  { name: 'Psychology In Seattle', handle: 'PsychologyInSeattle', channelId: 'UCVQXbB1rSYdPb2boNNpu3og', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. Kirk Honda - anger, frustration, nuanced emotional analysis' },
 
-  // === MEN'S EMOTIONAL HEALTH ===
-  { name: 'Lewis Howes', handle: 'LewisHowes', channelId: 'UCQjBpfPj72zwYFpS7U7gd_A', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'School of Greatness - men\'s mental health, vulnerability, growth' },
-  { name: 'The Minimalists', handle: 'TheMinimalists', channelId: 'UCRPrmdh5FLt4bxWgvQ8SWOg', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - intentional living, meaning over materialism' },
-  { name: 'Rich Roll', handle: 'richroll', channelId: 'UCOF0J3ms6IeZZCOp-jJMuXQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Plant-powered living, addiction recovery, men\'s transformation' },
+  // --- Shame & Guilt ---
+  { name: 'Dr. Ramani', handle: 'DoctorRamani', channelId: 'UC9Qixc77KhCo88E5gMs-caQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Shame, guilt, narcissistic abuse recovery, healing' },
 
-  // === GUIDED MEDITATION ===
-  { name: 'Michael Sealey', handle: 'MichaelSealey', channelId: 'UC9GoqsWjluXVSKHO4Wistbw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, hypnotherapy, sleep and relaxation' },
-  { name: 'The Honest Guys', handle: 'thehonestguys', channelId: 'UC7tD6Ifrwbiy-BoaAHEinmQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, relaxation, sleep stories' },
-  { name: 'Jason Stephenson', handle: 'JasonStephensonSleep', channelId: 'UCqDBSTeuGa1e3MSqG_nq2Uw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Sleep meditation, guided relaxation, anxiety relief' },
-
-  // === ADDICTION & RECOVERY ===
-  // Curated for compassionate, trauma-informed, non-judgmental approach to addiction
-  { name: 'Gabor Maté', handle: 'DrGaborMate', channelId: 'UC6JLfDwuqC6OmJAqVVn5f7w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Trauma-informed addiction specialist, compassionate approach to understanding addiction' },
-  { name: 'Russell Brand', handle: 'RussellBrand', channelId: 'UCswH8ovgUp5Bdg-0_JTYFNw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Recovered addict, spiritual approach to recovery, raw and authentic' },
-  { name: 'Annie Grace', handle: 'ThisNakedMind', channelId: 'UCDSEuXPwLJh4zLrVbYXj0Nw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'This Naked Mind - alcohol freedom without shame, science-based' },
-  { name: 'After Prison Show', handle: 'AfterPrisonShow', channelId: 'UCo2LGlvPwPJ_vD-dN8FdT8w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Joe Guerrero - real talk about addiction, recovery, and life after prison' },
-  { name: 'Recovery Elevator', handle: 'RecoveryElevator', channelId: 'UChvKBUy9eLU-5xVz2Rre7-g', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Paul Churchill - podcast about alcohol recovery, community-focused' },
-  { name: 'Club Soda', handle: 'ClubSodaUK', channelId: 'UC8oCJLZ_DLu7e5Qu3qbqRQw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Mindful drinking movement, harm reduction, choice without judgment' },
-
-  // === GRIEF & LOSS ===
+  // --- Grief & Sorrow ---
   { name: 'Refuge in Grief', handle: 'RefugeinGrief', channelId: 'UCwzQ3DPTgKmE6GUmfWuFxkQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Megan Devine - grief that doesn\'t need fixing, anti-toxic positivity' },
   { name: 'The Grief Recovery Method', handle: 'GriefRecoveryMethod', channelId: 'UCiE6-nB-c9qB5n0f3Cq1uRQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Evidence-based grief recovery, practical tools' },
   { name: 'What\'s Your Grief', handle: 'WhatsYourGrief', channelId: 'UCmQcjPmjwB7QmHM_NiP3EQg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Practical grief education, normalizing all types of loss' },
+  { name: 'Nora McInerny', handle: 'NoraMcInerny', channelId: 'UC0aCvDr7E_Cvq0KHB3FQXpg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Terrible, Thanks for Asking - grief with humor and honesty' },
 
-  // === AGING & MORTALITY ===
-  { name: 'Ask a Mortician', handle: 'AskAMortician', channelId: 'UCi5iiEyLwSLvlqnMi02u5gQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Caitlin Doughty - death positivity, confronting mortality with honesty' },
-  { name: 'Sixty and Me', handle: 'SixtyandMe', channelId: 'UCuEb_KLhBhZ_fQVZMbR2EJw', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Women over 60 sharing wisdom, embracing aging' },
+  // --- Calm & Contentment ---
+  { name: 'Michael Sealey', handle: 'MichaelSealey', channelId: 'UC9GoqsWjluXVSKHO4Wistbw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, hypnotherapy, deep relaxation' },
+  { name: 'The Honest Guys', handle: 'thehonestguys', channelId: 'UC7tD6Ifrwbiy-BoaAHEinmQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Guided meditations, calm, sleep stories' },
+  { name: 'Jason Stephenson', handle: 'JasonStephensonSleep', channelId: 'UCqDBSTeuGa1e3MSqG_nq2Uw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Sleep meditation, peace, anxiety relief' },
 
-  // === PARENTING ===
-  { name: 'Dr. Becky Kennedy', handle: 'drbeckyatgoodinside', channelId: 'UC2oF2TmQVzRCW3M6BQmwEFQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Good Inside parenting - repair over perfection, emotional regulation' },
-  { name: 'Janet Lansbury', handle: 'JanetLansbury', channelId: 'UC-pMWdv3GhJIBmYqAJWBQfQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'RIE parenting approach - respect, observation, trust in children' },
-  { name: 'The Holderness Family', handle: 'TheHoldernessFamily', channelId: 'UCjMgq_nGK5dg6pVDvH5LW8Q', category: 'humor_comedy' as ChannelCategory, trust: 'medium' as const, description: 'Parenting humor, relatable family chaos, joy in imperfection' },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // COGNITIVE PATTERNS
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  // === CHRONIC ILLNESS & DISABILITY ===
-  { name: 'Jessica Kellgren-Fozard', handle: 'JessicaKellgrenFozard', channelId: 'UCqZ3eDbxCaKBnE9W6w7xRGg', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deaf, disabled LGBTQ+ advocate - joy and chronic illness can coexist' },
-  { name: 'Chronically Jaquie', handle: 'ChronicallyJaquie', channelId: 'UCKaX0dQwEUgTafzCZ2yEjUQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'medium' as const, description: 'Living with chronic illness - the messy reality' },
+  // --- Ambiguity & Uncertainty ---
+  { name: 'Vsauce', handle: 'Vsauce', channelId: 'UC6nSFpj9HTCZ5t-N3Rm3-HA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Michael Stevens - embracing uncertainty, existential curiosity' },
+  { name: 'Veritasium', handle: 'veritasium', channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Derek Muller - uncertainty in science, changing one\'s mind' },
 
-  // === SPIRITUALITY (NON-DOGMATIC) ===
-  { name: 'Eckhart Tolle', handle: 'EckhartTolle', channelId: 'UCJ9rg3_ApZFpfIR0vftNPAA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Presence, consciousness, peace - accessible spirituality' },
-  { name: 'Tara Brach', handle: 'TaraBrach', channelId: 'UCxNFlBjJtHXLhHIkqxzJ7Tw', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Buddhist psychology, radical self-compassion, mindfulness' },
-  { name: 'Ram Dass', handle: 'RamDassOrg', channelId: 'UCrmD3-ZZTJRfxAOxS1LHkkQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Be Here Now - love, service, aging, dying, consciousness' },
+  // --- Cognitive Flow & Rhythm ---
+  { name: 'How to ADHD', handle: 'HowtoADHD', channelId: 'UC-nPM1_kSZf91ZGkcgy_95Q', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Jessica McCabe - ADHD cognitive patterns, flow states, rhythms' },
+  { name: 'Purple Ella', handle: 'PurpleElla', channelId: 'UCvj7WmANb1VdDwPv_L0D4ag', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism + ADHD - different cognitive rhythms, authentic experience' },
 
-  // === CREATIVITY & EXPRESSION ===
-  { name: 'The Art Assignment', handle: 'theartassignment', channelId: 'UCmQThz1OLYt8mb2PaGJSJeQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Art as emotional processing, creativity for everyone' },
-  { name: 'Austin Kleon', handle: 'AustinKleon', channelId: 'UCqQxXxW8qJw_9WqC8J8TfSQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Creative life, stealing like an artist, showing your work' },
+  // --- Perspective & Worldview ---
+  { name: 'Contrapoints', handle: 'ContraPoints', channelId: 'UCNvsIonJdJ5E4EXMa65VYpA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Natalie Wynn - philosophy, perspective shifts, nuance' },
+  { name: 'Philosophy Tube', handle: 'PhilosophyTube', channelId: 'UC2PA-AKmVpU6NKCGtZq_rKQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Abigail Thorn - philosophy, changing worldviews, identity' },
 
-  // === BURNOUT & REST ===
-  { name: 'The Nap Ministry', handle: 'TheNapMinistry', channelId: 'UCwJlZ8L-aSPb-PVNGNZDe-g', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Tricia Hersey - rest as resistance, rejecting grind culture' },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // EXISTENTIAL THEMES
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  // === LGBTQ+ EXPERIENCE ===
-  { name: 'Contrapoints', handle: 'ContraPoints', channelId: 'UCNvsIonJdJ5E4EXMa65VYpA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Natalie Wynn - trans experience, philosophy, nuance, beauty' },
-  { name: 'Jammidodger', handle: 'Jammidodger', channelId: 'UCXc4jQMOy2wvVo_jK1EuLSQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Trans man experience - joy, education, authenticity' },
+  // --- Identity & Selfhood ---
+  { name: 'Jammidodger', handle: 'Jammidodger', channelId: 'UCXc4jQMOy2wvVo_jK1EuLSQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Trans identity journey - discovering and becoming oneself' },
+  { name: 'Thais Gibson', handle: 'PersonalDevelopmentSchool', channelId: 'UCHQ4lSAu7jQXmVN3MPCPZGQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Attachment theory, identity patterns, self-discovery' },
+
+  // --- Meaning & Purpose ---
+  { name: 'The Minimalists', handle: 'TheMinimalists', channelId: 'UCRPrmdh5FLt4bxWgvQ8SWOg', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Joshua & Ryan - meaning over materialism, intentional living' },
+  { name: 'Victor Frankl Institute', handle: 'ViktorFranklInstitute', channelId: 'UCNqv3JbxGJ0gZ_fZG_QXLjw', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Man\'s Search for Meaning - logotherapy, finding purpose' },
+  { name: 'Academy of Ideas', handle: 'AcademyofIdeas', channelId: 'UCiRiQGCHGjDLT9FQXFW0I3A', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Philosophy for life - meaning, purpose, existentialism' },
+
+  // --- Growth & Personal Development ---
+  { name: 'Mel Robbins', handle: 'melrobbins', channelId: 'UCk2U-Oqn7RXf-ydPqfSxG5g', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Personal growth without toxic positivity, science-backed' },
+  { name: 'Rich Roll', handle: 'richroll', channelId: 'UCOF0J3ms6IeZZCOp-jJMuXQ', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Transformation, addiction recovery, personal evolution' },
+
+  // --- Transformation & Change ---
+  { name: 'Gabor Maté', handle: 'DrGaborMate', channelId: 'UC6JLfDwuqC6OmJAqVVn5f7w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Trauma-informed transformation, compassionate change' },
+  { name: 'Annie Grace', handle: 'ThisNakedMind', channelId: 'UCDSEuXPwLJh4zLrVbYXj0Nw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'This Naked Mind - alcohol freedom, identity transformation' },
+
+  // --- Mortality & Death Awareness ---
+  { name: 'Ask a Mortician', handle: 'AskAMortician', channelId: 'UCi5iiEyLwSLvlqnMi02u5gQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Caitlin Doughty - death positivity, confronting mortality honestly' },
+  { name: 'Ram Dass', handle: 'RamDassOrg', channelId: 'UCrmD3-ZZTJRfxAOxS1LHkkQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Be Here Now - aging, dying, consciousness, acceptance' },
+  { name: 'The Order of the Good Death', handle: 'OrderOfTheGoodDeath', channelId: 'UCkVMpFPDK1F67eCM60ICAVQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Death acceptance movement, mortality awareness' },
+
+  // --- Hope & Despair ---
+  { name: 'The Moth', handle: 'TheMoth', channelId: 'UCkVMpFPDK1F67eCM60ICAVQ', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'True stories - the full spectrum from despair to hope' },
+  { name: 'Humans of New York', handle: 'HumansofNewYork', channelId: 'UCQvJR3UyQ8K-TrVz0rENKxg', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Real human stories - struggles, hope, resilience' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // RELATIONAL DYNAMICS
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- Connection & Belonging ---
+  { name: 'NVC Marshall Rosenberg', handle: 'NonviolentCommunicationNVC', channelId: 'UC2iuX2CG6jgCgHVfMM7w3Yw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Nonviolent Communication - deep connection through needs' },
+  { name: 'Center for Nonviolent Communication', handle: 'CNVC', channelId: 'UCnYIS6HlFTpkNpkrXLvxOaw', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'NVC training - compassionate connection' },
+
+  // --- Isolation & Loneliness ---
+  { name: 'Kurzgesagt', handle: 'Kurzgesagt', channelId: 'UCsXVk37bltHxD1rDPwtNM8Q', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'In a Nutshell - loneliness, isolation, existential themes' },
+  { name: 'HealthyGamerGG', handle: 'HealthyGamerGG', channelId: 'UClHVl2N3jPEbkNJVx-ItQIQ', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Dr. K - isolation, gaming culture, mental health for lonely people' },
+
+  // --- Conflict & Discord ---
+  { name: 'TED Talks', handle: 'TED', channelId: 'UCAuUUnT6oDeKwE6v1NGQxug', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Ideas worth spreading - conflict resolution, understanding' },
+
+  // --- Caregiving & Nurturance ---
+  { name: 'Dr. Becky Kennedy', handle: 'drbeckyatgoodinside', channelId: 'UC2oF2TmQVzRCW3M6BQmwEFQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Good Inside - parenting as caregiving, nurturing connection' },
+  { name: 'Janet Lansbury', handle: 'JanetLansbury', channelId: 'UC-pMWdv3GhJIBmYqAJWBQfQ', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'RIE parenting - respectful caregiving, trust' },
+  { name: 'Teepa Snow', handle: 'TeepaSnow', channelId: 'UCmqMv7z9YqQf_J7bqMzPr1w', category: 'relationships_love' as ChannelCategory, trust: 'high' as const, description: 'Dementia caregiving - compassionate care, understanding' },
+
+  // --- Empathy & Understanding ---
+  { name: 'Andrew Huberman', handle: 'hubermanlab', channelId: 'UC2D2CMWXMOVWx7giW1n3LIg', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Neuroscience of empathy, connection, understanding others' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // SYMBOLIC EXPRESSION
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- Metaphoric Language & Symbolic Imagery ---
+  { name: 'Nerdwriter', handle: 'Nerdwriter1', channelId: 'UCJkMlOu7faDgqh4PfzbpLdg', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Video essays on art, metaphor, meaning in culture' },
+  { name: 'The Art Assignment', handle: 'theartassignment', channelId: 'UCmQThz1OLYt8mb2PaGJSJeQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Art as emotional expression, symbolic meaning' },
+
+  // --- Archetypal & Mythic Themes ---
+  { name: 'Joseph Campbell Foundation', handle: 'JosephCampbellFdn', channelId: 'UCq6v1HuYQ6m4d9PVcA0rqPQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Hero\'s journey, myth, archetypal psychology' },
+  { name: 'Jordan Peterson Clips', handle: 'JordanPetersonClips', channelId: 'UC6g_3zHOI47T6rjAA0RlV-w', category: 'philosophy_meaning' as ChannelCategory, trust: 'medium' as const, description: 'Jungian archetypes, mythology, meaning (use critically)' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // TEMPORAL & NARRATIVE PATTERNS
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- Narrative Arc / Personal Journey ---
+  { name: 'Soft White Underbelly', handle: 'SoftWhiteUnderbelly', channelId: 'UCCvcd0FYi58LwyTQP8MYTgg', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Mark Laita - raw life stories, personal journeys, humanity' },
+  { name: 'Special Books by Special Kids', handle: 'SpecialBooksbySpecialKids', channelId: 'UC4E98HDsPXrf5kTKIgrSmtQ', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Chris Ulmer - stories of disability, difference, humanity' },
+
+  // --- Temporal Focus (Past, Present, Future) ---
+  { name: 'Eckhart Tolle', handle: 'EckhartTolle', channelId: 'UCJ9rg3_ApZFpfIR0vftNPAA', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Present moment awareness, releasing past and future' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // LIFE CONTEXT (STAGES & TRANSITIONS)
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- Birth & New Beginnings ---
+  { name: 'The Birth Hour', handle: 'TheBirthHour', channelId: 'UCt1FgWrRWzYj_r3z0MWMtDA', category: 'storytelling_human_experience' as ChannelCategory, trust: 'high' as const, description: 'Birth stories - new beginnings, transformation' },
+
+  // --- Aging & Life Stages ---
+  { name: 'Sixty and Me', handle: 'SixtyandMe', channelId: 'UCuEb_KLhBhZ_fQVZMbR2EJw', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Women over 60 - embracing aging, wisdom' },
+  { name: 'Old Souls', handle: 'OldSoulsTV', channelId: 'UCeP6_FX8IfVl3xXQtjw1z2w', category: 'elderly_wisdom' as ChannelCategory, trust: 'high' as const, description: 'Elderly wisdom, life lessons, aging gracefully' },
+
+  // --- Death & Loss ---
+  // (see Grief & Mortality sections above)
+
+  // --- Major Life Transitions ---
+  { name: 'The Financial Diet', handle: 'TheFinancialDiet', channelId: 'UCSPYNpQ2fHv9HJ-q6MIMaPw', category: 'philosophy_meaning' as ChannelCategory, trust: 'medium' as const, description: 'Life transitions, adulting, major changes' },
+
+  // --- Rupture (Breakdown or Crisis) ---
+  { name: 'After Prison Show', handle: 'AfterPrisonShow', channelId: 'UCo2LGlvPwPJ_vD-dN8FdT8w', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Joe Guerrero - life after rupture, rebuilding from crisis' },
+  { name: 'Russell Brand', handle: 'RussellBrand', channelId: 'UCswH8ovgUp5Bdg-0_JTYFNw', category: 'addiction_recovery' as ChannelCategory, trust: 'medium' as const, description: 'Addiction crisis, spiritual recovery, transformation' },
+  { name: 'Recovery Elevator', handle: 'RecoveryElevator', channelId: 'UChvKBUy9eLU-5xVz2Rre7-g', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Alcohol crisis and recovery, community support' },
+  { name: 'Club Soda', handle: 'ClubSodaUK', channelId: 'UC8oCJLZ_DLu7e5Qu3qbqRQw', category: 'addiction_recovery' as ChannelCategory, trust: 'high' as const, description: 'Mindful drinking, harm reduction, choice' },
+
+  // --- Repair (Healing or Reconciliation) ---
+  { name: 'Austin Kleon', handle: 'AustinKleon', channelId: 'UCqQxXxW8qJw_9WqC8J8TfSQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Creative repair, finding your way back, showing your work' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // EMBODIED EXPERIENCE
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- Vitality & Aliveness ---
+  { name: 'Yoga With Adriene', handle: 'yogawithadriene', channelId: 'UCFKE7WVJfvaHW5q283SxchA', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Embodied practice, vitality, movement as healing' },
+
+  // --- Rest & Recovery ---
+  { name: 'The Nap Ministry', handle: 'TheNapMinistry', channelId: 'UCwJlZ8L-aSPb-PVNGNZDe-g', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Tricia Hersey - rest as resistance, recovery, rejecting grind' },
+
+  // --- Tension & Relaxation ---
+  { name: 'The Body Keeps the Score', handle: 'BesselVanDerKolk', channelId: 'UCQ2GfCOybQWdtcA0qVaM1aw', category: 'therapy_mental_health' as ChannelCategory, trust: 'high' as const, description: 'Bessel van der Kolk - trauma in the body, somatic healing' },
+
+  // --- Chronic Illness & Disability (Embodied Difference) ---
+  { name: 'Jessica Kellgren-Fozard', handle: 'JessicaKellgrenFozard', channelId: 'UCqZ3eDbxCaKBnE9W6w7xRGg', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Deaf, disabled LGBTQ+ - joy and chronic illness coexist' },
+  { name: 'Invisible i', handle: 'invisiblei', channelId: 'UCy0f7VLjz7L_rkF1pePJaOg', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Chronic illness, invisible disability, lived experience' },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // IDENTITY & DIVERSITY
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // --- LGBTQ+ Experience ---
+  { name: 'Ash Hardell', handle: 'AshHardell', channelId: 'UCnIX4jtXbqEwb8kEU3blzlg', category: 'vulnerability_authenticity' as ChannelCategory, trust: 'high' as const, description: 'Non-binary, queer identity journey, education' },
+
+  // --- Cultural & Racial Identity ---
+  { name: 'Jay Shetty', handle: 'JayShetty', channelId: 'UCbV60AGIHKz3xMfY3TdvLsQ', category: 'philosophy_meaning' as ChannelCategory, trust: 'high' as const, description: 'Former monk - wisdom traditions, cross-cultural meaning' },
+
+  // --- Neurodivergent Experience ---
+  { name: 'Yo Samdy Sam', handle: 'YoSamdySam', channelId: 'UCwVr5NHzQ4GqPuvViLoXLgw', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Autism, late diagnosis, neurodivergent identity' },
+  { name: 'The Aspie World', handle: 'TheAspieWorld', channelId: 'UCkpYu4pKJWY2PLe7a6o7G6A', category: 'neurodivergence' as ChannelCategory, trust: 'high' as const, description: 'Dan Jones - autism, ADHD, neurodivergent experience' },
 ];
 
 export default function InterviewProcessorScreen() {
@@ -232,6 +343,8 @@ export default function InterviewProcessorScreen() {
   const [pendingInsights, setPendingInsights] = useState<ExtractedInsight[]>([]);
   const [approvedInsights, setApprovedInsights] = useState<ExtractedInsight[]>([]);
   const [selectedInsight, setSelectedInsight] = useState<ExtractedInsight | null>(null);
+  const [selectedInsightIds, setSelectedInsightIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
 
   // Stats state
   const [qualityStats, setQualityStats] = useState<QualityStats | null>(null);
@@ -1237,6 +1350,130 @@ export default function InterviewProcessorScreen() {
     setSelectedInsight(null);
   };
 
+  // Toggle insight selection
+  const toggleInsightSelection = (insightId: string) => {
+    setSelectedInsightIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(insightId)) {
+        newSet.delete(insightId);
+      } else {
+        newSet.add(insightId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all pending insights
+  const selectAllInsights = () => {
+    if (selectedInsightIds.size === pendingInsights.length) {
+      setSelectedInsightIds(new Set());
+    } else {
+      setSelectedInsightIds(new Set(pendingInsights.map(i => i.id)));
+    }
+  };
+
+  // Bulk approve selected insights
+  const handleBulkApprove = async () => {
+    if (selectedInsightIds.size === 0) {
+      Alert.alert('No Selection', 'Please select insights to approve');
+      return;
+    }
+
+    setBulkApproving(true);
+    try {
+      let approvedCount = 0;
+      for (const id of selectedInsightIds) {
+        await approvePendingInsight(id);
+        approvedCount++;
+      }
+      await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + approvedCount });
+      setSelectedInsightIds(new Set());
+      loadData();
+      Alert.alert('Success', `Approved ${approvedCount} insights`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to approve some insights');
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
+  // Bulk reject selected insights
+  const handleBulkReject = async () => {
+    if (selectedInsightIds.size === 0) {
+      Alert.alert('No Selection', 'Please select insights to reject');
+      return;
+    }
+
+    Alert.alert(
+      'Confirm Rejection',
+      `Reject ${selectedInsightIds.size} selected insights?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reject',
+          style: 'destructive',
+          onPress: async () => {
+            setBulkApproving(true);
+            try {
+              let rejectedCount = 0;
+              for (const id of selectedInsightIds) {
+                await rejectPendingInsight(id, 'Bulk rejected by user');
+                rejectedCount++;
+              }
+              await updateQualityStats({ humanRejected: (qualityStats?.humanRejected || 0) + rejectedCount });
+              setSelectedInsightIds(new Set());
+              loadData();
+              Alert.alert('Done', `Rejected ${rejectedCount} insights`);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reject some insights');
+            } finally {
+              setBulkApproving(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Auto-approve high quality insights (quality >= 85, safety >= 95)
+  const handleAutoApproveHighQuality = async (minQuality: number = 85) => {
+    const highQuality = pendingInsights.filter(
+      i => i.qualityScore >= minQuality && (i.safetyScore || 100) >= 95 && !i.needsHumanReview
+    );
+
+    if (highQuality.length === 0) {
+      Alert.alert('No Matches', `No insights found with quality ≥${minQuality}%, safety ≥95%, and no review flags`);
+      return;
+    }
+
+    Alert.alert(
+      `Auto-Approve (≥${minQuality}%)`,
+      `Found ${highQuality.length} insights with quality ≥${minQuality}% and safety ≥95%.\n\nApprove all?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: `Approve ${highQuality.length}`,
+          onPress: async () => {
+            setBulkApproving(true);
+            try {
+              for (const insight of highQuality) {
+                await approvePendingInsight(insight.id);
+              }
+              await updateQualityStats({ humanApproved: (qualityStats?.humanApproved || 0) + highQuality.length });
+              setSelectedInsightIds(new Set());
+              loadData();
+              Alert.alert('Success', `Auto-approved ${highQuality.length} insights (≥${minQuality}%)`);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to approve some insights');
+            } finally {
+              setBulkApproving(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   // Render tabs
   const renderChannelsTab = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
@@ -2019,6 +2256,97 @@ export default function InterviewProcessorScreen() {
         </View>
       </View>
 
+      {/* Bulk Actions */}
+      {pendingInsights.length > 0 && (
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, marginBottom: 12 }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Bulk Actions</Text>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Pressable
+              style={[styles.bulkButton, { backgroundColor: colors.border }]}
+              onPress={selectAllInsights}
+            >
+              <Text style={{ color: colors.text, fontSize: 13 }}>
+                {selectedInsightIds.size === pendingInsights.length ? '☑ Deselect All' : '☐ Select All'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.bulkButton, {
+                backgroundColor: selectedInsightIds.size > 0 ? '#4CAF50' : colors.border,
+                opacity: selectedInsightIds.size > 0 ? 1 : 0.5
+              }]}
+              onPress={handleBulkApprove}
+              disabled={selectedInsightIds.size === 0 || bulkApproving}
+            >
+              <Text style={{ color: selectedInsightIds.size > 0 ? '#fff' : colors.textSecondary, fontSize: 13 }}>
+                ✓ Approve Selected ({selectedInsightIds.size})
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.bulkButton, {
+                backgroundColor: selectedInsightIds.size > 0 ? '#F44336' : colors.border,
+                opacity: selectedInsightIds.size > 0 ? 1 : 0.5
+              }]}
+              onPress={handleBulkReject}
+              disabled={selectedInsightIds.size === 0 || bulkApproving}
+            >
+              <Text style={{ color: selectedInsightIds.size > 0 ? '#fff' : colors.textSecondary, fontSize: 13 }}>
+                ✗ Reject Selected
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 }}>
+            <Text style={[styles.helperText, { color: colors.text, fontWeight: '600', marginBottom: 8 }]}>
+              Auto-Approve by Quality Threshold:
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <Pressable
+                style={[styles.bulkButton, { backgroundColor: '#9C27B0' }]}
+                onPress={() => handleAutoApproveHighQuality(90)}
+                disabled={bulkApproving}
+              >
+                <Text style={{ color: '#fff', fontSize: 13 }}>
+                  ⭐ 90%+ ({pendingInsights.filter(i => i.qualityScore >= 90 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.bulkButton, { backgroundColor: '#2196F3' }]}
+                onPress={() => handleAutoApproveHighQuality(85)}
+                disabled={bulkApproving}
+              >
+                <Text style={{ color: '#fff', fontSize: 13 }}>
+                  ⚡ 85%+ ({pendingInsights.filter(i => i.qualityScore >= 85 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.bulkButton, { backgroundColor: '#4CAF50' }]}
+                onPress={() => handleAutoApproveHighQuality(80)}
+                disabled={bulkApproving}
+              >
+                <Text style={{ color: '#fff', fontSize: 13 }}>
+                  ✓ 80%+ ({pendingInsights.filter(i => i.qualityScore >= 80 && (i.safetyScore || 100) >= 95 && !i.needsHumanReview).length})
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={[styles.helperText, { color: colors.textSecondary, marginTop: 6 }]}>
+              All require safety ≥95% and no review flags
+            </Text>
+          </View>
+
+          {bulkApproving && (
+            <View style={{ marginTop: 8 }}>
+              <ActivityIndicator color={colors.tint} />
+              <Text style={[styles.helperText, { color: colors.textSecondary, textAlign: 'center' }]}>
+                Processing...
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Pending Insights */}
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         Pending Review ({pendingInsights.length})
@@ -2029,14 +2357,32 @@ export default function InterviewProcessorScreen() {
           No insights pending review. Process some videos first!
         </Text>
       ) : (
-        pendingInsights.slice(0, 20).map(insight => (
+        pendingInsights.slice(0, 50).map(insight => (
           <Pressable
             key={insight.id}
-            style={[styles.insightCard, { backgroundColor: colors.cardBackground }]}
+            style={[
+              styles.insightCard,
+              { backgroundColor: colors.cardBackground },
+              selectedInsightIds.has(insight.id) && { borderColor: '#4CAF50', borderWidth: 2 }
+            ]}
             onPress={() => setSelectedInsight(insight)}
+            onLongPress={() => toggleInsightSelection(insight.id)}
           >
             <View style={styles.insightHeader}>
-              <Text style={[styles.insightTitle, { color: colors.text }]} numberOfLines={1}>
+              {/* Checkbox */}
+              <Pressable
+                style={[
+                  styles.checkbox,
+                  { borderColor: colors.border },
+                  selectedInsightIds.has(insight.id) && { backgroundColor: '#4CAF50', borderColor: '#4CAF50' }
+                ]}
+                onPress={() => toggleInsightSelection(insight.id)}
+              >
+                {selectedInsightIds.has(insight.id) && (
+                  <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
+                )}
+              </Pressable>
+              <Text style={[styles.insightTitle, { color: colors.text, flex: 1 }]} numberOfLines={1}>
                 {insight.title}
               </Text>
               <View style={[
@@ -2051,15 +2397,15 @@ export default function InterviewProcessorScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={[styles.insightSource, { color: colors.tint }]}>
+            <Text style={[styles.insightSource, { color: colors.tint, marginLeft: 28 }]}>
               {insight.channelName}
             </Text>
-            <Text style={[styles.insightText, { color: colors.textSecondary }]} numberOfLines={2}>
+            <Text style={[styles.insightText, { color: colors.textSecondary, marginLeft: 28 }]} numberOfLines={2}>
               {insight.insight}
             </Text>
             {insight.needsHumanReview && (
-              <View style={[styles.reviewFlag, { backgroundColor: '#FF980020' }]}>
-                <Text style={{ color: '#FF9800', fontSize: 11 }}>Needs careful review</Text>
+              <View style={[styles.reviewFlag, { backgroundColor: '#FF980020', marginLeft: 28 }]}>
+                <Text style={{ color: '#FF9800', fontSize: 11 }}>⚠ Needs careful review</Text>
               </View>
             )}
           </Pressable>
@@ -2563,6 +2909,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderRadius: 4,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bulkButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   insightModal: {
     padding: 20,
