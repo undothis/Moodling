@@ -1425,6 +1425,98 @@ YOU NEVER:
 3. **User controls** - Export, delete, disable features
 4. **No telemetry** - We don't track usage
 
+### Core Principle Kernel
+
+The Core Principle Kernel (`services/corePrincipleKernel.ts`) is the "constitution" of Mood Leaf. Every AI response must align with these principles.
+
+**Architecture:**
+- **Core Beliefs** - What we believe about minds, people, growth
+- **Program-Level Tenets** - Foundational philosophy that cannot be overridden
+- **Hard Constraints** - Things we NEVER do (violations are blocked)
+- **Soft Principles** - Things we strongly prefer (violations generate warnings)
+
+**Key Hard Constraints (Category: Neurological):**
+- `NO_VISUALIZATION_FOR_APHANTASIA` - Never suggest visualization to users with aphantasia
+- `NO_INNER_VOICE_FOR_NON_VERBAL_THINKERS` - Never ask about inner voice for users who don't have one
+
+**Key Hard Constraints (Category: Safety):**
+- `NO_CRISIS_DISMISSAL` - Never dismiss or minimize crisis signals
+- `NO_MEDICAL_DIAGNOSIS` - Never diagnose medical or mental health conditions
+
+**Key Hard Constraints (Category: Connection):**
+- `NO_REPLACING_THERAPY` - Never position the app as therapy replacement
+- `NO_REPLACING_HUMAN_CONNECTION` - Never position the app as substitute for relationships
+- `CRISIS_REQUIRES_HUMAN` - Must direct to human help during crisis signals
+
+### The Leniency Rule (Explicit Request Override)
+
+**THE PROBLEM WE SOLVED:**
+
+Accommodations were too rigid. If a user had aphantasia, the coach would REFUSE to describe a mental image even when the user explicitly asked for one. This was paternalistic and frustrating.
+
+**THE PRINCIPLE:**
+
+```
+We accommodate by default.
+We trust users when they explicitly ask for something.
+One request doesn't change their profile permanently.
+```
+
+**HOW IT WORKS:**
+
+1. User with aphantasia says: "Can you describe a peaceful beach scene for me?"
+2. System detects this as an explicit request for visualization
+3. Coach provides the description (normally blocked for aphantasia)
+4. Next conversation, accommodations return to default (no visualization unless asked)
+
+**Implementation:**
+
+```typescript
+// In corePrincipleKernel.ts
+export function detectExplicitRequests(userMessage: string): string[]
+
+// Returns array of things user explicitly requested
+// e.g., ['visualization', 'step-by-step guidance']
+```
+
+The detection looks for:
+- Direct request patterns: "Can you...", "Please give me...", "I want you to..."
+- Override keywords: "visualize", "picture", "imagine", "inner voice", etc.
+- Clarification phrases: "I know but...", "even though...", "anyway..."
+
+**Where It's Applied:**
+
+Both `claudeAPIService.ts` and `llamaIntegrationService.ts` use:
+1. `getPrincipleContextForLLM()` - Includes leniency instructions in system prompt
+2. `detectExplicitRequests()` - Detects when user overrides accommodations
+
+**System Prompt Addition (sent to both Claude and Llama):**
+
+```
+=== EXPLICIT REQUEST LENIENCY (Critical) ===
+Accommodations are DEFAULTS, not cages. When a user EXPLICITLY asks for something:
+
+- If user has aphantasia but asks "describe a peaceful beach scene" → DO IT
+- If user has no inner monologue but asks "what should I tell myself" → HELP THEM
+- If user prefers brevity but asks for detailed explanation → PROVIDE IT
+
+THE RULE: We accommodate by default. We trust explicit requests.
+
+IMPORTANT: One explicit request does NOT change their profile permanently.
+Next conversation, return to their default accommodations.
+Don't lecture them about their own needs. They know what they're asking for.
+```
+
+**Why Two Places (Kernel + API Service)?**
+
+| Location | Purpose |
+|----------|---------|
+| `corePrincipleKernel.ts` | Source of truth - defines the RULE |
+| `claudeAPIService.ts` / `llamaIntegrationService.ts` | Execution - tells the LLM about the rule |
+
+If only in kernel: LLM doesn't know the rule, still refuses
+If only in API service: Rule isn't documented/codified, future changes might break it
+
 ---
 
 ## Testing

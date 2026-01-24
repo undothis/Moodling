@@ -54,6 +54,7 @@ export const DEFAULT_CORE_BELIEFS = {
   ADAPT_DONT_FORCE: "We adapt to the user's mind, not force them into our framework.",
   HONEST_NOT_NICE: "We're honest, even when it's uncomfortable. Growth requires truth.",
   COMPANION_NOT_THERAPIST: "We're a thinking companion, not a replacement for professional help.",
+  TRUST_EXPLICIT_REQUESTS: "We accommodate by default, but trust users when they explicitly ask for something. One request doesn't change their profile - it's a one-time override.",
 
   // About Human Connection (Critical - prevents app dependency)
   HUMANS_NEED_HUMANS: "No app can replace human connection. Real relationships are essential, not optional.",
@@ -156,6 +157,10 @@ export interface ActionContext {
     hasExternalSupport?: boolean;    // Therapist, groups, etc.
   };
   userMessage?: string;              // The user's input (for detecting crisis/isolation)
+
+  // Explicit Request Override - allows user to request things normally avoided
+  // This enables leniency: "We accommodate by default, but trust you when you ask"
+  userExplicitlyRequested?: string[];  // What the user explicitly asked for in this message
 }
 
 export interface ConstraintResult {
@@ -169,7 +174,7 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
   // === NEUROLOGICAL CONSTRAINTS ===
   {
     id: 'NO_VISUALIZATION_FOR_APHANTASIA',
-    description: "NEVER suggest visualization to users with aphantasia",
+    description: "NEVER suggest visualization to users with aphantasia (unless they explicitly ask)",
     category: 'neurological',
     check: (ctx) => {
       if (!ctx.neurologicalProfile || !ctx.coachResponse) {
@@ -178,6 +183,16 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
 
       const hasAphantasia = ctx.neurologicalProfile.mentalImagery === 'aphantasia';
       if (!hasAphantasia) {
+        return { allowed: true, severity: 'ok' };
+      }
+
+      // LENIENCY: If user explicitly requested visualization, allow it
+      const explicitlyRequested = ctx.userExplicitlyRequested?.some(req =>
+        ['visualization', 'visualize', 'picture', 'imagine', 'mental image', 'describe a scene'].some(
+          keyword => req.toLowerCase().includes(keyword)
+        )
+      );
+      if (explicitlyRequested) {
         return { allowed: true, severity: 'ok' };
       }
 
@@ -205,7 +220,7 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
 
   {
     id: 'NO_INNER_VOICE_FOR_NON_VERBAL_THINKERS',
-    description: "NEVER ask about inner voice for users who don't have one",
+    description: "NEVER ask about inner voice for users who don't have one (unless they explicitly ask)",
     category: 'neurological',
     check: (ctx) => {
       if (!ctx.neurologicalProfile || !ctx.coachResponse) {
@@ -217,6 +232,16 @@ export const HARD_CONSTRAINTS: HardConstraint[] = [
         ctx.neurologicalProfile.internalMonologue === 'rare';
 
       if (!noInnerVoice) {
+        return { allowed: true, severity: 'ok' };
+      }
+
+      // LENIENCY: If user explicitly requested inner voice techniques, allow it
+      const explicitlyRequested = ctx.userExplicitlyRequested?.some(req =>
+        ['inner voice', 'self-talk', 'internal dialogue', 'what I tell myself', 'thoughts in my head'].some(
+          keyword => req.toLowerCase().includes(keyword)
+        )
+      );
+      if (explicitlyRequested) {
         return { allowed: true, severity: 'ok' };
       }
 
@@ -932,6 +957,57 @@ export async function validateCoachResponse(
 }
 
 // ============================================
+// EXPLICIT REQUEST DETECTION
+// Detects when user explicitly asks for something normally avoided
+// ============================================
+
+/**
+ * Detect explicit requests in user message
+ * Used to enable the "leniency rule" - accommodations can be overridden by explicit request
+ */
+export function detectExplicitRequests(userMessage: string): string[] {
+  if (!userMessage) return [];
+
+  const messageLower = userMessage.toLowerCase();
+  const explicitRequests: string[] = [];
+
+  // Request patterns that indicate explicit user desire
+  const requestPatterns = [
+    // Direct requests
+    /(?:can you|could you|please|i want you to|i'd like you to|would you)\s+(.+?)(?:\?|$)/gi,
+    // Asking for something specific
+    /(?:give me|tell me about|describe|show me|help me with)\s+(.+?)(?:\?|$)/gi,
+    // Clarification that they want it
+    /(?:i know but|even though|despite|still want|anyway)\s+(.+?)(?:\?|$)/gi,
+  ];
+
+  for (const pattern of requestPatterns) {
+    const matches = messageLower.matchAll(pattern);
+    for (const match of matches) {
+      if (match[1]) {
+        explicitRequests.push(match[1].trim());
+      }
+    }
+  }
+
+  // Check for specific accommodation override keywords
+  const overrideKeywords = [
+    { check: /visualiz|picture|imagine.*scene|mental image|mind's eye/i, request: 'visualization' },
+    { check: /inner voice|self.?talk|internal dialogue|voice in.*head/i, request: 'inner voice techniques' },
+    { check: /step.?by.?step|sequential|detailed instructions/i, request: 'step-by-step guidance' },
+    { check: /challenge me|be direct|tough love|honest feedback/i, request: 'direct feedback' },
+  ];
+
+  for (const { check, request } of overrideKeywords) {
+    if (check.test(messageLower)) {
+      explicitRequests.push(request);
+    }
+  }
+
+  return explicitRequests;
+}
+
+// ============================================
 // PRINCIPLE INJECTION FOR LLM
 // Add this to system prompts to ensure AI alignment
 // ============================================
@@ -963,6 +1039,21 @@ export function getPrincipleContextForLLM(): string {
   for (const constraint of criticalConstraints) {
     parts.push(`- ${constraint.description}`);
   }
+
+  // EXPLICIT REQUEST LENIENCY (NEW)
+  parts.push('\n\n=== EXPLICIT REQUEST LENIENCY (Critical) ===');
+  parts.push('Accommodations are DEFAULTS, not cages. When a user EXPLICITLY asks for something:');
+  parts.push('');
+  parts.push('- If user has aphantasia but asks "describe a peaceful beach scene" → DO IT');
+  parts.push('- If user has no inner monologue but asks "what should I tell myself" → HELP THEM');
+  parts.push('- If user prefers brevity but asks for detailed explanation → PROVIDE IT');
+  parts.push('- If user is usually sensitive but asks for tough love → GIVE IT (carefully)');
+  parts.push('');
+  parts.push('THE RULE: We accommodate by default. We trust explicit requests.');
+  parts.push('');
+  parts.push('IMPORTANT: One explicit request does NOT change their profile permanently.');
+  parts.push('Next conversation, return to their default accommodations.');
+  parts.push('Don\'t lecture them about their own needs. They know what they\'re asking for.');
 
   // Connection constraints (critical)
   parts.push('\n\n=== HUMAN CONNECTION (Critical) ===');
@@ -1431,10 +1522,13 @@ export default {
   validateCoachResponse,
   validateAgainstTenets,
 
-  // Context generation
+  // Explicit request detection (leniency rule)
+  detectExplicitRequests,
+
+  // Context generation (used by BOTH Claude and Llama)
   getCoreBeliefContext,
   getCriticalConstraintsContext,
-  getPrincipleContextForLLM,
+  getPrincipleContextForLLM,  // Same context for Claude AND Llama
   getProgramLevelTenetsContext,
 
   // Backend sync & management

@@ -48,6 +48,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getPrincipleContextForLLM,
   validateAgainstTenets,
+  detectExplicitRequests,
   PROGRAM_LEVEL_TENETS,
 } from './corePrincipleKernel';
 
@@ -490,12 +491,22 @@ export async function runInference(request: InferenceRequest): Promise<Inference
     modelVersion: 'placeholder',
   };
 
+  // Detect explicit requests from user (for leniency rule)
+  // This allows users to override accommodations by explicitly asking
+  // Same logic as Claude - ensures consistent behavior across both LLMs
+  const explicitRequests = detectExplicitRequests(request.prompt);
+  if (explicitRequests.length > 0) {
+    console.log('[CoreKernel][Llama] Explicit requests detected:', explicitRequests);
+  }
+
   // Validate response against Core Principle Kernel tenets
   // This ensures ALL AI responses (including Llama) abide by the kernel
   // When actual inference is implemented, this will catch violations
+  // Note: Explicit requests allow overriding neurological accommodations
   try {
     const tenetCheck = validateAgainstTenets(placeholderResponse.content, {
       userMessage: request.prompt
+      // Explicit requests available for future use in validation
     });
     if (!tenetCheck.aligned) {
       console.warn('[CoreKernel][Llama] Response may violate tenets:', tenetCheck.violations);

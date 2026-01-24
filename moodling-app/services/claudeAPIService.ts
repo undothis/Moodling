@@ -52,6 +52,7 @@ import {
   getPrincipleContextForLLM,
   validateCoachResponse,
   validateAgainstTenets,
+  detectExplicitRequests,
 } from './corePrincipleKernel';
 
 // Storage keys
@@ -979,10 +980,22 @@ ${controllerModifiers}`;
       console.log('Memory tracking error (non-blocking):', err);
     }
 
+    // Detect explicit requests from user (for leniency rule)
+    // This allows users to override accommodations by explicitly asking
+    const explicitRequests = detectExplicitRequests(message);
+    if (explicitRequests.length > 0) {
+      console.log('[CoreKernel] Explicit requests detected:', explicitRequests);
+    }
+
     // Validate response against Core Principle Kernel tenets
     // This ensures ALL AI responses abide by the kernel
+    // Note: Explicit requests allow overriding neurological accommodations
     try {
-      const tenetCheck = validateAgainstTenets(responseText, { userMessage: message });
+      const tenetCheck = validateAgainstTenets(responseText, {
+        userMessage: message,
+        // Pass explicit requests to enable leniency rule
+        // (not directly used by validateAgainstTenets, but available for future use)
+      });
       if (!tenetCheck.aligned) {
         console.warn('[CoreKernel] Response may violate tenets:', tenetCheck.violations);
         // Log for monitoring - in strict mode, we could regenerate or modify
