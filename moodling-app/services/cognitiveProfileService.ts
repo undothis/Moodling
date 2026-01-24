@@ -205,6 +205,47 @@ export type DailyEnergyPattern =
   | 'unpredictable';       // No clear pattern
 
 /**
+ * Sleep onset - how easily someone falls asleep
+ */
+export type SleepOnset =
+  | 'falls_asleep_easily'    // Out within minutes
+  | 'takes_a_while'          // 15-30 minutes typical
+  | 'often_struggles'        // Mind races, takes 30+ minutes
+  | 'highly_variable';       // Depends on the day
+
+/**
+ * Sleep maintenance - staying asleep through the night
+ */
+export type SleepMaintenance =
+  | 'sleeps_through'         // Rarely wakes
+  | 'wakes_but_returns'      // Wakes but falls back asleep easily
+  | 'wakes_and_struggles'    // Wakes and mind races
+  | 'wakes_too_early'        // Wakes before alarm, can't return
+  | 'fragmented';            // Multiple wake-ups, never deep
+
+/**
+ * What happens when trying to sleep
+ */
+export type SleepBlocker =
+  | 'racing_thoughts'        // Mind won't quiet
+  | 'body_tension'           // Physical restlessness
+  | 'worry_anxiety'          // Anxious about tomorrow or life
+  | 'replaying_day'          // Can't stop reviewing what happened
+  | 'creative_surge'         // Ideas come flooding at bedtime
+  | 'environment'            // Noise, light, temperature
+  | 'none_identified';       // No clear pattern
+
+/**
+ * Sleep quality perception
+ */
+export type SleepQuality =
+  | 'refreshed'              // Usually wake feeling rested
+  | 'functional'             // Good enough to function
+  | 'tired_but_okay'         // Often tired but manage
+  | 'chronically_tired'      // Rarely feel rested
+  | 'variable';              // Unpredictable
+
+/**
  * How someone experiences their productivity
  */
 export type ProductivityStyle =
