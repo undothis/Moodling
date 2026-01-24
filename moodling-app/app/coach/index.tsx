@@ -66,6 +66,7 @@ import {
   togglePersistentMode,
 } from '@/services/coachModeService';
 import { BreathingBall, BreathingPattern } from '@/components/BreathingBall';
+import { SkillOverlay, parseSkillTrigger, isOverlaySkill } from '@/components/SkillOverlay';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateProfileReveal } from '@/services/cognitiveProfileService';
 import { startTour, isTourActive, subscribeTourState, resetTour } from '@/services/guidedTourService';
@@ -172,6 +173,11 @@ export default function CoachScreen() {
   // Breathing ball state
   const [showBreathingBall, setShowBreathingBall] = useState(false);
   const [breathingPattern, setBreathingPattern] = useState<BreathingPattern>('box');
+
+  // Skill overlay state (for AI-triggered skills)
+  const [showSkillOverlay, setShowSkillOverlay] = useState(false);
+  const [activeSkillId, setActiveSkillId] = useState<string>('');
+  const [skillCoachMessage, setSkillCoachMessage] = useState<string>('');
 
   // Guided tour state - just track if active for hiding prompt
   const [tourActive, setTourActive] = useState(false);
@@ -596,6 +602,10 @@ export default function CoachScreen() {
       // Send to Claude API
       const response = await sendMessage(fullMessage, context);
 
+      // Parse response for skill triggers (e.g., [OPEN_SKILL:breathing_orb])
+      const { skillId, cleanText } = parseSkillTrigger(response.text);
+      const displayText = cleanText || response.text;
+
       // Remove typing indicator and add response
       setMessages((prev) => {
         const filtered = prev.filter((m) => m.id !== typingId);
@@ -603,17 +613,25 @@ export default function CoachScreen() {
           ...filtered,
           {
             id: `ai-${Date.now()}`,
-            text: response.text,
+            text: displayText,
             source: response.source,
             timestamp: new Date(),
           },
         ];
       });
 
+      // If AI triggered a skill, show the overlay
+      if (skillId && isOverlaySkill(skillId)) {
+        // Small delay to let the message appear first
+        setTimeout(() => {
+          handleSkillTrigger(skillId, displayText);
+        }, 500);
+      }
+
       // Speak the response if TTS is enabled
       if (ttsEnabled && coachSettings?.selectedPersona) {
         setIsSpeaking(true);
-        speakCoachResponse(response.text, coachSettings.selectedPersona)
+        speakCoachResponse(displayText, coachSettings.selectedPersona)
           .finally(() => setIsSpeaking(false));
       }
 
@@ -688,6 +706,16 @@ export default function CoachScreen() {
       .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** -> bold
       .replace(/\*([^*]+)\*/g, '$1')     // *italic* -> italic
       .replace(/---/g, '—');              // --- -> em dash
+  };
+
+  // Handle AI-triggered skill overlay
+  // AI can include [OPEN_SKILL:skill_id] in response to trigger a skill
+  const handleSkillTrigger = (skillId: string, coachMessage?: string) => {
+    if (isOverlaySkill(skillId)) {
+      setActiveSkillId(skillId);
+      setSkillCoachMessage(coachMessage || '');
+      setShowSkillOverlay(true);
+    }
   };
 
   // Show first-time content automatically with tour option
@@ -1129,6 +1157,14 @@ export default function CoachScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Skill Overlay - AI-triggered skill display */}
+      <SkillOverlay
+        visible={showSkillOverlay}
+        skillId={activeSkillId}
+        onClose={() => setShowSkillOverlay(false)}
+        coachMessage={skillCoachMessage}
+      />
     </View>
   );
 }
