@@ -7,30 +7,32 @@ A complete guide to all features and functionality in Mood Leaf.
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Core Philosophy](#core-philosophy)
-3. [Getting Started](#getting-started)
-4. [Journaling](#journaling)
-5. [AI Chat Companion](#ai-chat-companion)
-6. [Your AI Guide](#your-ai-guide)
-7. [Life Context System](#life-context-system)
-8. [HealthKit Integration](#healthkit-integration)
-9. [Patterns & Insights](#patterns--insights)
-10. [Seeds Tab](#seeds-tab)
-11. [Notifications](#notifications)
-12. [Settings & Personalization](#settings--personalization)
-13. [Privacy & Security](#privacy--security)
-14. [Slash Commands](#slash-commands)
-15. [Skills & Exercises](#skills--exercises)
-16. [Therapeutic Games](#therapeutic-games)
-17. [Collection System](#collection-system)
-18. [Food Tracking](#food-tracking)
-19. [Skills Tab](#skills-tab)
-20. [Premium Features](#premium-features)
-21. [AI Accountability Features](#ai-accountability-features)
-22. [AI Data Access Settings](#ai-data-access-settings)
-23. [Diagnostics & Self-Test](#diagnostics--self-test)
-24. [How Your Coach Learns to Understand You](#how-your-coach-learns-to-understand-you)
-25. [Troubleshooting](#troubleshooting)
+2. [Why Mood Leaf is Different](#why-mood-leaf-is-different)
+3. [Your Mood Print](#your-mood-print)
+4. [Core Philosophy](#core-philosophy)
+5. [Getting Started](#getting-started)
+6. [Journaling](#journaling)
+7. [AI Chat Companion](#ai-chat-companion)
+8. [Your AI Guide](#your-ai-guide)
+9. [Life Context System](#life-context-system)
+10. [HealthKit Integration](#healthkit-integration)
+11. [Patterns & Insights](#patterns--insights)
+12. [Seeds Tab](#seeds-tab)
+13. [Notifications](#notifications)
+14. [Settings & Personalization](#settings--personalization)
+15. [Privacy & Security](#privacy--security)
+16. [Slash Commands](#slash-commands)
+17. [Skills & Exercises](#skills--exercises)
+18. [Therapeutic Games](#therapeutic-games)
+19. [Collection System](#collection-system)
+20. [Food Tracking](#food-tracking)
+21. [Skills Tab](#skills-tab)
+22. [Premium Features](#premium-features)
+23. [AI Accountability Features](#ai-accountability-features)
+24. [AI Data Access Settings](#ai-data-access-settings)
+25. [Diagnostics & Self-Test](#diagnostics--self-test)
+26. [How Your Coach Learns to Understand You](#how-your-coach-learns-to-understand-you)
+27. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -53,6 +55,227 @@ Mood Leaf is designed for anyone who wants to:
 - Track mood patterns over time
 - Build emotional self-awareness
 - Complement (not replace) professional mental health care
+
+---
+
+## Why Mood Leaf is Different
+
+### The Problem with Other Mental Health Apps
+
+Most mental health apps fall into two categories:
+
+| Type | What They Do | The Problem |
+|------|--------------|-------------|
+| **Generic Chatbots** | Same responses for everyone | Don't know YOU, feel robotic |
+| **Mood Trackers** | Log your mood with numbers | Data without understanding |
+| **Meditation Apps** | Guide you through exercises | One-size-fits-all, no conversation |
+| **Therapy Matching** | Connect you to therapists | Expensive, not daily support |
+
+**None of them actually LEARN who you are.**
+
+### What Makes Mood Leaf Unique
+
+#### 1. We Create Your "Mood Print" 🌿
+
+Just like a fingerprint is unique to you, your **Mood Print** is a complete understanding of:
+- How you communicate (fast, slow, emotional, analytical)
+- What makes you stressed vs. calm
+- Your patterns (sleep, energy, mood connections)
+- Your history (what you've been through)
+- What actually helps YOU (not generic advice)
+
+No other app creates this level of personalized understanding.
+
+#### 2. We Listen to HOW You Speak, Not Just What You Say
+
+Other apps only read your words. Mood Leaf understands:
+- **Your voice rhythm** - Are you rushing? Dragging? Steady?
+- **Your emotional tone** - Stressed? Sad? Hiding something?
+- **Your distress signals** - Voice shaking? Breath catching?
+
+This is called **prosody** - the music of your voice. It reveals what words can't.
+
+#### 3. We Learn from Real Therapy Conversations
+
+Our AI doesn't just follow scripts. It's trained on:
+- Real conversations between skilled counselors and clients
+- Thousands of hours of therapeutic dialogue
+- Both what's said AND how it's said
+- What actually helps people feel better
+
+This means your coach responds like someone who's actually helped thousands of people.
+
+#### 4. We Remember Everything (That You Want Us To)
+
+| Feature | Other Apps | Mood Leaf |
+|---------|------------|-----------|
+| Remember last conversation | ❌ | ✅ |
+| Remember your family | ❌ | ✅ |
+| Remember your triggers | ❌ | ✅ |
+| Connect patterns over months | ❌ | ✅ |
+| Know your communication style | ❌ | ✅ |
+| Adapt to YOUR needs | ❌ | ✅ |
+
+#### 5. We Want You to NOT Need Us
+
+This is the biggest difference.
+
+Most apps want you **addicted**. More time = more money for them.
+
+Mood Leaf wants you **independent**. Our goal is to:
+- Build your self-awareness
+- Teach you to recognize your patterns
+- Give you skills you can use alone
+- Celebrate when you don't need us
+
+**Success = you eventually close the app and handle things yourself.**
+
+### The Mood Leaf Difference in Action
+
+**Scenario: You're stressed about a presentation**
+
+| Generic App | Mood Leaf |
+|-------------|-----------|
+| "Try deep breathing" | "I notice you're speaking faster than usual and your words are running together - that's your stress pattern. Last month before your review, you had the same thing. Remember how going for that walk helped? What worked about that?" |
+
+See the difference? Mood Leaf knows YOUR patterns, YOUR history, and what actually works FOR YOU.
+
+---
+
+## Your Mood Print
+
+### What is a Mood Print?
+
+Your **Mood Print** is Mood Leaf's complete understanding of who you are. It's built from multiple sources and creates a unique "fingerprint" of your emotional self.
+
+Think of it like this:
+- Your **fingerprint** is unique patterns on your finger
+- Your **Mood Print** is unique patterns in how you think, feel, and communicate
+
+### How Your Mood Print is Built
+
+Your Mood Print is created from **four layers**:
+
+```
+┌─────────────────────────────────────────┐
+│          YOUR MOOD PRINT                │
+├─────────────────────────────────────────┤
+│  Layer 4: Ongoing Learning              │
+│  (Every conversation refines it)        │
+├─────────────────────────────────────────┤
+│  Layer 3: Pattern Recognition           │
+│  (Connections discovered over time)     │
+├─────────────────────────────────────────┤
+│  Layer 2: Prosody Analysis              │
+│  (How you speak, not just what)         │
+├─────────────────────────────────────────┤
+│  Layer 1: Onboarding                    │
+│  (What you tell us directly)            │
+└─────────────────────────────────────────┘
+```
+
+### Layer 1: Onboarding (Foundation)
+
+When you first use Mood Leaf, we ask questions to understand you:
+
+| What We Learn | Why It Matters |
+|---------------|----------------|
+| **Communication preference** | Do you like direct advice or gentle exploration? |
+| **Energy patterns** | Are you a morning person? Night owl? |
+| **What you're working on** | Anxiety? Depression? Relationships? Growth? |
+| **Support style** | Do you want cheerleading or challenge? |
+| **Triggers** | What topics need extra sensitivity? |
+| **Background** | Life situation, responsibilities, context |
+
+This creates the **foundation** of your Mood Print.
+
+### Layer 2: Prosody Analysis (How You Communicate)
+
+As you use voice features or chat, we analyze:
+
+| What We Notice | What It Reveals |
+|----------------|-----------------|
+| **Speaking speed** | Stress level, energy, confidence |
+| **Voice pitch** | Emotional state, anxiety, excitement |
+| **Rhythm patterns** | Natural vs. forced, comfortable vs. struggling |
+| **Pause patterns** | Thinking, hesitation, emotional processing |
+| **Volume changes** | Confidence, withdrawal, intensity |
+| **Distress markers** | When you're struggling, even if you don't say it |
+
+**Example:** If you normally speak at 140 words per minute but today you're at 180, something's different - even if you say "I'm fine."
+
+### Layer 3: Pattern Recognition (Connections)
+
+Over time, Mood Leaf discovers patterns:
+
+| Pattern Type | Example |
+|--------------|---------|
+| **Mood ↔ Sleep** | "Bad mood days often follow nights with < 6 hours sleep" |
+| **Stress ↔ People** | "Mentions of [person] often come with anxiety" |
+| **Energy ↔ Activity** | "More steps yesterday = better mood today" |
+| **Triggers ↔ Time** | "Sunday nights often bring work anxiety" |
+| **Coping ↔ Success** | "Walking helps you more than meditation" |
+
+These patterns are **unique to you** - not generic statistics.
+
+### Layer 4: Ongoing Learning (Evolution)
+
+Your Mood Print isn't static. It evolves:
+
+- **Corrections**: When we get something wrong, you tell us
+- **Changes**: Your life changes, your Mood Print updates
+- **Growth**: As you develop new skills, we track that
+- **Preferences**: What you respond well to vs. what falls flat
+
+**Your Mood Print becomes more "you" with every conversation.**
+
+### What's IN Your Mood Print
+
+| Category | Includes |
+|----------|----------|
+| **Identity** | Name, preferred terms, how you want to be addressed |
+| **Life Context** | Family, work, relationships, responsibilities |
+| **Psychological Profile** | Communication style, emotional patterns, triggers |
+| **Health Patterns** | Sleep, activity, energy correlations |
+| **Preferences** | Tone, advice style, level of challenge |
+| **History** | Past struggles, victories, ongoing themes |
+| **Skills** | What coping strategies you know, what you're learning |
+| **Voice Profile** | Your normal prosody patterns as baseline |
+
+### Your Privacy and Your Mood Print
+
+**Everything stays on your device.** Your Mood Print is:
+
+- ✅ Stored locally only
+- ✅ Never uploaded to servers
+- ✅ Never shared with anyone
+- ✅ Never used to train other AI
+- ✅ Deletable at any time
+- ✅ Exportable if you want to see it
+
+When you chat, only the **relevant parts** of your Mood Print are sent to Claude's API for that conversation - and nothing is stored by Anthropic.
+
+### Viewing Your Mood Print
+
+You can see and manage your Mood Print:
+
+1. Go to **Settings** > **Life Context** to see what's stored
+2. Go to **Settings** > **AI Data Access** to control what's used
+3. Go to **Settings** > **Export Data** to download everything
+
+### Why This Matters
+
+Without a Mood Print, every conversation starts from zero.
+
+**With generic apps:**
+> "I'm stressed about work"
+> "Try taking a break and doing some deep breathing"
+
+**With YOUR Mood Print:**
+> "I'm stressed about work"
+> "I remember you mentioned the quarterly review is coming up - is this about that? Last time, you found it helpful to write down your accomplishments first. Want to try that?"
+
+The difference is night and day.
 
 ---
 
