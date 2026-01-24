@@ -36,7 +36,8 @@ app.get('/', (req, res) => {
     message: 'Transcript server is running (yt-dlp)',
     endpoints: {
       transcript: 'GET /transcript?v=VIDEO_ID',
-      batch: 'POST /batch-transcripts { videoIds: [...] }'
+      batch: 'POST /batch-transcripts { videoIds: [...] }',
+      claudeExtract: 'POST /claude-extract (Claude API proxy)'
     }
   });
 });
@@ -155,6 +156,89 @@ app.get('/transcript', async (req, res) => {
   });
 });
 
+/**
+ * Proxy Claude API calls (React Native can't call external APIs reliably)
+ */
+app.post('/claude-extract', async (req, res) => {
+  const { transcript, videoTitle, videoId, channelName, categories, apiKey } = req.body;
+
+  if (!transcript || !apiKey) {
+    return res.status(400).json({ error: 'Missing transcript or apiKey' });
+  }
+
+  console.log(`[Claude] Extracting insights for: ${videoTitle}`);
+
+  try {
+    const prompt = buildExtractionPrompt(transcript, videoTitle, channelName, categories);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`[Claude] ✓ Got response for: ${videoTitle}`);
+
+    res.json(data);
+  } catch (error) {
+    console.error(`[Claude] Error:`, error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Build extraction prompt (same logic as in youtubeProcessorService)
+ */
+function buildExtractionPrompt(transcript, videoTitle, channelName, categories) {
+  const categoryDescriptions = categories.map(c => `- ${c.name}: ${c.description}`).join('\n');
+
+  return `You are an expert at extracting therapeutic and coaching insights from interview transcripts.
+
+Analyze this transcript from "${videoTitle}" by ${channelName} and extract valuable insights.
+
+CATEGORIES TO EXTRACT:
+${categoryDescriptions}
+
+TRANSCRIPT:
+${transcript.substring(0, 15000)}
+
+Extract 3-8 high-quality insights. For each insight, provide:
+1. A clear, actionable title
+2. The full insight text (2-4 sentences)
+3. Which category it belongs to
+4. A quality score (0-100)
+5. A safety score (0-100) - lower if potentially harmful advice
+6. Confidence level (0-1)
+
+Return ONLY valid JSON in this format:
+{
+  "insights": [
+    {
+      "title": "Brief title",
+      "insight": "The full insight text...",
+      "category": "category_name",
+      "qualityScore": 85,
+      "safetyScore": 95,
+      "confidence": 0.9
+    }
+  ]
+}`;
+}
+
 // Batch fetch multiple transcripts
 app.post('/batch-transcripts', async (req, res) => {
   const { videoIds } = req.body;
@@ -209,6 +293,7 @@ app.listen(PORT, () => {
 ║  Endpoints:                                            ║
 ║    GET  /transcript?v=VIDEO_ID                         ║
 ║    POST /batch-transcripts                             ║
+║    POST /claude-extract (Claude API proxy)             ║
 ╚════════════════════════════════════════════════════════╝
   `);
 

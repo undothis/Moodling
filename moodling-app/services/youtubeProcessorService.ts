@@ -2175,26 +2175,27 @@ export async function extractInsightsWithClaude(
     return { insights: [], error: 'Transcript too short to analyze' };
   }
 
-  const prompt = buildExtractionPrompt(transcript, videoTitle, channelName, categories);
-
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Route through local server (React Native can't call external APIs reliably)
+    const response = await fetch(`${TRANSCRIPT_SERVER_URL}/claude-extract`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+        transcript,
+        videoTitle,
+        videoId,
+        channelName,
+        categories,
+        apiKey,
       }),
+      signal: AbortSignal.timeout(120000), // 2 min timeout for Claude
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `API error: ${response.status}`);
+      throw new Error(errorData.error || `Server error: ${response.status}`);
     }
 
     const data = await response.json();
