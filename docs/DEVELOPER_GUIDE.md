@@ -41,7 +41,8 @@ Complete technical documentation for the Mood Leaf codebase.
 30. [Fidget Pad Game](#fidget-pad-game)
 31. [Food Tracking with AI Detection](#food-tracking-with-ai-detection)
 32. [Skills Progression Tab](#skills-progression-tab)
-33. [Future Enhancements](#future-enhancements)
+33. [Coach Access Registry](#coach-access-registry)
+34. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -6544,6 +6545,177 @@ const STORAGE_KEYS = {
   TOUR_STEP: 'moodleaf_guided_tour_step',
 };
 ```
+
+---
+
+## Coach Access Registry
+
+The Coach Access Registry (`coachAccessRegistry.ts`) is a **whitelist** that defines everything the AI coach can access. If something is not in this registry, the AI is blocked from accessing it.
+
+### Purpose
+
+- **Developer control** over what data flows to the AI
+- **Troubleshooting** by enabling/disabling specific data sources
+- **Security** by explicitly defining what's allowed vs blocked
+- **Visibility** into all AI capabilities in one place
+
+### How It Works
+
+```typescript
+import { isAccessAllowed, setAccessEnabled } from '@/services/coachAccessRegistry';
+
+// Check if AI can access something
+if (isAccessAllowed('journal_entries')) {
+  // Include journal data in prompt
+}
+
+// Toggle access (developer only)
+await setAccessEnabled('health_metrics', false);
+```
+
+### Access Categories
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| `core` | Required for coach to function | Ethical principles, personality, tone |
+| `user_data` | User's personal data | Name, preferences, cognitive profile |
+| `context` | Memories and life context | Memories, relationships, journal |
+| `tracking` | Mood and habit tracking | Quick logs, lifestyle factors, exposure |
+| `health` | Health and calendar data | HealthKit, correlations, calendar |
+| `therapeutic` | CBT/DBT modes | Coach modes |
+| `actions` | Things AI can trigger | Open/close skill overlay |
+
+### What's Allowed (Default Enabled)
+
+**Core (cannot disable):**
+- `core_principles` - Ethical tenets
+- `coach_personality` - Persona settings
+- `tone_preferences` - Communication style
+- `conversation_history` - Recent messages
+
+**User Data:**
+- `user_name` - User's name
+- `user_preferences` - General settings
+- `cognitive_profile` - How user thinks
+- `psychological_profile` - Psych patterns
+- `chronotype` - Sleep preferences
+
+**Context & Memories:**
+- `memory_context` - Past conversations
+- `life_context` - People, events, topics
+- `social_connections` - Relationship health
+- `journal_entries` - Recent entries (summarized)
+
+**Tracking:**
+- `quick_logs` - Mood, energy logs
+- `lifestyle_factors` - Sleep, caffeine, etc.
+- `exposure_progress` - Anxiety tracking
+- `accountability_data` - Limits
+- `skill_recommendations` - Suggested skills
+- `achievements` - Pending celebrations
+
+**Health (conditional):**
+- `health_metrics` - HealthKit data
+- `health_correlations` - Health-mood links
+- `calendar_events` - Upcoming events
+- `drink_pacing` - Drink tracking
+- `habit_timers` - Habit progress
+
+**Therapeutic:**
+- `coach_modes` - Active CBT/DBT modes
+
+**Actions:**
+- `action_open_skill` - Open skill overlay
+- `action_close_skill` - Close skill overlay
+
+### What's Blocked (Default Disabled)
+
+**Sensitive Data:**
+- `raw_journal_content` - Full unedited journals
+- `deleted_entries` - Deleted data
+- `api_keys` - Security tokens
+- `device_info` - Device details
+- `subscription_status` - Payment info
+- `export_history` - Export logs
+
+**Not Implemented:**
+- `location_data` - GPS location
+- `contacts` - Phone contacts
+- `photos` - Photo library
+
+**Tracking (blocked):**
+- `notifications` - Notification history
+- `app_usage` - Usage stats
+- `crash_logs` - Error logs
+- `network_requests` - API call history
+- `training_data` - Training data
+
+**Dangerous Actions:**
+- `action_delete_data` - Delete user data
+- `action_send_notification` - Send notifications
+- `action_make_purchase` - In-app purchases
+- `action_share_externally` - Share outside app
+- `action_navigate` - Navigate screens
+- `action_modify_settings` - Change settings
+- `action_access_clipboard` - Read clipboard
+
+### Admin Functions
+
+```typescript
+import {
+  getRegistrySummary,
+  getAllEntries,
+  getEntriesByCategory,
+  getAccessLogs,
+  debugPrintRegistry,
+} from '@/services/coachAccessRegistry';
+
+// Get overview
+const summary = getRegistrySummary();
+// { total: 45, enabled: 28, disabled: 17, required: 4 }
+
+// Get all entries with status
+const entries = getAllEntries();
+
+// Get entries by category
+const healthEntries = getEntriesByCategory('health');
+
+// View access logs (dev mode only)
+const logs = getAccessLogs(50);
+
+// Debug print to console
+debugPrintRegistry();
+```
+
+### Adding New Access Points
+
+When adding a new data source or action:
+
+1. Add entry to `COACH_ACCESS_REGISTRY` in `coachAccessRegistry.ts`
+2. Set `enabled: true` if AI should access it by default
+3. Set `required: true` if it cannot be disabled
+4. Add `conditional` if it depends on user settings
+5. Use `isAccessAllowed()` before including data in prompts
+
+```typescript
+new_data_source: {
+  id: 'new_data_source',
+  name: 'Human-Readable Name',
+  description: 'What this data contains',
+  service: 'serviceFileName',
+  category: 'user_data',
+  enabled: true,
+  required: false,
+  conditional: 'Only if feature X enabled',
+},
+```
+
+### Security Notes
+
+- **Required entries cannot be disabled** - Core safety principles must always be active
+- **Blocked entries are explicit** - Developer can see what AI cannot access
+- **Logs are dev-mode only** - Production doesn't log access
+- **Whitelist approach** - If not in registry, it's blocked
 
 ---
 
