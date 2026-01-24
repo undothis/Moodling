@@ -205,6 +205,47 @@ export type DailyEnergyPattern =
   | 'unpredictable';       // No clear pattern
 
 /**
+ * Sleep onset - how easily someone falls asleep
+ */
+export type SleepOnset =
+  | 'falls_asleep_easily'    // Out within minutes
+  | 'takes_a_while'          // 15-30 minutes typical
+  | 'often_struggles'        // Mind races, takes 30+ minutes
+  | 'highly_variable';       // Depends on the day
+
+/**
+ * Sleep maintenance - staying asleep through the night
+ */
+export type SleepMaintenance =
+  | 'sleeps_through'         // Rarely wakes
+  | 'wakes_but_returns'      // Wakes but falls back asleep easily
+  | 'wakes_and_struggles'    // Wakes and mind races
+  | 'wakes_too_early'        // Wakes before alarm, can't return
+  | 'fragmented';            // Multiple wake-ups, never deep
+
+/**
+ * What happens when trying to sleep
+ */
+export type SleepBlocker =
+  | 'racing_thoughts'        // Mind won't quiet
+  | 'body_tension'           // Physical restlessness
+  | 'worry_anxiety'          // Anxious about tomorrow or life
+  | 'replaying_day'          // Can't stop reviewing what happened
+  | 'creative_surge'         // Ideas come flooding at bedtime
+  | 'environment'            // Noise, light, temperature
+  | 'none_identified';       // No clear pattern
+
+/**
+ * Sleep quality perception
+ */
+export type SleepQuality =
+  | 'refreshed'              // Usually wake feeling rested
+  | 'functional'             // Good enough to function
+  | 'tired_but_okay'         // Often tired but manage
+  | 'chronically_tired'      // Rarely feel rested
+  | 'variable';              // Unpredictable
+
+/**
  * How someone experiences their productivity
  */
 export type ProductivityStyle =
@@ -269,6 +310,15 @@ export interface CognitiveProfile {
   cyclicalPattern: CyclicalPattern | null;  // Only populated if rhythm is cyclical
   dailyEnergyPattern: DailyEnergyPattern;
   productivityStyle: ProductivityStyle;
+
+  // === SLEEP PATTERNS ===
+  sleepOnset: SleepOnset;
+  sleepMaintenance: SleepMaintenance;
+  primarySleepBlocker: SleepBlocker | null;
+  sleepQuality: SleepQuality;
+  idealSleepHours: number | null;  // What they feel they need
+  usesScreensBeforeBed: boolean;
+  hasTriedSleepTechniques: boolean;
 
   // Metadata
   completedOnboarding: boolean;
@@ -1203,6 +1253,233 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     measures: [],
     adaptiveDepth: 'deep',
     requiresPrevious: ['energy_consistency']
+  },
+
+  // ========== SLEEP PATTERNS ==========
+  {
+    id: 'sleep_falling_asleep',
+    text: "When you get into bed, how easily do you fall asleep?",
+    subtext: "Sleep is foundational to everything else. Let's understand your patterns.",
+    type: 'choice',
+    options: [
+      {
+        value: 'easy',
+        label: "Pretty easily - I'm usually out within 10 minutes",
+        indicates: { sleepOnset: 'falls_asleep_easily' }
+      },
+      {
+        value: 'takes_time',
+        label: "It takes a while - maybe 15-30 minutes",
+        indicates: { sleepOnset: 'takes_a_while' }
+      },
+      {
+        value: 'struggle',
+        label: "I often struggle - my mind won't quiet down",
+        indicates: { sleepOnset: 'often_struggles' }
+      },
+      {
+        value: 'variable',
+        label: "It really depends on the day",
+        indicates: { sleepOnset: 'highly_variable' }
+      }
+    ],
+    measures: ['sleepOnset'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'sleep_staying_asleep',
+    text: "Once you're asleep, how's your night?",
+    type: 'choice',
+    options: [
+      {
+        value: 'solid',
+        label: "I usually sleep through the night",
+        indicates: { sleepMaintenance: 'sleeps_through' }
+      },
+      {
+        value: 'wake_return',
+        label: "I wake up sometimes but fall back asleep easily",
+        indicates: { sleepMaintenance: 'wakes_but_returns' }
+      },
+      {
+        value: 'wake_struggle',
+        label: "I wake up and then my mind starts racing",
+        indicates: { sleepMaintenance: 'wakes_and_struggles' }
+      },
+      {
+        value: 'early',
+        label: "I wake up too early and can't get back to sleep",
+        indicates: { sleepMaintenance: 'wakes_too_early' }
+      },
+      {
+        value: 'fragmented',
+        label: "My sleep is fragmented - I never feel like I get deep rest",
+        indicates: { sleepMaintenance: 'fragmented' }
+      }
+    ],
+    measures: ['sleepMaintenance'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'sleep_blocker',
+    text: "When you can't sleep, what's usually going on?",
+    subtext: "This helps me suggest the right techniques for you.",
+    type: 'choice',
+    options: [
+      {
+        value: 'racing_thoughts',
+        label: "Racing thoughts - my mind won't stop",
+        description: "Thoughts jumping from one thing to another",
+        indicates: { primarySleepBlocker: 'racing_thoughts' }
+      },
+      {
+        value: 'worry',
+        label: "Worry or anxiety about tomorrow",
+        description: "Thinking about what I need to do or what might go wrong",
+        indicates: { primarySleepBlocker: 'worry_anxiety' }
+      },
+      {
+        value: 'replay',
+        label: "Replaying the day",
+        description: "Going over conversations or events that already happened",
+        indicates: { primarySleepBlocker: 'replaying_day' }
+      },
+      {
+        value: 'body',
+        label: "Physical restlessness",
+        description: "Body tension, can't get comfortable",
+        indicates: { primarySleepBlocker: 'body_tension' }
+      },
+      {
+        value: 'creative',
+        label: "Creative surge",
+        description: "Ideas and inspiration flood in at bedtime",
+        indicates: { primarySleepBlocker: 'creative_surge' }
+      },
+      {
+        value: 'environment',
+        label: "Environment issues",
+        description: "Noise, light, temperature, partner",
+        indicates: { primarySleepBlocker: 'environment' }
+      },
+      {
+        value: 'none',
+        label: "Sleep isn't usually a problem for me",
+        indicates: { primarySleepBlocker: 'none_identified' }
+      }
+    ],
+    measures: ['primarySleepBlocker'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['sleep_falling_asleep']
+  },
+
+  {
+    id: 'sleep_quality',
+    text: "How do you usually feel when you wake up?",
+    type: 'choice',
+    options: [
+      {
+        value: 'refreshed',
+        label: "Usually refreshed and ready to go",
+        indicates: { sleepQuality: 'refreshed' }
+      },
+      {
+        value: 'functional',
+        label: "Good enough to function",
+        indicates: { sleepQuality: 'functional' }
+      },
+      {
+        value: 'tired_okay',
+        label: "Often tired but I manage",
+        indicates: { sleepQuality: 'tired_but_okay' }
+      },
+      {
+        value: 'chronically_tired',
+        label: "Rarely feel rested, even after a full night",
+        indicates: { sleepQuality: 'chronically_tired' }
+      },
+      {
+        value: 'variable',
+        label: "It's really unpredictable",
+        indicates: { sleepQuality: 'variable' }
+      }
+    ],
+    measures: ['sleepQuality'],
+    adaptiveDepth: 'standard'
+  },
+
+  {
+    id: 'sleep_screens',
+    text: "Do you typically use screens (phone, TV, computer) in the hour before bed?",
+    type: 'choice',
+    options: [
+      {
+        value: 'yes_phone',
+        label: "Yes, usually my phone",
+        indicates: { usesScreensBeforeBed: true }
+      },
+      {
+        value: 'yes_tv',
+        label: "Yes, usually TV or streaming",
+        indicates: { usesScreensBeforeBed: true }
+      },
+      {
+        value: 'yes_both',
+        label: "Yes, multiple screens",
+        indicates: { usesScreensBeforeBed: true }
+      },
+      {
+        value: 'sometimes',
+        label: "Sometimes, not always",
+        indicates: { usesScreensBeforeBed: true }
+      },
+      {
+        value: 'no',
+        label: "No, I avoid screens before bed",
+        indicates: { usesScreensBeforeBed: false }
+      }
+    ],
+    measures: ['usesScreensBeforeBed'],
+    adaptiveDepth: 'deep'
+  },
+
+  {
+    id: 'sleep_techniques',
+    text: "Have you tried any sleep techniques or routines?",
+    subtext: "No judgment either way - just helps me know where to start.",
+    type: 'choice',
+    options: [
+      {
+        value: 'yes_work',
+        label: "Yes, and some have worked",
+        indicates: { hasTriedSleepTechniques: true }
+      },
+      {
+        value: 'yes_not_work',
+        label: "Yes, but nothing really sticks",
+        indicates: { hasTriedSleepTechniques: true }
+      },
+      {
+        value: 'a_few',
+        label: "A few things here and there",
+        indicates: { hasTriedSleepTechniques: true }
+      },
+      {
+        value: 'no',
+        label: "Not really - open to suggestions",
+        indicates: { hasTriedSleepTechniques: false }
+      },
+      {
+        value: 'no_need',
+        label: "No need - sleep isn't an issue for me",
+        indicates: { hasTriedSleepTechniques: false }
+      }
+    ],
+    measures: ['hasTriedSleepTechniques'],
+    adaptiveDepth: 'deep',
+    requiresPrevious: ['sleep_blocker']
   }
 ];
 
@@ -1244,6 +1521,14 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   cyclicalPattern: null,
   dailyEnergyPattern: 'consistent',
   productivityStyle: 'steady_consistent',
+  // Sleep (default to functional, detect via onboarding)
+  sleepOnset: 'takes_a_while',
+  sleepMaintenance: 'wakes_but_returns',
+  primarySleepBlocker: null,
+  sleepQuality: 'functional',
+  idealSleepHours: null,
+  usesScreensBeforeBed: true,
+  hasTriedSleepTechniques: false,
   completedOnboarding: false,
   onboardingDepth: 'standard',
   lastUpdated: new Date().toISOString(),
