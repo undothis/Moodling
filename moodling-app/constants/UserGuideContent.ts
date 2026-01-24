@@ -340,6 +340,33 @@ export const FAQ_CONTENT: FAQItem[] = [
     question: 'How do I track skill progress?',
     answer: 'Each skill tracks: times practiced, total time spent, current streak, and personal best. The more you practice, the more "mastered" a skill becomes. Your Skills section shows all progress at a glance.',
   },
+
+  // Twigs & Accountability
+  {
+    category: 'features',
+    question: 'Can I set limits on Twigs?',
+    answer: 'Yes! Any Twig can have a daily or weekly limit. Example: set coffee to max 4/day. The app alerts you when approaching the limit, at the limit, or over it. Great for accountability without judgment.',
+  },
+  {
+    category: 'features',
+    question: 'What are accountability alerts?',
+    answer: 'Optional notifications that help you stick to limits you set. Get alerted at 80% of your limit ("3/4 coffees"), when you hit the limit, or if you go over. You control the messages and when they fire.',
+  },
+  {
+    category: 'features',
+    question: 'Can I get random reminders for Twigs?',
+    answer: 'Yes! Choose from: Fixed times (9am, 2pm, 7pm), Interval-based (every 2 hours), or Random (spread throughout your day). Set a window (8am-10pm) and how many alerts per day. The app spaces them intelligently.',
+  },
+  {
+    category: 'features',
+    question: 'How do interval reminders work?',
+    answer: 'Set an interval (e.g., every 90 minutes) and a time window (e.g., 8am-8pm). The app reminds you at regular intervals within that window. Good for water intake, medication, posture checks, or habit building.',
+  },
+  {
+    category: 'features',
+    question: 'Can I customize accountability messages?',
+    answer: 'Yes! Write your own messages for: approaching limit, at limit, and over limit. Make them motivating, gentle, or whatever works for you. Example: "You\'ve had enough coffee for today, try water?" instead of generic alerts.',
+  },
 ];
 
 // ============================================

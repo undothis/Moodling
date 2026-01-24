@@ -45,6 +45,44 @@ export type LogFrequency =
   | 'as_needed';     // No schedule, just track when it happens
 
 /**
+ * Alert scheduling type for accountability reminders
+ */
+export type AlertScheduleType =
+  | 'fixed'          // Fixed times (e.g., 9am, 2pm, 7pm)
+  | 'interval'       // Every N hours/minutes
+  | 'random'         // Random times within a window
+  | 'smart';         // AI-suggested based on patterns
+
+/**
+ * Accountability alert configuration
+ */
+export interface AccountabilityConfig {
+  enabled: boolean;
+  // Limit alerts
+  alertAtPercent?: number;          // Alert when reaching X% of limit (e.g., 80)
+  alertAtLimit?: boolean;           // Alert when limit reached
+  alertOverLimit?: boolean;         // Alert when over limit
+  // Reminder scheduling
+  scheduleType: AlertScheduleType;
+  // For fixed schedule
+  fixedTimes?: string[];            // ["09:00", "14:00", "19:00"]
+  // For interval schedule
+  intervalMinutes?: number;         // Alert every N minutes
+  intervalStartTime?: string;       // Start time for intervals (e.g., "08:00")
+  intervalEndTime?: string;         // End time for intervals (e.g., "22:00")
+  // For random schedule
+  randomMinPerDay?: number;         // Minimum random alerts per day
+  randomMaxPerDay?: number;         // Maximum random alerts per day
+  randomWindowStart?: string;       // Start of random window (e.g., "08:00")
+  randomWindowEnd?: string;         // End of random window (e.g., "22:00")
+  // Custom messages
+  approachingLimitMessage?: string; // "You're at 3 coffees, limit is 4"
+  atLimitMessage?: string;          // "You've hit your coffee limit"
+  overLimitMessage?: string;        // "You're over your coffee limit"
+  reminderMessage?: string;         // General reminder message
+}
+
+/**
  * A user-defined quick log button
  */
 export interface QuickLog {
@@ -71,6 +109,8 @@ export interface QuickLog {
   // AI creation metadata
   createdByAI?: boolean;           // Was this created by AI from conversation?
   createdFromMessage?: string;     // The message that triggered creation
+  // Accountability tracking
+  accountability?: AccountabilityConfig;  // Limit alerts and smart reminders
 }
 
 /**
@@ -220,6 +260,7 @@ export async function createQuickLog(
     completed: false,
     createdByAI: options?.createdByAI,
     createdFromMessage: options?.createdFromMessage,
+    accountability: options?.accountability,
   };
 
   logs.push(newLog);
@@ -968,4 +1009,278 @@ export async function clearAllQuickLogData(): Promise<void> {
   } catch (error) {
     console.error('Failed to clear quick log data:', error);
   }
+}
+
+// ============================================
+// ACCOUNTABILITY & LIMIT TRACKING
+// ============================================
+
+/**
+ * Accountability status for a log
+ */
+export interface AccountabilityStatus {
+  logId: string;
+  logName: string;
+  emoji: string;
+  currentCount: number;
+  dailyLimit?: number;
+  weeklyLimit?: number;
+  percentOfDailyLimit?: number;
+  percentOfWeeklyLimit?: number;
+  status: 'ok' | 'approaching' | 'at_limit' | 'over_limit';
+  message?: string;
+}
+
+/**
+ * Get accountability status for a log
+ */
+export async function getAccountabilityStatus(logId: string): Promise<AccountabilityStatus | null> {
+  const logs = await getAllQuickLogs();
+  const log = logs.find(l => l.id === logId);
+  if (!log) return null;
+
+  const todayCount = await getTodayCount(logId);
+  const weekEntries = await getEntriesForLog(logId, 7);
+  const weekCount = weekEntries.length;
+
+  const status: AccountabilityStatus = {
+    logId: log.id,
+    logName: log.name,
+    emoji: log.emoji,
+    currentCount: todayCount,
+    dailyLimit: log.maxLimitPerDay,
+    weeklyLimit: log.maxLimitPerWeek,
+    status: 'ok',
+  };
+
+  // Check daily limit
+  if (log.maxLimitPerDay) {
+    status.percentOfDailyLimit = Math.round((todayCount / log.maxLimitPerDay) * 100);
+
+    if (todayCount > log.maxLimitPerDay) {
+      status.status = 'over_limit';
+      status.message = log.accountability?.overLimitMessage ||
+        `You're over your ${log.name} limit (${todayCount}/${log.maxLimitPerDay})`;
+    } else if (todayCount === log.maxLimitPerDay) {
+      status.status = 'at_limit';
+      status.message = log.accountability?.atLimitMessage ||
+        `You've hit your ${log.name} limit for today`;
+    } else if (log.accountability?.alertAtPercent &&
+               status.percentOfDailyLimit >= log.accountability.alertAtPercent) {
+      status.status = 'approaching';
+      status.message = log.accountability?.approachingLimitMessage ||
+        `You're at ${todayCount}/${log.maxLimitPerDay} ${log.name}`;
+    }
+  }
+
+  // Check weekly limit (if daily didn't trigger)
+  if (log.maxLimitPerWeek && status.status === 'ok') {
+    status.percentOfWeeklyLimit = Math.round((weekCount / log.maxLimitPerWeek) * 100);
+
+    if (weekCount > log.maxLimitPerWeek) {
+      status.status = 'over_limit';
+      status.message = `You're over your weekly ${log.name} limit (${weekCount}/${log.maxLimitPerWeek})`;
+    } else if (weekCount === log.maxLimitPerWeek) {
+      status.status = 'at_limit';
+      status.message = `You've hit your weekly ${log.name} limit`;
+    } else if (log.accountability?.alertAtPercent &&
+               status.percentOfWeeklyLimit >= log.accountability.alertAtPercent) {
+      status.status = 'approaching';
+      status.message = `You're at ${weekCount}/${log.maxLimitPerWeek} ${log.name} this week`;
+    }
+  }
+
+  return status;
+}
+
+/**
+ * Get all logs with accountability enabled
+ */
+export async function getAccountabilityLogs(): Promise<QuickLog[]> {
+  const logs = await getQuickLogs();
+  return logs.filter(log =>
+    log.accountability?.enabled ||
+    log.maxLimitPerDay !== undefined ||
+    log.maxLimitPerWeek !== undefined
+  );
+}
+
+/**
+ * Get logs needing accountability alerts right now
+ */
+export async function getAccountabilityAlertsNeeded(): Promise<AccountabilityStatus[]> {
+  const logs = await getAccountabilityLogs();
+  const alerts: AccountabilityStatus[] = [];
+
+  for (const log of logs) {
+    const status = await getAccountabilityStatus(log.id);
+    if (status && status.status !== 'ok') {
+      // Check if alert should fire based on config
+      if (log.accountability) {
+        if (status.status === 'approaching' && !log.accountability.alertAtPercent) continue;
+        if (status.status === 'at_limit' && !log.accountability.alertAtLimit) continue;
+        if (status.status === 'over_limit' && !log.accountability.alertOverLimit) continue;
+      }
+      alerts.push(status);
+    }
+  }
+
+  return alerts;
+}
+
+/**
+ * Calculate next random alert time within window
+ */
+export function calculateNextRandomAlertTime(
+  windowStart: string,
+  windowEnd: string,
+  alertsRemaining: number
+): Date | null {
+  if (alertsRemaining <= 0) return null;
+
+  const now = new Date();
+  const today = getToday();
+
+  // Parse window times
+  const [startHour, startMin] = windowStart.split(':').map(Number);
+  const [endHour, endMin] = windowEnd.split(':').map(Number);
+
+  const windowStartDate = new Date(`${today}T${windowStart}:00`);
+  const windowEndDate = new Date(`${today}T${windowEnd}:00`);
+
+  // If current time is past window, return null
+  if (now >= windowEndDate) return null;
+
+  // If current time is before window, start from window start
+  const effectiveStart = now < windowStartDate ? windowStartDate : now;
+
+  // Calculate remaining window duration in minutes
+  const remainingMinutes = (windowEndDate.getTime() - effectiveStart.getTime()) / 60000;
+
+  // Spread remaining alerts evenly with randomization
+  const avgInterval = remainingMinutes / alertsRemaining;
+  const randomOffset = (Math.random() - 0.5) * avgInterval * 0.5; // +/- 25% variance
+
+  const nextAlertMinutes = avgInterval * 0.5 + randomOffset; // First alert within first half of interval
+
+  const nextAlert = new Date(effectiveStart.getTime() + nextAlertMinutes * 60000);
+
+  // Ensure within window
+  if (nextAlert >= windowEndDate) return null;
+
+  return nextAlert;
+}
+
+/**
+ * Calculate next interval alert time
+ */
+export function calculateNextIntervalAlertTime(
+  intervalMinutes: number,
+  startTime: string,
+  endTime: string,
+  lastAlertTime?: Date
+): Date | null {
+  const now = new Date();
+  const today = getToday();
+
+  const windowStart = new Date(`${today}T${startTime}:00`);
+  const windowEnd = new Date(`${today}T${endTime}:00`);
+
+  // If past window, return null
+  if (now >= windowEnd) return null;
+
+  // Calculate next alert
+  let nextAlert: Date;
+
+  if (!lastAlertTime || lastAlertTime < windowStart) {
+    // First alert of the day - start from window start or now, whichever is later
+    nextAlert = now < windowStart ? windowStart : now;
+  } else {
+    // Next interval from last alert
+    nextAlert = new Date(lastAlertTime.getTime() + intervalMinutes * 60000);
+  }
+
+  // Ensure within window
+  if (nextAlert >= windowEnd) return null;
+  if (nextAlert < now) {
+    // If calculated time is in the past, skip to next interval from now
+    const intervalsSinceStart = Math.ceil((now.getTime() - windowStart.getTime()) / (intervalMinutes * 60000));
+    nextAlert = new Date(windowStart.getTime() + intervalsSinceStart * intervalMinutes * 60000);
+  }
+
+  if (nextAlert >= windowEnd) return null;
+
+  return nextAlert;
+}
+
+/**
+ * Get accountability summary for Claude context
+ */
+export async function getAccountabilityContextForClaude(): Promise<string> {
+  const logs = await getAccountabilityLogs();
+  if (logs.length === 0) return '';
+
+  const parts: string[] = ['ACCOUNTABILITY TRACKING (limits & goals):'];
+
+  for (const log of logs) {
+    const status = await getAccountabilityStatus(log.id);
+    if (!status) continue;
+
+    let limitInfo = '';
+    if (log.maxLimitPerDay) {
+      limitInfo = `daily limit: ${log.maxLimitPerDay}, today: ${status.currentCount}`;
+      if (status.percentOfDailyLimit) {
+        limitInfo += ` (${status.percentOfDailyLimit}%)`;
+      }
+    }
+    if (log.maxLimitPerWeek) {
+      const weekEntries = await getEntriesForLog(log.id, 7);
+      limitInfo += limitInfo ? ', ' : '';
+      limitInfo += `weekly limit: ${log.maxLimitPerWeek}, this week: ${weekEntries.length}`;
+    }
+
+    const statusEmoji = status.status === 'ok' ? '✅' :
+                        status.status === 'approaching' ? '⚠️' :
+                        status.status === 'at_limit' ? '🛑' : '❌';
+
+    parts.push(`  ${log.emoji} ${log.name}: ${limitInfo} ${statusEmoji}`);
+
+    if (status.message && status.status !== 'ok') {
+      parts.push(`      → ${status.message}`);
+    }
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Enable accountability for a log with default settings
+ */
+export async function enableAccountability(
+  logId: string,
+  config: Partial<AccountabilityConfig>
+): Promise<QuickLog | null> {
+  const defaultConfig: AccountabilityConfig = {
+    enabled: true,
+    alertAtPercent: 80,
+    alertAtLimit: true,
+    alertOverLimit: true,
+    scheduleType: 'fixed',
+    ...config,
+  };
+
+  return updateQuickLog(logId, { accountability: defaultConfig });
+}
+
+/**
+ * Disable accountability for a log
+ */
+export async function disableAccountability(logId: string): Promise<QuickLog | null> {
+  const logs = await getAllQuickLogs();
+  const log = logs.find(l => l.id === logId);
+  if (!log || !log.accountability) return log || null;
+
+  return updateQuickLog(logId, {
+    accountability: { ...log.accountability, enabled: false },
+  });
 }

@@ -29,6 +29,8 @@ import {
   QuickLog,
   QuickLogType,
   LogFrequency,
+  AlertScheduleType,
+  AccountabilityConfig,
   getQuickLogs,
   getAllQuickLogs,
   createQuickLog,
@@ -71,6 +73,14 @@ const FREQUENCY_OPTIONS: { value: LogFrequency; label: string; description: stri
   { value: 'as_needed', label: 'As needed', description: 'No schedule, just track when it happens' },
 ];
 
+// Alert schedule options
+const ALERT_SCHEDULE_OPTIONS: { value: AlertScheduleType; label: string; description: string }[] = [
+  { value: 'fixed', label: 'Fixed times', description: 'Reminders at specific times (e.g., 9am, 2pm, 7pm)' },
+  { value: 'interval', label: 'Interval', description: 'Remind every X hours within a time window' },
+  { value: 'random', label: 'Random', description: 'Random reminders spread throughout your day' },
+  { value: 'smart', label: 'Smart', description: 'AI suggests best times based on your patterns' },
+];
+
 export default function QuickLogsManagerScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -91,6 +101,13 @@ export default function QuickLogsManagerScreen() {
   const [frequency, setFrequency] = useState<LogFrequency>('daily');
   const [hasLimit, setHasLimit] = useState(false);
   const [dailyLimit, setDailyLimit] = useState('');
+  // Accountability alert settings
+  const [hasReminders, setHasReminders] = useState(false);
+  const [alertSchedule, setAlertSchedule] = useState<AlertScheduleType>('fixed');
+  const [intervalMinutes, setIntervalMinutes] = useState('120'); // 2 hours default
+  const [randomAlertsPerDay, setRandomAlertsPerDay] = useState('3');
+  const [alertWindowStart, setAlertWindowStart] = useState('08:00');
+  const [alertWindowEnd, setAlertWindowEnd] = useState('21:00');
 
   // Preset picker state
   const [showPresets, setShowPresets] = useState(false);
@@ -125,6 +142,12 @@ export default function QuickLogsManagerScreen() {
     setFrequency('daily');
     setHasLimit(false);
     setDailyLimit('');
+    setHasReminders(false);
+    setAlertSchedule('fixed');
+    setIntervalMinutes('120');
+    setRandomAlertsPerDay('3');
+    setAlertWindowStart('08:00');
+    setAlertWindowEnd('21:00');
     setShowModal(true);
   };
 
@@ -137,8 +160,16 @@ export default function QuickLogsManagerScreen() {
     setFrequency(log.frequency);
     // Check if this log has a limit alert
     const existingAlert = limitAlerts.find(a => a.twigId === log.id && a.isActive);
-    setHasLimit(!!existingAlert);
-    setDailyLimit(existingAlert ? String(existingAlert.maxLimit) : '');
+    setHasLimit(!!existingAlert || !!log.maxLimitPerDay);
+    setDailyLimit(existingAlert ? String(existingAlert.maxLimit) : log.maxLimitPerDay ? String(log.maxLimitPerDay) : '');
+    // Load accountability settings
+    const acc = log.accountability;
+    setHasReminders(acc?.enabled ?? false);
+    setAlertSchedule(acc?.scheduleType ?? 'fixed');
+    setIntervalMinutes(acc?.intervalMinutes ? String(acc.intervalMinutes) : '120');
+    setRandomAlertsPerDay(acc?.randomMaxPerDay ? String(acc.randomMaxPerDay) : '3');
+    setAlertWindowStart(acc?.intervalStartTime ?? acc?.randomWindowStart ?? '08:00');
+    setAlertWindowEnd(acc?.intervalEndTime ?? acc?.randomWindowEnd ?? '21:00');
     setShowModal(true);
   };
 
@@ -155,6 +186,26 @@ export default function QuickLogsManagerScreen() {
       return;
     }
 
+    // Build accountability config
+    const accountability: AccountabilityConfig | undefined = (hasLimit || hasReminders) ? {
+      enabled: hasLimit || hasReminders,
+      alertAtPercent: 80,
+      alertAtLimit: hasLimit,
+      alertOverLimit: hasLimit,
+      scheduleType: alertSchedule,
+      // Fixed times - user would set these separately
+      fixedTimes: alertSchedule === 'fixed' ? ['09:00', '14:00', '19:00'] : undefined,
+      // Interval settings
+      intervalMinutes: alertSchedule === 'interval' ? parseInt(intervalMinutes) || 120 : undefined,
+      intervalStartTime: alertSchedule === 'interval' ? alertWindowStart : undefined,
+      intervalEndTime: alertSchedule === 'interval' ? alertWindowEnd : undefined,
+      // Random settings
+      randomMinPerDay: alertSchedule === 'random' ? Math.max(1, (parseInt(randomAlertsPerDay) || 3) - 1) : undefined,
+      randomMaxPerDay: alertSchedule === 'random' ? parseInt(randomAlertsPerDay) || 3 : undefined,
+      randomWindowStart: alertSchedule === 'random' ? alertWindowStart : undefined,
+      randomWindowEnd: alertSchedule === 'random' ? alertWindowEnd : undefined,
+    } : undefined;
+
     try {
       if (editingLog) {
         // Update existing
@@ -163,6 +214,8 @@ export default function QuickLogsManagerScreen() {
           emoji,
           type,
           frequency,
+          maxLimitPerDay: hasLimit ? limitValue : undefined,
+          accountability,
         });
 
         // Handle limit alert updates
@@ -179,7 +232,11 @@ export default function QuickLogsManagerScreen() {
         }
       } else {
         // Create new
-        const newLog = await createQuickLog(name.trim(), emoji, type, { frequency });
+        const newLog = await createQuickLog(name.trim(), emoji, type, {
+          frequency,
+          maxLimitPerDay: hasLimit ? limitValue : undefined,
+          accountability,
+        });
 
         // Create limit alert if specified
         if (hasLimit && limitValue > 0) {
@@ -489,6 +546,180 @@ export default function QuickLogsManagerScreen() {
                 </View>
               )}
             </View>
+
+            {/* Reminder Alerts */}
+            <View style={styles.formGroup}>
+              <Text style={[styles.formLabel, { color: colors.text }]}>
+                Reminder Alerts
+              </Text>
+              <Text style={[styles.formDescription, { color: colors.textMuted }]}>
+                Get reminded to log this twig throughout the day
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.optionCard,
+                  {
+                    backgroundColor: hasReminders ? colors.tint + '20' : colors.card,
+                    borderColor: hasReminders ? colors.tint : colors.border,
+                  },
+                ]}
+                onPress={() => setHasReminders(!hasReminders)}
+              >
+                <View style={styles.optionContent}>
+                  <Text style={[styles.optionLabel, { color: colors.text }]}>
+                    Enable reminder alerts
+                  </Text>
+                  <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                    Get nudges to log at set times, intervals, or randomly
+                  </Text>
+                </View>
+                <Ionicons
+                  name={hasReminders ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={22}
+                  color={hasReminders ? colors.tint : colors.textMuted}
+                />
+              </TouchableOpacity>
+
+              {hasReminders && (
+                <View style={styles.reminderSettings}>
+                  {/* Alert Schedule Type */}
+                  <Text style={[styles.subLabel, { color: colors.text }]}>
+                    Alert Schedule
+                  </Text>
+                  {ALERT_SCHEDULE_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.optionCard,
+                        {
+                          backgroundColor: alertSchedule === option.value ? colors.tint + '20' : colors.card,
+                          borderColor: alertSchedule === option.value ? colors.tint : colors.border,
+                        },
+                      ]}
+                      onPress={() => setAlertSchedule(option.value)}
+                    >
+                      <View style={styles.optionContent}>
+                        <Text style={[styles.optionLabel, { color: colors.text }]}>
+                          {option.label}
+                        </Text>
+                        <Text style={[styles.optionDescription, { color: colors.textMuted }]}>
+                          {option.description}
+                        </Text>
+                      </View>
+                      {alertSchedule === option.value && (
+                        <Ionicons name="checkmark-circle" size={22} color={colors.tint} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+
+                  {/* Interval Settings */}
+                  {alertSchedule === 'interval' && (
+                    <View style={styles.scheduleSettings}>
+                      <View style={styles.scheduleRow}>
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          Every
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={intervalMinutes}
+                          onChangeText={setIntervalMinutes}
+                          placeholder="120"
+                          placeholderTextColor={colors.textMuted}
+                          keyboardType="number-pad"
+                        />
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          minutes
+                        </Text>
+                      </View>
+                      <View style={styles.scheduleRow}>
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          Between
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={alertWindowStart}
+                          onChangeText={setAlertWindowStart}
+                          placeholder="08:00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          and
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={alertWindowEnd}
+                          onChangeText={setAlertWindowEnd}
+                          placeholder="21:00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Random Settings */}
+                  {alertSchedule === 'random' && (
+                    <View style={styles.scheduleSettings}>
+                      <View style={styles.scheduleRow}>
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          Up to
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={randomAlertsPerDay}
+                          onChangeText={setRandomAlertsPerDay}
+                          placeholder="3"
+                          placeholderTextColor={colors.textMuted}
+                          keyboardType="number-pad"
+                        />
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          alerts per day
+                        </Text>
+                      </View>
+                      <View style={styles.scheduleRow}>
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          Between
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={alertWindowStart}
+                          onChangeText={setAlertWindowStart}
+                          placeholder="08:00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        <Text style={[styles.scheduleLabel, { color: colors.text }]}>
+                          and
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.scheduleInput,
+                            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+                          ]}
+                          value={alertWindowEnd}
+                          onChangeText={setAlertWindowEnd}
+                          placeholder="21:00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -729,6 +960,37 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     width: 80,
+    textAlign: 'center',
+  },
+  reminderSettings: {
+    marginTop: 16,
+  },
+  subLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  scheduleSettings: {
+    marginTop: 16,
+    gap: 12,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  scheduleLabel: {
+    fontSize: 14,
+  },
+  scheduleInput: {
+    fontSize: 16,
+    fontWeight: '500',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 70,
     textAlign: 'center',
   },
   // Preset styles
