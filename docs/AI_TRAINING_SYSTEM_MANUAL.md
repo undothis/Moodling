@@ -23,6 +23,23 @@ The MoodLeaf AI Training System is designed to create a specialized, human-like 
 
 ---
 
+## Quick Start: Transcript Server
+
+**Before processing YouTube channels, start the transcript server:**
+
+```bash
+# Terminal 1 - Start the transcript server
+cd transcript-server
+npm install   # only first time
+npm start
+```
+
+Keep this terminal open while processing. The server runs on `http://localhost:3333`.
+
+**Why?** YouTube blocks direct transcript requests from mobile apps. The server runs on your computer where those restrictions don't apply.
+
+---
+
 ## Table of Contents
 
 1. [System Architecture](#1-system-architecture)

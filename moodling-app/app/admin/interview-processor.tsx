@@ -134,6 +134,7 @@ const RECOMMENDED_CHANNELS = [
 
 export default function InterviewProcessorScreen() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
 
@@ -1363,6 +1364,24 @@ export default function InterviewProcessorScreen() {
 
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        {/* Server Instructions */}
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderLeftWidth: 4, borderLeftColor: '#FF9800' }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>⚡ Transcript Server Required</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary, marginBottom: 8 }]}>
+            Run this in a separate terminal to fetch YouTube transcripts:
+          </Text>
+          <View style={{ backgroundColor: isDark ? '#1a1a2e' : '#f5f5f5', padding: 12, borderRadius: 8, marginBottom: 8 }}>
+            <Text style={{ fontFamily: 'monospace', fontSize: 12, color: colors.text }}>
+              cd transcript-server{'\n'}
+              npm install{'\n'}
+              npm start
+            </Text>
+          </View>
+          <Text style={[styles.helperText, { color: colors.textSecondary, fontSize: 11 }]}>
+            Server runs on localhost:3333. Keep terminal open while processing.
+          </Text>
+        </View>
+
         {/* Channel Selection */}
         <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>Select Channel</Text>
