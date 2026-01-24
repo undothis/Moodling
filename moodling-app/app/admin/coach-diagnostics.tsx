@@ -50,6 +50,13 @@ import {
   detectUserAlivenessSignals,
   getAlivenessDirectiveForLLM,
 } from '@/services/alivenessService';
+import {
+  getAccessRegistry,
+  getEnabledSources,
+  getSourcesByCategory,
+  isSourceEnabled,
+  DataSource,
+} from '@/services/coachAccessRegistry';
 
 interface DiagnosticResult {
   name: string;
@@ -101,6 +108,73 @@ export default function CoachDiagnosticsScreen() {
     setSummary('');
 
     const diagnostics: DiagnosticResult[] = [];
+
+    // 0. AI Data Access (Coach Access Registry)
+    diagnostics.push(await runDiagnostic('AI Data Access Registry', async () => {
+      const registry = await getAccessRegistry();
+      const enabledSources = await getEnabledSources();
+      const sourcesByCategory = await getSourcesByCategory();
+      const categories = Object.keys(sourcesByCategory);
+      const totalSources = registry.sources.length;
+      const enabledCount = enabledSources.length;
+      const disabledCount = totalSources - enabledCount;
+
+      // Build category breakdown
+      const categoryBreakdown = categories.map(cat => {
+        const sources = sourcesByCategory[cat as keyof typeof sourcesByCategory] || [];
+        const catEnabled = sources.filter(s => s.enabled).length;
+        return `${cat}: ${catEnabled}/${sources.length}`;
+      }).join(', ');
+
+      // Build blocked/allowed list
+      const blockedSources = registry.sources.filter(s => !s.enabled).map(s => s.name);
+      const blockedList = blockedSources.length > 0
+        ? `BLOCKED: ${blockedSources.slice(0, 5).join(', ')}${blockedSources.length > 5 ? ` +${blockedSources.length - 5} more` : ''}`
+        : 'All sources allowed';
+
+      return {
+        success: registry.globalEnabled,
+        message: registry.globalEnabled
+          ? `Global ON - ${enabledCount}/${totalSources} sources enabled (${disabledCount} blocked)`
+          : `Global OFF - ALL AI access blocked`,
+        details: registry.globalEnabled
+          ? `${blockedList}\nCategories: ${categoryBreakdown}`
+          : 'Enable global access in Settings > AI Data Access'
+      };
+    }));
+    setResults([...diagnostics]);
+
+    // 0.5 Test individual blocked sources
+    diagnostics.push(await runDiagnostic('Data Flow Verification', async () => {
+      const registry = await getAccessRegistry();
+      if (!registry.globalEnabled) {
+        return {
+          success: true,
+          message: 'Global access OFF - all data blocked',
+          details: 'No data flows to AI when global toggle is off'
+        };
+      }
+
+      // Test a few key sources
+      const testSources = ['user_context', 'life_context', 'health_kit', 'calendar_events', 'quick_logs'];
+      const results: string[] = [];
+
+      for (const sourceId of testSources) {
+        const isEnabled = await isSourceEnabled(sourceId);
+        const source = registry.sources.find(s => s.id === sourceId);
+        const name = source?.name || sourceId;
+        results.push(`${isEnabled ? '✅' : '🚫'} ${name}: ${isEnabled ? 'flows to AI' : 'BLOCKED'}`);
+      }
+
+      const blockedCount = testSources.filter(async id => !(await isSourceEnabled(id))).length;
+
+      return {
+        success: true,
+        message: `Verified ${testSources.length} key data sources`,
+        details: results.join('\n')
+      };
+    }));
+    setResults([...diagnostics]);
 
     // 1. API Key Check
     diagnostics.push(await runDiagnostic('Claude API Key', async () => {
@@ -478,8 +552,9 @@ export default function CoachDiagnosticsScreen() {
               What This Tests
             </Text>
             <Text style={[styles.instructionsText, { color: colors.textSecondary }]}>
-              This diagnostic tool checks all 23 services that the Coach uses to provide personalized responses:
+              This diagnostic tool checks all 24 services that the Coach uses to provide personalized responses:
               {'\n\n'}
+              • AI Data Access Registry (what data Coach can see){'\n'}
               • API connectivity & authentication{'\n'}
               • Safety & safeguard systems{'\n'}
               • Personality & tone configuration{'\n'}
