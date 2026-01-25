@@ -1235,7 +1235,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['regulationStyle', 'canSelfSoothe'],
-    adaptiveDepth: 'standard'
+    adaptiveDepth: 'basic'  // Changed from standard - this is important
   },
 
   {
@@ -1291,8 +1291,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['primaryExternalRegulation'],
-    adaptiveDepth: 'standard',
-    requiresPrevious: ['regulation_style']
+    adaptiveDepth: 'basic'  // Removed requiresPrevious - this is important for understanding external regulation
   },
 
   {
@@ -1317,8 +1316,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['regulationAwareness'],
-    adaptiveDepth: 'standard',
-    requiresPrevious: ['regulation_style']
+    adaptiveDepth: 'basic'  // Removed requiresPrevious - awareness is important early
   },
 
   // ========== STRUCTURE PREFERENCE ==========
@@ -1687,7 +1685,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['sleepOnset'],
-    adaptiveDepth: 'standard'
+    adaptiveDepth: 'basic'  // Changed from standard - sleep is fundamental
   },
 
   {
@@ -1810,7 +1808,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['sleepQuality'],
-    adaptiveDepth: 'standard'
+    adaptiveDepth: 'basic'  // Changed from standard - sleep quality is important
   },
 
   {
