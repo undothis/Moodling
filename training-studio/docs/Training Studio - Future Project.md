@@ -566,7 +566,135 @@ This `.jsonl` file can be:
 7. Build React web UI
 8. Add facial analysis (optional, phase 2)
 9. Test end-to-end pipeline
-10. Migrate data from Mood Leaf
+10. **Copy/migrate existing code from Mood Leaf** (see below)
+11. Remove training code from Mood Leaf
+
+---
+
+## Code Migration: Copy from Mood Leaf to Training Studio
+
+> **GOAL:** Copy all training-related code from `moodling-app/` to `training-studio/`,
+> then eventually DELETE it from Mood Leaf to keep the app lean.
+
+### Files to Copy/Migrate
+
+#### Services (TypeScript → Port to Python or keep as reference)
+
+| Source File | Lines | What It Contains | Migration Action |
+|-------------|-------|------------------|------------------|
+| `moodling-app/services/youtubeProcessorService.ts` | 1200+ | Channel management, video fetching, insight extraction, quality scoring, deduplication, batch processing | Port core logic to Python backend |
+| `moodling-app/services/interviewAnalysisService.ts` | 835 | Prosody types, interview dynamics, speaker profiles, distress markers, statistics types | Convert types to Python Pydantic models |
+| `moodling-app/services/prosodyExtractionService.ts` | 300+ | Prosodic feature types, voice quality types | Convert types to Python Pydantic models |
+| `moodling-app/services/trainingDataService.ts` | - | Training data storage, retrieval | Port to Python with SQLite/PostgreSQL |
+| `moodling-app/services/trainingQualityService.ts` | - | Quality metrics, scoring | Port to Python |
+| `moodling-app/services/trainingStatusService.ts` | - | Processing status tracking | Port to Python |
+| `moodling-app/services/trainingCleanupService.ts` | - | Data cleanup utilities | Port to Python |
+
+#### UI Components (React Native → Port to React/Next.js Web)
+
+| Source File | What It Contains | Migration Action |
+|-------------|------------------|------------------|
+| `moodling-app/app/admin/interview-processor.tsx` | Full harvester UI: channels, batch, process, review, stats tabs | Port to Next.js web app |
+| `moodling-app/app/admin/training.tsx` | Training admin panel | Port to Next.js web app |
+
+#### Key Data Structures to Preserve
+
+```typescript
+// From youtubeProcessorService.ts - MUST PRESERVE
+const CHANNEL_CATEGORIES = [...];           // 60+ channel categories
+const EXTRACTION_CATEGORIES = [...];        // 50+ insight extraction types
+const RECOMMENDED_CHANNELS = [...];         // 60+ pre-populated channels
+const QUALITY_THRESHOLDS = {...};           // Scoring thresholds
+
+// From interviewAnalysisService.ts - MUST PRESERVE
+type MetricalFoot = 'iamb' | 'trochee' | ...;
+interface ScansionAnalysis {...};
+interface RhythmAnalysis {...};
+interface CadenceAnalysis {...};
+interface SpeakerProfile {...};
+interface InterviewDynamics {...};
+interface DistressMarkerProfile {...};
+type InterviewType = 'therapeutic_session' | ...;
+type TherapeuticApproach = 'cbt' | 'dbt' | ...;
+
+// From prosodyExtractionService.ts - MUST PRESERVE
+interface ProsodicFeatures {...};
+interface VoiceQualityFeatures {...};
+```
+
+### Migration Process
+
+```
+Step 1: COPY (Don't delete yet)
+─────────────────────────────────────────────────────────────────
+moodling-app/services/youtubeProcessorService.ts
+    │
+    └──► training-studio/reference/youtubeProcessorService.ts
+    └──► training-studio/backend/youtube.py (port to Python)
+
+moodling-app/services/interviewAnalysisService.ts
+    │
+    └──► training-studio/reference/interviewAnalysisService.ts
+    └──► training-studio/backend/models.py (Pydantic models)
+
+moodling-app/app/admin/interview-processor.tsx
+    │
+    └──► training-studio/reference/interview-processor.tsx
+    └──► training-studio/frontend/src/app/processor/page.tsx
+
+
+Step 2: VERIFY Training Studio works
+─────────────────────────────────────────────────────────────────
+- All channels load correctly
+- Batch processing works
+- Insight extraction works
+- Quality scoring works
+- Statistics dashboard works
+
+
+Step 3: DELETE from Mood Leaf (only after Step 2 verified)
+─────────────────────────────────────────────────────────────────
+rm moodling-app/services/youtubeProcessorService.ts
+rm moodling-app/services/interviewAnalysisService.ts
+rm moodling-app/services/prosodyExtractionService.ts
+rm moodling-app/services/trainingDataService.ts
+rm moodling-app/services/trainingQualityService.ts
+rm moodling-app/services/trainingStatusService.ts
+rm moodling-app/services/trainingCleanupService.ts
+rm moodling-app/app/admin/interview-processor.tsx
+rm moodling-app/app/admin/training.tsx
+```
+
+### Existing transcript-server (Already Separate)
+
+The `transcript-server/` folder is already outside of `moodling-app/`:
+
+```
+/Mood-Leaf/
+├── moodling-app/           # React Native app (will be cleaned)
+├── transcript-server/      # Already separate ✅
+│   ├── server.js           # yt-dlp + transcript fetching
+│   ├── package.json
+│   └── README.md
+└── training-studio/        # New (will contain migrated code)
+    ├── backend/
+    ├── frontend/
+    ├── reference/          # Original TS files for reference
+    └── docs/
+```
+
+### What Stays in Mood Leaf After Migration
+
+Only user-facing features:
+- ✅ Coach chat
+- ✅ Journaling
+- ✅ Skills & games
+- ✅ Tree visualization
+- ✅ Onboarding
+- ✅ Settings (user-facing only)
+- ✅ User cadence analysis (on-device, if built)
+
+**Everything training/harvesting related → Training Studio**
 11. Remove training code from Mood Leaf
 
 ---
