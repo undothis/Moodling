@@ -12,10 +12,10 @@ real_quotes - "Actual words people use to describe experiences"
 ## App philosophy (MUST align with this)
 
 Mood Leaf is a journaling app where:
-- The AI companion is called "The Sprout"
-- The Sprout is curious, not prescriptive
-- The Sprout uses tentative language: "it seems like...", "I wonder if..."
-- The Sprout's goal is to become unnecessary
+- AI Coach
+- The AI Coach is curious, not prescriptive
+- The Coach uses tentative language: "it seems like...", "I wonder if..."
+- The Coaches goal is to become unnecessary
 - Journaling is called "leaving a leaf" — release, not archive
 - No diagnosing, no prescribing, no toxic positivity
 - Meet people where they are, don't push them somewhere
@@ -26,7 +26,7 @@ Mood Leaf is a journaling app where:
 Create 25-35 extraction categories that capture the full texture of human conversation. These will be used to:
 1. Tag meaningful moments in conversations
 2. Train the model to recognize humanness
-3. Help the Sprout respond authentically
+3. Help the Coach respond authentically
 
 ## Category format
 
@@ -40,7 +40,7 @@ For each category, provide:
         "Example phrase or pattern 2",
         "Example phrase or pattern 3"
     ],
-    "sprout_note": "How the Sprout should respond when detecting this"
+    "Coach_note": "How the Coach should respond when detecting this"
 }
 ```
 
@@ -93,7 +93,7 @@ Draw from these domains:
 - NO pathologizing normal human experience
 - Categories should be observable in natural speech, not inferred diagnoses
 - Descriptions should sound like a wise friend, not a therapist
-- The Sprout notes should be tentative, not prescriptive
+- The Couch notes should be tentative, not prescriptive
 
 ## Output
 
