@@ -20,13 +20,18 @@ const STORAGE_KEY = '@moodling/journal_entries';
  * Save a new entry to storage
  */
 export async function saveEntry(entry: JournalEntry): Promise<void> {
+  const timerId = startTimer('Save journal entry', 'storage');
   try {
     const entries = await getAllEntries();
     const updatedEntries = [entry, ...entries]; // Newest first
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
-  } catch (error) {
+    await endTimer(timerId, { entryId: entry.id, totalEntries: updatedEntries.length });
+    await info('storage', 'Journal entry saved', { entryId: entry.id });
+  } catch (error: any) {
     // Errors are sacred - log and rethrow
     console.error('[journalStorage] Failed to save entry:', error);
+    await logError('storage', 'Failed to save journal entry', { error: error.message, entryId: entry.id });
+    await endTimer(timerId, { error: error.message });
     throw new Error('Failed to save journal entry');
   }
 }
@@ -35,15 +40,23 @@ export async function saveEntry(entry: JournalEntry): Promise<void> {
  * Get all entries from storage
  */
 export async function getAllEntries(): Promise<JournalEntry[]> {
+  const timerId = startTimer('Load journal entries', 'storage');
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
+    if (!stored) {
+      await endTimer(timerId, { entriesLoaded: 0 });
+      return [];
+    }
 
     const parsed = JSON.parse(stored) as JournalEntry[];
-    return parsed.map(parseJournalEntry);
-  } catch (error) {
+    const entries = parsed.map(parseJournalEntry);
+    await endTimer(timerId, { entriesLoaded: entries.length });
+    return entries;
+  } catch (error: any) {
     // Errors are sacred - log and return empty (don't crash)
     console.error('[journalStorage] Failed to load entries:', error);
+    await logError('storage', 'Failed to load journal entries', { error: error.message });
+    await endTimer(timerId, { error: error.message });
     return [];
   }
 }
