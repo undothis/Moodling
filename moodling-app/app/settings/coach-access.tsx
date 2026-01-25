@@ -16,10 +16,11 @@ import {
   ScrollView,
   Switch,
   Pressable,
+  TouchableOpacity,
   useColorScheme,
   ActivityIndicator,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import {
@@ -32,6 +33,13 @@ import {
   AccessCategory,
   CATEGORY_LABELS,
 } from '@/services/coachAccessRegistry';
+import {
+  runFullDiagnostic,
+  testSourceById,
+  TestResult,
+  DiagnosticReport,
+  getStatusEmoji,
+} from '@/services/diagnosticTestService';
 
 // Category emojis for visual clarity
 const CATEGORY_EMOJIS: Record<AccessCategory, string> = {
@@ -51,11 +59,17 @@ export default function CoachAccessSettingsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [registry, setRegistry] = useState<CoachAccessRegistry | null>(null);
   const [sourcesByCategory, setSourcesByCategory] = useState<Record<AccessCategory, DataSource[]> | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  // Testing state
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
+  const [testSummary, setTestSummary] = useState<string | null>(null);
 
   // Load settings
   const loadSettings = useCallback(async () => {
@@ -135,6 +149,61 @@ export default function CoachAccessSettingsScreen() {
     return { enabled, total: sources.length };
   };
 
+  // Run tests on all data sources
+  const runTests = useCallback(async () => {
+    setIsTesting(true);
+    setTestResults({});
+    setTestSummary(null);
+
+    try {
+      const report = await runFullDiagnostic();
+
+      // Convert results array to lookup by sourceId
+      const resultsMap: Record<string, TestResult> = {};
+      for (const result of report.results) {
+        resultsMap[result.sourceId] = result;
+      }
+      setTestResults(resultsMap);
+      setTestSummary(report.summary);
+    } catch (error) {
+      console.error('Test failed:', error);
+      setTestSummary('Test failed - see console for details');
+    } finally {
+      setIsTesting(false);
+    }
+  }, []);
+
+  // Get test status indicator for a source
+  const getSourceTestStatus = (sourceId: string) => {
+    const result = testResults[sourceId];
+    if (!result) return null;
+
+    // Check if source is blocked (toggle OFF)
+    const source = registry?.sources.find(s => s.id === sourceId);
+    const isBlocked = source && !source.enabled;
+    const globalBlocked = registry && !registry.globalEnabled;
+
+    if (globalBlocked || isBlocked) {
+      return {
+        emoji: '🚫',
+        color: '#9E9E9E',
+        status: 'BLOCKED',
+        details: globalBlocked ? 'Global access OFF' : 'Toggle is OFF - data not sent to AI',
+      };
+    }
+
+    return {
+      emoji: getStatusEmoji(result.status),
+      color: result.status === 'passed' ? '#4CAF50' :
+             result.status === 'failed' ? '#F44336' :
+             result.status === 'warning' ? '#FF9800' : '#9E9E9E',
+      status: result.status === 'passed' ? 'WORKING' :
+              result.status === 'failed' ? 'FAILED' :
+              result.status === 'warning' ? 'NEEDS PERMISSION' : 'SKIPPED',
+      details: result.details || result.error || '',
+    };
+  };
+
   if (loading || !registry || !sourcesByCategory) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -196,6 +265,46 @@ export default function CoachAccessSettingsScreen() {
           Control exactly what information your AI coach can use. Toggle individual data sources on or off. Your preferences are saved automatically.
         </Text>
 
+        {/* Testing Section */}
+        <View style={[styles.testingCard, { backgroundColor: colors.card }]}>
+          <View style={styles.testingHeader}>
+            <Text style={[styles.testingTitle, { color: colors.text }]}>
+              Test Data Access
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.testButton,
+                { backgroundColor: isTesting ? colors.border : colors.tint }
+              ]}
+              onPress={runTests}
+              disabled={isTesting}
+            >
+              {isTesting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.testButtonText}>Run Tests</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {testSummary && (
+            <View style={[styles.testSummary, { backgroundColor: colors.background }]}>
+              <Text style={[styles.testSummaryText, { color: colors.text }]}>
+                {testSummary}
+              </Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.fullDiagnosticsLink}
+            onPress={() => router.push('/admin/coach-diagnostics')}
+          >
+            <Text style={[styles.fullDiagnosticsText, { color: colors.tint }]}>
+              Open Full Diagnostics
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Categories */}
         {(Object.entries(sourcesByCategory) as [AccessCategory, DataSource[]][])
           .filter(([_, sources]) => sources.length > 0)
@@ -234,6 +343,7 @@ export default function CoachAccessSettingsScreen() {
                   <View style={styles.sourcesList}>
                     {sources.map((source) => {
                       const isSafetySource = ['core_principles', 'safeguards'].includes(source.id);
+                      const testStatus = getSourceTestStatus(source.id);
 
                       return (
                         <View
@@ -243,7 +353,22 @@ export default function CoachAccessSettingsScreen() {
                             { borderTopColor: colors.border },
                           ]}
                         >
-                          <View style={styles.sourceInfo}>
+                          {/* Test Status Indicator */}
+                          {testStatus && (
+                            <View style={[
+                              styles.testStatusIndicator,
+                              {
+                                borderColor: testStatus.color,
+                                backgroundColor: testStatus.color + '15',
+                              }
+                            ]}>
+                              <Text style={styles.testStatusEmoji}>{testStatus.emoji}</Text>
+                              <Text style={[styles.testStatusLabel, { color: testStatus.color }]}>
+                                {testStatus.status}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={[styles.sourceInfo, testStatus && styles.sourceInfoWithTest]}>
                             <Text style={[styles.sourceName, { color: colors.text }]}>
                               {source.name}
                               {isSafetySource && (
@@ -258,6 +383,12 @@ export default function CoachAccessSettingsScreen() {
                             {source.requiresPermission && !source.permissionGranted && (
                               <Text style={[styles.permissionNote, { color: colors.warning }]}>
                                 Requires device permission
+                              </Text>
+                            )}
+                            {/* Show test details if failed or warning */}
+                            {testStatus && (testStatus.emoji === '❌' || testStatus.emoji === '⚠️') && testStatus.details && (
+                              <Text style={[styles.testDetailsText, { color: testStatus.color }]}>
+                                {testStatus.details}
                               </Text>
                             )}
                           </View>
@@ -428,5 +559,76 @@ const styles = StyleSheet.create({
   privacyText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  // Testing styles
+  testingCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: 12,
+  },
+  testingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  testingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  testButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 90,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  testSummary: {
+    marginTop: 12,
+    padding: 10,
+    borderRadius: 8,
+  },
+  testSummaryText: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  fullDiagnosticsLink: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  fullDiagnosticsText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  testStatusIndicator: {
+    marginRight: 10,
+    minWidth: 70,
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  testStatusEmoji: {
+    fontSize: 14,
+  },
+  testStatusLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
+  sourceInfoWithTest: {
+    flex: 1,
+  },
+  testDetailsText: {
+    fontSize: 11,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
