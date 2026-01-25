@@ -7,6 +7,8 @@ import {
   addChannel,
   deleteChannel,
   fetchRecommendedChannels,
+  getAIChannelRecommendations,
+  AIChannelRecommendation,
 } from '@/lib/api';
 import {
   Plus,
@@ -18,6 +20,13 @@ import {
   ChevronDown,
   ChevronUp,
   Filter,
+  Search,
+  Sparkles,
+  Info,
+  Wand2,
+  MessageSquare,
+  Lightbulb,
+  CheckCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -196,11 +205,16 @@ function RecommendedChannelCard({
   channel,
   onAdd,
   isAdded,
+  isAdding,
+  description,
 }: {
-  channel: { name: string; category: string; url: string };
+  channel: { name: string; category: string; url: string; description?: string };
   onAdd: () => void;
   isAdded: boolean;
+  isAdding?: boolean;
+  description?: string;
 }) {
+  const desc = description || channel.description;
   return (
     <div className={clsx(
       "bg-white rounded-lg p-3 border transition-colors",
@@ -215,6 +229,11 @@ function RecommendedChannelCard({
           <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full flex-shrink-0">
             Added
           </span>
+        ) : isAdding ? (
+          <span className="px-3 py-1 text-xs bg-gray-100 text-gray-500 rounded-full flex-shrink-0 flex items-center gap-1">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Adding...
+          </span>
         ) : (
           <button
             onClick={onAdd}
@@ -224,6 +243,9 @@ function RecommendedChannelCard({
           </button>
         )}
       </div>
+      {desc && (
+        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{desc}</p>
+      )}
     </div>
   );
 }
@@ -268,6 +290,16 @@ export default function ChannelsPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showAllRecommended, setShowAllRecommended] = useState(false);
+  const [addingChannels, setAddingChannels] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  // AI Recommendation state
+  const [aiDescription, setAiDescription] = useState('');
+  const [aiRecommendations, setAiRecommendations] = useState<AIChannelRecommendation[]>([]);
+  const [aiTrainingTips, setAiTrainingTips] = useState('');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [showAIRecommender, setShowAIRecommender] = useState(false);
 
   const { data: channels, isLoading } = useQuery({
     queryKey: ['channels'],
@@ -288,10 +320,37 @@ export default function ChannelsPage() {
 
   const { mutate: add } = useMutation({
     mutationFn: addChannel,
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['channels'] });
+      // Remove from adding set on success
+      const urlKey = variables.url.replace('https://youtube.com/', '');
+      setAddingChannels(prev => {
+        const next = new Set(prev);
+        next.delete(urlKey);
+        return next;
+      });
+    },
+    onError: (_, variables) => {
+      // Remove from adding set on error too
+      const urlKey = variables.url.replace('https://youtube.com/', '');
+      setAddingChannels(prev => {
+        const next = new Set(prev);
+        next.delete(urlKey);
+        return next;
+      });
+      alert('Failed to add channel. Please try again.');
     },
   });
+
+  const handleAddChannel = (channel: { url: string; category: string }) => {
+    setAddingChannels(prev => new Set(prev).add(channel.url));
+    add({
+      url: `https://youtube.com/${channel.url}`,
+      category: channel.category,
+      trust_level: 'high',
+      extraction_categories: [],
+    });
+  };
 
   // Group recommended channels by category
   const groupedRecommended = useMemo(() => {
@@ -321,6 +380,33 @@ export default function ChannelsPage() {
       if (next.has(cat)) next.delete(cat);
       else next.add(cat);
       return next;
+    });
+  };
+
+  const handleGetAIRecommendations = async () => {
+    if (!aiDescription.trim()) return;
+
+    setIsLoadingAI(true);
+    try {
+      const response = await getAIChannelRecommendations(aiDescription);
+      if (response.success && response.recommendations) {
+        setAiRecommendations(response.recommendations);
+        setAiTrainingTips(response.training_tips || '');
+      } else {
+        alert(response.error || 'Failed to get recommendations');
+      }
+    } catch (error) {
+      alert('Failed to get AI recommendations. Make sure your Claude API key is configured.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const handleAddAllAIRecommendations = () => {
+    aiRecommendations.forEach(channel => {
+      if (!addedChannelUrls.has(channel.url)) {
+        handleAddChannel(channel);
+      }
     });
   };
 
@@ -375,6 +461,144 @@ export default function ChannelsPage() {
           ))}
         </div>
       )}
+
+      {/* AI Channel Recommender */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Wand2 className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                AI Channel Recommender
+              </h2>
+              <p className="text-sm text-gray-600">
+                Describe your AI and get personalized channel recommendations
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAIRecommender(!showAIRecommender)}
+            className="px-4 py-2 text-sm bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {showAIRecommender ? 'Hide' : 'Get Recommendations'}
+          </button>
+        </div>
+
+        {showAIRecommender && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Describe what you want your AI to do:
+              </label>
+              <textarea
+                value={aiDescription}
+                onChange={(e) => setAiDescription(e.target.value)}
+                placeholder="Example: I want to build an AI wellness coach that helps people deal with anxiety, provides coping strategies, and offers empathetic support during difficult times. It should sound warm and understanding, like a therapist friend."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px] resize-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleGetAIRecommendations}
+                disabled={!aiDescription.trim() || isLoadingAI}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Find Best Channels
+                  </>
+                )}
+              </button>
+
+              {aiRecommendations.length > 0 && (
+                <button
+                  onClick={handleAddAllAIRecommendations}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Add All Recommended
+                </button>
+              )}
+            </div>
+
+            {/* AI Recommendations Results */}
+            {aiRecommendations.length > 0 && (
+              <div className="mt-6 space-y-4">
+                {aiTrainingTips && (
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Training Tip</p>
+                        <p className="text-sm text-gray-600 mt-1">{aiTrainingTips}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm font-medium text-gray-700">
+                  Recommended channels for your AI ({aiRecommendations.length}):
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {aiRecommendations.map((channel) => (
+                    <div
+                      key={channel.url}
+                      className={clsx(
+                        "bg-white rounded-lg p-4 border transition-colors",
+                        addedChannelUrls.has(channel.url)
+                          ? "border-green-200 bg-green-50"
+                          : "border-purple-200 hover:border-purple-300"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-purple-500" />
+                          <p className="font-medium text-gray-900">{channel.name}</p>
+                        </div>
+                        {addedChannelUrls.has(channel.url) ? (
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                            Added
+                          </span>
+                        ) : addingChannels.has(channel.url) ? (
+                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-full flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Adding...
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleAddChannel(channel)}
+                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                      <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full mb-2">
+                        {CATEGORY_LABELS[channel.category] || channel.category}
+                      </span>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <span className="font-medium text-purple-700">Why this channel: </span>
+                        {channel.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Recommended Channels */}
       {recommended && recommended.length > 0 && (
@@ -450,14 +674,8 @@ export default function ChannelsPage() {
                           key={channel.url}
                           channel={channel}
                           isAdded={addedChannelUrls.has(channel.url)}
-                          onAdd={() =>
-                            add({
-                              url: `https://youtube.com/${channel.url}`,
-                              category: channel.category,
-                              trust_level: 'high',
-                              extraction_categories: [],
-                            })
-                          }
+                          isAdding={addingChannels.has(channel.url)}
+                          onAdd={() => handleAddChannel(channel)}
                         />
                       ))}
                     </div>
@@ -473,20 +691,122 @@ export default function ChannelsPage() {
                   key={channel.url}
                   channel={channel}
                   isAdded={addedChannelUrls.has(channel.url)}
-                  onAdd={() =>
-                    add({
-                      url: `https://youtube.com/${channel.url}`,
-                      category: channel.category,
-                      trust_level: 'high',
-                      extraction_categories: [],
-                    })
-                  }
+                  isAdding={addingChannels.has(channel.url)}
+                  onAdd={() => handleAddChannel(channel)}
                 />
               ))}
             </div>
           )}
         </div>
       )}
+
+      {/* Channel Discovery / Search */}
+      <div className="bg-white rounded-xl p-6 border border-gray-100 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-purple-500" />
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Discover More Channels
+              </h2>
+              <p className="text-sm text-gray-500">
+                Search for channels that fit MoodLeaf's coaching style
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="px-4 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            {showSearch ? 'Hide Search' : 'Search Channels'}
+          </button>
+        </div>
+
+        {showSearch && (
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by topic (e.g., 'anxiety', 'relationships', 'grief')"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                onClick={() => {/* Search functionality */}}
+                className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+              >
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+            </div>
+
+            {/* Search suggestions */}
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="flex items-start gap-2 mb-3">
+                <Info className="w-4 h-4 text-purple-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-purple-900">Channel Discovery Tips</p>
+                  <p className="text-xs text-purple-700 mt-1">
+                    Look for channels with authentic conversations about emotions, personal growth, and mental wellness.
+                    The best training data comes from therapists, coaches, and thoughtful interviewers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                {['therapy sessions', 'emotional intelligence', 'life coaching', 'mental health interviews', 'grief counseling', 'relationship advice', 'mindfulness', 'personal stories'].map(topic => (
+                  <button
+                    key={topic}
+                    onClick={() => setSearchQuery(topic)}
+                    className="px-3 py-1.5 text-xs bg-white text-purple-700 rounded-full hover:bg-purple-100 transition-colors"
+                  >
+                    {topic}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filtered results from recommendations */}
+            {searchQuery && recommended && (
+              <div>
+                <p className="text-sm text-gray-600 mb-3">
+                  Matching channels from our curated list:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {recommended
+                    .filter(ch =>
+                      ch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      ch.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (ch.description && ch.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                    )
+                    .slice(0, 9)
+                    .map((channel) => (
+                      <RecommendedChannelCard
+                        key={channel.url}
+                        channel={channel}
+                        isAdded={addedChannelUrls.has(channel.url)}
+                        isAdding={addingChannels.has(channel.url)}
+                        onAdd={() => handleAddChannel(channel)}
+                      />
+                    ))
+                  }
+                </div>
+                {recommended.filter(ch =>
+                  ch.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  ch.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (ch.description && ch.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                ).length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No matching channels found. Try a different search term or add a custom channel above.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <AddChannelModal
         isOpen={showAddModal}

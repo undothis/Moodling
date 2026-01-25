@@ -358,3 +358,32 @@ export async function fetchAnalysisStats(): Promise<any> {
   if (!res.ok) throw new Error('Failed to fetch analysis stats');
   return res.json();
 }
+
+export interface AIChannelRecommendation {
+  name: string;
+  url: string;
+  category: string;
+  channel_id?: string;
+  description?: string;
+  reason: string;
+}
+
+export interface AIRecommendResponse {
+  success: boolean;
+  recommendations?: AIChannelRecommendation[];
+  training_tips?: string;
+  original_description?: string;
+  error?: string;
+}
+
+export async function getAIChannelRecommendations(
+  description: string
+): Promise<AIRecommendResponse> {
+  const res = await fetch(`${API_BASE}/recommend-channels-ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) throw new Error('Failed to get AI recommendations');
+  return res.json();
+}

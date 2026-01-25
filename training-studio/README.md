@@ -108,6 +108,25 @@ HUGGINGFACE_TOKEN=hf_...
 - Supports @handle, /channel/, and /c/ URL formats
 - Set trust levels and categories
 
+**70+ Recommended Channels**
+- Pre-curated list from MoodLeaf's interview sources
+- Organized by category: Philosophy, Therapy, Relationships, Grief, Addiction, etc.
+- One-click add to your channel list
+- Shows "Added" badge for channels already in your list
+
+**Channel Discovery**
+- Search through recommended channels by topic
+- Quick topic buttons: therapy sessions, emotional intelligence, life coaching, etc.
+- Find channels that fit MoodLeaf's coaching style
+
+**AI Channel Recommender**
+- Describe what you want your AI to do in natural language
+- Claude analyzes your description and recommends the best channels
+- Each recommendation includes a personalized explanation of WHY it fits your AI
+- Get training tips specific to your use case
+- One-click "Add All Recommended" to add all suggested channels
+- Example: "I want an AI that helps people cope with grief and loss, providing comfort and understanding"
+
 ### Process Videos
 
 **Simple Mode (Recommended)**
@@ -123,6 +142,13 @@ HUGGINGFACE_TOKEN=hf_...
 - Prosody analysis
 - Facial expression analysis
 - More detailed but requires more dependencies
+
+**Batch Processing**
+- Process multiple videos from a channel at once
+- Click "Batch Process" to enter batch mode
+- Select individual videos or "Select All"
+- Click "Process X Videos" to start batch
+- Videos are queued with automatic pacing to avoid overload
 
 ### Review Insights
 - View extracted insights
