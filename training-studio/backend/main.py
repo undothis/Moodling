@@ -16,7 +16,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import shutil
 import tempfile
 
@@ -347,7 +347,7 @@ Format your response as JSON with this structure:
 Only include channels from the list above. Be specific about why each channel matches their needs."""
 
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2000,
