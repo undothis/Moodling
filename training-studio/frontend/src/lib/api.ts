@@ -274,3 +274,87 @@ export async function runDiagnostics(): Promise<DiagnosticsResponse> {
   if (!res.ok) throw new Error('Failed to run diagnostics');
   return res.json();
 }
+
+// Tuning Dashboard APIs
+export interface ChannelStats {
+  channel_id: string;
+  channel_name: string;
+  channel_url: string;
+  influence_weight: number;
+  include_in_training: boolean;
+  trust_level: string;
+  total_insights: number;
+  approved_insights: number;
+  pending_insights: number;
+  rejected_insights: number;
+  avg_quality: number;
+  avg_safety: number;
+  avg_confidence: number;
+  category_distribution: Record<string, number>;
+  videos_processed: number;
+}
+
+export async function fetchChannelStats(): Promise<{ channels: ChannelStats[] }> {
+  const res = await fetch(`${API_BASE}/tuning/channels`);
+  if (!res.ok) throw new Error('Failed to fetch channel stats');
+  return res.json();
+}
+
+export async function updateChannelWeight(
+  channelId: string,
+  weight: number,
+  includeInTraining?: boolean,
+  notes?: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/tuning/channels/${channelId}/weight`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      influence_weight: weight,
+      include_in_training: includeInTraining,
+      notes,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to update channel weight');
+  return res.json();
+}
+
+export async function deleteChannelInsights(
+  channelId: string
+): Promise<{ success: boolean; deleted_count: number }> {
+  const res = await fetch(`${API_BASE}/tuning/channels/${channelId}/insights`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete channel insights');
+  return res.json();
+}
+
+export async function deleteVideoInsights(
+  videoId: string
+): Promise<{ success: boolean; deleted_count: number }> {
+  const res = await fetch(`${API_BASE}/tuning/videos/${videoId}/insights`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete video insights');
+  return res.json();
+}
+
+export interface SourceToken {
+  token: string;
+  channel_id: string;
+  video_id: string;
+  insight_count: number;
+  categories: string[];
+}
+
+export async function fetchSourceTokens(): Promise<{ source_tokens: SourceToken[] }> {
+  const res = await fetch(`${API_BASE}/tuning/source-tokens`);
+  if (!res.ok) throw new Error('Failed to fetch source tokens');
+  return res.json();
+}
+
+export async function fetchAnalysisStats(): Promise<any> {
+  const res = await fetch(`${API_BASE}/stats/analysis`);
+  if (!res.ok) throw new Error('Failed to fetch analysis stats');
+  return res.json();
+}

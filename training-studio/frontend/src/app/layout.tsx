@@ -16,6 +16,8 @@ import {
   Key,
   Check,
   X,
+  Sliders,
+  FlaskConical,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getApiKeyStatus, setApiKey } from '@/lib/api';
@@ -26,6 +28,8 @@ const navItems = [
   { href: '/process', label: 'Process', icon: Play },
   { href: '/review', label: 'Review', icon: CheckSquare },
   { href: '/stats', label: 'Statistics', icon: BarChart3 },
+  { href: '/tuning', label: 'Tuning', icon: Sliders },
+  { href: '/test', label: 'Test Model', icon: FlaskConical },
   { href: '/export', label: 'Export', icon: Download },
 ];
 

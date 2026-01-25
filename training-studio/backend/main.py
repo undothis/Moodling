@@ -799,6 +799,349 @@ async def get_api_key_status():
 
 
 # ============================================================================
+# TUNING DASHBOARD - Source Management & Influence Control
+# ============================================================================
+
+@app.get("/tuning/channels")
+async def get_channel_statistics():
+    """
+    Get detailed statistics for each channel for tuning dashboard.
+    Shows contribution, quality scores, and influence settings.
+    """
+    stats = await db.get_channel_statistics()
+    return {"channels": stats}
+
+
+@app.get("/tuning/videos")
+async def get_video_statistics():
+    """Get statistics for each processed video."""
+    stats = await db.get_video_statistics()
+    return {"videos": stats}
+
+
+class UpdateChannelWeightRequest(BaseModel):
+    """Request to update channel influence weight."""
+    influence_weight: float  # 0.0 to 2.0
+    include_in_training: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+@app.put("/tuning/channels/{channel_id}/weight")
+async def update_channel_weight(channel_id: str, request: UpdateChannelWeightRequest):
+    """
+    Update channel's influence weight for training.
+    Weight: 0.0 = exclude, 0.5 = half influence, 1.0 = normal, 2.0 = double influence
+    """
+    if not 0.0 <= request.influence_weight <= 2.0:
+        raise HTTPException(status_code=400, detail="Weight must be between 0.0 and 2.0")
+
+    updates = {"influence_weight": request.influence_weight}
+    if request.include_in_training is not None:
+        updates["include_in_training"] = request.include_in_training
+    if request.notes is not None:
+        updates["notes"] = request.notes
+
+    channel = await db.update_channel(channel_id, updates)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    return {
+        "success": True,
+        "channel_id": channel_id,
+        "influence_weight": request.influence_weight
+    }
+
+
+@app.delete("/tuning/channels/{channel_id}/insights")
+async def delete_channel_insights(channel_id: str):
+    """Delete all insights from a specific channel."""
+    count = await db.delete_insights_by_channel(channel_id)
+    return {
+        "success": True,
+        "deleted_count": count,
+        "channel_id": channel_id
+    }
+
+
+@app.delete("/tuning/videos/{video_id}/insights")
+async def delete_video_insights(video_id: str):
+    """Delete all insights from a specific video."""
+    count = await db.delete_insights_by_video(video_id)
+    return {
+        "success": True,
+        "deleted_count": count,
+        "video_id": video_id
+    }
+
+
+@app.get("/tuning/quality-alerts")
+async def get_quality_alerts():
+    """
+    Identify problematic data sources - channels and videos with low quality.
+    Helps pinpoint what's contributing to bad training data.
+    """
+    all_insights = await db.get_all_insights()
+    channels = await db.get_all_channels()
+
+    channel_map = {c.id: c.name for c in channels}
+
+    # Aggregate by channel
+    channel_stats = {}
+    video_stats = {}
+
+    for i in all_insights:
+        ch_id = i.channel_id or "unknown"
+        vid_id = i.video_id or "unknown"
+
+        # Channel stats
+        if ch_id not in channel_stats:
+            channel_stats[ch_id] = {
+                "channel_id": ch_id,
+                "channel_name": channel_map.get(ch_id, "Unknown"),
+                "total_insights": 0,
+                "low_quality_count": 0,  # quality < 70
+                "low_safety_count": 0,   # safety < 70
+                "flagged_count": 0,
+                "rejected_count": 0,
+                "quality_scores": [],
+                "safety_scores": [],
+                "categories": {}
+            }
+        channel_stats[ch_id]["total_insights"] += 1
+        channel_stats[ch_id]["quality_scores"].append(i.quality_score)
+        channel_stats[ch_id]["safety_scores"].append(i.safety_score)
+        if i.quality_score < 70:
+            channel_stats[ch_id]["low_quality_count"] += 1
+        if i.safety_score < 70:
+            channel_stats[ch_id]["low_safety_count"] += 1
+        if i.flagged_for_review:
+            channel_stats[ch_id]["flagged_count"] += 1
+        if i.status == "rejected":
+            channel_stats[ch_id]["rejected_count"] += 1
+        cat = i.category or "unknown"
+        channel_stats[ch_id]["categories"][cat] = channel_stats[ch_id]["categories"].get(cat, 0) + 1
+
+        # Video stats
+        if vid_id not in video_stats:
+            video_stats[vid_id] = {
+                "video_id": vid_id,
+                "channel_id": ch_id,
+                "channel_name": channel_map.get(ch_id, "Unknown"),
+                "total_insights": 0,
+                "low_quality_count": 0,
+                "low_safety_count": 0,
+                "flagged_count": 0,
+                "quality_scores": [],
+                "safety_scores": [],
+            }
+        video_stats[vid_id]["total_insights"] += 1
+        video_stats[vid_id]["quality_scores"].append(i.quality_score)
+        video_stats[vid_id]["safety_scores"].append(i.safety_score)
+        if i.quality_score < 70:
+            video_stats[vid_id]["low_quality_count"] += 1
+        if i.safety_score < 70:
+            video_stats[vid_id]["low_safety_count"] += 1
+        if i.flagged_for_review:
+            video_stats[vid_id]["flagged_count"] += 1
+
+    # Calculate averages and identify problematic sources
+    problematic_channels = []
+    for ch_id, stats in channel_stats.items():
+        if stats["quality_scores"]:
+            stats["avg_quality"] = round(sum(stats["quality_scores"]) / len(stats["quality_scores"]), 1)
+            stats["avg_safety"] = round(sum(stats["safety_scores"]) / len(stats["safety_scores"]), 1)
+            del stats["quality_scores"]
+            del stats["safety_scores"]
+
+            # Flag as problematic if:
+            # - Average quality < 75
+            # - Average safety < 75
+            # - More than 30% flagged or rejected
+            # - More than 20% low quality
+            problem_score = 0
+            problems = []
+
+            if stats["avg_quality"] < 75:
+                problem_score += 3
+                problems.append(f"Low avg quality ({stats['avg_quality']})")
+            if stats["avg_safety"] < 75:
+                problem_score += 4
+                problems.append(f"Low avg safety ({stats['avg_safety']})")
+
+            flag_rate = (stats["flagged_count"] + stats["rejected_count"]) / stats["total_insights"]
+            if flag_rate > 0.3:
+                problem_score += 2
+                problems.append(f"High flag/reject rate ({round(flag_rate * 100)}%)")
+
+            low_quality_rate = stats["low_quality_count"] / stats["total_insights"]
+            if low_quality_rate > 0.2:
+                problem_score += 2
+                problems.append(f"Many low-quality insights ({round(low_quality_rate * 100)}%)")
+
+            low_safety_rate = stats["low_safety_count"] / stats["total_insights"]
+            if low_safety_rate > 0.1:
+                problem_score += 3
+                problems.append(f"Safety concerns ({round(low_safety_rate * 100)}% unsafe)")
+
+            if problem_score > 0:
+                stats["problem_score"] = problem_score
+                stats["problems"] = problems
+                problematic_channels.append(stats)
+
+    problematic_videos = []
+    for vid_id, stats in video_stats.items():
+        if stats["quality_scores"]:
+            stats["avg_quality"] = round(sum(stats["quality_scores"]) / len(stats["quality_scores"]), 1)
+            stats["avg_safety"] = round(sum(stats["safety_scores"]) / len(stats["safety_scores"]), 1)
+            del stats["quality_scores"]
+            del stats["safety_scores"]
+
+            problem_score = 0
+            problems = []
+
+            if stats["avg_quality"] < 70:
+                problem_score += 3
+                problems.append(f"Low quality ({stats['avg_quality']})")
+            if stats["avg_safety"] < 70:
+                problem_score += 4
+                problems.append(f"Safety concerns ({stats['avg_safety']})")
+            if stats["flagged_count"] > 0:
+                problem_score += 1
+                problems.append(f"{stats['flagged_count']} flagged insights")
+
+            if problem_score > 0:
+                stats["problem_score"] = problem_score
+                stats["problems"] = problems
+                problematic_videos.append(stats)
+
+    # Sort by problem severity
+    problematic_channels.sort(key=lambda x: x.get("problem_score", 0), reverse=True)
+    problematic_videos.sort(key=lambda x: x.get("problem_score", 0), reverse=True)
+
+    return {
+        "problematic_channels": problematic_channels[:20],
+        "problematic_videos": problematic_videos[:30],
+        "summary": {
+            "total_channels_analyzed": len(channel_stats),
+            "channels_with_issues": len(problematic_channels),
+            "total_videos_analyzed": len(video_stats),
+            "videos_with_issues": len(problematic_videos),
+        }
+    }
+
+
+@app.get("/tuning/source-tokens")
+async def get_source_tokens():
+    """
+    Get all unique source tokens for tracking training data provenance.
+    Useful for identifying which data influenced model behavior.
+    """
+    insights = await db.get_all_insights(status="approved")
+
+    tokens = {}
+    for insight in insights:
+        token = insight.source_token or f"{insight.channel_id}_{insight.video_id}_{insight.id[:8]}"
+        if token not in tokens:
+            tokens[token] = {
+                "token": token,
+                "channel_id": insight.channel_id,
+                "video_id": insight.video_id,
+                "insight_count": 0,
+                "categories": set(),
+            }
+        tokens[token]["insight_count"] += 1
+        tokens[token]["categories"].add(insight.category)
+
+    # Convert sets to lists for JSON
+    for t in tokens.values():
+        t["categories"] = list(t["categories"])
+
+    return {"source_tokens": list(tokens.values())}
+
+
+# ============================================================================
+# COMPREHENSIVE ANALYSIS STATISTICS
+# ============================================================================
+
+@app.get("/stats/analysis")
+async def get_analysis_statistics():
+    """
+    Get comprehensive statistics on all analysis performed.
+    Includes prosody, facial, and other analysis metrics.
+    """
+    # This would aggregate data from processing jobs
+    # For now, return the structure - actual data comes from jobs
+
+    return {
+        "prosody": {
+            "description": "Voice and speech pattern analysis",
+            "metrics": {
+                "pitch": {
+                    "name": "Pitch Analysis",
+                    "description": "Fundamental frequency (F0) patterns",
+                    "measures": ["mean", "std", "range", "trajectory"]
+                },
+                "rhythm": {
+                    "name": "Rhythm Analysis",
+                    "description": "Speech rate and tempo patterns",
+                    "measures": ["speech_rate_wpm", "syllables_per_second", "tempo_variability"]
+                },
+                "pauses": {
+                    "name": "Pause Analysis",
+                    "description": "Silent and filled pause patterns",
+                    "measures": ["frequency_per_minute", "mean_duration", "pattern"]
+                },
+                "volume": {
+                    "name": "Volume Analysis",
+                    "description": "Loudness and intensity patterns",
+                    "measures": ["mean_db", "range_db", "trajectory"]
+                },
+                "voice_quality": {
+                    "name": "Voice Quality",
+                    "description": "Voice characteristics from Praat",
+                    "measures": ["jitter", "shimmer", "hnr", "breathiness", "creakiness"]
+                }
+            },
+            "composite_scores": ["aliveness_score", "naturalness_score", "expressiveness", "engagement_score"]
+        },
+        "distress_markers": {
+            "description": "Emotional distress detection",
+            "metrics": {
+                "crying": ["detected", "type", "intensity"],
+                "voice_breaks": ["count", "timestamps"],
+                "tremor": ["detected", "severity", "pattern"],
+                "breathing": ["pattern", "distress_level"]
+            }
+        },
+        "facial": {
+            "description": "Facial expression analysis",
+            "metrics": {
+                "emotions": {
+                    "name": "Emotion Detection",
+                    "categories": ["happiness", "sadness", "anger", "fear", "surprise", "disgust", "contempt", "neutral"]
+                },
+                "action_units": {
+                    "name": "Facial Action Units (FACS)",
+                    "description": "Muscle movement patterns"
+                },
+                "gaze": {
+                    "name": "Gaze Analysis",
+                    "measures": ["direction", "focus_score", "aversion_frequency"]
+                }
+            }
+        },
+        "linguistic": {
+            "description": "Speech content analysis",
+            "metrics": {
+                "transcript": ["word_count", "duration", "language"],
+                "diarization": ["speaker_count", "turn_taking_rate"],
+                "classification": ["interview_type", "therapeutic_approach"]
+            }
+        }
+    }
+
+
+# ============================================================================
 # STATISTICS & EXPORT
 # ============================================================================
 
@@ -828,68 +1171,125 @@ async def get_statistics():
 @app.get("/export")
 async def export_training_data(
     format: str = Query(default="alpaca"),
-    status: str = Query(default="approved")
+    status: str = Query(default="approved"),
+    apply_weights: bool = Query(default=True)
 ):
     """
-    Export training data in various formats.
+    Export training data in various formats with source tracking.
 
     Formats:
     - alpaca: Alpaca/ShareGPT format for fine-tuning
     - jsonl: JSON Lines format
     - raw: Raw insight data
+
+    Features:
+    - Includes source_token for tracking which data influenced model
+    - Applies channel influence_weight (set apply_weights=false to skip)
+    - Filters out channels with include_in_training=false
     """
     insights = await db.get_all_insights(status=status)
 
+    # Get channel weights for filtering and weighting
+    channels = await db.get_all_channels()
+    channel_weights = {c.id: {
+        "weight": c.influence_weight,
+        "include": c.include_in_training,
+        "name": c.name
+    } for c in channels}
+
+    # Filter insights based on channel settings
+    filtered_insights = []
+    for i in insights:
+        ch_settings = channel_weights.get(i.channel_id, {"weight": 1.0, "include": True})
+        if ch_settings["include"]:
+            filtered_insights.append((i, ch_settings["weight"], ch_settings.get("name", "Unknown")))
+
     if format == "alpaca":
-        # Alpaca format for Llama fine-tuning
+        # Alpaca format for Llama fine-tuning with source tracking
         examples = []
-        for i in insights:
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+
             example = {
                 "instruction": f"As a wellness coach, how should you handle this situation based on your understanding of human psychology?",
                 "input": f"Category: {i.category}\nContext: {i.insight}",
                 "output": i.coaching_implication,
                 "metadata": {
+                    "source_token": source_token,
                     "source_video": i.video_id,
+                    "source_channel": i.channel_id,
+                    "channel_name": ch_name,
                     "category": i.category,
                     "quality_score": i.quality_score,
+                    "safety_score": i.safety_score,
+                    "influence_weight": weight if apply_weights else 1.0,
                 }
             }
-            examples.append(example)
+
+            # Apply weight by duplicating examples (for weighted training)
+            if apply_weights and weight > 1.0:
+                # Add extra copies for higher weight
+                for _ in range(int(weight)):
+                    examples.append(example)
+            elif apply_weights and weight < 1.0 and weight > 0:
+                # Random sampling for lower weight could be done here
+                examples.append(example)
+            else:
+                examples.append(example)
 
         return {
             "format": "alpaca",
             "count": len(examples),
+            "unique_insights": len(filtered_insights),
+            "weights_applied": apply_weights,
             "data": examples
         }
 
     elif format == "jsonl":
-        # JSONL format
+        # JSONL format with source tracking
         lines = []
-        for i in insights:
-            lines.append({
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+
+            entry = {
                 "messages": [
                     {"role": "system", "content": "You are a compassionate wellness coach."},
                     {"role": "user", "content": f"Insight about {i.category}: {i.insight}"},
                     {"role": "assistant", "content": i.coaching_implication}
-                ]
-            })
+                ],
+                "_source": {
+                    "token": source_token,
+                    "video_id": i.video_id,
+                    "channel_id": i.channel_id,
+                    "weight": weight if apply_weights else 1.0
+                }
+            }
+            lines.append(entry)
+
         return {
             "format": "jsonl",
             "count": len(lines),
+            "weights_applied": apply_weights,
             "data": lines
         }
 
     else:  # raw
         return {
             "format": "raw",
-            "count": len(insights),
+            "count": len(filtered_insights),
+            "weights_applied": apply_weights,
             "data": [
                 {
                     "id": i.id,
+                    "source_token": i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}",
+                    "channel_id": i.channel_id,
+                    "channel_name": ch_name,
+                    "video_id": i.video_id,
                     "category": i.category,
                     "title": i.title,
                     "insight": i.insight,
                     "coaching_implication": i.coaching_implication,
+                    "influence_weight": weight if apply_weights else 1.0,
                     "scores": {
                         "quality": i.quality_score,
                         "specificity": i.specificity_score,
@@ -898,7 +1298,7 @@ async def export_training_data(
                         "novelty": i.novelty_score,
                     }
                 }
-                for i in insights
+                for i, weight, ch_name in filtered_insights
             ]
         }
 

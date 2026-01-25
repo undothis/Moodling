@@ -54,6 +54,11 @@ class ChannelModel(Base):
     last_processed = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # Influence/tuning controls
+    influence_weight = Column(Float, default=1.0)  # 0.0 to 2.0 - how much this channel affects training
+    include_in_training = Column(Boolean, default=True)  # Quick toggle to exclude from exports
+    notes = Column(Text, nullable=True)  # Notes about this channel's contribution
+
     # Relationships
     videos = relationship("VideoModel", back_populates="channel")
 
@@ -121,6 +126,10 @@ class InsightModel(Base):
     category = Column(String, nullable=False)
     coaching_implication = Column(Text, nullable=False)
     timestamp = Column(String, nullable=True)
+
+    # Source tracking for training data provenance
+    source_token = Column(String, nullable=True)  # Unique token: {channel_short}_{video_short}_{insight_short}
+    channel_id = Column(String, nullable=True)  # Direct channel reference for quick filtering
 
     # Scores
     quality_score = Column(Float, default=0.0)
@@ -302,6 +311,163 @@ class DatabaseService:
                 "pending_insights": status_counts.get("pending", 0),
                 "rejected_insights": status_counts.get("rejected", 0),
             }
+
+    @staticmethod
+    async def get_insights_by_channel(channel_id: str) -> List[InsightModel]:
+        """Get all insights from a specific channel."""
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(InsightModel)
+                .where(InsightModel.channel_id == channel_id)
+                .order_by(InsightModel.created_at.desc())
+            )
+            return result.scalars().all()
+
+    @staticmethod
+    async def get_insights_by_video(video_id: str) -> List[InsightModel]:
+        """Get all insights from a specific video."""
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(InsightModel)
+                .where(InsightModel.video_id == video_id)
+                .order_by(InsightModel.created_at.desc())
+            )
+            return result.scalars().all()
+
+    @staticmethod
+    async def delete_insights_by_channel(channel_id: str) -> int:
+        """Delete all insights from a specific channel. Returns count deleted."""
+        async with async_session() as session:
+            from sqlalchemy import delete, select, func
+
+            # Count first
+            count_result = await session.execute(
+                select(func.count(InsightModel.id))
+                .where(InsightModel.channel_id == channel_id)
+            )
+            count = count_result.scalar() or 0
+
+            # Delete
+            await session.execute(
+                delete(InsightModel).where(InsightModel.channel_id == channel_id)
+            )
+            await session.commit()
+            return count
+
+    @staticmethod
+    async def delete_insights_by_video(video_id: str) -> int:
+        """Delete all insights from a specific video. Returns count deleted."""
+        async with async_session() as session:
+            from sqlalchemy import delete, select, func
+
+            # Count first
+            count_result = await session.execute(
+                select(func.count(InsightModel.id))
+                .where(InsightModel.video_id == video_id)
+            )
+            count = count_result.scalar() or 0
+
+            # Delete
+            await session.execute(
+                delete(InsightModel).where(InsightModel.video_id == video_id)
+            )
+            await session.commit()
+            return count
+
+    @staticmethod
+    async def get_channel_statistics() -> List[dict]:
+        """Get detailed statistics for each channel."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            channels = await session.execute(select(ChannelModel))
+            channel_list = channels.scalars().all()
+
+            stats = []
+            for channel in channel_list:
+                # Get insight counts and averages for this channel
+                insight_stats = await session.execute(
+                    select(
+                        func.count(InsightModel.id).label('total'),
+                        func.avg(InsightModel.quality_score).label('avg_quality'),
+                        func.avg(InsightModel.safety_score).label('avg_safety'),
+                        func.avg(InsightModel.confidence).label('avg_confidence'),
+                    ).where(InsightModel.channel_id == channel.id)
+                )
+                row = insight_stats.fetchone()
+
+                # Get status breakdown
+                status_counts = await session.execute(
+                    select(InsightModel.status, func.count(InsightModel.id))
+                    .where(InsightModel.channel_id == channel.id)
+                    .group_by(InsightModel.status)
+                )
+                status_dict = {s[0]: s[1] for s in status_counts}
+
+                # Get category breakdown
+                category_counts = await session.execute(
+                    select(InsightModel.category, func.count(InsightModel.id))
+                    .where(InsightModel.channel_id == channel.id)
+                    .group_by(InsightModel.category)
+                )
+                category_dict = {c[0]: c[1] for c in category_counts}
+
+                stats.append({
+                    "channel_id": channel.id,
+                    "channel_name": channel.name,
+                    "channel_url": channel.url,
+                    "influence_weight": channel.influence_weight,
+                    "include_in_training": channel.include_in_training,
+                    "trust_level": channel.trust_level,
+                    "total_insights": row.total if row else 0,
+                    "approved_insights": status_dict.get("approved", 0),
+                    "pending_insights": status_dict.get("pending", 0),
+                    "rejected_insights": status_dict.get("rejected", 0),
+                    "avg_quality": round(row.avg_quality, 1) if row and row.avg_quality else 0,
+                    "avg_safety": round(row.avg_safety, 1) if row and row.avg_safety else 0,
+                    "avg_confidence": round(row.avg_confidence * 100, 1) if row and row.avg_confidence else 0,
+                    "category_distribution": category_dict,
+                    "videos_processed": channel.videos_processed,
+                })
+
+            return stats
+
+    @staticmethod
+    async def get_video_statistics() -> List[dict]:
+        """Get statistics for each processed video."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            # Get unique video IDs with insights
+            video_ids = await session.execute(
+                select(InsightModel.video_id).distinct()
+            )
+
+            stats = []
+            for (video_id,) in video_ids:
+                insight_stats = await session.execute(
+                    select(
+                        func.count(InsightModel.id).label('total'),
+                        func.avg(InsightModel.quality_score).label('avg_quality'),
+                        func.avg(InsightModel.safety_score).label('avg_safety'),
+                        InsightModel.channel_id,
+                    ).where(InsightModel.video_id == video_id)
+                    .group_by(InsightModel.channel_id)
+                )
+                row = insight_stats.fetchone()
+
+                if row:
+                    stats.append({
+                        "video_id": video_id,
+                        "channel_id": row.channel_id,
+                        "total_insights": row.total,
+                        "avg_quality": round(row.avg_quality, 1) if row.avg_quality else 0,
+                        "avg_safety": round(row.avg_safety, 1) if row.avg_safety else 0,
+                    })
+
+            return stats
 
 
 # Export database service
