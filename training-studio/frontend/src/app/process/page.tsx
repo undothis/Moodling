@@ -6,6 +6,7 @@ import {
   fetchChannels,
   fetchChannelVideos,
   processVideo,
+  processVideoSimple,
   fetchJobs,
 } from '@/lib/api';
 import {
@@ -157,6 +158,8 @@ export default function ProcessPage() {
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [processingVideos, setProcessingVideos] = useState<Set<string>>(new Set());
+  const [simpleMode, setSimpleMode] = useState(true);  // Default to simple mode
+  const [autoApprove, setAutoApprove] = useState(false);
   const [skipFacial, setSkipFacial] = useState(true);
   const [skipProsody, setSkipProsody] = useState(false);
 
@@ -178,7 +181,10 @@ export default function ProcessPage() {
   });
 
   const { mutate: startProcess } = useMutation({
-    mutationFn: (url: string) => processVideo(url, { skipFacial, skipProsody }),
+    mutationFn: (url: string) =>
+      simpleMode
+        ? processVideoSimple(url, { autoApprove })
+        : processVideo(url, { skipFacial, skipProsody }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     },
@@ -237,25 +243,50 @@ export default function ProcessPage() {
         </div>
 
         {/* Options */}
-        <div className="flex items-center gap-6 mt-4">
+        <div className="flex flex-wrap items-center gap-6 mt-4">
           <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
               type="checkbox"
-              checked={skipFacial}
-              onChange={(e) => setSkipFacial(e.target.checked)}
+              checked={simpleMode}
+              onChange={(e) => setSimpleMode(e.target.checked)}
               className="rounded border-gray-300 text-leaf-500 focus:ring-leaf-500"
             />
-            Skip facial analysis (faster)
+            <span className="font-medium">Simple Mode</span>
+            <span className="text-xs text-gray-400">(YouTube transcript + Claude only, much faster)</span>
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={skipProsody}
-              onChange={(e) => setSkipProsody(e.target.checked)}
-              className="rounded border-gray-300 text-leaf-500 focus:ring-leaf-500"
-            />
-            Skip prosody extraction
-          </label>
+          {simpleMode && (
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={autoApprove}
+                onChange={(e) => setAutoApprove(e.target.checked)}
+                className="rounded border-gray-300 text-leaf-500 focus:ring-leaf-500"
+              />
+              Auto-approve 85+ quality
+            </label>
+          )}
+          {!simpleMode && (
+            <>
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={skipFacial}
+                  onChange={(e) => setSkipFacial(e.target.checked)}
+                  className="rounded border-gray-300 text-leaf-500 focus:ring-leaf-500"
+                />
+                Skip facial analysis
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={skipProsody}
+                  onChange={(e) => setSkipProsody(e.target.checked)}
+                  className="rounded border-gray-300 text-leaf-500 focus:ring-leaf-500"
+                />
+                Skip prosody extraction
+              </label>
+            </>
+          )}
         </div>
       </div>
 

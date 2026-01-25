@@ -1,7 +1,7 @@
 'use client';
 
 import './globals.css';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -13,8 +13,14 @@ import {
   BarChart3,
   Download,
   Leaf,
+  Key,
+  Check,
+  X,
+  Sliders,
+  FlaskConical,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { getApiKeyStatus, setApiKey } from '@/lib/api';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,8 +28,85 @@ const navItems = [
   { href: '/process', label: 'Process', icon: Play },
   { href: '/review', label: 'Review', icon: CheckSquare },
   { href: '/stats', label: 'Statistics', icon: BarChart3 },
+  { href: '/tuning', label: 'Tuning', icon: Sliders },
+  { href: '/test', label: 'Test Model', icon: FlaskConical },
   { href: '/export', label: 'Export', icon: Download },
 ];
+
+function ApiKeyConfig() {
+  const queryClient = useQueryClient();
+  const [showInput, setShowInput] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+
+  const { data: keyStatus } = useQuery({
+    queryKey: ['api-key-status'],
+    queryFn: getApiKeyStatus,
+  });
+
+  const { mutate: saveKey, isPending } = useMutation({
+    mutationFn: setApiKey,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-key-status'] });
+      setShowInput(false);
+      setApiKeyInput('');
+    },
+  });
+
+  const handleSave = () => {
+    if (apiKeyInput.trim()) {
+      saveKey(apiKeyInput.trim());
+    }
+  };
+
+  return (
+    <div className="p-4 border-t border-gray-200">
+      <div className="flex items-center gap-2 mb-2">
+        <Key className="w-4 h-4 text-gray-400" />
+        <span className="text-xs font-medium text-gray-600">Claude API Key</span>
+      </div>
+
+      {showInput ? (
+        <div className="space-y-2">
+          <input
+            type="password"
+            value={apiKeyInput}
+            onChange={(e) => setApiKeyInput(e.target.value)}
+            placeholder="sk-ant-..."
+            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-leaf-500"
+          />
+          <div className="flex gap-1">
+            <button
+              onClick={handleSave}
+              disabled={isPending || !apiKeyInput.trim()}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-leaf-500 text-white text-xs rounded hover:bg-leaf-600 disabled:opacity-50"
+            >
+              <Check className="w-3 h-3" />
+              Save
+            </button>
+            <button
+              onClick={() => setShowInput(false)}
+              className="px-2 py-1 text-gray-500 text-xs hover:text-gray-700"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowInput(true)}
+          className={clsx(
+            'w-full px-2 py-1 text-xs rounded border transition-colors',
+            keyStatus?.configured
+              ? 'border-green-300 bg-green-50 text-green-700'
+              : 'border-yellow-300 bg-yellow-50 text-yellow-700'
+          )}
+        >
+          {keyStatus?.configured ? `Configured ${keyStatus.masked_key}` : 'Click to configure'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Sidebar() {
   const pathname = usePathname();
@@ -64,6 +147,9 @@ function Sidebar() {
           );
         })}
       </nav>
+
+      {/* API Key Config */}
+      <ApiKeyConfig />
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">

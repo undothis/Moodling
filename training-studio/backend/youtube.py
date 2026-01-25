@@ -93,16 +93,22 @@ class YouTubeService:
         Uses yt-dlp to extract channel metadata.
         """
         parsed = self.parse_channel_url(url)
+        channel_url = parsed["url"]
+
+        print(f"[YouTube] Getting channel info for: {channel_url}")
 
         try:
-            # Use yt-dlp to get channel info
+            # Use yt-dlp to get channel info by fetching first video
             cmd = [
                 "yt-dlp",
                 "--dump-json",
-                "--playlist-items", "1",  # Just get first video for channel info
+                "--playlist-items", "1",
                 "--flat-playlist",
-                parsed["url"] + "/videos"
+                "--no-warnings",
+                f"{channel_url}/videos"
             ]
+
+            print(f"[YouTube] Running: {' '.join(cmd)}")
 
             result = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -111,9 +117,17 @@ class YouTubeService:
             )
             stdout, stderr = await result.communicate()
 
-            if result.returncode != 0:
-                # Try alternate approach - get channel page directly
-                cmd = ["yt-dlp", "--dump-json", "--playlist-items", "0", parsed["url"]]
+            if result.returncode != 0 or not stdout.strip():
+                print(f"[YouTube] First attempt failed, trying alternate approach...")
+                # Try without /videos suffix
+                cmd = [
+                    "yt-dlp",
+                    "--dump-json",
+                    "--playlist-items", "1",
+                    "--flat-playlist",
+                    "--no-warnings",
+                    channel_url
+                ]
                 result = await asyncio.create_subprocess_exec(
                     *cmd,
                     stdout=asyncio.subprocess.PIPE,
@@ -121,23 +135,36 @@ class YouTubeService:
                 )
                 stdout, stderr = await result.communicate()
 
-            if stdout:
-                data = json.loads(stdout.decode())
+            if stdout.strip():
+                # Parse first line of JSON output
+                first_line = stdout.decode().strip().split('\n')[0]
+                data = json.loads(first_line)
+
+                channel_name = data.get("channel") or data.get("uploader") or data.get("channel_id") or "Unknown"
+                channel_id = data.get("channel_id") or str(uuid.uuid4())[:8]
+
+                print(f"[YouTube] Found channel: {channel_name} ({channel_id})")
+
                 return {
-                    "channel_id": data.get("channel_id", ""),
-                    "channel_name": data.get("channel", data.get("uploader", "")),
-                    "channel_url": data.get("channel_url", parsed["url"]),
+                    "channel_id": channel_id,
+                    "channel_name": channel_name,
+                    "channel_url": data.get("channel_url") or channel_url,
                     "subscriber_count": data.get("channel_follower_count"),
                 }
+            else:
+                print(f"[YouTube] No output from yt-dlp. stderr: {stderr.decode()}")
 
         except Exception as e:
             print(f"[YouTube] Error getting channel info: {e}")
 
-        # Fallback to parsed info
+        # Fallback to parsed info - extract name from handle if available
+        fallback_name = parsed.get("handle", "").lstrip("@") or parsed.get("name") or "Unknown Channel"
+        print(f"[YouTube] Using fallback name: {fallback_name}")
+
         return {
             "channel_id": parsed.get("channel_id", str(uuid.uuid4())[:8]),
-            "channel_name": parsed.get("handle", parsed.get("name", "Unknown")),
-            "channel_url": parsed["url"],
+            "channel_name": fallback_name,
+            "channel_url": channel_url,
         }
 
     async def fetch_channel_videos(
@@ -157,14 +184,24 @@ class YouTubeService:
         - balanced: 40% popular + 40% recent + 20% random
         """
         try:
+            # Normalize the URL - ensure it ends with /videos for channel listings
+            normalized_url = channel_url.rstrip('/')
+            if not normalized_url.endswith('/videos'):
+                normalized_url = f"{normalized_url}/videos"
+
+            print(f"[YouTube] Fetching videos from: {normalized_url}")
+
             # Use yt-dlp to get playlist info
             cmd = [
                 "yt-dlp",
                 "--dump-json",
                 "--flat-playlist",
                 "--playlist-end", str(max_videos * 2),  # Get extra for filtering
-                f"{channel_url}/videos"
+                "--no-warnings",
+                normalized_url
             ]
+
+            print(f"[YouTube] Running: {' '.join(cmd)}")
 
             result = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -174,8 +211,28 @@ class YouTubeService:
             stdout, stderr = await result.communicate()
 
             if result.returncode != 0:
-                print(f"[YouTube] Error fetching videos: {stderr.decode()}")
-                return []
+                stderr_text = stderr.decode()
+                print(f"[YouTube] Error fetching videos: {stderr_text}")
+
+                # Try alternate URL format if first attempt failed
+                if "@" in channel_url:
+                    # Try without /videos suffix for @handle URLs
+                    alt_url = channel_url.rstrip('/')
+                    print(f"[YouTube] Retrying with: {alt_url}")
+                    cmd[6] = alt_url  # Replace URL in command
+
+                    result = await asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await result.communicate()
+
+                    if result.returncode != 0:
+                        print(f"[YouTube] Retry also failed: {stderr.decode()}")
+                        return []
+                else:
+                    return []
 
             # Parse JSON lines
             videos = []

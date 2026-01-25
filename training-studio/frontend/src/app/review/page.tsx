@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchInsights, reviewInsight, deleteInsight, fetchCategories } from '@/lib/api';
+import { fetchInsights, reviewInsight, deleteInsight, fetchCategories, batchApproveInsights } from '@/lib/api';
 import {
   Check,
   X,
@@ -219,8 +219,18 @@ export default function ReviewPage() {
     },
   });
 
+  const { mutate: batchApprove, isPending: isBatchApproving } = useMutation({
+    mutationFn: (minQuality: number) => batchApproveInsights(minQuality),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      alert(`Approved ${data.approved_count} insights with quality >= 85`);
+    },
+  });
+
   const pendingCount = insights?.filter((i) => i.status === 'pending').length || 0;
   const flaggedCount = insights?.filter((i) => i.flagged_for_review).length || 0;
+  const highQualityPending = insights?.filter((i) => i.status === 'pending' && i.quality_score >= 85).length || 0;
 
   return (
     <div className="p-8">
@@ -246,34 +256,52 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-500" />
+      {/* Filters and Batch Actions */}
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500 text-sm"
+            >
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500 text-sm"
           >
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="">All Categories</option>
+            {categories &&
+              Object.keys(categories).map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat.replace(/_/g, ' ')}
+                </option>
+              ))}
           </select>
         </div>
 
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500 text-sm"
-        >
-          <option value="">All Categories</option>
-          {categories &&
-            Object.keys(categories).map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.replace(/_/g, ' ')}
-              </option>
-            ))}
-        </select>
+        {/* Batch Approve Button */}
+        {statusFilter === 'pending' && highQualityPending > 0 && (
+          <button
+            onClick={() => batchApprove(85)}
+            disabled={isBatchApproving}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors text-sm font-medium"
+          >
+            {isBatchApproving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            Approve All 85+ ({highQualityPending})
+          </button>
+        )}
       </div>
 
       {/* Insights List */}
