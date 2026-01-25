@@ -49,3 +49,5 @@ coverage/
 *.log
 tmp/
 temp/
+training-studio/backend/.env.save
+training-studio/frontend/next-env.d.ts

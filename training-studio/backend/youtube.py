@@ -191,7 +191,7 @@ class YouTubeService:
                         videos.append(VideoMetadata(
                             id=str(uuid.uuid4()),
                             video_id=data.get("id", ""),
-                            channel_id=data.get("channel_id", ""),
+                            channel_id=data.get("channel_id") or "unknown",
                             title=data.get("title", ""),
                             description=data.get("description", ""),
                             duration_seconds=duration or 0,
@@ -471,7 +471,7 @@ class YouTubeService:
                 return VideoMetadata(
                     id=str(uuid.uuid4()),
                     video_id=data.get("id", video_id),
-                    channel_id=data.get("channel_id", ""),
+                    channel_id=data.get("channel_id") or "unknown",
                     title=data.get("title", ""),
                     description=data.get("description", ""),
                     duration_seconds=data.get("duration", 0),
