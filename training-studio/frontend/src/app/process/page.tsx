@@ -19,6 +19,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  PlayCircle,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -26,10 +29,16 @@ function VideoCard({
   video,
   isProcessing,
   onProcess,
+  isSelected,
+  onToggleSelect,
+  showSelect,
 }: {
   video: any;
   isProcessing: boolean;
   onProcess: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
+  showSelect?: boolean;
 }) {
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -44,7 +53,10 @@ function VideoCard({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+    <div className={clsx(
+      "bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow",
+      isSelected ? "border-leaf-500 ring-2 ring-leaf-200" : "border-gray-100"
+    )}>
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gray-100">
         {video.thumbnail_url ? (
@@ -61,6 +73,18 @@ function VideoCard({
         <span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
           {formatDuration(video.duration_seconds)}
         </span>
+        {showSelect && (
+          <button
+            onClick={onToggleSelect}
+            className="absolute top-2 left-2 p-1 bg-white/90 rounded shadow hover:bg-white transition-colors"
+          >
+            {isSelected ? (
+              <CheckSquare className="w-5 h-5 text-leaf-600" />
+            ) : (
+              <Square className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -162,6 +186,8 @@ export default function ProcessPage() {
   const [autoApprove, setAutoApprove] = useState(false);
   const [skipFacial, setSkipFacial] = useState(true);
   const [skipProsody, setSkipProsody] = useState(false);
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
+  const [batchMode, setBatchMode] = useState(false);
 
   const { data: channels } = useQuery({
     queryKey: ['channels'],
@@ -208,6 +234,48 @@ export default function ProcessPage() {
     if (!videoUrl) return;
     startProcess(videoUrl);
     setVideoUrl('');
+  };
+
+  const toggleVideoSelection = (videoId: string) => {
+    setSelectedVideos(prev => {
+      const next = new Set(prev);
+      if (next.has(videoId)) next.delete(videoId);
+      else next.add(videoId);
+      return next;
+    });
+  };
+
+  const selectAllVideos = () => {
+    if (!channelVideos?.videos) return;
+    setSelectedVideos(new Set(channelVideos.videos.map(v => v.video_id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedVideos(new Set());
+  };
+
+  const handleBatchProcess = async () => {
+    if (selectedVideos.size === 0) return;
+
+    // Mark all selected videos as processing
+    setProcessingVideos(prev => {
+      const next = new Set(prev);
+      selectedVideos.forEach(id => next.add(id));
+      return next;
+    });
+
+    // Process each video with a small delay between them
+    const videoIds = Array.from(selectedVideos);
+    for (const videoId of videoIds) {
+      const url = `https://www.youtube.com/watch?v=${videoId}`;
+      startProcess(url);
+      // Small delay to avoid overwhelming the backend
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Clear selection after starting batch
+    clearSelection();
+    setBatchMode(false);
   };
 
   const activeJobs = jobs?.filter((j) => !['completed', 'failed'].includes(j.status)) || [];
@@ -306,13 +374,35 @@ export default function ProcessPage() {
 
       {/* Browse Channel Videos */}
       <div className="bg-white rounded-xl p-6 border border-gray-100">
-        <h2 className="font-semibold text-gray-900 mb-4">Browse Channel Videos</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Browse Channel Videos</h2>
+          {channelVideos?.videos && channelVideos.videos.length > 0 && (
+            <button
+              onClick={() => {
+                setBatchMode(!batchMode);
+                if (!batchMode) clearSelection();
+              }}
+              className={clsx(
+                "px-4 py-2 text-sm rounded-lg flex items-center gap-2 transition-colors",
+                batchMode
+                  ? "bg-leaf-500 text-white hover:bg-leaf-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              )}
+            >
+              <PlayCircle className="w-4 h-4" />
+              {batchMode ? 'Exit Batch Mode' : 'Batch Process'}
+            </button>
+          )}
+        </div>
 
         {/* Channel Selector */}
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap gap-4 items-center">
           <select
             value={selectedChannel || ''}
-            onChange={(e) => setSelectedChannel(e.target.value || null)}
+            onChange={(e) => {
+              setSelectedChannel(e.target.value || null);
+              clearSelection();
+            }}
             className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500"
           >
             <option value="">Select a channel...</option>
@@ -322,6 +412,34 @@ export default function ProcessPage() {
               </option>
             ))}
           </select>
+
+          {/* Batch controls */}
+          {batchMode && channelVideos?.videos && channelVideos.videos.length > 0 && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={selectAllVideos}
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Select All ({channelVideos.videos.length})
+              </button>
+              <button
+                onClick={clearSelection}
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Clear
+              </button>
+              {selectedVideos.size > 0 && (
+                <button
+                  onClick={handleBatchProcess}
+                  disabled={processingVideos.size > 0}
+                  className="px-4 py-1.5 text-sm bg-leaf-500 text-white rounded-lg hover:bg-leaf-600 disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" />
+                  Process {selectedVideos.size} Videos
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Videos Grid */}
@@ -344,6 +462,9 @@ export default function ProcessPage() {
                     video={video}
                     isProcessing={processingVideos.has(video.video_id)}
                     onProcess={() => handleProcessVideo(video.video_id)}
+                    isSelected={selectedVideos.has(video.video_id)}
+                    onToggleSelect={() => toggleVideoSelection(video.video_id)}
+                    showSelect={batchMode}
                   />
                 ))}
               </div>

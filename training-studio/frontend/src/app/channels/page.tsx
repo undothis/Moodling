@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchChannels,
@@ -15,6 +15,9 @@ import {
   Loader2,
   ExternalLink,
   Star,
+  ChevronDown,
+  ChevronUp,
+  Filter,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -192,34 +195,79 @@ function ChannelCard({
 function RecommendedChannelCard({
   channel,
   onAdd,
+  isAdded,
 }: {
   channel: { name: string; category: string; url: string };
   onAdd: () => void;
+  isAdded: boolean;
 }) {
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-100 hover:border-leaf-200 transition-colors">
+    <div className={clsx(
+      "bg-white rounded-lg p-3 border transition-colors",
+      isAdded ? "border-green-200 bg-green-50" : "border-gray-100 hover:border-leaf-200"
+    )}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Star className="w-4 h-4 text-yellow-500" />
-          <div>
-            <p className="font-medium text-gray-900 text-sm">{channel.name}</p>
-            <p className="text-xs text-gray-500">{channel.category}</p>
-          </div>
+        <div className="flex items-center gap-2 min-w-0">
+          <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+          <p className="font-medium text-gray-900 text-sm truncate">{channel.name}</p>
         </div>
-        <button
-          onClick={onAdd}
-          className="px-3 py-1 text-xs bg-leaf-50 text-leaf-700 rounded-full hover:bg-leaf-100 transition-colors"
-        >
-          Add
-        </button>
+        {isAdded ? (
+          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full flex-shrink-0">
+            Added
+          </span>
+        ) : (
+          <button
+            onClick={onAdd}
+            className="px-3 py-1 text-xs bg-leaf-50 text-leaf-700 rounded-full hover:bg-leaf-100 transition-colors flex-shrink-0"
+          >
+            Add
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  // Emotional Experience
+  philosophy_meaning: 'Philosophy & Meaning',
+  relationships_love: 'Relationships & Love',
+  therapy_mental_health: 'Therapy & Mental Health',
+  grief_loss: 'Grief & Loss',
+  vulnerability_shame: 'Vulnerability & Shame',
+  addiction_recovery: 'Addiction & Recovery',
+  trauma_healing: 'Trauma & Healing',
+  // Cognitive Experience
+  neurodivergent: 'Neurodivergent Perspectives',
+  psychology_behavior: 'Psychology & Behavior',
+  // Communication Patterns
+  communication_conflict: 'Communication & Conflict',
+  // Life Transitions
+  life_transitions: 'Life Transitions',
+  parenting_family: 'Parenting & Family',
+  // Wisdom & Depth
+  spirituality_faith: 'Spirituality & Faith',
+  deep_conversations: 'Deep Conversations',
+  human_stories: 'Human Stories',
+  // Wellness
+  wellness_selfcare: 'Wellness & Self-Care',
+  // Legacy categories
+  general: 'General',
+  therapy: 'Therapy',
+  mental_health: 'Mental Health',
+  relationships: 'Relationships',
+  grief: 'Grief',
+  addiction: 'Addiction',
+  wisdom: 'Wisdom',
+  vulnerability: 'Vulnerability',
+};
+
 export default function ChannelsPage() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showAllRecommended, setShowAllRecommended] = useState(false);
 
   const { data: channels, isLoading } = useQuery({
     queryKey: ['channels'],
@@ -244,6 +292,37 @@ export default function ChannelsPage() {
       queryClient.invalidateQueries({ queryKey: ['channels'] });
     },
   });
+
+  // Group recommended channels by category
+  const groupedRecommended = useMemo(() => {
+    if (!recommended) return {};
+    return recommended.reduce((acc, ch) => {
+      const cat = ch.category || 'general';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(ch);
+      return acc;
+    }, {} as Record<string, typeof recommended>);
+  }, [recommended]);
+
+  // Get unique categories
+  const categories = useMemo(() => {
+    return Object.keys(groupedRecommended).sort();
+  }, [groupedRecommended]);
+
+  // Check if a channel is already added
+  const addedChannelUrls = useMemo(() => {
+    if (!channels) return new Set<string>();
+    return new Set(channels.map(ch => ch.url.replace('https://youtube.com/', '').replace('https://www.youtube.com/', '')));
+  }, [channels]);
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   return (
     <div className="p-8">
@@ -299,26 +378,113 @@ export default function ChannelsPage() {
 
       {/* Recommended Channels */}
       {recommended && recommended.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Recommended Channels
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recommended.slice(0, 8).map((channel) => (
-              <RecommendedChannelCard
-                key={channel.url}
-                channel={channel}
-                onAdd={() =>
-                  add({
-                    url: `https://youtube.com/${channel.url}`,
-                    category: channel.category,
-                    trust_level: 'medium',
-                    extraction_categories: [],
-                  })
-                }
-              />
-            ))}
+        <div className="bg-white rounded-xl p-6 border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Recommended Channels
+              </h2>
+              <p className="text-sm text-gray-500">
+                {recommended.length} curated channels across {categories.length} categories
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_LABELS[cat] || cat} ({groupedRecommended[cat]?.length})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setShowAllRecommended(!showAllRecommended)}
+                className="px-4 py-1.5 text-sm bg-leaf-50 text-leaf-700 rounded-lg hover:bg-leaf-100 flex items-center gap-2"
+              >
+                {showAllRecommended ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Show All
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {showAllRecommended ? (
+            // Full categorized view
+            <div className="space-y-4">
+              {(categoryFilter === 'all' ? categories : [categoryFilter]).map(cat => (
+                <div key={cat} className="border border-gray-100 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleCategory(cat)}
+                    className="w-full px-4 py-3 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">
+                        {CATEGORY_LABELS[cat] || cat}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
+                        {groupedRecommended[cat]?.length} channels
+                      </span>
+                    </div>
+                    {expandedCategories.has(cat) ? (
+                      <ChevronUp className="w-4 h-4 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
+                    )}
+                  </button>
+                  {(expandedCategories.has(cat) || categoryFilter !== 'all') && (
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {groupedRecommended[cat]?.map((channel) => (
+                        <RecommendedChannelCard
+                          key={channel.url}
+                          channel={channel}
+                          isAdded={addedChannelUrls.has(channel.url)}
+                          onAdd={() =>
+                            add({
+                              url: `https://youtube.com/${channel.url}`,
+                              category: channel.category,
+                              trust_level: 'high',
+                              extraction_categories: [],
+                            })
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Compact preview (first 12)
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {recommended.slice(0, 12).map((channel) => (
+                <RecommendedChannelCard
+                  key={channel.url}
+                  channel={channel}
+                  isAdded={addedChannelUrls.has(channel.url)}
+                  onAdd={() =>
+                    add({
+                      url: `https://youtube.com/${channel.url}`,
+                      category: channel.category,
+                      trust_level: 'high',
+                      extraction_categories: [],
+                    })
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
