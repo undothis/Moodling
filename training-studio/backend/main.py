@@ -1113,8 +1113,9 @@ class ApiKeyRequest(BaseModel):
 @app.post("/config/api-key")
 async def set_api_key(request: ApiKeyRequest):
     """Set the Anthropic API key (stored in memory, not persisted)."""
-    if not request.api_key.startswith("sk-ant-"):
-        raise HTTPException(status_code=400, detail="Invalid API key format")
+    # Accept keys starting with sk-ant- or sk- (newer format)
+    if not (request.api_key.startswith("sk-ant-") or request.api_key.startswith("sk-")):
+        raise HTTPException(status_code=400, detail="Invalid API key format. Key should start with 'sk-'")
 
     # Update the settings in memory
     settings.anthropic_api_key = request.api_key
