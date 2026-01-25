@@ -7,6 +7,8 @@ import {
   addChannel,
   deleteChannel,
   fetchRecommendedChannels,
+  getAIChannelRecommendations,
+  AIChannelRecommendation,
 } from '@/lib/api';
 import {
   Plus,
@@ -21,6 +23,10 @@ import {
   Search,
   Sparkles,
   Info,
+  Wand2,
+  MessageSquare,
+  Lightbulb,
+  CheckCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -288,6 +294,13 @@ export default function ChannelsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
+  // AI Recommendation state
+  const [aiDescription, setAiDescription] = useState('');
+  const [aiRecommendations, setAiRecommendations] = useState<AIChannelRecommendation[]>([]);
+  const [aiTrainingTips, setAiTrainingTips] = useState('');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [showAIRecommender, setShowAIRecommender] = useState(false);
+
   const { data: channels, isLoading } = useQuery({
     queryKey: ['channels'],
     queryFn: fetchChannels,
@@ -370,6 +383,33 @@ export default function ChannelsPage() {
     });
   };
 
+  const handleGetAIRecommendations = async () => {
+    if (!aiDescription.trim()) return;
+
+    setIsLoadingAI(true);
+    try {
+      const response = await getAIChannelRecommendations(aiDescription);
+      if (response.success && response.recommendations) {
+        setAiRecommendations(response.recommendations);
+        setAiTrainingTips(response.training_tips || '');
+      } else {
+        alert(response.error || 'Failed to get recommendations');
+      }
+    } catch (error) {
+      alert('Failed to get AI recommendations. Make sure your Claude API key is configured.');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const handleAddAllAIRecommendations = () => {
+    aiRecommendations.forEach(channel => {
+      if (!addedChannelUrls.has(channel.url)) {
+        handleAddChannel(channel);
+      }
+    });
+  };
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -421,6 +461,144 @@ export default function ChannelsPage() {
           ))}
         </div>
       )}
+
+      {/* AI Channel Recommender */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Wand2 className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                AI Channel Recommender
+              </h2>
+              <p className="text-sm text-gray-600">
+                Describe your AI and get personalized channel recommendations
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAIRecommender(!showAIRecommender)}
+            className="px-4 py-2 text-sm bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {showAIRecommender ? 'Hide' : 'Get Recommendations'}
+          </button>
+        </div>
+
+        {showAIRecommender && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Describe what you want your AI to do:
+              </label>
+              <textarea
+                value={aiDescription}
+                onChange={(e) => setAiDescription(e.target.value)}
+                placeholder="Example: I want to build an AI wellness coach that helps people deal with anxiety, provides coping strategies, and offers empathetic support during difficult times. It should sound warm and understanding, like a therapist friend."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px] resize-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleGetAIRecommendations}
+                disabled={!aiDescription.trim() || isLoadingAI}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoadingAI ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Find Best Channels
+                  </>
+                )}
+              </button>
+
+              {aiRecommendations.length > 0 && (
+                <button
+                  onClick={handleAddAllAIRecommendations}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Add All Recommended
+                </button>
+              )}
+            </div>
+
+            {/* AI Recommendations Results */}
+            {aiRecommendations.length > 0 && (
+              <div className="mt-6 space-y-4">
+                {aiTrainingTips && (
+                  <div className="bg-white rounded-lg p-4 border border-purple-200">
+                    <div className="flex items-start gap-2">
+                      <Lightbulb className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Training Tip</p>
+                        <p className="text-sm text-gray-600 mt-1">{aiTrainingTips}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-sm font-medium text-gray-700">
+                  Recommended channels for your AI ({aiRecommendations.length}):
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {aiRecommendations.map((channel) => (
+                    <div
+                      key={channel.url}
+                      className={clsx(
+                        "bg-white rounded-lg p-4 border transition-colors",
+                        addedChannelUrls.has(channel.url)
+                          ? "border-green-200 bg-green-50"
+                          : "border-purple-200 hover:border-purple-300"
+                      )}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-purple-500" />
+                          <p className="font-medium text-gray-900">{channel.name}</p>
+                        </div>
+                        {addedChannelUrls.has(channel.url) ? (
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
+                            Added
+                          </span>
+                        ) : addingChannels.has(channel.url) ? (
+                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-full flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Adding...
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleAddChannel(channel)}
+                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                      <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full mb-2">
+                        {CATEGORY_LABELS[channel.category] || channel.category}
+                      </span>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <span className="font-medium text-purple-700">Why this channel: </span>
+                        {channel.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Recommended Channels */}
       {recommended && recommended.length > 0 && (

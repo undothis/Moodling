@@ -300,6 +300,91 @@ async def get_recommended_channels():
     return RECOMMENDED_CHANNELS
 
 
+class AIRecommendRequest(BaseModel):
+    description: str = Field(..., description="Description of what the AI should do")
+
+
+@app.post("/recommend-channels-ai")
+async def recommend_channels_ai(request: AIRecommendRequest):
+    """Use Claude to recommend channels based on AI description."""
+    import anthropic
+    import json
+    import re
+
+    # Build channel list for Claude
+    channel_info = []
+    for ch in RECOMMENDED_CHANNELS:
+        channel_info.append(f"- {ch['name']} ({ch['category']}): {ch.get('description', 'No description')}")
+
+    channels_text = "\n".join(channel_info)
+
+    prompt = f"""You are helping select YouTube channels to train an AI coaching assistant.
+
+The user wants to build an AI that: {request.description}
+
+Here are the available channels to choose from:
+
+{channels_text}
+
+Based on the user's description, recommend the TOP 8-10 most relevant channels for training their AI.
+
+For each recommended channel, explain WHY it's a good fit for their specific use case.
+
+Format your response as JSON with this structure:
+{{
+  "recommendations": [
+    {{
+      "name": "Channel Name",
+      "category": "category_key",
+      "reason": "2-3 sentence explanation of why this channel is perfect for their AI"
+    }}
+  ],
+  "training_tips": "1-2 sentences of advice for training this type of AI"
+}}
+
+Only include channels from the list above. Be specific about why each channel matches their needs."""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        # Parse the response
+        response_text = response.content[0].text
+
+        # Find JSON in response
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            result = json.loads(json_match.group())
+
+            # Match recommendations back to full channel data
+            enriched_recommendations = []
+            for rec in result.get("recommendations", []):
+                # Find the full channel data
+                for ch in RECOMMENDED_CHANNELS:
+                    if ch["name"].lower() == rec["name"].lower():
+                        enriched_recommendations.append({
+                            **ch,
+                            "reason": rec.get("reason", "Recommended for your use case")
+                        })
+                        break
+
+            return {
+                "success": True,
+                "recommendations": enriched_recommendations,
+                "training_tips": result.get("training_tips", ""),
+                "original_description": request.description
+            }
+        else:
+            return {"success": False, "error": "Could not parse AI response"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 # ============================================================================
 # CHANNEL MANAGEMENT
 # ============================================================================

@@ -119,6 +119,14 @@ HUGGINGFACE_TOKEN=hf_...
 - Quick topic buttons: therapy sessions, emotional intelligence, life coaching, etc.
 - Find channels that fit MoodLeaf's coaching style
 
+**AI Channel Recommender**
+- Describe what you want your AI to do in natural language
+- Claude analyzes your description and recommends the best channels
+- Each recommendation includes a personalized explanation of WHY it fits your AI
+- Get training tips specific to your use case
+- One-click "Add All Recommended" to add all suggested channels
+- Example: "I want an AI that helps people cope with grief and loss, providing comfort and understanding"
+
 ### Process Videos
 
 **Simple Mode (Recommended)**
