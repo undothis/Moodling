@@ -5,7 +5,7 @@ Ported from TypeScript interfaces in interviewAnalysisService.ts and prosodyExtr
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
 
 
@@ -322,13 +322,21 @@ class SpeakerSegment(BaseModel):
     distress_markers: Optional[DistressMarkers] = None
 
 
+class TranscriptSegment(BaseModel):
+    """A simple transcript segment without speaker info"""
+    text: str
+    start: float
+    end: float
+    confidence: float = 1.0
+
+
 class TranscriptResult(BaseModel):
     """Complete transcription result"""
     text: str
     language: str = "en"
     duration: float
     words: List[WordTimestamp] = Field(default_factory=list)
-    segments: List[SpeakerSegment] = Field(default_factory=list)
+    segments: List[Union[SpeakerSegment, TranscriptSegment]] = Field(default_factory=list)
 
 
 # ============================================================================
