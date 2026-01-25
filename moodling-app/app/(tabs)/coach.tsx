@@ -141,6 +141,7 @@ export default function CoachTabScreen() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
   const voiceControllerRef = useRef<VoiceChatController | null>(null);
+  const wasVoiceInputRef = useRef(false); // Track if last message was from voice
 
   // Typing animation
   const typingAnim = useRef(new Animated.Value(0)).current;
@@ -178,6 +179,7 @@ export default function CoachTabScreen() {
         onMessageReady: (transcript) => {
           // Auto-send when silence detected (if enabled in settings)
           if (transcript.trim()) {
+            wasVoiceInputRef.current = true; // Mark that this was voice input
             handleSendRef.current?.(transcript);
           }
         },
@@ -231,6 +233,11 @@ export default function CoachTabScreen() {
   const handleSend = async (overrideText?: string) => {
     const messageText = overrideText || inputText.trim();
     if (!messageText || isLoading) return;
+
+    // If no override text, this is a manual send (typed), so reset voice flag
+    if (!overrideText) {
+      wasVoiceInputRef.current = false;
+    }
 
     // Add user message
     const userMessage: DisplayMessage = {
@@ -302,10 +309,40 @@ export default function CoachTabScreen() {
       try {
         const ttsSettings = await getTTSSettings();
         if (ttsSettings.enabled) {
-          speakCoachResponse(response.text);
+          // Await TTS to complete before potentially restarting listening
+          await speakCoachResponse(response.text, coachSettings?.persona || 'sage');
+
+          // Auto-listen: restart voice recording after TTS completes
+          if (wasVoiceInputRef.current && voiceControllerRef.current) {
+            const voiceSettings = await getVoiceSettings();
+            if (voiceSettings.autoListen) {
+              console.log('[Coach] Auto-listen: restarting voice recording after TTS');
+              setTimeout(() => {
+                voiceControllerRef.current?.startListening();
+              }, 500);
+            }
+          }
+        } else if (wasVoiceInputRef.current && voiceControllerRef.current) {
+          // No TTS but voice was used - still restart listening if autoListen enabled
+          const voiceSettings = await getVoiceSettings();
+          if (voiceSettings.autoListen) {
+            console.log('[Coach] Auto-listen: restarting voice recording (no TTS)');
+            setTimeout(() => {
+              voiceControllerRef.current?.startListening();
+            }, 300);
+          }
         }
       } catch (ttsError) {
         console.log('[Coach] TTS error (non-blocking):', ttsError);
+        // Even if TTS fails, try to restart listening if voice was used
+        if (wasVoiceInputRef.current && voiceControllerRef.current) {
+          const voiceSettings = await getVoiceSettings();
+          if (voiceSettings.autoListen) {
+            setTimeout(() => {
+              voiceControllerRef.current?.startListening();
+            }, 300);
+          }
+        }
       }
     } catch (error) {
       console.error('[Coach] Failed to send message:', error);
