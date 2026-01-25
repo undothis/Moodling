@@ -2,6 +2,21 @@
 
 ## Executive Summary
 
+### The Goal: Train Llama to Be a Human-Feeling Coach
+
+The Behavioral Analytics System harvests YouTube content to build training data for **fine-tuning Llama** (or other open-source LLMs). The goal is an AI coach that:
+- Knows **WHAT** to say (wisdom from transcripts)
+- Knows **HOW** to say it (aliveness from audio/video)
+- Feels **human**, not robotic
+
+### Yes, We Download Full Videos
+
+This system downloads **full video and audio files** (via yt-dlp), not just transcripts. This is required for:
+- Prosody extraction (pitch, rhythm, pauses)
+- Facial expression analysis
+- Voice quality detection
+- Distress marker identification
+
 The Behavioral Analytics System harvests YouTube content to extract two types of training data:
 
 | Stream | Purpose | What We Extract | Makes AI... |
@@ -622,6 +637,413 @@ Transformation Score: 78/100
 
 ---
 
-*Document Version: 2.0*
+## Part 8: One-Button Processing Pipeline
+
+The goal is simple: **one button to process an interview and get everything**.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ONE-BUTTON INTERVIEW PROCESSING                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   INPUT: Video file or YouTube URL                                          │
+│                                                                              │
+│                         [  PROCESS  ]                                        │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                      PROCESSING STEPS                                │   │
+│   │                                                                      │   │
+│   │   1. Download video + audio (yt-dlp)                                │   │
+│   │   2. Extract audio → WAV file (ffmpeg)                              │   │
+│   │   3. Transcribe with word timestamps (Whisper)                      │   │
+│   │   4. Separate speakers (pyannote diarization)                       │   │
+│   │   5. Extract prosody features (librosa + parselmouth)               │   │
+│   │   6. Detect emotional markers (crying, tremor, voice breaks)        │   │
+│   │   7. Extract facial features from video (MediaPipe + DeepFace)      │   │
+│   │   8. Classify interview type + therapeutic approach                 │   │
+│   │   9. Generate training insights (Claude API)                        │   │
+│   │  10. Score quality on 5 dimensions                                  │   │
+│   │  11. Store in database                                              │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                               │
+│                              ▼                                               │
+│   OUTPUT:                                                                    │
+│   ├── Full transcript with word-level timestamps                            │
+│   ├── Speaker segments (who said what when)                                 │
+│   ├── Prosodic features (tempo, pitch, volume, pauses)                      │
+│   ├── Voice quality metrics (jitter, shimmer, tremor)                       │
+│   ├── Facial emotion timeline                                               │
+│   ├── Distress markers timeline                                             │
+│   ├── Interview classification (type, approach, quality)                    │
+│   ├── Training insights (wisdom + coaching implications)                    │
+│   └── Aliveness scores                                                      │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 9: The 10 Aliveness Qualities
+
+These are the qualities that make something feel **alive** rather than **animated**. They're extracted from interviews and used to train the AI coach.
+
+### 1. Imperfect Rhythm
+Human things don't loop cleanly. Speech has micro-pauses, uneven timing, accelerations and decelerations.
+
+**What to extract**: Speech rate variability, pause irregularity, tempo changes.
+
+### 2. Asymmetry Over Time
+Humans aren't symmetrical in motion. We shift, favor one side, return to center imperfectly.
+
+**What to extract**: How speech patterns shift during conversation. Leading with questions then settling into statements.
+
+### 3. Latency (Reaction Delay)
+Living systems don't respond instantly. There's a gap between feeling and expression.
+
+**What to extract**: Response latency, "wait, let me think" moments, processing pauses.
+
+### 4. Rest Is Part of Motion
+We don't move constantly. We settle, hover, pause mid-breath.
+
+**What to extract**: Comfortable silences, pauses that aren't awkward, breathing room.
+
+### 5. Amplitude Restraint
+Humans rarely move at full range unless distressed. Most motion is 10-20% of possible range.
+
+**What to extract**: Volume restraint, emotional understatement, not-dramatic delivery.
+
+### 6. Flow Without Destination
+Human life doesn't always move toward something. Sometimes it just continues.
+
+**What to extract**: Conversations that don't conclude neatly, the messy middle, being without resolution.
+
+### 7. Consistency Across States
+Humans don't behave "better" when doing well. Character persists through joy, grief, exhaustion.
+
+**What to extract**: How communication patterns persist across emotional states.
+
+### 8. Scale Independence
+Same principles at all scales. A check-in isn't "less" than a deep session.
+
+**What to extract**: How different people embody similar needs at different scales.
+
+### 9. Backgrounded Attention
+Humans can be with things that don't demand focus. Companionship without pressure.
+
+**What to extract**: What makes people feel "accompanied" without pressure.
+
+### 10. Non-Instrumentality
+Humans can feel when something exists FOR them vs WITH them.
+
+**What to extract**: The distinction between instrumental advice vs real presence.
+
+### Aliveness Scoring
+
+Each interview is scored on these qualities:
+
+```
+Aliveness Scores (0-100 each):
+├── Imperfect Rhythm:      78  (high speech rate variability)
+├── Natural Latency:       85  (presence of thinking pauses)
+├── Amplitude Restraint:   62  (moderate, some dramatic moments)
+├── Flow Quality:          91  (natural, not choppy)
+└── Overall Aliveness:     79  (weighted average)
+```
+
+---
+
+## Part 10: Statistics Dashboard
+
+The dashboard shows aggregate metrics across all processed interviews:
+
+```
+╔════════════════════════════════════════════════════════════════════════════╗
+║                         TRAINING STUDIO DASHBOARD                           ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║                                                                             ║
+║  PROCESSING OVERVIEW                                                        ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │  Total Videos Processed:     1,247                                  │    ║
+║  │  Total Hours Analyzed:       2,156 hours                            │    ║
+║  │  Approved Insights:          8,432                                  │    ║
+║  │  Pending Review:             342                                    │    ║
+║  │  Rejected:                   1,891                                  │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  INTERVIEW TYPE BREAKDOWN                                                   ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ Therapeutic Session    ████████████████████  42%                   │    ║
+║  │ Coaching Conversation  ██████████████        28%                   │    ║
+║  │ Crisis Support         ████████              15%                   │    ║
+║  │ Skill Teaching         ████                   8%                   │    ║
+║  │ Other                  ███                    7%                   │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  THERAPEUTIC APPROACH FREQUENCY                                             ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ CBT                    ████████████████████  234 videos            │    ║
+║  │ Motivational Interview ████████████████      189 videos            │    ║
+║  │ Mindfulness-Based      ██████████████        156 videos            │    ║
+║  │ Solution-Focused       ████████████          134 videos            │    ║
+║  │ Trauma-Informed        ██████████            112 videos            │    ║
+║  │ DBT                    ████████               89 videos            │    ║
+║  │ Somatic                ██████                 67 videos            │    ║
+║  │ IFS                    ████                   45 videos            │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  EMOTIONAL ARC PATTERNS                                                     ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ U-shaped (down→up)        ████████████████  35%  TRANSFORMATIVE   │    ║
+║  │ Ascending (improving)     ████████████      25%                   │    ║
+║  │ Stable                    ██████████        20%                   │    ║
+║  │ Rollercoaster             ██████            12%                   │    ║
+║  │ Descending                ████               8%                   │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  DISTRESS MARKER FREQUENCY                                                  ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ Crying detected:          23% of interviews                        │    ║
+║  │ Voice tremor:             18% of interviews                        │    ║
+║  │ Choking/gulping:          12% of interviews                        │    ║
+║  │ Breath irregularity:      31% of interviews                        │    ║
+║  │ Voice breaks:             15% of interviews                        │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  PROSODY STATISTICS                                                         ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ Average Speech Rate:      142 WPM (range: 80-220)                  │    ║
+║  │ Average Pitch (F0):       178 Hz (women: 210, men: 125)            │    ║
+║  │ Average Pause Duration:   0.8 seconds                              │    ║
+║  │ Pause Frequency:          4.2 per minute                           │    ║
+║  │ Volume Variability:       12 dB average range                      │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  SPEAKING RATIO (Interviewer vs Interviewee)                                ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ Interviewer: ███████████████░░░░░ 38%                              │    ║
+║  │ Interviewee: ████████████████████████░░ 62%                        │    ║
+║  │                                                                    │    ║
+║  │ Ideal ratio: 30-40% interviewer / 60-70% interviewee              │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  ALIVENESS SCORES (Average)                                                 ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ Imperfect Rhythm:     ████████████████░░░░  78/100                │    ║
+║  │ Natural Latency:      █████████████████░░░  82/100                │    ║
+║  │ Amplitude Restraint:  ██████████████░░░░░░  68/100                │    ║
+║  │ Flow Quality:         ███████████████████░  89/100                │    ║
+║  │ Overall Aliveness:    ████████████████░░░░  79/100                │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  QUALITY SCORE DISTRIBUTION                                                 ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ 90-100 (Excellent):   ████████              312 insights          │    ║
+║  │ 80-89  (Good):        ██████████████████    1,847 insights        │    ║
+║  │ 70-79  (Acceptable):  ████████████████████  2,891 insights        │    ║
+║  │ 60-69  (Marginal):    ████████████          1,234 insights        │    ║
+║  │ <60    (Rejected):    ██████                 891 insights         │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  TOPIC CLUSTERS                                                             ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ ● Anxiety/Fear         ● Relationships        ● Self-Worth        │    ║
+║  │ ● Work Stress          ● Family Dynamics      ● Life Transitions  │    ║
+║  │ ● Grief/Loss           ● Identity             ● Trauma Recovery   │    ║
+║  │ ● Depression           ● Anger Management     ● Addiction         │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+║  TRAINING GAPS IDENTIFIED                                                   ║
+║  ┌────────────────────────────────────────────────────────────────────┐    ║
+║  │ ⚠️ Low coverage: Elderly population (3% of data)                  │    ║
+║  │ ⚠️ Low coverage: Non-English speakers                             │    ║
+║  │ ⚠️ Limited: Male vulnerability examples                           │    ║
+║  │ ⚠️ Limited: Neurodivergent-specific techniques                    │    ║
+║  └────────────────────────────────────────────────────────────────────┘    ║
+║                                                                             ║
+╚════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Part 11: Llama Fine-Tuning Output
+
+The ultimate goal is to export training data for fine-tuning Llama.
+
+### Training Data Format for Llama
+
+```jsonl
+{"messages": [{"role": "system", "content": "You are Moodling, a warm and grounded AI coach. Respond with the aliveness qualities: imperfect rhythm, natural latency, amplitude restraint."}, {"role": "user", "content": "I can't stop worrying about everything"}, {"role": "assistant", "content": "Yeah.\n\nThat sounds exhausting.\n\n...what kind of worrying? The spinning kind, or the heavy kind?"}], "prosody_context": {"ideal_pace": "slow", "ideal_volume": "soft", "pause_frequency": "high"}, "source": "video_abc123"}
+{"messages": [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}], "prosody_context": {...}, "source": "..."}
+```
+
+### Fine-Tuning Approach
+
+1. **Base model**: Llama 3.1 8B or 70B
+2. **Method**: LoRA (Low-Rank Adaptation) for efficient fine-tuning
+3. **Training data**: 10,000+ high-quality examples from harvested interviews
+4. **Validation**: Held-out test set of real coaching conversations
+5. **Evaluation**: Human preference rating + automated aliveness scoring
+
+### Export Pipeline
+
+```
+Approved Insights (8,000+)
+         │
+         ▼
+┌─────────────────────────────────┐
+│   TRAINING DATA GENERATOR       │
+│                                 │
+│   1. Format as conversation     │
+│   2. Add prosody context        │
+│   3. Add system prompt          │
+│   4. Validate format            │
+│   5. Split train/val/test       │
+│                                 │
+└─────────────────────────────────┘
+         │
+         ▼
+    training_data.jsonl
+    validation_data.jsonl
+    test_data.jsonl
+         │
+         ▼
+┌─────────────────────────────────┐
+│   LLAMA FINE-TUNING             │
+│                                 │
+│   - LoRA adapters               │
+│   - 3-5 epochs                  │
+│   - Learning rate: 1e-4         │
+│   - Batch size: 4               │
+│                                 │
+└─────────────────────────────────┘
+         │
+         ▼
+    moodling-llama-v1.gguf
+         │
+         ▼
+    Deploy to Mood Leaf app
+    (on-device inference)
+```
+
+---
+
+## Part 12: Complete Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           COMPLETE DATA FLOW                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   60+ CURATED YOUTUBE CHANNELS                                              │
+│   (therapy, mental health, vulnerability, wisdom)                           │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    TRAINING STUDIO                                   │   │
+│   │                                                                      │   │
+│   │   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐            │   │
+│   │   │  DOWNLOAD   │    │   PROCESS   │    │   ANALYZE   │            │   │
+│   │   │             │    │             │    │             │            │   │
+│   │   │ • yt-dlp    │───▶│ • Whisper   │───▶│ • Claude    │            │   │
+│   │   │ • Video     │    │ • pyannote  │    │ • Quality   │            │   │
+│   │   │ • Audio     │    │ • librosa   │    │ • Scoring   │            │   │
+│   │   │ • Metadata  │    │ • MediaPipe │    │ • Insights  │            │   │
+│   │   └─────────────┘    └─────────────┘    └─────────────┘            │   │
+│   │                                                │                    │   │
+│   │                                                ▼                    │   │
+│   │   ┌─────────────────────────────────────────────────────────────┐  │   │
+│   │   │                      DATABASE                                │  │   │
+│   │   │                                                              │  │   │
+│   │   │  Videos │ Transcripts │ Prosody │ Facial │ Insights        │  │   │
+│   │   │  ────── │ ─────────── │ ─────── │ ────── │ ────────        │  │   │
+│   │   │  1,247  │   1,247     │  1,247  │   892  │   8,432         │  │   │
+│   │   │                                                              │  │   │
+│   │   └─────────────────────────────────────────────────────────────┘  │   │
+│   │                                                │                    │   │
+│   │                                                ▼                    │   │
+│   │   ┌─────────────────────────────────────────────────────────────┐  │   │
+│   │   │                    WEB UI                                    │  │   │
+│   │   │                                                              │  │   │
+│   │   │  [Channels] [Process] [Review] [Stats] [Export]             │  │   │
+│   │   │                                                              │  │   │
+│   │   └─────────────────────────────────────────────────────────────┘  │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    TRAINING EXPORT                                   │   │
+│   │                                                                      │   │
+│   │   training_data.jsonl (10,000+ examples)                            │   │
+│   │   ├── Wisdom insights                                               │   │
+│   │   ├── Prosody context                                               │   │
+│   │   ├── Aliveness markers                                             │   │
+│   │   └── Coaching implications                                         │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    LLAMA FINE-TUNING                                 │   │
+│   │                                                                      │   │
+│   │   Llama 3.1 8B + LoRA → moodling-llama-v1.gguf                      │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                              │                                               │
+│                              ▼                                               │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    MOOD LEAF APP                                     │   │
+│   │                                                                      │   │
+│   │   On-device Llama inference                                         │   │
+│   │   ├── Knows WHAT to say (wisdom)                                    │   │
+│   │   ├── Knows HOW to say it (aliveness)                               │   │
+│   │   └── Feels HUMAN, not robotic                                      │   │
+│   │                                                                      │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Summary: What Gets Downloaded & Extracted
+
+### Downloads (per video)
+
+| File | Purpose | Size | Kept? |
+|------|---------|------|-------|
+| Video (.mp4) | Facial analysis | ~500 MB | Deleted after processing |
+| Audio (.wav) | Prosody extraction | ~150 MB | Deleted after processing |
+| Transcript (.json) | Word-level timestamps | ~50 KB | Kept |
+
+### Extractions (per video)
+
+| Data | Source | Storage |
+|------|--------|---------|
+| Full transcript | Whisper | Database |
+| Word timestamps | Whisper | Database |
+| Speaker segments | pyannote | Database |
+| Prosodic features | librosa + parselmouth | Database |
+| Facial emotions | DeepFace | Database (features only, not frames) |
+| Action Units | Py-Feat | Database |
+| Distress markers | Audio analysis | Database |
+| Interview classification | Claude | Database |
+| Training insights | Claude | Database |
+| Quality scores | Claude | Database |
+| Aliveness scores | Computed | Database |
+
+### Final Training Output
+
+| Format | Records | Use |
+|--------|---------|-----|
+| `training_data.jsonl` | 10,000+ | Llama fine-tuning |
+| `prosody_features.json` | Per video | Context for inference |
+| `insights_approved.json` | 8,000+ | RAG retrieval |
+
+---
+
+*Document Version: 3.0*
 *Created: January 2025*
-*Status: Complete specification for Training Studio*
+*Status: Complete specification for Training Studio - Llama training edition*
