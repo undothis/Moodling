@@ -14,11 +14,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import shutil
+import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -383,6 +385,479 @@ Only include channels from the list above. Be specific about why each channel ma
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# ============================================================================
+# MOVIE SUPPORT
+# ============================================================================
+
+@app.get("/recommended-movies")
+async def get_recommended_movies():
+    """Get list of recommended movies for training data."""
+    return RECOMMENDED_MOVIES
+
+
+@app.post("/recommend-movies-ai")
+async def recommend_movies_ai(request: AIRecommendRequest):
+    """Use Claude to recommend movies based on AI description."""
+    import anthropic
+    import json
+    import re
+
+    # Build movie list for Claude
+    movie_info = []
+    for m in RECOMMENDED_MOVIES:
+        movie_info.append(f"- {m['title']} ({m['year']}) [{m['category']}]: {m['description']} WHY: {m['why_train']}")
+
+    movies_text = "\n".join(movie_info)
+
+    prompt = f"""You are helping select movies to train an AI coaching assistant.
+
+The user wants to build an AI that: {request.description}
+
+Here are movies with rich emotional content for training:
+
+{movies_text}
+
+Based on the user's description, recommend the TOP 6-8 most relevant movies for training their AI.
+
+For each recommended movie, explain WHY it's perfect for their specific use case.
+
+Format your response as JSON:
+{{
+  "recommendations": [
+    {{
+      "title": "Movie Title",
+      "category": "category_key",
+      "reason": "2-3 sentence explanation of why this movie is perfect for their AI"
+    }}
+  ],
+  "training_tips": "1-2 sentences of advice for extracting insights from movies"
+}}
+
+Only include movies from the list above. Be specific about why each matches their needs."""
+
+    try:
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            result = json.loads(json_match.group())
+
+            # Match recommendations back to full movie data
+            enriched_recommendations = []
+            for rec in result.get("recommendations", []):
+                for m in RECOMMENDED_MOVIES:
+                    if m["title"].lower() == rec["title"].lower():
+                        enriched_recommendations.append({
+                            **m,
+                            "reason": rec.get("reason", "Recommended for your use case")
+                        })
+                        break
+
+            return {
+                "success": True,
+                "recommendations": enriched_recommendations,
+                "training_tips": result.get("training_tips", ""),
+                "original_description": request.description
+            }
+        else:
+            return {"success": False, "error": "Could not parse AI response"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class MovieUploadResponse(BaseModel):
+    success: bool
+    job_id: Optional[str] = None
+    message: str
+    transcript_source: Optional[str] = None  # "whisper" or "subtitles"
+
+
+@app.post("/movies/upload")
+async def upload_movie(
+    background_tasks: BackgroundTasks,
+    movie_file: UploadFile = File(...),
+    subtitle_file: Optional[UploadFile] = File(None),
+    title: str = Form(...),
+    category: str = Form("general"),
+    use_whisper: bool = Form(True),
+):
+    """
+    Upload a movie file for processing.
+
+    Options for transcription:
+    1. Upload subtitle file (.srt, .vtt) - Fastest, most accurate for dialogue
+    2. Use Whisper transcription - Works for any video, extracts from audio
+    3. Both - Use subtitles for text, Whisper for voice analysis
+
+    Args:
+        movie_file: Video file (mp4, mkv, avi, etc.)
+        subtitle_file: Optional subtitle file (.srt, .vtt)
+        title: Movie title for identification
+        category: Emotional category (grief, therapy, etc.)
+        use_whisper: Whether to run Whisper transcription (default: True)
+    """
+    try:
+        # Create temp directory for this movie
+        movie_id = str(uuid.uuid4())
+        temp_dir = Path(settings.temp_path) / movie_id
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save movie file
+        movie_path = temp_dir / movie_file.filename
+        with open(movie_path, "wb") as f:
+            shutil.copyfileobj(movie_file.file, f)
+
+        # Save subtitle file if provided
+        subtitle_path = None
+        if subtitle_file:
+            subtitle_path = temp_dir / subtitle_file.filename
+            with open(subtitle_path, "wb") as f:
+                shutil.copyfileobj(subtitle_file.file, f)
+
+        # Create processing job
+        job_id = str(uuid.uuid4())
+
+        # Start background processing
+        background_tasks.add_task(
+            process_movie_background,
+            job_id=job_id,
+            movie_id=movie_id,
+            movie_path=str(movie_path),
+            subtitle_path=str(subtitle_path) if subtitle_path else None,
+            title=title,
+            category=category,
+            use_whisper=use_whisper,
+        )
+
+        return MovieUploadResponse(
+            success=True,
+            job_id=job_id,
+            message=f"Movie '{title}' uploaded. Processing started.",
+            transcript_source="subtitles + whisper" if subtitle_file and use_whisper else ("subtitles" if subtitle_file else "whisper")
+        )
+
+    except Exception as e:
+        return MovieUploadResponse(
+            success=False,
+            message=str(e)
+        )
+
+
+async def process_movie_background(
+    job_id: str,
+    movie_id: str,
+    movie_path: str,
+    subtitle_path: Optional[str],
+    title: str,
+    category: str,
+    use_whisper: bool,
+):
+    """Background task to process an uploaded movie."""
+    from models import TranscriptResult, TranscriptSegment
+
+    try:
+        transcript_text = ""
+
+        # Parse subtitles if provided
+        if subtitle_path:
+            transcript_text = parse_subtitle_file(subtitle_path)
+            print(f"[Movie] Parsed {len(transcript_text)} chars from subtitles")
+
+        # Run Whisper if requested and no subtitles (or in addition to subtitles for analysis)
+        if use_whisper and not transcript_text:
+            # Extract audio and transcribe
+            print(f"[Movie] Running Whisper transcription...")
+            audio_path = await extract_audio_from_video(movie_path)
+            transcript_result = await transcription_service.transcribe(audio_path)
+            transcript_text = transcript_result.text
+            print(f"[Movie] Whisper extracted {len(transcript_text)} chars")
+
+        if not transcript_text:
+            print(f"[Movie] No transcript available for {title}")
+            return
+
+        # Create transcript object
+        transcript = TranscriptResult(
+            text=transcript_text,
+            segments=[TranscriptSegment(
+                text=transcript_text,
+                start=0.0,
+                end=0.0,
+                confidence=1.0
+            )],
+            language="en",
+            duration=0
+        )
+
+        # Extract insights
+        print(f"[Movie] Extracting insights from '{title}'...")
+        insights = await insight_service.extract_insights(
+            transcript=transcript,
+            video_title=f"[Movie] {title}",
+            channel_name=f"Movie ({category})",
+            max_insights=12  # More insights for movies
+        )
+
+        # Store insights in database
+        for insight in insights:
+            insight.video_id = movie_id
+            insight.channel_id = f"movie_{category}"
+            insight.source_token = f"movie_{movie_id[:8]}_{insight.id[:6]}"
+
+            # Save to database
+            insight_data = {
+                "id": insight.id,
+                "video_id": insight.video_id,
+                "channel_id": insight.channel_id,
+                "title": insight.title,
+                "insight": insight.insight,
+                "category": insight.category.value,
+                "coaching_implication": insight.coaching_implication,
+                "timestamp": insight.timestamp,
+                "source_token": insight.source_token,
+                "quality_score": insight.quality_score,
+                "specificity_score": insight.specificity_score,
+                "actionability_score": insight.actionability_score,
+                "safety_score": insight.safety_score,
+                "novelty_score": insight.novelty_score,
+                "confidence": insight.confidence,
+                "status": insight.status.value,
+                "flagged_for_review": insight.flagged_for_review,
+                "emotional_context_json": insight.emotional_context,
+            }
+            await db.create_insight(insight_data)
+
+        print(f"[Movie] Stored {len(insights)} insights from '{title}'")
+
+    except Exception as e:
+        print(f"[Movie] Error processing '{title}': {e}")
+
+
+def parse_subtitle_file(filepath: str) -> str:
+    """Parse .srt or .vtt subtitle file to plain text."""
+    import re
+
+    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        content = f.read()
+
+    # Remove timing lines and numbers for SRT
+    # Pattern matches: digit lines, timestamp lines (00:00:00,000 --> 00:00:00,000)
+    content = re.sub(r'^\d+\s*$', '', content, flags=re.MULTILINE)
+    content = re.sub(r'\d{2}:\d{2}:\d{2}[,\.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,\.]\d{3}', '', content)
+
+    # Remove VTT header
+    content = re.sub(r'^WEBVTT.*$', '', content, flags=re.MULTILINE)
+
+    # Remove HTML-style tags
+    content = re.sub(r'<[^>]+>', '', content)
+
+    # Clean up whitespace
+    lines = [line.strip() for line in content.split('\n') if line.strip()]
+    return ' '.join(lines)
+
+
+async def extract_audio_from_video(video_path: str) -> str:
+    """Extract audio from video file using ffmpeg."""
+    import subprocess
+
+    audio_path = video_path.rsplit('.', 1)[0] + '.wav'
+
+    cmd = [
+        'ffmpeg', '-i', video_path,
+        '-vn',  # No video
+        '-acodec', 'pcm_s16le',
+        '-ar', '16000',  # Sample rate for Whisper
+        '-ac', '1',  # Mono
+        '-y',  # Overwrite
+        audio_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    await process.communicate()
+
+    return audio_path
+
+
+class SubtitleSearchRequest(BaseModel):
+    """Request to search for subtitles."""
+    title: str
+    year: Optional[int] = None
+    language: str = "eng"
+
+
+class SubtitleResult(BaseModel):
+    """A subtitle search result."""
+    provider: str
+    language: str
+    release_name: str
+    download_url: Optional[str] = None
+    score: int
+    subtitle_id: str
+
+
+@app.post("/movies/search-subtitles")
+async def search_subtitles(request: SubtitleSearchRequest):
+    """
+    Search for subtitles by movie title and optionally year.
+    Uses subliminal to search multiple providers (OpenSubtitles, Addic7ed, etc.)
+
+    Returns a list of matching subtitles that can be downloaded.
+    """
+    try:
+        from babelfish import Language
+        from subliminal import Video, download_best_subtitles, save_subtitles
+        from subliminal.providers.opensubtitles import OpenSubtitlesProvider
+        from subliminal.providers.addic7ed import Addic7edProvider
+        import subliminal
+
+        # Create a Video object for the search
+        # We use Movie type for better search results
+        video = Video.fromname(f"{request.title}.mkv")
+        if request.year:
+            video.year = request.year
+
+        # Configure language
+        lang = Language(request.language)
+        languages = {lang}
+
+        # Search for subtitles using subliminal's region
+        subtitles = []
+
+        # Use subliminal's built-in search
+        try:
+            with subliminal.region.configure('dogpile.cache.memory'):
+                results = subliminal.list_subtitles({video}, languages)
+
+                for video_obj, subs in results.items():
+                    for sub in subs[:10]:  # Limit to 10 results
+                        subtitles.append({
+                            "provider": sub.provider_name,
+                            "language": str(sub.language),
+                            "release_name": getattr(sub, 'release', '') or getattr(sub, 'filename', request.title),
+                            "subtitle_id": sub.id,
+                            "score": getattr(sub, 'hearing_impaired', False) and 50 or 100,
+                        })
+        except Exception as search_error:
+            print(f"[Subtitles] Search error: {search_error}")
+            # Fallback: return empty but successful response
+
+        return {
+            "success": True,
+            "query": {
+                "title": request.title,
+                "year": request.year,
+                "language": request.language
+            },
+            "results": subtitles,
+            "count": len(subtitles),
+            "note": "Click 'Download' to fetch a subtitle file, or search OpenSubtitles.org manually for more options."
+        }
+
+    except ImportError as e:
+        return {
+            "success": False,
+            "error": "Subtitle search not available. Install with: pip install subliminal babelfish",
+            "details": str(e)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@app.post("/movies/download-subtitle")
+async def download_subtitle(request: SubtitleSearchRequest):
+    """
+    Download the best matching subtitle for a movie.
+    Saves the subtitle file and returns the path.
+    """
+    try:
+        from babelfish import Language
+        from subliminal import Video, download_best_subtitles, save_subtitles
+        import subliminal
+
+        # Create temp directory for subtitle
+        subtitle_dir = Path(settings.temp_path) / "subtitles"
+        subtitle_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create a fake video path for subliminal
+        fake_video_path = subtitle_dir / f"{request.title.replace(' ', '_')}.mkv"
+        fake_video_path.touch()
+
+        try:
+            # Create Video object
+            video = Video.fromguess(str(fake_video_path), {
+                'title': request.title,
+                'year': request.year,
+                'type': 'movie'
+            })
+
+            lang = Language(request.language)
+
+            # Configure subliminal and download best subtitle
+            with subliminal.region.configure('dogpile.cache.memory'):
+                subtitles = download_best_subtitles({video}, {lang})
+
+                if video in subtitles and subtitles[video]:
+                    # Save the subtitle
+                    subtitle = subtitles[video][0]
+
+                    # Create subtitle filename
+                    subtitle_filename = f"{request.title.replace(' ', '_')}.{request.language}.srt"
+                    subtitle_path = subtitle_dir / subtitle_filename
+
+                    # Save subtitle content
+                    save_subtitles(video, subtitles[video], directory=str(subtitle_dir))
+
+                    # Find the saved file
+                    for f in subtitle_dir.glob(f"*{request.title.replace(' ', '_')}*.srt"):
+                        return {
+                            "success": True,
+                            "subtitle_path": str(f),
+                            "filename": f.name,
+                            "language": request.language,
+                            "provider": subtitle.provider_name,
+                            "message": f"Downloaded subtitle from {subtitle.provider_name}"
+                        }
+
+                    return {
+                        "success": False,
+                        "error": "Subtitle downloaded but file not found"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": f"No subtitles found for '{request.title}' ({request.year or 'any year'})"
+                    }
+        finally:
+            # Cleanup fake video file
+            if fake_video_path.exists():
+                fake_video_path.unlink()
+
+    except ImportError:
+        return {
+            "success": False,
+            "error": "Subtitle download not available. Install with: pip install subliminal babelfish"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 
 # ============================================================================

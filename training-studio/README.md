@@ -127,6 +127,39 @@ HUGGINGFACE_TOKEN=hf_...
 - One-click "Add All Recommended" to add all suggested channels
 - Example: "I want an AI that helps people cope with grief and loss, providing comfort and understanding"
 
+### Movies
+
+Training Studio can also process movies for rich emotional training data.
+
+**Upload Movies**
+- Upload your own movie files (mp4, mkv, avi, etc.)
+- Use subtitle files (.srt, .vtt) for fastest and most accurate transcription
+- Use Whisper AI to extract speech from audio when no subtitles available
+- Categorize movies by emotional theme
+
+**Automatic Subtitle Search**
+- Built-in subtitle finder searches OpenSubtitles, Addic7ed, and other providers
+- Enter movie title and year to search
+- One-click download of best matching subtitle
+- Supports multiple languages (English, Spanish, French, German, etc.)
+
+**40+ Recommended Movies**
+- Pre-curated list organized by emotional category:
+  - Grief & Loss (Manchester by the Sea, Ordinary People, etc.)
+  - Therapy & Mental Health (Good Will Hunting, Silver Linings Playbook)
+  - Addiction & Recovery (Beautiful Boy, 28 Days)
+  - Relationships & Love (Marriage Story, Blue Valentine)
+  - Trauma & Healing (Room, The Perks of Being a Wallflower)
+  - Family Dynamics (Ladybird, The Squid and the Whale)
+  - And more...
+
+**AI Movie Recommender**
+- Describe your AI's purpose and get personalized movie recommendations
+- Each recommendation explains WHY the movie fits your training goals
+- Get training tips specific to your use case
+
+**Important**: You must own or have legal rights to any movie files you upload.
+
 ### Process Videos
 
 **Simple Mode (Recommended)**
