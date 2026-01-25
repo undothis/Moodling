@@ -387,6 +387,16 @@ const SERVICE_TESTERS: Record<string, () => Promise<{ success: boolean; data?: a
       return { success: false, error: e.message };
     }
   },
+
+  screen_time: async () => {
+    try {
+      const { getScreenTimeContextForClaude } = await import('./screenTimeService');
+      const context = await getScreenTimeContextForClaude();
+      return { success: true, data: context };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
 };
 
 // ============================================================================

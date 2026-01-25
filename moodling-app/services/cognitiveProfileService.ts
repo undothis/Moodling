@@ -355,6 +355,19 @@ export interface CognitiveProfile {
   usesScreensBeforeBed: boolean;
   hasTriedSleepTechniques: boolean;
 
+  // === BIOLOGICAL & CYCLE ===
+  biologicalSex: 'female' | 'male' | 'intersex' | null;
+  hasMenstrualCycle: boolean;
+  cycleRegularity: 'regular' | 'irregular' | 'transitional' | null;
+  cycleMoodAwareness: 'high' | 'moderate' | 'developing' | 'low' | null;
+  hardestCyclePhase: 'luteal' | 'menstrual' | 'ovulation' | 'variable' | 'none' | null;
+
+  // === THINKING STYLE ===
+  thinkingStyle: 'binary' | 'nuanced' | 'contextual' | null;  // Black-white vs grey
+  decisiveness: 'high' | 'moderate' | 'low' | null;
+  divergentThinking: boolean;  // Sees multiple valid answers
+  perfectionismLevel: 'high' | 'moderate' | 'low' | null;
+
   // Metadata
   completedOnboarding: boolean;
   onboardingDepth: 'quick' | 'standard' | 'deep';
@@ -950,6 +963,241 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['sensitivityLevel', 'emotionalIntelligence'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== INTERMISSION BREAK ==========
+  {
+    id: 'intermission_break',
+    text: "Hey, you're doing great! Time for a quick intermission.",
+    subtext: "Seriously - stand up, walk around, shake it out, take a deep breath. Go stand in the sun for a minute if you can. Come back when you're ready. This isn't a test, and there's no timer. 🌿",
+    type: 'choice',
+    options: [
+      {
+        value: 'ready',
+        label: "Okay, I'm back and ready to continue",
+        indicates: {}
+      },
+      {
+        value: 'skipped',
+        label: "I'm good, let's keep going",
+        indicates: {}
+      },
+      {
+        value: 'actually_moved',
+        label: "I actually got up and moved around!",
+        description: "Gold star for you ⭐",
+        indicates: { followsDirections: true }
+      }
+    ],
+    measures: [],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== BIOLOGICAL SEX & CYCLE ==========
+  {
+    id: 'biological_sex',
+    text: "What's your biological sex?",
+    subtext: "This helps us understand hormonal patterns that can affect mood and energy. You can skip if you prefer.",
+    type: 'choice',
+    options: [
+      {
+        value: 'female',
+        label: "Female",
+        indicates: { biologicalSex: 'female' }
+      },
+      {
+        value: 'male',
+        label: "Male",
+        indicates: { biologicalSex: 'male' }
+      },
+      {
+        value: 'intersex',
+        label: "Intersex",
+        indicates: { biologicalSex: 'intersex' }
+      },
+      {
+        value: 'prefer_not',
+        label: "Prefer not to say",
+        indicates: {}
+      }
+    ],
+    measures: ['biologicalSex'],
+    adaptiveDepth: 'basic'
+  },
+
+  {
+    id: 'menstrual_cycle_tracking',
+    text: "Do you experience a menstrual cycle?",
+    subtext: "Cycle phases can significantly affect mood, energy, and cognitive function. Understanding your patterns helps us support you better.",
+    type: 'choice',
+    options: [
+      {
+        value: 'yes_regular',
+        label: "Yes, fairly regular",
+        indicates: { hasMenstrualCycle: true, cycleRegularity: 'regular' }
+      },
+      {
+        value: 'yes_irregular',
+        label: "Yes, but irregular",
+        indicates: { hasMenstrualCycle: true, cycleRegularity: 'irregular' }
+      },
+      {
+        value: 'perimenopause',
+        label: "Going through perimenopause/menopause",
+        indicates: { hasMenstrualCycle: true, cycleRegularity: 'transitional' }
+      },
+      {
+        value: 'no',
+        label: "No",
+        indicates: { hasMenstrualCycle: false }
+      },
+      {
+        value: 'prefer_not',
+        label: "Prefer not to say",
+        indicates: {}
+      }
+    ],
+    measures: ['hasMenstrualCycle', 'cycleRegularity'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['biological_sex']
+  },
+
+  {
+    id: 'cycle_mood_awareness',
+    text: "How aware are you of how your cycle affects your mood?",
+    subtext: "Some people notice big shifts, others don't. Both are normal.",
+    type: 'choice',
+    options: [
+      {
+        value: 'very_aware',
+        label: "Very aware - I can predict mood shifts based on where I am in my cycle",
+        indicates: { cycleMoodAwareness: 'high' }
+      },
+      {
+        value: 'somewhat',
+        label: "Somewhat - I notice patterns but not consistently",
+        indicates: { cycleMoodAwareness: 'moderate' }
+      },
+      {
+        value: 'learning',
+        label: "I'm just starting to pay attention to this",
+        indicates: { cycleMoodAwareness: 'developing' }
+      },
+      {
+        value: 'not_much',
+        label: "I don't notice much difference throughout my cycle",
+        indicates: { cycleMoodAwareness: 'low' }
+      }
+    ],
+    measures: ['cycleMoodAwareness'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['menstrual_cycle_tracking']
+  },
+
+  {
+    id: 'cycle_hardest_phase',
+    text: "Which phase of your cycle tends to be hardest for you emotionally?",
+    subtext: "This helps your coach adjust support based on where you are.",
+    type: 'choice',
+    options: [
+      {
+        value: 'premenstrual',
+        label: "The week before my period (premenstrual/luteal)",
+        description: "PMS, irritability, low mood, anxiety",
+        indicates: { hardestCyclePhase: 'luteal' }
+      },
+      {
+        value: 'during',
+        label: "During my period (menstrual)",
+        description: "Pain, fatigue, low energy",
+        indicates: { hardestCyclePhase: 'menstrual' }
+      },
+      {
+        value: 'ovulation',
+        label: "Around ovulation (mid-cycle)",
+        description: "Anxiety, overwhelm, sensitivity",
+        indicates: { hardestCyclePhase: 'ovulation' }
+      },
+      {
+        value: 'varies',
+        label: "It varies - no consistent pattern",
+        indicates: { hardestCyclePhase: 'variable' }
+      },
+      {
+        value: 'none',
+        label: "No phase is particularly harder",
+        indicates: { hardestCyclePhase: 'none' }
+      }
+    ],
+    measures: ['hardestCyclePhase'],
+    adaptiveDepth: 'standard',
+    requiresPrevious: ['cycle_mood_awareness']
+  },
+
+  // ========== THINKING STYLE: GREY VS BLACK-WHITE ==========
+  {
+    id: 'thinking_style_spectrum',
+    text: "When you're asked to make a choice, how do you typically feel?",
+    subtext: "Be honest - this helps us understand how your mind naturally works.",
+    type: 'choice',
+    options: [
+      {
+        value: 'clear_choice',
+        label: "I usually see a clear right answer",
+        description: "Things tend to be either/or for me",
+        indicates: { thinkingStyle: 'binary', comfortWithAmbiguity: 'low' }
+      },
+      {
+        value: 'see_nuance',
+        label: "I see lots of nuance and \"it depends\"",
+        description: "Most things feel like shades of grey",
+        indicates: { thinkingStyle: 'nuanced', comfortWithAmbiguity: 'high' }
+      },
+      {
+        value: 'depends_topic',
+        label: "Depends on the topic - some things are clear, others complex",
+        indicates: { thinkingStyle: 'contextual', comfortWithAmbiguity: 'moderate' }
+      },
+      {
+        value: 'frustrated_forced',
+        label: "I get frustrated when forced to pick just one option",
+        description: "Why can't I choose multiple?",
+        indicates: { thinkingStyle: 'nuanced', comfortWithAmbiguity: 'high', divergentThinking: true }
+      }
+    ],
+    measures: ['thinkingStyle', 'comfortWithAmbiguity'],
+    adaptiveDepth: 'basic'
+  },
+
+  {
+    id: 'single_choice_feeling',
+    text: "How does it make you feel to only have one choice for each question here?",
+    subtext: "This tells us about how you process decisions.",
+    type: 'choice',
+    options: [
+      {
+        value: 'fine',
+        label: "Totally fine - I can pick what fits best",
+        indicates: { decisiveness: 'high', thinkingStyle: 'binary' }
+      },
+      {
+        value: 'manageable',
+        label: "A bit limiting but I can work with it",
+        indicates: { decisiveness: 'moderate', thinkingStyle: 'contextual' }
+      },
+      {
+        value: 'hard',
+        label: "Actually kind of hard - multiple answers often fit",
+        indicates: { decisiveness: 'low', thinkingStyle: 'nuanced', divergentThinking: true }
+      },
+      {
+        value: 'anxiety',
+        label: "It makes me a bit anxious - what if I pick wrong?",
+        indicates: { decisiveness: 'low', perfectionismLevel: 'high' }
+      }
+    ],
+    measures: ['decisiveness', 'thinkingStyle', 'perfectionismLevel'],
     adaptiveDepth: 'basic'
   },
 
@@ -1773,6 +2021,17 @@ const DEFAULT_PROFILE: CognitiveProfile = {
   actualSleepHours: null,
   usesScreensBeforeBed: true,
   hasTriedSleepTechniques: false,
+  // Biological & Cycle (detect via onboarding)
+  biologicalSex: null,
+  hasMenstrualCycle: false,
+  cycleRegularity: null,
+  cycleMoodAwareness: null,
+  hardestCyclePhase: null,
+  // Thinking style
+  thinkingStyle: null,
+  decisiveness: null,
+  divergentThinking: false,
+  perfectionismLevel: null,
   completedOnboarding: false,
   onboardingDepth: 'standard',
   lastUpdated: new Date().toISOString(),

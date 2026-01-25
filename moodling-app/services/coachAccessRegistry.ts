@@ -389,6 +389,15 @@ export const DEFAULT_DATA_SOURCES: DataSource[] = [
     serviceName: 'sessionContextService',
     contextFunction: 'getSessionContextForLLM',
   },
+  {
+    id: 'screen_time',
+    name: 'Screen Time',
+    description: 'App usage duration, session lengths, and screen time patterns',
+    category: 'diagnostics',
+    enabled: true,
+    serviceName: 'screenTimeService',
+    contextFunction: 'getScreenTimeContextForClaude',
+  },
 ];
 
 // ============================================
