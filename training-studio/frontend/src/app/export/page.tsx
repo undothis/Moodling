@@ -12,10 +12,13 @@ import {
   CheckCircle,
   Copy,
   ExternalLink,
+  MessageSquare,
+  Brain,
+  Heart,
 } from 'lucide-react';
 import clsx from 'clsx';
 
-type ExportFormat = 'alpaca' | 'jsonl' | 'raw';
+type ExportFormat = 'alpaca' | 'chatml' | 'sharegpt' | 'conversations' | 'jsonl' | 'raw';
 
 function FormatCard({
   format,
@@ -140,19 +143,51 @@ export default function ExportPage() {
       {/* Format Selection */}
       <div className="mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">Export Format</h3>
+
+        {/* Recommended Formats */}
+        <p className="text-sm text-gray-500 mb-3">Recommended for Training:</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <FormatCard
+            format="chatml"
+            title="ChatML Format"
+            description="Best for Llama 3+, OpenAI. Multi-turn with system prompt and emotional context."
+            icon={MessageSquare}
+            selected={format === 'chatml'}
+            onSelect={() => setFormat('chatml')}
+          />
+          <FormatCard
+            format="sharegpt"
+            title="ShareGPT Format"
+            description="Best for Unsloth. Community standard format with human/gpt roles."
+            icon={Brain}
+            selected={format === 'sharegpt'}
+            onSelect={() => setFormat('sharegpt')}
+          />
+          <FormatCard
+            format="conversations"
+            title="Rich Conversations"
+            description="Full multi-turn with emotional context, therapeutic techniques, and metadata."
+            icon={Heart}
+            selected={format === 'conversations'}
+            onSelect={() => setFormat('conversations')}
+          />
+        </div>
+
+        {/* Legacy Formats */}
+        <p className="text-sm text-gray-500 mb-3">Other Formats:</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormatCard
             format="alpaca"
             title="Alpaca Format"
-            description="Standard instruction-tuning format for Llama models. Includes instruction, input, and output fields."
+            description="Classic instruction/input/output format. Simple but single-turn only."
             icon={FileText}
             selected={format === 'alpaca'}
             onSelect={() => setFormat('alpaca')}
           />
           <FormatCard
             format="jsonl"
-            title="JSONL (ChatML)"
-            description="JSON Lines format with message arrays. Compatible with most fine-tuning frameworks."
+            title="JSONL"
+            description="JSON Lines with basic message arrays. Lightweight format."
             icon={FileJson}
             selected={format === 'jsonl'}
             onSelect={() => setFormat('jsonl')}
@@ -160,7 +195,7 @@ export default function ExportPage() {
           <FormatCard
             format="raw"
             title="Raw Data"
-            description="Complete insight data with all scores and metadata. Useful for custom processing."
+            description="Complete insight data with all scores, emotional context, and metadata."
             icon={Database}
             selected={format === 'raw'}
             onSelect={() => setFormat('raw')}
@@ -255,26 +290,58 @@ export default function ExportPage() {
 
       {/* Usage Instructions */}
       <div className="mt-8 bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">Next Steps</h3>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600">
-          <li>Export your approved insights in Alpaca format</li>
-          <li>
-            Upload to a fine-tuning platform (e.g., Modal, RunPod, or local)
-          </li>
-          <li>
-            Fine-tune Llama 3 or Mistral using QLoRA for efficient training
-          </li>
-          <li>Deploy the trained model for inference</li>
-        </ol>
+        <h3 className="font-semibold text-gray-900 mb-3">Training Guide</h3>
 
-        <div className="mt-4 flex items-center gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Quick Start */}
+          <div>
+            <h4 className="font-medium text-gray-800 mb-2">Quick Start (Easiest)</h4>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
+              <li>Export in <strong>ShareGPT</strong> format</li>
+              <li>Use <strong>Unsloth</strong> with free Colab notebook</li>
+              <li>Train Llama 3.2 3B (fits on 12GB GPU)</li>
+              <li>Export to GGUF for mobile deployment</li>
+            </ol>
+          </div>
+
+          {/* Recommended Stack */}
+          <div>
+            <h4 className="font-medium text-gray-800 mb-2">Recommended For MoodLeaf</h4>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
+              <li>Export in <strong>ChatML</strong> format</li>
+              <li>Fine-tune Llama 3.1 8B with QLoRA</li>
+              <li>Deploy on-device (iOS/Android) or cloud</li>
+              <li>Use emotional context for empathetic responses</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="font-medium text-gray-800 mb-2">Format Comparison</h4>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p><strong>ChatML</strong> → Llama 3+, includes system prompt, emotional context</p>
+            <p><strong>ShareGPT</strong> → Unsloth, community datasets, human/gpt roles</p>
+            <p><strong>Conversations</strong> → Maximum data richness, therapeutic techniques tagged</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4">
           <a
             href="https://github.com/unslothai/unsloth"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-leaf-600 hover:text-leaf-700"
           >
-            Unsloth (Fast LoRA)
+            Unsloth (2x Faster)
+            <ExternalLink className="w-3 h-3" />
+          </a>
+          <a
+            href="https://docs.unsloth.ai/get-started/fine-tuning-llms-guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-sm text-leaf-600 hover:text-leaf-700"
+          >
+            Unsloth Tutorial
             <ExternalLink className="w-3 h-3" />
           </a>
           <a

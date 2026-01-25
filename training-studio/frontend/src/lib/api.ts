@@ -387,3 +387,67 @@ export async function getAIChannelRecommendations(
   if (!res.ok) throw new Error('Failed to get AI recommendations');
   return res.json();
 }
+
+// ============================================================================
+// MOVIE SUPPORT
+// ============================================================================
+
+export interface RecommendedMovie {
+  title: string;
+  year: number;
+  category: string;
+  description: string;
+  why_train: string;
+  reason?: string; // Added by AI recommendations
+}
+
+export async function fetchRecommendedMovies(): Promise<RecommendedMovie[]> {
+  const res = await fetch(`${API_BASE}/recommended-movies`);
+  if (!res.ok) throw new Error('Failed to fetch recommended movies');
+  return res.json();
+}
+
+export interface AIMovieRecommendResponse {
+  success: boolean;
+  recommendations?: RecommendedMovie[];
+  training_tips?: string;
+  original_description?: string;
+  error?: string;
+}
+
+export async function getAIMovieRecommendations(
+  description: string
+): Promise<AIMovieRecommendResponse> {
+  const res = await fetch(`${API_BASE}/recommend-movies-ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) throw new Error('Failed to get AI movie recommendations');
+  return res.json();
+}
+
+export interface MovieUploadResponse {
+  success: boolean;
+  job_id?: string;
+  message: string;
+}
+
+export async function uploadMovie(
+  movieFile: File,
+  title: string,
+  category: string
+): Promise<MovieUploadResponse> {
+  const formData = new FormData();
+  formData.append('movie_file', movieFile);
+  formData.append('title', title);
+  formData.append('category', category);
+
+  const res = await fetch(`${API_BASE}/movies/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Failed to upload movie');
+  return res.json();
+}
+

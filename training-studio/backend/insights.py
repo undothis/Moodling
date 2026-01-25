@@ -34,6 +34,7 @@ class InsightExtractionService:
         channel_name: str,
         categories: Optional[List[str]] = None,
         prosody: Optional[ProsodicFeatures] = None,
+        facial_emotions: Optional[Dict[str, Any]] = None,
         max_insights: int = 8
     ) -> List[ExtractedInsight]:
         """
@@ -45,10 +46,11 @@ class InsightExtractionService:
             channel_name: Name of the channel
             categories: Specific categories to extract (None = all)
             prosody: Prosodic features for context
+            facial_emotions: Facial emotion analysis results
             max_insights: Maximum number of insights to extract
 
         Returns:
-            List of extracted insights
+            List of extracted insights with emotional context
         """
         if not self.api_key:
             raise ValueError("Anthropic API key not configured")
@@ -60,6 +62,7 @@ class InsightExtractionService:
             channel_name=channel_name,
             categories=categories or list(EXTRACTION_CATEGORIES.keys()),
             prosody=prosody,
+            facial_emotions=facial_emotions,
             max_insights=max_insights
         )
 
@@ -101,6 +104,7 @@ class InsightExtractionService:
         channel_name: str,
         categories: List[str],
         prosody: Optional[ProsodicFeatures],
+        facial_emotions: Optional[Dict[str, Any]],
         max_insights: int
     ) -> str:
         """Build the extraction prompt for Claude."""
@@ -132,6 +136,29 @@ Rising pitch and increased pace often indicate excitement or anxiety.
 A sagging volume trajectory may indicate hopelessness or fatigue.
 """
 
+        # Build facial emotion context if available
+        facial_context = ""
+        if facial_emotions:
+            emotions = facial_emotions.get("dominant_emotions", [])
+            intensity = facial_emotions.get("average_intensity", 0.5)
+            micro_expressions = facial_emotions.get("micro_expressions", [])
+            emotional_shifts = facial_emotions.get("emotional_shifts", [])
+
+            facial_context = f"""
+
+## Facial Expression Context (What We Observed)
+
+Visual analysis detected the following emotional cues:
+- **Dominant Emotions**: {', '.join(emotions) if emotions else 'neutral'}
+- **Emotional Intensity**: {intensity:.0%}
+- **Micro-expressions**: {', '.join(micro_expressions) if micro_expressions else 'none detected'}
+- **Emotional Shifts**: {len(emotional_shifts)} significant changes during the video
+
+This is crucial for understanding what people FEEL vs what they SAY.
+When someone says "I'm fine" but shows sadness, that incongruence is meaningful.
+The AI coach should learn to gently acknowledge unspoken emotions.
+"""
+
         # Truncate transcript if too long
         transcript_text = transcript.text
         if len(transcript_text) > 15000:
@@ -153,7 +180,7 @@ Focus on:
 3. **What helps and hurts** - Practical wisdom about support
 4. **Communication insights** - How people want to be talked to
 5. **Neurological diversity** - Different ways minds work
-{prosody_context}
+{prosody_context}{facial_context}
 ## Categories to Extract
 
 {category_section}
@@ -175,6 +202,12 @@ Return ONLY valid JSON with this structure:
       "category": "category_name from list above",
       "coaching_implication": "How an AI coach should behave differently based on this insight",
       "timestamp": "approximate timestamp if relevant (e.g., '12:34')",
+      "emotional_context": {{
+        "emotions": ["primary_emotion", "secondary_emotion"],
+        "intensity": 0.7,
+        "incongruence": false,
+        "therapeutic_response": "how to acknowledge these emotions"
+      }},
       "quality_score": 85,
       "specificity_score": 90,
       "actionability_score": 80,
@@ -251,6 +284,9 @@ Return ONLY the JSON, no other text."""
                 else:
                     status = InsightStatus.PENDING
 
+                # Extract emotional context if present
+                emotional_context = item.get("emotional_context", {})
+
                 insight = ExtractedInsight(
                     id=str(uuid.uuid4()),
                     video_id="",  # Set by caller
@@ -267,7 +303,8 @@ Return ONLY the JSON, no other text."""
                     confidence=item.get("confidence", 0),
                     status=status,
                     flagged_for_review=flagged,
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
+                    emotional_context=emotional_context  # Include emotional context
                 )
                 insights.append(insight)
 

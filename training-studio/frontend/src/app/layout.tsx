@@ -18,6 +18,7 @@ import {
   X,
   Sliders,
   FlaskConical,
+  Film,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getApiKeyStatus, setApiKey } from '@/lib/api';
@@ -25,6 +26,7 @@ import { getApiKeyStatus, setApiKey } from '@/lib/api';
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/channels', label: 'Channels', icon: Youtube },
+  { href: '/movies', label: 'Movies', icon: Film },
   { href: '/process', label: 'Process', icon: Play },
   { href: '/review', label: 'Review', icon: CheckSquare },
   { href: '/stats', label: 'Statistics', icon: BarChart3 },
