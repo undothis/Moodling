@@ -64,6 +64,39 @@ const DEDICATED_ROUTES: Record<string, string> = {
   kaleidoscope: '/games/kaleidoscope',
   maze_walker: '/games/maze-walker',
   untangle: '/games/untangle',
+  // New Therapeutic Games
+  pixel_hunt: '/games/pixel-hunt',
+  pattern_lock: '/games/pattern-lock',
+  word_stream: '/games/word-stream',
+  '54321_quest': '/games/54321-quest',
+  body_map: '/games/body-map',
+  earth_touch: '/games/earth-touch',
+  anchor_drop: '/games/anchor-drop',
+  breath_waves: '/games/breath-waves',
+  cloud_garden: '/games/cloud-garden',
+  star_connect: '/games/star-connect',
+  emotion_explorer: '/games/emotion-explorer',
+  coping_cards: '/games/coping-cards',
+  thought_bubbles: '/games/thought-bubbles',
+  body_signals: '/games/body-signals',
+  perspective_shift: '/games/perspective-shift',
+  future_self: '/games/future-self',
+  values_quest: '/games/values-quest',
+  the_pause: '/games/the-pause',
+  thought_maze: '/games/thought-maze',
+  chain_reaction: '/games/chain-reaction',
+  odd_one_out: '/games/odd-one-out',
+  logic_gates: '/games/logic-gates',
+  sequence_builder: '/games/sequence-builder',
+  balance_scale: '/games/balance-scale',
+  path_finder: '/games/path-finder',
+  pattern_breaker: '/games/pattern-breaker',
+  reframe_puzzle: '/games/reframe-puzzle',
+  what_comes_next: '/games/what-comes-next',
+  pixel_sudoku: '/games/pixel-sudoku',
+  nonogram: '/games/nonogram',
+  minesweeper_zen: '/games/minesweeper-zen',
+  tower_of_hanoi: '/games/tower-of-hanoi',
   // Dedicated clinical skill components
   safety_plan: '/skills/safety-plan',
   grounding_ladder: '/skills/grounding-ladder',
@@ -342,6 +375,27 @@ export default function SkillsScreen() {
           ))}
         </View>
       </View>
+      )}
+
+      {/* Quick Access: Games Hub */}
+      {!isSearching && (
+        <TouchableOpacity
+          style={[styles.gamesQuickAccess, { backgroundColor: colors.card }]}
+          onPress={() => router.push('/games' as any)}
+        >
+          <View style={styles.gamesQuickAccessContent}>
+            <Text style={styles.gamesQuickAccessEmoji}>🎮</Text>
+            <View style={styles.gamesQuickAccessText}>
+              <Text style={[styles.gamesQuickAccessTitle, { color: colors.text }]}>
+                Mindful Games
+              </Text>
+              <Text style={[styles.gamesQuickAccessSubtitle, { color: colors.textMuted }]}>
+                Relaxing retro games for focus and calm
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* Skills Section */}
@@ -822,5 +876,31 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     lineHeight: 20,
+  },
+  gamesQuickAccess: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#6366F1',
+  },
+  gamesQuickAccessContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  gamesQuickAccessEmoji: {
+    fontSize: 32,
+    marginRight: 14,
+  },
+  gamesQuickAccessText: {
+    flex: 1,
+  },
+  gamesQuickAccessTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  gamesQuickAccessSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
   },
 });
