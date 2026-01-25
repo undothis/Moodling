@@ -225,7 +225,8 @@ export default function CoachAccessSettingsScreen() {
       <Stack.Screen
         options={{
           title: 'AI Data Access',
-          headerBackTitle: 'Settings',
+          headerShown: true,
+          headerBackTitle: 'Back',
         }}
       />
       <ScrollView
