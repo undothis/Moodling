@@ -966,34 +966,6 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     adaptiveDepth: 'basic'
   },
 
-  // ========== INTERMISSION BREAK ==========
-  {
-    id: 'intermission_break',
-    text: "Hey, you're doing great! Time for a quick intermission.",
-    subtext: "Seriously - stand up, walk around, shake it out, take a deep breath. Go stand in the sun for a minute if you can. Come back when you're ready. This isn't a test, and there's no timer. 🌿",
-    type: 'choice',
-    options: [
-      {
-        value: 'ready',
-        label: "Okay, I'm back and ready to continue",
-        indicates: {}
-      },
-      {
-        value: 'skipped',
-        label: "I'm good, let's keep going",
-        indicates: {}
-      },
-      {
-        value: 'actually_moved',
-        label: "I actually got up and moved around!",
-        description: "Gold star for you ⭐",
-        indicates: { followsDirections: true }
-      }
-    ],
-    measures: [],
-    adaptiveDepth: 'basic'
-  },
-
   // ========== BIOLOGICAL SEX & CYCLE ==========
   {
     id: 'biological_sex',
@@ -1347,6 +1319,34 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
       }
     ],
     measures: ['structurePreference', 'comfortWithAmbiguity'],
+    adaptiveDepth: 'basic'
+  },
+
+  // ========== INTERMISSION BREAK (halfway point) ==========
+  {
+    id: 'intermission_break',
+    text: "Hey, you're doing great! Time for a quick intermission.",
+    subtext: "Seriously - stand up, walk around, shake it out, take a deep breath. Go stand in the sun for a minute if you can. Come back when you're ready. This isn't a test, and there's no timer. 🌿",
+    type: 'choice',
+    options: [
+      {
+        value: 'ready',
+        label: "Okay, I'm back and ready to continue",
+        indicates: {}
+      },
+      {
+        value: 'skipped',
+        label: "I'm good, let's keep going",
+        indicates: {}
+      },
+      {
+        value: 'actually_moved',
+        label: "I actually got up and moved around!",
+        description: "Gold star for you ⭐",
+        indicates: { followsDirections: true }
+      }
+    ],
+    measures: [],
     adaptiveDepth: 'basic'
   },
 
@@ -2187,18 +2187,16 @@ export async function getOnboardingProgressInfo(): Promise<{
   });
 
   const answeredCount = progress.answeredQuestions.length;
-  const totalAtCurrentDepth = questionsAtCurrentDepth.length;
   const remainingCount = remainingQuestions.length;
 
-  // Calculate progress as percentage of answered vs total at current depth
-  // Use a minimum total to avoid division issues
-  const effectiveTotal = Math.max(totalAtCurrentDepth, answeredCount + remainingCount);
-  const progressPercent = effectiveTotal > 0 ? (answeredCount / effectiveTotal) * 100 : 0;
+  // Total is always answered + remaining (accurate for "Question X of Y" display)
+  const totalQuestions = answeredCount + remainingCount;
+  const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
   return {
     answeredCount,
     remainingCount,
-    totalAtCurrentDepth,
+    totalAtCurrentDepth: totalQuestions, // Use accurate total for display
     progressPercent: Math.min(progressPercent, 100), // Cap at 100
   };
 }
