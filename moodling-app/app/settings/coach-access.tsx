@@ -39,6 +39,7 @@ import {
   TestResult,
   DiagnosticReport,
   getStatusEmoji,
+  getStatusColor,
 } from '@/services/diagnosticTestService';
 
 // Category emojis for visual clarity
@@ -186,20 +187,21 @@ export default function CoachAccessSettingsScreen() {
     if (globalBlocked || isBlocked) {
       return {
         emoji: '🚫',
-        color: '#9E9E9E',
+        color: '#9E9E9E', // Gray for blocked
         status: 'BLOCKED',
         details: globalBlocked ? 'Global access OFF' : 'Toggle is OFF - data not sent to AI',
       };
     }
 
+    // Use the shared color function for consistency
     return {
       emoji: getStatusEmoji(result.status),
-      color: result.status === 'passed' ? '#4CAF50' :
-             result.status === 'failed' ? '#F44336' :
-             result.status === 'warning' ? '#FF9800' : '#9E9E9E',
+      color: getStatusColor(result.status),
       status: result.status === 'passed' ? 'WORKING' :
               result.status === 'failed' ? 'FAILED' :
-              result.status === 'warning' ? 'NEEDS PERMISSION' : 'SKIPPED',
+              result.status === 'warning' ? 'NEEDS PERMISSION' :
+              result.status === 'skipped' ? 'SKIPPED' :
+              result.status === 'running' ? 'TESTING' : 'PENDING',
       details: result.details || result.error || '',
     };
   };
