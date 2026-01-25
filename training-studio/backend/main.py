@@ -671,6 +671,18 @@ async def add_channel(request: ChannelCreateRequest):
         # Get channel info from YouTube
         info = await youtube_service.get_channel_info(request.url)
 
+        # Check if channel already exists by URL pattern
+        existing_channels = await db.get_all_channels()
+        normalized_url = request.url.lower().replace("https://", "").replace("http://", "").replace("www.", "")
+        for existing in existing_channels:
+            existing_normalized = existing.url.lower().replace("https://", "").replace("http://", "").replace("www.", "")
+            if normalized_url in existing_normalized or existing_normalized in normalized_url:
+                return {
+                    "success": True,
+                    "channel": {"id": existing.id, "name": existing.name},
+                    "message": "Channel already added"
+                }
+
         channel_data = {
             "id": str(uuid.uuid4()),
             "channel_id": info.get("channel_id", str(uuid.uuid4())[:8]),
@@ -692,7 +704,12 @@ async def add_channel(request: ChannelCreateRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        # Provide better error messages
+        if "UNIQUE constraint" in error_msg:
+            return {"success": True, "message": "Channel already exists"}
+        print(f"[Channels] Error adding channel: {error_msg}")
+        raise HTTPException(status_code=400, detail=f"Failed to add channel: {error_msg}")
 
 
 @app.delete("/channels/{channel_id}")
