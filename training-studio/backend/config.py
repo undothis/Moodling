@@ -148,60 +148,189 @@ EXTRACTION_CATEGORIES = {
 }
 
 
-# Recommended YouTube channels (from the documentation)
+# Recommended YouTube channels (from MoodLeaf interview processor)
+# Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
+# embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware
 RECOMMENDED_CHANNELS = [
-    # Emotional Experience - Awe
-    {"name": "The Dictionary of Obscure Sorrows", "category": "awe", "url": "@dictionaryofobscuresorrows"},
-    {"name": "Big Think", "category": "wisdom", "url": "@bigthink"},
-    {"name": "Pursuit of Wonder", "category": "existential", "url": "@PursuitofWonder"},
+    # ══════════════════════════════════════════════════════════════════════════════
+    # EMOTIONAL EXPERIENCE
+    # ══════════════════════════════════════════════════════════════════════════════
 
-    # Emotional Experience - Joy
-    {"name": "The School of Life", "category": "wisdom", "url": "@theschooloflifetv"},
-    {"name": "Some Good News", "category": "joy", "url": "@somegoodnews"},
-    {"name": "Kurzgesagt – In a Nutshell", "category": "wonder", "url": "@kurzgesagt"},
+    # --- Awe & Wonder ---
+    {"name": "The School of Life", "url": "@theschooloflife", "channel_id": "UC7IcJI8PUf5Z3zKxnZvTBog", "category": "philosophy_meaning", "trust": "high", "description": "Alain de Botton - philosophy for everyday emotional life"},
+    {"name": "Shots of Awe", "url": "@ShotsOfAwe", "channel_id": "UClYb9NpXnRemxYoWbcYANsA", "category": "philosophy_meaning", "trust": "high", "description": "Jason Silva - micro-documentaries on wonder, consciousness"},
 
-    # Vulnerability & Emotional Depth
-    {"name": "Soft White Underbelly", "category": "vulnerability", "url": "@SoftWhiteUnderbelly"},
-    {"name": "The Diary Of A CEO", "category": "vulnerability", "url": "@TheDiaryOfACEO"},
-    {"name": "Brené Brown", "category": "vulnerability", "url": "@BreneBrownOfficial"},
+    # --- Joy & Delight ---
+    {"name": "SoulPancake", "url": "@soulpancake", "channel_id": "UCvddZU4j9oalKOxCJ0IuNyg", "category": "joy_celebration", "trust": "high", "description": "Uplifting content about human connection, joy, and meaning"},
+    {"name": "The Holderness Family", "url": "@TheHoldernessFamily", "channel_id": "UCjMgq_nGK5dg6pVDvH5LW8Q", "category": "humor_comedy", "trust": "medium", "description": "Parenting humor, relatable family chaos"},
 
-    # Therapy & Mental Health
-    {"name": "Kati Morton", "category": "therapy", "url": "@KatiMorton"},
-    {"name": "Dr. Tracey Marks", "category": "therapy", "url": "@DrTraceyMarks"},
-    {"name": "Psychology In Seattle", "category": "therapy", "url": "@PsychologyInSeattle"},
-    {"name": "Therapy in a Nutshell", "category": "therapy", "url": "@TherapyinaNutshell"},
-    {"name": "HealthyGamerGG", "category": "mental_health", "url": "@HealthyGamerGG"},
-    {"name": "Cinema Therapy", "category": "therapy", "url": "@CinemaTherapy"},
+    # --- Playfulness & Spontaneity ---
+    {"name": "Yes Theory", "url": "@YesTheory", "channel_id": "UCvK4bOhULCpmLabd2pDMtnA", "category": "philosophy_meaning", "trust": "high", "description": "Seek discomfort - embracing uncertainty, spontaneous connection"},
 
-    # Grief & Loss
-    {"name": "The Dinner Party", "category": "grief", "url": "@TheDinnerPartyOrg"},
-    {"name": "What's Your Grief", "category": "grief", "url": "@WhatsYourGrief"},
-    {"name": "Refuge in Grief", "category": "grief", "url": "@RefugeinGrief"},
+    # --- Gratitude & Appreciation ---
+    {"name": "StoryCorps", "url": "@storycorps", "channel_id": "UCBYXhmHfUOpb9TYuPpVzFWA", "category": "elderly_wisdom", "trust": "high", "description": "Ordinary people's stories - gratitude, love, appreciation"},
 
-    # Relationships & Communication
-    {"name": "The Gottman Institute", "category": "relationships", "url": "@TheGottmanInstitute"},
-    {"name": "Esther Perel", "category": "relationships", "url": "@EstherPerel"},
-    {"name": "Matthew Hussey", "category": "relationships", "url": "@howtogettheguy"},
+    # --- Love & Compassion ---
+    {"name": "Esther Perel", "url": "@estherperel", "channel_id": "UCyktTJjKdR81Cv9sMXK5QCA", "category": "relationships_love", "trust": "high", "description": "Love as complex & contradictory. 'Where Do We Begin'"},
+    {"name": "The Gottman Institute", "url": "@gottmaninstitute", "channel_id": "UCWxbz64r6vI7E2awwc8apLQ", "category": "relationships_love", "trust": "high", "description": "John Gottman - research-based love, compassion in relationships"},
+    {"name": "Tara Brach", "url": "@TaraBrach", "channel_id": "UCxNFlBjJtHXLhHIkqxzJ7Tw", "category": "philosophy_meaning", "trust": "high", "description": "Radical self-compassion, loving kindness, mindfulness"},
 
-    # ADHD & Neurodivergence
-    {"name": "How to ADHD", "category": "neurodivergent", "url": "@HowtoADHD"},
-    {"name": "ADHD Jesse", "category": "neurodivergent", "url": "@ADHDJesse"},
-    {"name": "The Aspie World", "category": "neurodivergent", "url": "@TheAspieWorld"},
+    # --- Vulnerability & Openness ---
+    {"name": "Brené Brown", "url": "@BreneBrown", "channel_id": "UCpLsVgZrECIhPdJJCxyNRlQ", "category": "vulnerability_authenticity", "trust": "high", "description": "Vulnerability research, courage, authenticity"},
+    {"name": "Diary of a CEO", "url": "@TheDiaryOfACEO", "channel_id": "UCGq-a57w-aPwyi3pW7XLiHw", "category": "vulnerability_authenticity", "trust": "high", "description": "Deep conversations on failure, vulnerability, raw truth"},
+    {"name": "Lewis Howes", "url": "@LewisHowes", "channel_id": "UCQjBpfPj72zwYFpS7U7gd_A", "category": "vulnerability_authenticity", "trust": "high", "description": "School of Greatness - men's vulnerability, emotional openness"},
 
-    # Addiction & Recovery
-    {"name": "AfterParty", "category": "addiction", "url": "@AfterPartyCHD"},
-    {"name": "Recovery Elevator", "category": "addiction", "url": "@RecoveryElevator"},
+    # --- Fear & Anxiety ---
+    {"name": "Therapy in a Nutshell", "url": "@TherapyinaNutshell", "channel_id": "UCpuKvNRyiFKC4Cgz5bulHjg", "category": "therapy_mental_health", "trust": "high", "description": "Licensed LMFT - anxiety, fear, evidence-based mental health"},
+    {"name": "Kati Morton", "url": "@KatiMorton", "channel_id": "UCzBYOHyEEzlkRdDOSobbpvw", "category": "therapy_mental_health", "trust": "high", "description": "Licensed therapist - anxiety, fear, accessible mental health"},
+    {"name": "The Anxiety Guy", "url": "@TheAnxietyGuy", "channel_id": "UCrJ9_a2zUNnVRvAq-OPuxgQ", "category": "therapy_mental_health", "trust": "high", "description": "Dennis Simsek - anxiety recovery, fear confrontation"},
 
-    # Aging & Life Transitions
-    {"name": "StoryCorps", "category": "wisdom", "url": "@StoryCorps"},
-    {"name": "The Moth", "category": "storytelling", "url": "@TheMothStories"},
+    # --- Anger & Frustration ---
+    {"name": "Psychology In Seattle", "url": "@PsychologyInSeattle", "channel_id": "UCVQXbB1rSYdPb2boNNpu3og", "category": "therapy_mental_health", "trust": "high", "description": "Dr. Kirk Honda - anger, frustration, nuanced emotional analysis"},
 
-    # Mindfulness & Somatic
-    {"name": "Tara Brach", "category": "mindfulness", "url": "@TaraBrach"},
-    {"name": "The Holistic Psychologist", "category": "somatic", "url": "@theholisticpsychologist"},
-    {"name": "Irene Lyon", "category": "somatic", "url": "@IreneLyon"},
+    # --- Shame & Guilt ---
+    {"name": "Dr. Ramani", "url": "@DoctorRamani", "channel_id": "UC9Qixc77KhCo88E5gMs-caQ", "category": "therapy_mental_health", "trust": "high", "description": "Shame, guilt, narcissistic abuse recovery, healing"},
 
-    # Work & Career
-    {"name": "Simon Sinek", "category": "work", "url": "@SimonSinek"},
-    {"name": "Adam Grant", "category": "work", "url": "@AdamGrantOfficial"},
+    # --- Grief & Sorrow ---
+    {"name": "Refuge in Grief", "url": "@RefugeinGrief", "channel_id": "UCwzQ3DPTgKmE6GUmfWuFxkQ", "category": "therapy_mental_health", "trust": "high", "description": "Megan Devine - grief that doesn't need fixing, anti-toxic positivity"},
+    {"name": "The Grief Recovery Method", "url": "@GriefRecoveryMethod", "channel_id": "UCiE6-nB-c9qB5n0f3Cq1uRQ", "category": "therapy_mental_health", "trust": "high", "description": "Evidence-based grief recovery, practical tools"},
+    {"name": "What's Your Grief", "url": "@WhatsYourGrief", "channel_id": "UCmQcjPmjwB7QmHM_NiP3EQg", "category": "therapy_mental_health", "trust": "high", "description": "Practical grief education, normalizing all types of loss"},
+    {"name": "Nora McInerny", "url": "@NoraMcInerny", "channel_id": "UC0aCvDr7E_Cvq0KHB3FQXpg", "category": "therapy_mental_health", "trust": "high", "description": "Terrible, Thanks for Asking - grief with humor and honesty"},
+
+    # --- Calm & Contentment ---
+    {"name": "Michael Sealey", "url": "@MichaelSealey", "channel_id": "UC9GoqsWjluXVSKHO4Wistbw", "category": "therapy_mental_health", "trust": "high", "description": "Guided meditations, hypnotherapy, deep relaxation"},
+    {"name": "The Honest Guys", "url": "@thehonestguys", "channel_id": "UC7tD6Ifrwbiy-BoaAHEinmQ", "category": "therapy_mental_health", "trust": "high", "description": "Guided meditations, calm, sleep stories"},
+    {"name": "Jason Stephenson", "url": "@JasonStephensonSleep", "channel_id": "UCqDBSTeuGa1e3MSqG_nq2Uw", "category": "therapy_mental_health", "trust": "high", "description": "Sleep meditation, peace, anxiety relief"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # COGNITIVE PATTERNS
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Ambiguity & Uncertainty ---
+    {"name": "Vsauce", "url": "@Vsauce", "channel_id": "UC6nSFpj9HTCZ5t-N3Rm3-HA", "category": "philosophy_meaning", "trust": "high", "description": "Michael Stevens - embracing uncertainty, existential curiosity"},
+    {"name": "Veritasium", "url": "@veritasium", "channel_id": "UCHnyfMqiRRG1u-2MsSQLbXA", "category": "philosophy_meaning", "trust": "high", "description": "Derek Muller - uncertainty in science, changing one's mind"},
+
+    # --- Cognitive Flow & Rhythm ---
+    {"name": "How to ADHD", "url": "@HowtoADHD", "channel_id": "UC-nPM1_kSZf91ZGkcgy_95Q", "category": "neurodivergence", "trust": "high", "description": "Jessica McCabe - ADHD cognitive patterns, flow states, rhythms"},
+    {"name": "Purple Ella", "url": "@PurpleElla", "channel_id": "UCvj7WmANb1VdDwPv_L0D4ag", "category": "neurodivergence", "trust": "high", "description": "Autism + ADHD - different cognitive rhythms, authentic experience"},
+
+    # --- Perspective & Worldview ---
+    {"name": "Contrapoints", "url": "@ContraPoints", "channel_id": "UCNvsIonJdJ5E4EXMa65VYpA", "category": "philosophy_meaning", "trust": "high", "description": "Natalie Wynn - philosophy, perspective shifts, nuance"},
+    {"name": "Philosophy Tube", "url": "@PhilosophyTube", "channel_id": "UC2PA-AKmVpU6NKCGtZq_rKQ", "category": "philosophy_meaning", "trust": "high", "description": "Abigail Thorn - philosophy, changing worldviews, identity"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # EXISTENTIAL THEMES
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Identity & Selfhood ---
+    {"name": "Jammidodger", "url": "@Jammidodger", "channel_id": "UCXc4jQMOy2wvVo_jK1EuLSQ", "category": "vulnerability_authenticity", "trust": "high", "description": "Trans identity journey - discovering and becoming oneself"},
+    {"name": "Thais Gibson", "url": "@PersonalDevelopmentSchool", "channel_id": "UCHQ4lSAu7jQXmVN3MPCPZGQ", "category": "relationships_love", "trust": "high", "description": "Attachment theory, identity patterns, self-discovery"},
+
+    # --- Meaning & Purpose ---
+    {"name": "The Minimalists", "url": "@TheMinimalists", "channel_id": "UCRPrmdh5FLt4bxWgvQ8SWOg", "category": "philosophy_meaning", "trust": "high", "description": "Joshua & Ryan - meaning over materialism, intentional living"},
+    {"name": "Victor Frankl Institute", "url": "@ViktorFranklInstitute", "channel_id": "UCNqv3JbxGJ0gZ_fZG_QXLjw", "category": "philosophy_meaning", "trust": "high", "description": "Man's Search for Meaning - logotherapy, finding purpose"},
+    {"name": "Academy of Ideas", "url": "@AcademyofIdeas", "channel_id": "UCiRiQGCHGjDLT9FQXFW0I3A", "category": "philosophy_meaning", "trust": "high", "description": "Philosophy for life - meaning, purpose, existentialism"},
+
+    # --- Growth & Personal Development ---
+    {"name": "Mel Robbins", "url": "@melrobbins", "channel_id": "UCk2U-Oqn7RXf-ydPqfSxG5g", "category": "vulnerability_authenticity", "trust": "high", "description": "Personal growth without toxic positivity, science-backed"},
+    {"name": "Rich Roll", "url": "@richroll", "channel_id": "UCOF0J3ms6IeZZCOp-jJMuXQ", "category": "vulnerability_authenticity", "trust": "high", "description": "Transformation, addiction recovery, personal evolution"},
+
+    # --- Transformation & Change ---
+    {"name": "Gabor Maté", "url": "@DrGaborMate", "channel_id": "UC6JLfDwuqC6OmJAqVVn5f7w", "category": "addiction_recovery", "trust": "high", "description": "Trauma-informed transformation, compassionate change"},
+    {"name": "Annie Grace", "url": "@ThisNakedMind", "channel_id": "UCDSEuXPwLJh4zLrVbYXj0Nw", "category": "addiction_recovery", "trust": "high", "description": "This Naked Mind - alcohol freedom, identity transformation"},
+
+    # --- Mortality & Death Awareness ---
+    {"name": "Ask a Mortician", "url": "@AskAMortician", "channel_id": "UCi5iiEyLwSLvlqnMi02u5gQ", "category": "philosophy_meaning", "trust": "high", "description": "Caitlin Doughty - death positivity, confronting mortality honestly"},
+    {"name": "Ram Dass", "url": "@RamDassOrg", "channel_id": "UCrmD3-ZZTJRfxAOxS1LHkkQ", "category": "philosophy_meaning", "trust": "high", "description": "Be Here Now - aging, dying, consciousness, acceptance"},
+
+    # --- Hope & Despair ---
+    {"name": "The Moth", "url": "@TheMoth", "channel_id": "UCkVMpFPDK1F67eCM60ICAVQ", "category": "storytelling_human_experience", "trust": "high", "description": "True stories - the full spectrum from despair to hope"},
+    {"name": "Humans of New York", "url": "@HumansofNewYork", "channel_id": "UCQvJR3UyQ8K-TrVz0rENKxg", "category": "storytelling_human_experience", "trust": "high", "description": "Real human stories - struggles, hope, resilience"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # RELATIONAL DYNAMICS
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Connection & Belonging ---
+    {"name": "NVC Marshall Rosenberg", "url": "@NonviolentCommunicationNVC", "channel_id": "UC2iuX2CG6jgCgHVfMM7w3Yw", "category": "relationships_love", "trust": "high", "description": "Nonviolent Communication - deep connection through needs"},
+
+    # --- Isolation & Loneliness ---
+    {"name": "Kurzgesagt", "url": "@Kurzgesagt", "channel_id": "UCsXVk37bltHxD1rDPwtNM8Q", "category": "philosophy_meaning", "trust": "high", "description": "In a Nutshell - loneliness, isolation, existential themes"},
+    {"name": "HealthyGamerGG", "url": "@HealthyGamerGG", "channel_id": "UClHVl2N3jPEbkNJVx-ItQIQ", "category": "therapy_mental_health", "trust": "high", "description": "Dr. K - isolation, gaming culture, mental health"},
+
+    # --- Conflict & Discord ---
+    {"name": "TED Talks", "url": "@TED", "channel_id": "UCAuUUnT6oDeKwE6v1NGQxug", "category": "philosophy_meaning", "trust": "high", "description": "Ideas worth spreading - conflict resolution, understanding"},
+
+    # --- Caregiving & Nurturance ---
+    {"name": "Dr. Becky Kennedy", "url": "@drbeckyatgoodinside", "channel_id": "UC2oF2TmQVzRCW3M6BQmwEFQ", "category": "relationships_love", "trust": "high", "description": "Good Inside - parenting as caregiving, nurturing connection"},
+    {"name": "Janet Lansbury", "url": "@JanetLansbury", "channel_id": "UC-pMWdv3GhJIBmYqAJWBQfQ", "category": "relationships_love", "trust": "high", "description": "RIE parenting - respectful caregiving, trust"},
+    {"name": "Teepa Snow", "url": "@TeepaSnow", "channel_id": "UCmqMv7z9YqQf_J7bqMzPr1w", "category": "relationships_love", "trust": "high", "description": "Dementia caregiving - compassionate care, understanding"},
+
+    # --- Empathy & Understanding ---
+    {"name": "Andrew Huberman", "url": "@hubermanlab", "channel_id": "UC2D2CMWXMOVWx7giW1n3LIg", "category": "therapy_mental_health", "trust": "high", "description": "Neuroscience of empathy, connection, understanding others"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # SYMBOLIC EXPRESSION
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Metaphoric Language & Symbolic Imagery ---
+    {"name": "Nerdwriter", "url": "@Nerdwriter1", "channel_id": "UCJkMlOu7faDgqh4PfzbpLdg", "category": "philosophy_meaning", "trust": "high", "description": "Video essays on art, metaphor, meaning in culture"},
+    {"name": "The Art Assignment", "url": "@theartassignment", "channel_id": "UCmQThz1OLYt8mb2PaGJSJeQ", "category": "philosophy_meaning", "trust": "high", "description": "Art as emotional expression, symbolic meaning"},
+
+    # --- Archetypal & Mythic Themes ---
+    {"name": "Joseph Campbell Foundation", "url": "@JosephCampbellFdn", "channel_id": "UCq6v1HuYQ6m4d9PVcA0rqPQ", "category": "philosophy_meaning", "trust": "high", "description": "Hero's journey, myth, archetypal psychology"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # TEMPORAL & NARRATIVE PATTERNS
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Narrative Arc / Personal Journey ---
+    {"name": "Soft White Underbelly", "url": "@SoftWhiteUnderbelly", "channel_id": "UCCvcd0FYi58LwyTQP8MYTgg", "category": "storytelling_human_experience", "trust": "high", "description": "Mark Laita - raw life stories, personal journeys, humanity"},
+    {"name": "Special Books by Special Kids", "url": "@SpecialBooksbySpecialKids", "channel_id": "UC4E98HDsPXrf5kTKIgrSmtQ", "category": "storytelling_human_experience", "trust": "high", "description": "Chris Ulmer - stories of disability, difference, humanity"},
+
+    # --- Temporal Focus (Past, Present, Future) ---
+    {"name": "Eckhart Tolle", "url": "@EckhartTolle", "channel_id": "UCJ9rg3_ApZFpfIR0vftNPAA", "category": "philosophy_meaning", "trust": "high", "description": "Present moment awareness, releasing past and future"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # LIFE CONTEXT (STAGES & TRANSITIONS)
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Birth & New Beginnings ---
+    {"name": "The Birth Hour", "url": "@TheBirthHour", "channel_id": "UCt1FgWrRWzYj_r3z0MWMtDA", "category": "storytelling_human_experience", "trust": "high", "description": "Birth stories - new beginnings, transformation"},
+
+    # --- Aging & Life Stages ---
+    {"name": "Sixty and Me", "url": "@SixtyandMe", "channel_id": "UCuEb_KLhBhZ_fQVZMbR2EJw", "category": "elderly_wisdom", "trust": "high", "description": "Women over 60 - embracing aging, wisdom"},
+
+    # --- Rupture (Breakdown or Crisis) ---
+    {"name": "After Prison Show", "url": "@AfterPrisonShow", "channel_id": "UCo2LGlvPwPJ_vD-dN8FdT8w", "category": "addiction_recovery", "trust": "high", "description": "Joe Guerrero - life after rupture, rebuilding from crisis"},
+    {"name": "Recovery Elevator", "url": "@RecoveryElevator", "channel_id": "UChvKBUy9eLU-5xVz2Rre7-g", "category": "addiction_recovery", "trust": "high", "description": "Alcohol crisis and recovery, community support"},
+    {"name": "Club Soda", "url": "@ClubSodaUK", "channel_id": "UC8oCJLZ_DLu7e5Qu3qbqRQw", "category": "addiction_recovery", "trust": "high", "description": "Mindful drinking, harm reduction, choice"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # EMBODIED EXPERIENCE
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Vitality & Aliveness ---
+    {"name": "Yoga With Adriene", "url": "@yogawithadriene", "channel_id": "UCFKE7WVJfvaHW5q283SxchA", "category": "therapy_mental_health", "trust": "high", "description": "Embodied practice, vitality, movement as healing"},
+
+    # --- Tension & Relaxation ---
+    {"name": "The Body Keeps the Score", "url": "@BesselVanDerKolk", "channel_id": "UCQ2GfCOybQWdtcA0qVaM1aw", "category": "therapy_mental_health", "trust": "high", "description": "Bessel van der Kolk - trauma in the body, somatic healing"},
+
+    # --- Chronic Illness & Disability ---
+    {"name": "Jessica Kellgren-Fozard", "url": "@JessicaKellgrenFozard", "channel_id": "UCqZ3eDbxCaKBnE9W6w7xRGg", "category": "vulnerability_authenticity", "trust": "high", "description": "Deaf, disabled LGBTQ+ - joy and chronic illness coexist"},
+    {"name": "Invisible i", "url": "@invisiblei", "channel_id": "UCy0f7VLjz7L_rkF1pePJaOg", "category": "vulnerability_authenticity", "trust": "high", "description": "Chronic illness, invisible disability, lived experience"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # IDENTITY & DIVERSITY
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- LGBTQ+ Experience ---
+    {"name": "Ash Hardell", "url": "@AshHardell", "channel_id": "UCnIX4jtXbqEwb8kEU3blzlg", "category": "vulnerability_authenticity", "trust": "high", "description": "Non-binary, queer identity journey, education"},
+
+    # --- Cultural & Racial Identity ---
+    {"name": "Jay Shetty", "url": "@JayShetty", "channel_id": "UCbV60AGIHKz3xMfY3TdvLsQ", "category": "philosophy_meaning", "trust": "high", "description": "Former monk - wisdom traditions, cross-cultural meaning"},
+
+    # --- Neurodivergent Experience ---
+    {"name": "Yo Samdy Sam", "url": "@YoSamdySam", "channel_id": "UCwVr5NHzQ4GqPuvViLoXLgw", "category": "neurodivergence", "trust": "high", "description": "Autism, late diagnosis, neurodivergent identity"},
+    {"name": "The Aspie World", "url": "@TheAspieWorld", "channel_id": "UCkpYu4pKJWY2PLe7a6o7G6A", "category": "neurodivergence", "trust": "high", "description": "Dan Jones - autism, ADHD, neurodivergent experience"},
 ]

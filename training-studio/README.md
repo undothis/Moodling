@@ -132,8 +132,37 @@ HUGGINGFACE_TOKEN=hf_...
 
 ### Statistics
 - Category distribution charts
-- Quality score distributions
-- Processing trends
+- Quality and safety score distributions
+- Average scores with progress bars
+- Quick stats panel
+
+### Tuning Dashboard
+
+The Tuning page helps you control how each channel influences your training data:
+
+**Channel Influence Controls**
+- **Weight Slider** (0x to 2x) - Increase or decrease a channel's influence on training
+- **Include Toggle** - Quickly exclude a channel from exports without deleting data
+- **Contribution View** - See what percentage of training data each channel provides
+
+**Category Breakdown**
+- See which categories each channel contributes (e.g., "emotional regulation", "coping strategies")
+- Warning if a channel is too focused on one category (>50%)
+- Helps balance your training data across topics
+
+**Quality Alerts**
+- Automatically identifies problematic channels/videos with:
+  - Low average quality scores (<75)
+  - Low safety scores (<75)
+  - High rejection rates (>30%)
+  - Many flagged insights
+- Helps you pinpoint what's contributing bad data
+
+**Data Provenance (Source Tokens)**
+- Every insight gets a unique source token
+- Track which channel/video each training example came from
+- If your fine-tuned model behaves strangely, trace it back to the source
+- Delete all insights from a problematic channel or video with one click
 
 ### Export
 - **Alpaca format** - For Llama fine-tuning
@@ -166,7 +195,27 @@ The Dashboard shows status for each component:
 1. **Add Channels** - Add YouTube channels with interview content
 2. **Process Videos** - Either paste URLs or select from channel listings
 3. **Review Insights** - Approve good insights, reject bad ones
-4. **Export Data** - Export approved insights for model training
+4. **Tune Data** - Adjust channel weights, remove bad sources
+5. **Export Data** - Export approved insights for model training
+6. **Test in MoodLeaf** - Test the fine-tuned model in the actual app
+
+### Tuning Workflow
+
+After processing several channels, use the Tuning page to:
+
+1. **Check Quality Alerts** - See if any channels are producing low-quality data
+2. **Review Category Balance** - Ensure training isn't too weighted toward one topic
+3. **Adjust Weights** - Reduce influence of channels pushing the model in unwanted directions
+4. **Remove Bad Data** - Delete insights from problematic videos/channels
+5. **Re-export** - Export with updated weights applied
+
+### Testing Strategy
+
+Training Studio focuses on **data curation**. For testing the fine-tuned model:
+
+- **Don't test here** - A test panel in Training Studio would be misleading
+- **Test in MoodLeaf** - The real app has system prompts, exclusions, and memory that affect responses
+- **Use source tokens** - If the model misbehaves, trace the behavior back to specific training data
 
 ---
 
@@ -211,8 +260,16 @@ training-studio/
 │
 ├── frontend/          # Next.js 14
 │   └── src/
-│       ├── app/       # Pages
-│       └── lib/       # API client
+│       ├── app/
+│       │   ├── page.tsx      # Dashboard
+│       │   ├── channels/     # Channel management
+│       │   ├── process/      # Video processing
+│       │   ├── review/       # Insight review
+│       │   ├── stats/        # Statistics
+│       │   ├── tuning/       # Tuning dashboard
+│       │   └── export/       # Data export
+│       └── lib/
+│           └── api.ts        # API client
 │
 ├── start.sh           # One-button startup (bash)
 ├── start.csh          # One-button startup (tcsh)
