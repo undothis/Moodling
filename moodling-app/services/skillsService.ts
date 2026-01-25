@@ -1102,6 +1102,7 @@ export async function getSkillsMenuData(isPremium: boolean): Promise<{
     growth: [],
     social: [],
     advanced: [],
+    games: [],
   };
 
   for (const skill of SKILLS) {
