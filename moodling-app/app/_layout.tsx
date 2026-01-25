@@ -207,6 +207,13 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
+        <Stack.Screen
+          name="settings/coach-access"
+          options={{
+            title: 'AI Data Access',
+            presentation: 'card',
+          }}
+        />
       </Stack>
 
       {/* Guided Tour Spotlight - at root level so it persists across navigation */}
