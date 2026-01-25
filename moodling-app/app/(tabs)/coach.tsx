@@ -175,7 +175,7 @@ export default function CoachTabScreen() {
             setInterimTranscript(transcript);
           }
         },
-        onAutoSend: (transcript) => {
+        onMessageReady: (transcript) => {
           // Auto-send when silence detected (if enabled in settings)
           if (transcript.trim()) {
             handleSendRef.current?.(transcript);
