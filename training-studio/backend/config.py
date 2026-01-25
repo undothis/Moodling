@@ -334,3 +334,74 @@ RECOMMENDED_CHANNELS = [
     {"name": "Yo Samdy Sam", "url": "@YoSamdySam", "channel_id": "UCwVr5NHzQ4GqPuvViLoXLgw", "category": "neurodivergence", "trust": "high", "description": "Autism, late diagnosis, neurodivergent identity"},
     {"name": "The Aspie World", "url": "@TheAspieWorld", "channel_id": "UCkpYu4pKJWY2PLe7a6o7G6A", "category": "neurodivergence", "trust": "high", "description": "Dan Jones - autism, ADHD, neurodivergent experience"},
 ]
+
+
+# ============================================================================
+# RECOMMENDED MOVIES FOR TRAINING
+# ============================================================================
+# Movies with rich emotional content, authentic human experiences, and
+# therapeutic themes. Perfect for training an empathetic AI coach.
+# Note: Users need to provide their own movie files (legally obtained)
+
+RECOMMENDED_MOVIES = [
+    # --- GRIEF & LOSS ---
+    {"title": "Manchester by the Sea", "year": 2016, "category": "grief_loss", "description": "Devastating portrait of grief, guilt, and the inability to forgive oneself. Shows how trauma can freeze a person.", "why_train": "Teaches AI to recognize deep grief that someone can't articulate, and the importance of presence over advice."},
+    {"title": "Ordinary People", "year": 1980, "category": "grief_loss", "description": "Family navigating survivor's guilt after a son's death. Includes therapy sessions.", "why_train": "Excellent examples of therapeutic dialogue and family dynamics around unprocessed grief."},
+    {"title": "In the Bedroom", "year": 2001, "category": "grief_loss", "description": "Parents dealing with the violent death of their son. Raw, realistic grief.", "why_train": "Shows how grief manifests differently in different people, and how couples can drift apart in pain."},
+    {"title": "Rabbit Hole", "year": 2010, "category": "grief_loss", "description": "Couple coping with the accidental death of their child. Includes support group scenes.", "why_train": "Authentic support group dialogue, different coping mechanisms, and the non-linear nature of grief."},
+
+    # --- MENTAL HEALTH & THERAPY ---
+    {"title": "Good Will Hunting", "year": 1997, "category": "therapy_mental_health", "description": "Troubled genius works through childhood trauma with therapist. Classic therapy relationship.", "why_train": "Gold standard for therapeutic breakthrough moments. 'It's not your fault' scene is peak emotional validation."},
+    {"title": "Silver Linings Playbook", "year": 2012, "category": "therapy_mental_health", "description": "Bipolar disorder, family dysfunction, and finding connection. Realistic medication discussions.", "why_train": "Shows mental illness in relatable context, the messy reality of recovery, and how love/connection can coexist with treatment."},
+    {"title": "A Beautiful Mind", "year": 2001, "category": "therapy_mental_health", "description": "Schizophrenia and the challenge of distinguishing reality. Long-term illness management.", "why_train": "Understanding chronic mental illness, the role of support systems, and living with ongoing challenges."},
+    {"title": "Girl, Interrupted", "year": 1999, "category": "therapy_mental_health", "description": "Young woman in psychiatric hospital. Group dynamics, diagnosis, identity.", "why_train": "Peer support dynamics, questioning normalcy, the complexity of mental health labels."},
+
+    # --- ADDICTION & RECOVERY ---
+    {"title": "Beautiful Boy", "year": 2018, "category": "addiction_recovery", "description": "Father-son relationship through meth addiction. Cycles of relapse and hope.", "why_train": "Teaches the cyclical nature of addiction, family impact, and maintaining love while setting boundaries."},
+    {"title": "Requiem for a Dream", "year": 2000, "category": "addiction_recovery", "description": "Multiple addictions and their devastating progression. Unflinching look at rock bottom.", "why_train": "Understanding the progressive nature of addiction and the desperation it creates. Use carefully - intense content."},
+    {"title": "28 Days", "year": 2000, "category": "addiction_recovery", "description": "Alcoholic in rehab. Recovery process, group therapy, accountability.", "why_train": "Realistic rehab environment, group therapy dynamics, early recovery challenges."},
+    {"title": "Clean and Sober", "year": 1988, "category": "addiction_recovery", "description": "Real estate agent in rehab. Denial, acceptance, and early recovery.", "why_train": "Classic portrayal of denial breaking down, the moment of surrender, AA/NA dynamics."},
+
+    # --- RELATIONSHIPS & COMMUNICATION ---
+    {"title": "Marriage Story", "year": 2019, "category": "relationships_love", "description": "Divorce process with still-loving couple. Communication breakdown.", "why_train": "Masterclass in how love can coexist with incompatibility. The argument scene shows escalation patterns."},
+    {"title": "Blue Valentine", "year": 2010, "category": "relationships_love", "description": "Relationship shown at beginning and end. How connection erodes.", "why_train": "Understanding relationship deterioration patterns, the gap between intention and impact."},
+    {"title": "Revolutionary Road", "year": 2008, "category": "relationships_love", "description": "1950s couple trapped in suburban expectations. Dreams vs. reality.", "why_train": "How unspoken expectations poison relationships, the danger of burying authentic self."},
+    {"title": "Eternal Sunshine of the Spotless Mind", "year": 2004, "category": "relationships_love", "description": "Memory erasure after breakup. The value of painful memories.", "why_train": "Teaches that painful experiences have value, and that avoiding pain isn't the same as healing."},
+
+    # --- TRAUMA & HEALING ---
+    {"title": "The Perks of Being a Wallflower", "year": 2012, "category": "trauma_healing", "description": "Teen processing repressed trauma. Friendship, belonging, breakthrough.", "why_train": "Shows how trauma surfaces, the power of feeling seen, and breakthrough moments."},
+    {"title": "Mystic River", "year": 2003, "category": "trauma_healing", "description": "Childhood trauma affecting adult lives. Three men, interconnected pain.", "why_train": "Long-term effects of childhood trauma, how unprocessed pain ripples through decades."},
+    {"title": "Precious", "year": 2009, "category": "trauma_healing", "description": "Abuse survivor finding voice through education and writing. Resilience.", "why_train": "Extreme adversity and the spark of resilience. The power of one person believing in you."},
+    {"title": "The Prince of Tides", "year": 1991, "category": "trauma_healing", "description": "Man confronts family secrets through sister's therapist. Repressed memories.", "why_train": "Family secrets, the cost of silence, and how therapy can unearth buried truth."},
+
+    # --- DEPRESSION & SUICIDALITY ---
+    {"title": "The Hours", "year": 2002, "category": "therapy_mental_health", "description": "Three women across time dealing with depression. Interconnected stories.", "why_train": "Depression across contexts and eras, the weight of existence, finding reasons to stay."},
+    {"title": "Melancholia", "year": 2011, "category": "therapy_mental_health", "description": "Depression portrayed as planetary collision. Artistic depiction of despair.", "why_train": "Visceral understanding of how depression feels from inside. The inability to 'just feel better.'"},
+    {"title": "It's Kind of a Funny Story", "year": 2010, "category": "therapy_mental_health", "description": "Teen checks himself into psychiatric ward. Peer support, finding perspective.", "why_train": "Normalizing seeking help, psychiatric hospital as place of healing, peer connection."},
+
+    # --- FAMILY DYNAMICS ---
+    {"title": "August: Osage County", "year": 2013, "category": "parenting_family", "description": "Dysfunctional family gathering after death. Generational trauma.", "why_train": "How family patterns repeat, the drama triangle in action, buried resentments surfacing."},
+    {"title": "The Squid and the Whale", "year": 2005, "category": "parenting_family", "description": "Divorce through children's eyes. Intellectual parents, emotional neglect.", "why_train": "Impact of divorce on children, how parents unconsciously use children as proxies."},
+    {"title": "Boyhood", "year": 2014, "category": "parenting_family", "description": "12 years of a boy's life. Divorce, blended families, growing up.", "why_train": "Realistic family evolution, stepfamily dynamics, the long arc of parenting."},
+    {"title": "Kramer vs. Kramer", "year": 1979, "category": "parenting_family", "description": "Custody battle and evolving parenthood. Father learning to parent.", "why_train": "Challenging gender roles in parenting, the cost of divorce on children."},
+
+    # --- IDENTITY & SELF-DISCOVERY ---
+    {"title": "Lady Bird", "year": 2017, "category": "life_transitions", "description": "Senior year identity formation. Mother-daughter tension.", "why_train": "Adolescent identity development, the push-pull of parental relationships, finding authentic self."},
+    {"title": "Moonlight", "year": 2016, "category": "vulnerability_shame", "description": "Three stages of Black gay man's life. Identity, shame, masculinity.", "why_train": "Identity formation under societal pressure, toxic masculinity, learning to accept oneself."},
+    {"title": "Call Me by Your Name", "year": 2017, "category": "relationships_love", "description": "First love, self-discovery, the pain of impermanence.", "why_train": "The father's speech at the end is a masterclass in emotional wisdom about embracing feeling."},
+
+    # --- LONELINESS & CONNECTION ---
+    {"title": "Her", "year": 2013, "category": "relationships_love", "description": "Man falls in love with AI. Loneliness, connection, what makes relationships real.", "why_train": "Directly relevant - explores human-AI emotional connection, what we need from relationships."},
+    {"title": "Lost in Translation", "year": 2003, "category": "human_stories", "description": "Two lonely people connect briefly. Platonic intimacy, feeling understood.", "why_train": "The power of being truly seen, connection without agenda, meaningful brief encounters."},
+    {"title": "Anomalisa", "year": 2015, "category": "therapy_mental_health", "description": "Man who sees everyone as same. Profound alienation and brief connection.", "why_train": "Understanding depersonalization, the desperation for genuine connection, numbness."},
+
+    # --- AGING & MORTALITY ---
+    {"title": "Away from Her", "year": 2006, "category": "grief_loss", "description": "Woman with Alzheimer's, husband's journey of letting go.", "why_train": "Anticipatory grief, identity loss, unconditional love in devastating circumstances."},
+    {"title": "Amour", "year": 2012, "category": "grief_loss", "description": "Elderly couple facing terminal illness. Love, dignity, hard choices.", "why_train": "End-of-life care, maintaining dignity, the weight of caretaking."},
+    {"title": "The Farewell", "year": 2019, "category": "grief_loss", "description": "Family keeps grandmother's diagnosis secret. Cultural differences in death.", "why_train": "Cultural perspectives on truth-telling and death, family dynamics across cultures."},
+
+    # --- NEURODIVERGENCE ---
+    {"title": "Rain Man", "year": 1988, "category": "neurodivergence", "description": "Autistic savant and his brother. Understanding difference.", "why_train": "Foundational autism representation. Shows both gifts and challenges of neurodivergence."},
+    {"title": "Temple Grandin", "year": 2010, "category": "neurodivergence", "description": "Autistic scientist's life. Different thinking as strength.", "why_train": "Neurodivergence as different, not less. Finding ways to thrive by leaning into difference."},
+    {"title": "Adam", "year": 2009, "category": "neurodivergence", "description": "Man with Asperger's navigating romance. Social challenges, authenticity.", "why_train": "Relationship challenges with neurodivergence, the beauty of direct communication."},
+]

@@ -14,11 +14,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import shutil
+import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -383,6 +385,258 @@ Only include channels from the list above. Be specific about why each channel ma
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# ============================================================================
+# MOVIE SUPPORT
+# ============================================================================
+
+@app.get("/recommended-movies")
+async def get_recommended_movies():
+    """Get list of recommended movies for training data."""
+    return RECOMMENDED_MOVIES
+
+
+@app.post("/recommend-movies-ai")
+async def recommend_movies_ai(request: AIRecommendRequest):
+    """Use Claude to recommend movies based on AI description."""
+    import anthropic
+    import json
+    import re
+
+    # Build movie list for Claude
+    movie_info = []
+    for m in RECOMMENDED_MOVIES:
+        movie_info.append(f"- {m['title']} ({m['year']}) [{m['category']}]: {m['description']} WHY: {m['why_train']}")
+
+    movies_text = "\n".join(movie_info)
+
+    prompt = f"""You are helping select movies to train an AI coaching assistant.
+
+The user wants to build an AI that: {request.description}
+
+Here are movies with rich emotional content for training:
+
+{movies_text}
+
+Based on the user's description, recommend the TOP 6-8 most relevant movies for training their AI.
+
+For each recommended movie, explain WHY it's perfect for their specific use case.
+
+Format your response as JSON:
+{{
+  "recommendations": [
+    {{
+      "title": "Movie Title",
+      "category": "category_key",
+      "reason": "2-3 sentence explanation of why this movie is perfect for their AI"
+    }}
+  ],
+  "training_tips": "1-2 sentences of advice for extracting insights from movies"
+}}
+
+Only include movies from the list above. Be specific about why each matches their needs."""
+
+    try:
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            result = json.loads(json_match.group())
+
+            # Match recommendations back to full movie data
+            enriched_recommendations = []
+            for rec in result.get("recommendations", []):
+                for m in RECOMMENDED_MOVIES:
+                    if m["title"].lower() == rec["title"].lower():
+                        enriched_recommendations.append({
+                            **m,
+                            "reason": rec.get("reason", "Recommended for your use case")
+                        })
+                        break
+
+            return {
+                "success": True,
+                "recommendations": enriched_recommendations,
+                "training_tips": result.get("training_tips", ""),
+                "original_description": request.description
+            }
+        else:
+            return {"success": False, "error": "Could not parse AI response"}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class MovieUploadResponse(BaseModel):
+    success: bool
+    job_id: Optional[str] = None
+    message: str
+
+
+@app.post("/movies/upload")
+async def upload_movie(
+    background_tasks: BackgroundTasks,
+    movie_file: UploadFile = File(...),
+    title: str = Form(...),
+    category: str = Form("general"),
+):
+    """
+    Upload a movie file for processing.
+
+    Uses Whisper AI to transcribe dialogue from the audio track.
+
+    Args:
+        movie_file: Video file (mp4, mkv, avi, etc.)
+        title: Movie title for identification
+        category: Emotional category (grief, therapy, etc.)
+    """
+    try:
+        # Create temp directory for this movie
+        movie_id = str(uuid.uuid4())
+        temp_dir = Path(settings.temp_path) / movie_id
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save movie file
+        movie_path = temp_dir / movie_file.filename
+        with open(movie_path, "wb") as f:
+            shutil.copyfileobj(movie_file.file, f)
+
+        # Create processing job
+        job_id = str(uuid.uuid4())
+
+        # Start background processing
+        background_tasks.add_task(
+            process_movie_background,
+            job_id=job_id,
+            movie_id=movie_id,
+            movie_path=str(movie_path),
+            title=title,
+            category=category,
+        )
+
+        return MovieUploadResponse(
+            success=True,
+            job_id=job_id,
+            message=f"Movie '{title}' uploaded. Whisper transcription started.",
+        )
+
+    except Exception as e:
+        return MovieUploadResponse(
+            success=False,
+            message=str(e)
+        )
+
+
+async def process_movie_background(
+    job_id: str,
+    movie_id: str,
+    movie_path: str,
+    title: str,
+    category: str,
+):
+    """Background task to process an uploaded movie using Whisper transcription."""
+    from models import TranscriptResult, TranscriptSegment
+
+    try:
+        # Extract audio and transcribe with Whisper
+        print(f"[Movie] Running Whisper transcription for '{title}'...")
+        audio_path = await extract_audio_from_video(movie_path)
+        transcript_result = await transcription_service.transcribe(audio_path)
+        transcript_text = transcript_result.text
+        print(f"[Movie] Whisper extracted {len(transcript_text)} chars")
+
+        if not transcript_text:
+            print(f"[Movie] No transcript available for {title}")
+            return
+
+        # Create transcript object
+        transcript = TranscriptResult(
+            text=transcript_text,
+            segments=[TranscriptSegment(
+                text=transcript_text,
+                start=0.0,
+                end=0.0,
+                confidence=1.0
+            )],
+            language="en",
+            duration=0
+        )
+
+        # Extract insights
+        print(f"[Movie] Extracting insights from '{title}'...")
+        insights = await insight_service.extract_insights(
+            transcript=transcript,
+            video_title=f"[Movie] {title}",
+            channel_name=f"Movie ({category})",
+            max_insights=12  # More insights for movies
+        )
+
+        # Store insights in database
+        for insight in insights:
+            insight.video_id = movie_id
+            insight.channel_id = f"movie_{category}"
+            insight.source_token = f"movie_{movie_id[:8]}_{insight.id[:6]}"
+
+            # Save to database
+            insight_data = {
+                "id": insight.id,
+                "video_id": insight.video_id,
+                "channel_id": insight.channel_id,
+                "title": insight.title,
+                "insight": insight.insight,
+                "category": insight.category.value,
+                "coaching_implication": insight.coaching_implication,
+                "timestamp": insight.timestamp,
+                "source_token": insight.source_token,
+                "quality_score": insight.quality_score,
+                "specificity_score": insight.specificity_score,
+                "actionability_score": insight.actionability_score,
+                "safety_score": insight.safety_score,
+                "novelty_score": insight.novelty_score,
+                "confidence": insight.confidence,
+                "status": insight.status.value,
+                "flagged_for_review": insight.flagged_for_review,
+                "emotional_context_json": insight.emotional_context,
+            }
+            await db.create_insight(insight_data)
+
+        print(f"[Movie] Stored {len(insights)} insights from '{title}'")
+
+    except Exception as e:
+        print(f"[Movie] Error processing '{title}': {e}")
+
+
+async def extract_audio_from_video(video_path: str) -> str:
+    """Extract audio from video file using ffmpeg."""
+    import subprocess
+
+    audio_path = video_path.rsplit('.', 1)[0] + '.wav'
+
+    cmd = [
+        'ffmpeg', '-i', video_path,
+        '-vn',  # No video
+        '-acodec', 'pcm_s16le',
+        '-ar', '16000',  # Sample rate for Whisper
+        '-ac', '1',  # Mono
+        '-y',  # Overwrite
+        audio_path
+    ]
+
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    await process.communicate()
+
+    return audio_path
 
 
 # ============================================================================
@@ -1263,12 +1517,16 @@ async def export_training_data(
     Export training data in various formats with source tracking.
 
     Formats:
-    - alpaca: Alpaca/ShareGPT format for fine-tuning
+    - alpaca: Classic Alpaca format (instruction/input/output) - basic Q&A
+    - chatml: ChatML format for Llama 3+, OpenAI - multi-turn with system prompt
+    - sharegpt: ShareGPT format for Unsloth - community standard
+    - conversations: Rich multi-turn with full emotional context
     - jsonl: JSON Lines format
-    - raw: Raw insight data
+    - raw: Raw insight data with all fields
 
     Features:
     - Includes source_token for tracking which data influenced model
+    - Includes emotional_context from facial/voice analysis when available
     - Applies channel influence_weight (set apply_weights=false to skip)
     - Filters out channels with include_in_training=false
     """
@@ -1358,6 +1616,147 @@ async def export_training_data(
             "data": lines
         }
 
+    elif format == "chatml":
+        # ChatML format - OpenAI/Llama 3+ compatible multi-turn conversations
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+
+            # Build emotional context string if available
+            emotion_prefix = ""
+            if emotional_context.get("emotions"):
+                emotions = ", ".join(emotional_context["emotions"])
+                intensity = emotional_context.get("intensity", 0.5)
+                emotion_prefix = f"[User appears {emotions} (intensity: {intensity:.1f})] "
+
+            # Generate multi-turn conversation
+            conversation = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are MoodLeaf, a compassionate AI wellness coach. You provide empathetic support, help users understand their emotions, and offer practical coping strategies. You respond warmly and validate feelings before offering guidance."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{emotion_prefix}{i.insight}"
+                    },
+                    {
+                        "role": "assistant",
+                        "content": i.coaching_implication
+                    }
+                ],
+                "_metadata": {
+                    "source_token": source_token,
+                    "category": i.category,
+                    "emotional_context": emotional_context,
+                    "quality_score": i.quality_score,
+                    "channel": ch_name,
+                    "weight": weight if apply_weights else 1.0
+                }
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "chatml",
+            "description": "ChatML format for Llama 3+, OpenAI fine-tuning",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
+    elif format == "sharegpt":
+        # ShareGPT format - Unsloth/community standard
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+
+            # Build emotional context string if available
+            emotion_prefix = ""
+            if emotional_context.get("emotions"):
+                emotions = ", ".join(emotional_context["emotions"])
+                emotion_prefix = f"[Detected emotions: {emotions}] "
+
+            conversation = {
+                "conversations": [
+                    {
+                        "from": "system",
+                        "value": "You are MoodLeaf, a compassionate AI wellness coach. You provide empathetic support, help users understand their emotions, and offer practical coping strategies."
+                    },
+                    {
+                        "from": "human",
+                        "value": f"{emotion_prefix}{i.insight}"
+                    },
+                    {
+                        "from": "gpt",
+                        "value": i.coaching_implication
+                    }
+                ],
+                "source_token": source_token,
+                "category": i.category,
+                "emotional_context": emotional_context
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "sharegpt",
+            "description": "ShareGPT format for Unsloth fine-tuning",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
+    elif format == "conversations":
+        # Full multi-turn therapeutic conversations with emotional context
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+            prosody_context = i.prosody_context_json or {}
+
+            # Create a realistic multi-turn conversation
+            conversation = {
+                "id": source_token,
+                "category": i.category,
+                "emotional_context": {
+                    "detected_emotions": emotional_context.get("emotions", []),
+                    "intensity": emotional_context.get("intensity", 0.5),
+                    "micro_expressions": emotional_context.get("micro_expressions", []),
+                    "voice_tone": prosody_context.get("tone", "neutral")
+                },
+                "conversation": [
+                    {
+                        "role": "user",
+                        "content": i.insight,
+                        "emotional_state": emotional_context.get("emotions", ["neutral"])
+                    },
+                    {
+                        "role": "assistant",
+                        "content": i.coaching_implication,
+                        "therapeutic_technique": i.category,
+                        "responds_to_emotions": emotional_context.get("emotions", [])
+                    }
+                ],
+                "metadata": {
+                    "source_token": source_token,
+                    "channel": ch_name,
+                    "video_id": i.video_id,
+                    "quality_score": i.quality_score,
+                    "safety_score": i.safety_score,
+                    "weight": weight if apply_weights else 1.0
+                }
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "conversations",
+            "description": "Rich multi-turn conversations with emotional context for advanced training",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
     else:  # raw
         return {
             "format": "raw",
@@ -1374,6 +1773,8 @@ async def export_training_data(
                     "title": i.title,
                     "insight": i.insight,
                     "coaching_implication": i.coaching_implication,
+                    "emotional_context": i.emotional_context_json,
+                    "prosody_context": i.prosody_context_json,
                     "influence_weight": weight if apply_weights else 1.0,
                     "scores": {
                         "quality": i.quality_score,

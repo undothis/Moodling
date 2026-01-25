@@ -127,6 +127,33 @@ HUGGINGFACE_TOKEN=hf_...
 - One-click "Add All Recommended" to add all suggested channels
 - Example: "I want an AI that helps people cope with grief and loss, providing comfort and understanding"
 
+### Movies
+
+Training Studio can also process movies for rich emotional training data.
+
+**Upload Movies**
+- Upload your own movie files (mp4, mkv, avi, etc.)
+- Whisper AI automatically extracts and transcribes all dialogue
+- More reliable than subtitles (no sync issues, no missing dialogue)
+- Categorize movies by emotional theme
+
+**40+ Recommended Movies**
+- Pre-curated list organized by emotional category:
+  - Grief & Loss (Manchester by the Sea, Ordinary People, etc.)
+  - Therapy & Mental Health (Good Will Hunting, Silver Linings Playbook)
+  - Addiction & Recovery (Beautiful Boy, 28 Days)
+  - Relationships & Love (Marriage Story, Blue Valentine)
+  - Trauma & Healing (Room, The Perks of Being a Wallflower)
+  - Family Dynamics (Ladybird, The Squid and the Whale)
+  - And more...
+
+**AI Movie Recommender**
+- Describe your AI's purpose and get personalized movie recommendations
+- Each recommendation explains WHY the movie fits your training goals
+- Get training tips specific to your use case
+
+**Important**: You must own or have legal rights to any movie files you upload.
+
 ### Process Videos
 
 **Simple Mode (Recommended)**
@@ -191,9 +218,126 @@ The Tuning page helps you control how each channel influences your training data
 - Delete all insights from a problematic channel or video with one click
 
 ### Export
-- **Alpaca format** - For Llama fine-tuning
-- **JSONL format** - For OpenAI-style training
-- **Raw format** - Full insight data
+
+**Recommended Formats (Multi-turn with Emotional Context):**
+- **ChatML** - Best for Llama 3+, OpenAI. Includes system prompt and emotional context
+- **ShareGPT** - Best for Unsloth. Community standard with human/gpt roles
+- **Conversations** - Richest format with therapeutic techniques, emotional states tagged
+
+**Legacy Formats:**
+- **Alpaca** - Classic instruction/input/output (single-turn only)
+- **JSONL** - JSON Lines with basic messages
+- **Raw** - Complete data with all scores and metadata
+
+**Emotional Context in Exports:**
+Each training example includes emotional data when available:
+```json
+{
+  "emotional_context": {
+    "emotions": ["sad", "anxious"],
+    "intensity": 0.7,
+    "incongruence": true,
+    "therapeutic_response": "Acknowledge the sadness while gently exploring..."
+  }
+}
+```
+
+---
+
+## MoodLeaf Deployment Architecture
+
+Training Studio creates data for a **three-tiered AI architecture** optimized for iOS and Android:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MoodLeaf Mobile App                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  TIER 1: BUILT-IN LLM (Instant, Free, Private)                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  iOS: Apple Foundation Models (~3B)                       │   │
+│  │  Android: Gemini Nano / On-device Llama                   │   │
+│  │                                                           │   │
+│  │  Handles:                                                 │   │
+│  │  • Quick acknowledgments ("I hear you...")               │   │
+│  │  • Context assembly and memory retrieval                 │   │
+│  │  • Basic emotion classification                          │   │
+│  │  • Session state management                              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           ↓                                      │
+│  TIER 2: LOCAL FINE-TUNED LLAMA (Free, Private, Your Data)     │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Llama 3.2 1B-3B (GGUF format via llama.cpp)              │   │
+│  │  Fine-tuned on YOUR Training Studio data                  │   │
+│  │                                                           │   │
+│  │  Handles:                                                 │   │
+│  │  • Empathetic coaching responses                         │   │
+│  │  • Therapeutic techniques (CBT, DBT, etc.)               │   │
+│  │  • Emotion-aware conversations                           │   │
+│  │  • 90% of user interactions                              │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                           ↓                                      │
+│  TIER 3: CLOUD (Optional Premium, Complex Cases)                │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │  Llama 3.1 70B / Claude API                               │   │
+│  │                                                           │   │
+│  │  Handles:                                                 │   │
+│  │  • Complex trauma/crisis situations                      │   │
+│  │  • Deep multi-session reasoning                          │   │
+│  │  • Premium feature (revenue stream)                      │   │
+│  │  • Fallback for edge cases                               │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why Three Tiers?
+
+| Tier | Cost | Latency | Privacy | Intelligence |
+|------|------|---------|---------|--------------|
+| Built-in LLM | FREE | Instant | 100% private | Basic |
+| Local Llama | FREE | Fast | 100% private | Good (your training) |
+| Cloud | Pay-per-use | ~1-2s | Sent to server | Excellent |
+
+### Training Data Flow
+
+```
+YouTube Videos → Training Studio → Export (ChatML/ShareGPT)
+                                          ↓
+                                   Fine-tune with Unsloth
+                                          ↓
+                              Llama 3.2 3B (your coaching style)
+                                          ↓
+                              Convert to GGUF for mobile
+                                          ↓
+                              Deploy in MoodLeaf app
+```
+
+### Recommended Setup
+
+**For 100% Free/Private Operation:**
+1. Export training data in **ShareGPT** format
+2. Fine-tune **Llama 3.2 3B** using Unsloth (free Colab works)
+3. Convert to GGUF format
+4. Deploy on-device with llama.cpp
+5. Use Apple Foundation Models for quick responses (iOS)
+
+**For Premium Features:**
+- Add cloud tier for users who want "deeper" sessions
+- Host Llama 3.1 8B on Together.ai (~$0.20/1M tokens)
+- Or use Claude API for complex cases
+
+### Mobile Framework Recommendations
+
+**iOS:**
+- Apple Foundation Models API (iOS 18+, FREE)
+- llama.cpp with Core ML optimization
+- MLX for Apple Silicon
+
+**Android:**
+- llama.cpp with Vulkan/OpenCL
+- MLC-LLM for optimized inference
+- Google's Gemini Nano (Pixel phones)
 
 ---
 
@@ -242,6 +386,72 @@ Training Studio focuses on **data curation**. For testing the fine-tuned model:
 - **Don't test here** - A test panel in Training Studio would be misleading
 - **Test in MoodLeaf** - The real app has system prompts, exclusions, and memory that affect responses
 - **Use source tokens** - If the model misbehaves, trace the behavior back to specific training data
+
+---
+
+## Training Data Formats Explained
+
+### ChatML (Recommended for Llama 3+)
+
+ChatML is the format used by OpenAI and Llama 3. It uses role-based messages:
+
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are MoodLeaf, a compassionate wellness coach..."},
+    {"role": "user", "content": "[User appears sad, anxious] I've been struggling lately..."},
+    {"role": "assistant", "content": "I can hear that you're going through a difficult time..."}
+  ]
+}
+```
+
+**Best for:** Llama 3+, OpenAI fine-tuning, production deployments
+
+### ShareGPT (Best for Unsloth)
+
+ShareGPT uses human/gpt roles and is the community standard:
+
+```json
+{
+  "conversations": [
+    {"from": "system", "value": "You are MoodLeaf, a compassionate wellness coach..."},
+    {"from": "human", "value": "[Detected emotions: sad] I've been struggling lately..."},
+    {"from": "gpt", "value": "I can hear that you're going through a difficult time..."}
+  ]
+}
+```
+
+**Best for:** Unsloth, community datasets, quick experimentation
+
+### Emotional Context
+
+Training Studio automatically includes emotional context from facial/voice analysis:
+
+```json
+{
+  "emotional_context": {
+    "emotions": ["sad", "anxious"],
+    "intensity": 0.7,
+    "incongruence": true,
+    "therapeutic_response": "Acknowledge unspoken sadness"
+  }
+}
+```
+
+This teaches the model to:
+- Recognize when someone SAYS "I'm fine" but LOOKS sad
+- Respond to emotional undercurrents
+- Use appropriate therapeutic techniques
+
+### How the AI Learns from This
+
+**Without emotional context:**
+> User: "I'm fine, just tired"
+> AI: "Make sure to get enough sleep!"
+
+**With emotional context:**
+> User: [appears anxious, tense] "I'm fine, just tired"
+> AI: "I notice you seem a bit tense. Sometimes 'tired' can mean more than just needing sleep. Would you like to talk about what's been on your mind?"
 
 ---
 

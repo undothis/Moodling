@@ -497,6 +497,9 @@ class ExtractedInsight(BaseModel):
     # Prosody context
     prosody_context: Optional[Dict[str, Any]] = None
 
+    # Emotional context from facial/voice analysis
+    emotional_context: Optional[Dict[str, Any]] = None  # {"emotions": [...], "intensity": 0.7, ...}
+
     # Status
     status: InsightStatus = InsightStatus.PENDING
     flagged_for_review: bool = False
