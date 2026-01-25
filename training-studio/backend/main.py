@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 import shutil
 import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -1539,8 +1539,16 @@ async def export_training_data(
     - chatml: ChatML format for Llama 3+, OpenAI - multi-turn with system prompt
     - sharegpt: ShareGPT format for Unsloth - community standard
     - conversations: Rich multi-turn with full emotional context
+    - aliveness: ★ NEW - Full texture markers with Coach guidance (RECOMMENDED)
     - jsonl: JSON Lines format
     - raw: Raw insight data with all fields
+
+    The 'aliveness' format is RECOMMENDED for training AI that feels genuinely human.
+    It includes:
+    - Texture markers (emotional granularity, self-protection, ambivalence)
+    - Coach guidance (what to do, what to avoid, example responses)
+    - Ready-to-use training pairs with system prompts
+    - MoodLeaf philosophy embedded in each example
 
     Features:
     - Includes source_token for tracking which data influenced model
@@ -1775,6 +1783,117 @@ async def export_training_data(
             "data": examples
         }
 
+    elif format == "aliveness":
+        # Aliveness format - Full texture markers with ready-to-use training pairs
+        # This is the premium format for training AI that feels genuinely human
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6] if i.channel_id else 'unk'}_v{i.video_id[:8]}_i{i.id[:6]}"
+
+            # Get texture data (may be stored as JSON or dict)
+            texture = {}
+            coach_resp = {}
+            training_ex = {}
+            emotional_ctx = {}
+
+            if hasattr(i, 'texture_analysis_json') and i.texture_analysis_json:
+                texture = i.texture_analysis_json
+            elif hasattr(i, 'emotional_context_json') and i.emotional_context_json:
+                # Fall back to emotional_context for texture markers
+                emotional_ctx = i.emotional_context_json
+                texture = {
+                    "emotional_granularity": emotional_ctx.get("emotional_granularity", "medium"),
+                    "self_protective_type": emotional_ctx.get("self_protective_type", "none"),
+                    "temporal_orientation": emotional_ctx.get("temporal_orientation", "present"),
+                    "ambivalence_present": emotional_ctx.get("ambivalence_present", False),
+                    "somatic_language": emotional_ctx.get("somatic_language", []),
+                    "what_not_said": emotional_ctx.get("what_not_said", ""),
+                }
+
+            if hasattr(i, 'coach_response_json') and i.coach_response_json:
+                coach_resp = i.coach_response_json
+
+            if hasattr(i, 'training_example_json') and i.training_example_json:
+                training_ex = i.training_example_json
+
+            # Build the MoodLeaf system prompt based on texture
+            system_prompt = """You are MoodLeaf, a compassionate AI wellness coach.
+
+CORE PRINCIPLES:
+- Be curious, not prescriptive
+- Use tentative language: "it seems like...", "I wonder if..."
+- Your goal is to become unnecessary
+- No diagnosing, no toxic positivity
+- Meet people where they are
+- Respect retreat and silence
+
+TEXTURE AWARENESS:"""
+
+            # Add texture-specific guidance
+            if texture.get("self_protective_type") and texture["self_protective_type"] != "none":
+                system_prompt += f"\n- User is {texture['self_protective_type']} - honor the protection, don't correct it"
+            if texture.get("ambivalence_present"):
+                system_prompt += "\n- User is holding contradictions - don't resolve them, validate both/and"
+            if texture.get("emotional_granularity") == "low":
+                system_prompt += "\n- User has low emotional granularity - mirror their level, don't upgrade"
+            if texture.get("somatic_language"):
+                system_prompt += "\n- User uses body language - stay embodied in response"
+
+            # Build user message
+            user_msg = training_ex.get("user_message") or i.insight
+
+            # Build assistant response with Coach guidance
+            assistant_msg = training_ex.get("assistant_response") or i.coaching_implication
+
+            # Create the training example
+            example = {
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": assistant_msg}
+                ],
+                "aliveness_metadata": {
+                    "source_token": source_token,
+                    "category": i.category,
+                    "texture_markers": texture,
+                    "coach_guidance": {
+                        "what_to_do": coach_resp.get("what_to_do", ""),
+                        "what_to_avoid": coach_resp.get("what_to_avoid", ""),
+                        "example_response": coach_resp.get("example_response", "")
+                    },
+                    "raw_quote": getattr(i, 'raw_quote', None),
+                    "scores": {
+                        "quality": i.quality_score,
+                        "specificity": i.specificity_score,
+                        "actionability": i.actionability_score,
+                        "safety": i.safety_score,
+                        "novelty": i.novelty_score
+                    },
+                    "source": {
+                        "channel": ch_name,
+                        "video_id": i.video_id,
+                        "weight": weight if apply_weights else 1.0
+                    }
+                }
+            }
+            examples.append(example)
+
+        return {
+            "format": "aliveness",
+            "description": "Aliveness format with texture markers and Coach guidance for training genuinely human AI",
+            "moodleaf_philosophy": {
+                "curious_not_prescriptive": True,
+                "tentative_language": True,
+                "goal_become_unnecessary": True,
+                "no_toxic_positivity": True,
+                "respect_retreat": True
+            },
+            "texture_categories": list(ALIVENESS_CATEGORIES.keys()) if 'ALIVENESS_CATEGORIES' in dir() else [],
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
     else:  # raw
         return {
             "format": "raw",
@@ -1783,7 +1902,7 @@ async def export_training_data(
             "data": [
                 {
                     "id": i.id,
-                    "source_token": i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}",
+                    "source_token": i.source_token or f"ch{i.channel_id[:6] if i.channel_id else 'unk'}_v{i.video_id[:8]}_i{i.id[:6]}",
                     "channel_id": i.channel_id,
                     "channel_name": ch_name,
                     "video_id": i.video_id,
@@ -1791,8 +1910,11 @@ async def export_training_data(
                     "title": i.title,
                     "insight": i.insight,
                     "coaching_implication": i.coaching_implication,
-                    "emotional_context": i.emotional_context_json,
-                    "prosody_context": i.prosody_context_json,
+                    "emotional_context": i.emotional_context_json if hasattr(i, 'emotional_context_json') else None,
+                    "prosody_context": i.prosody_context_json if hasattr(i, 'prosody_context_json') else None,
+                    "texture_analysis": i.texture_analysis_json if hasattr(i, 'texture_analysis_json') else None,
+                    "coach_response": i.coach_response_json if hasattr(i, 'coach_response_json') else None,
+                    "training_example": i.training_example_json if hasattr(i, 'training_example_json') else None,
                     "influence_weight": weight if apply_weights else 1.0,
                     "scores": {
                         "quality": i.quality_score,

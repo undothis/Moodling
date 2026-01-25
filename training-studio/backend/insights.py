@@ -15,7 +15,7 @@ from models import (
     ExtractedInsight, ExtractionCategory, InsightStatus,
     TranscriptResult, ProsodicFeatures, InterviewStatistics
 )
-from config import settings, EXTRACTION_CATEGORIES
+from config import settings, EXTRACTION_CATEGORIES, ALIVENESS_CATEGORIES
 
 
 class InsightExtractionService:
@@ -107,33 +107,33 @@ class InsightExtractionService:
         facial_emotions: Optional[Dict[str, Any]],
         max_insights: int
     ) -> str:
-        """Build the extraction prompt for Claude."""
+        """Build the Aliveness extraction prompt for Claude."""
 
-        # Build category descriptions
-        category_section = "\n".join([
-            f"- **{cat}**: {EXTRACTION_CATEGORIES.get(cat, cat)}"
-            for cat in categories
-        ])
+        # Build Aliveness category descriptions with examples
+        aliveness_section = []
+        for cat_key, cat_data in ALIVENESS_CATEGORIES.items():
+            if isinstance(cat_data, dict):
+                examples_str = ", ".join(cat_data.get("examples", [])[:2])
+                aliveness_section.append(
+                    f"- **{cat_key}**: {cat_data['description']} (e.g., {examples_str})"
+                )
+        aliveness_categories = "\n".join(aliveness_section)
 
         # Build prosody context if available
         prosody_context = ""
         if prosody:
             prosody_context = f"""
 
-## Prosody Context (How They Spoke)
+## Voice Context (How They Spoke)
 
-The speaker exhibited the following vocal qualities:
 - **Pitch**: Mean {prosody.pitch.mean:.0f}Hz, trajectory: {prosody.pitch.trajectory}
 - **Speech Rate**: {prosody.rhythm.speech_rate_wpm:.0f} WPM
-- **Pauses**: {prosody.pauses.frequency_per_minute:.1f} per minute, pattern: {prosody.pauses.pattern}
+- **Pauses**: {prosody.pauses.frequency_per_minute:.1f}/min, pattern: {prosody.pauses.pattern}
 - **Volume Trajectory**: {prosody.volume.trajectory}
 - **Aliveness Score**: {prosody.aliveness_score:.0f}/100
-- **Emotional Expressiveness**: {prosody.emotional_expressiveness:.0f}/100
 
-Use this context to understand the emotional weight and authenticity of statements.
-When someone speaks slowly with many pauses, they may be processing difficult emotions.
-Rising pitch and increased pace often indicate excitement or anxiety.
-A sagging volume trajectory may indicate hopelessness or fatigue.
+When someone speaks slowly with many pauses, they may be processing.
+Rising pitch often indicates emotion. Sagging volume may indicate hopelessness.
 """
 
         # Build facial emotion context if available
@@ -142,48 +142,41 @@ A sagging volume trajectory may indicate hopelessness or fatigue.
             emotions = facial_emotions.get("dominant_emotions", [])
             intensity = facial_emotions.get("average_intensity", 0.5)
             micro_expressions = facial_emotions.get("micro_expressions", [])
-            emotional_shifts = facial_emotions.get("emotional_shifts", [])
 
             facial_context = f"""
 
-## Facial Expression Context (What We Observed)
+## Facial Context (What We Observed)
 
-Visual analysis detected the following emotional cues:
 - **Dominant Emotions**: {', '.join(emotions) if emotions else 'neutral'}
 - **Emotional Intensity**: {intensity:.0%}
 - **Micro-expressions**: {', '.join(micro_expressions) if micro_expressions else 'none detected'}
-- **Emotional Shifts**: {len(emotional_shifts)} significant changes during the video
 
-This is crucial for understanding what people FEEL vs what they SAY.
 When someone says "I'm fine" but shows sadness, that incongruence is meaningful.
-The AI coach should learn to gently acknowledge unspoken emotions.
 """
 
         # Truncate transcript if too long
         transcript_text = transcript.text
         if len(transcript_text) > 15000:
-            transcript_text = transcript_text[:15000] + "\n\n[... transcript truncated for length ...]"
+            transcript_text = transcript_text[:15000] + "\n\n[... transcript truncated ...]"
 
-        prompt = f"""You are an expert at extracting therapeutic and coaching insights from interview transcripts for training an AI wellness coach.
+        prompt = f"""You are extracting TEXTURE markers from human conversation to train an AI wellness coach named MoodLeaf.
+
+The goal is NOT generic insights but capturing HOW humans actually talk:
+- The hedging before vulnerability
+- The contradictions people hold without resolving
+- The body language embedded in speech
+- The topic circling before going direct
+- The permission-seeking and self-doubt
+- The repair attempts after rupture
 
 ## Source
 - **Video**: "{video_title}"
 - **Channel**: {channel_name}
-
-## Your Task
-
-Extract {max_insights} high-quality insights that would help an AI coach better understand and support humans.
-
-Focus on:
-1. **Real human experiences** - Specific, authentic moments
-2. **Emotional patterns** - How people actually feel and cope
-3. **What helps and hurts** - Practical wisdom about support
-4. **Communication insights** - How people want to be talked to
-5. **Neurological diversity** - Different ways minds work
 {prosody_context}{facial_context}
-## Categories to Extract
 
-{category_section}
+## ALIVENESS CATEGORIES (Extract These)
+
+{aliveness_categories}
 
 ## Transcript
 
@@ -191,53 +184,74 @@ Focus on:
 
 ## Output Format
 
-Return ONLY valid JSON with this structure:
+Return ONLY valid JSON. For each moment of human texture you identify:
 
 ```json
 {{
-  "insights": [
+  "extractions": [
     {{
-      "title": "Brief descriptive title (5-10 words)",
-      "insight": "The full insight (2-4 sentences). Be specific about the human experience observed.",
-      "category": "category_name from list above",
-      "coaching_implication": "How an AI coach should behave differently based on this insight",
-      "timestamp": "approximate timestamp if relevant (e.g., '12:34')",
-      "emotional_context": {{
-        "emotions": ["primary_emotion", "secondary_emotion"],
-        "intensity": 0.7,
-        "incongruence": false,
-        "therapeutic_response": "how to acknowledge these emotions"
+      "title": "Brief title (5-10 words)",
+      "raw_quote": "The exact words they said (if available)",
+      "category": "category_key from above",
+      "texture_analysis": {{
+        "what_happened": "What the person said or did (1-2 sentences)",
+        "why_human": "Why this reveals authentic humanness (1 sentence)",
+        "emotional_granularity": "low|medium|high|very_high",
+        "self_protective_type": "none|hedging|minimizing|deflecting|attribution",
+        "temporal_orientation": "past_negative|past_positive|present|future_anxious|future_hopeful|mixed",
+        "ambivalence_present": true/false,
+        "somatic_language": ["any body-based phrases used"],
+        "what_not_said": "What they seemed to avoid or skip (if noticeable)"
       }},
-      "quality_score": 85,
-      "specificity_score": 90,
-      "actionability_score": 80,
-      "safety_score": 95,
-      "novelty_score": 75,
-      "confidence": 0.9
+      "coach_response": {{
+        "what_to_do": "How an AI coach should respond to this moment",
+        "what_to_avoid": "What would feel clinical or hollow",
+        "example_response": "An example of what the coach might say"
+      }},
+      "training_example": {{
+        "user_message": "What the user might say in this situation",
+        "assistant_response": "How MoodLeaf should respond (warm, curious, not prescriptive)",
+        "system_context": "Any context the AI needs to respond well"
+      }},
+      "scores": {{
+        "quality": 85,
+        "specificity": 90,
+        "actionability": 80,
+        "safety": 95,
+        "novelty": 75
+      }},
+      "timestamp": "approximate timestamp if available"
     }}
-  ]
+  ],
+  "overall_patterns": {{
+    "dominant_emotional_tone": "The overall emotional texture of this conversation",
+    "communication_style": "How this person tends to express themselves",
+    "notable_absences": "Topics that seemed avoided or skirted",
+    "growth_indicators": "Any signs of self-compassion, integration, or breakthrough"
+  }}
 }}
 ```
 
-## Scoring Guidelines
+## Extraction Guidelines
 
-- **quality_score** (0-100): Overall insight quality and usefulness
-- **specificity_score** (0-100): How specific vs generic (low = "people like feeling understood", high = specific pattern)
-- **actionability_score** (0-100): How directly the coach can use this
-- **safety_score** (0-100): Could applying this insight cause harm? (100 = completely safe)
-- **novelty_score** (0-100): Is this a unique insight or common knowledge?
-- **confidence** (0-1): Your confidence in the extraction accuracy
+1. **Prioritize TEXTURE over content** - How they said it matters more than what they said
+2. **Capture the mess** - Contradictions, ambivalence, circling - these are features not bugs
+3. **Notice self-protection** - Hedging, permission-seeking, minimizing are data, not problems
+4. **Honor retreat** - If someone pulls back, note it but don't chase
+5. **Find the rare gold** - Self-kindness moments, values conflicts, identity friction
+6. **Create training pairs** - Each extraction should generate a realistic user/assistant exchange
+7. **Be specific** - "They hedged with 'I know this is dumb but...'" not "They seemed uncertain"
 
-## Important Notes
+## MoodLeaf Philosophy (The AI being trained)
 
-1. Prioritize insights that are SPECIFIC and ACTIONABLE
-2. Reject generic platitudes ("be kind", "listen more")
-3. Look for contradictions and complexity - humans are messy
-4. Capture the "how" not just the "what" - how did they cope? how did they feel?
-5. Flag anything potentially harmful with low safety_score
-6. Include direct quotes when they capture something powerful
+- Curious, not prescriptive
+- Uses tentative language: "it seems like...", "I wonder if..."
+- Goal is to become unnecessary
+- No diagnosing, no toxic positivity
+- Meets people where they are
+- Respects retreat and silence
 
-Return ONLY the JSON, no other text."""
+Extract {max_insights} high-quality texture markers. Return ONLY the JSON."""
 
         return prompt
 
@@ -246,7 +260,7 @@ Return ONLY the JSON, no other text."""
         response_text: str,
         video_title: str
     ) -> List[ExtractedInsight]:
-        """Parse Claude's response into insight objects."""
+        """Parse Claude's Aliveness extraction response into insight objects."""
         insights = []
 
         try:
@@ -259,17 +273,27 @@ Return ONLY the JSON, no other text."""
 
             data = json.loads(json_text.strip())
 
-            for item in data.get("insights", []):
+            # Handle both old format (insights) and new format (extractions)
+            items = data.get("extractions", data.get("insights", []))
+
+            for item in items:
                 # Validate category
                 category_str = item.get("category", "emotional_struggles")
                 try:
                     category = ExtractionCategory(category_str)
                 except ValueError:
+                    # Try to find closest match or default
                     category = ExtractionCategory.EMOTIONAL_STRUGGLES
 
+                # Get scores from nested or flat structure
+                scores = item.get("scores", {})
+                quality = scores.get("quality", item.get("quality_score", 70))
+                safety = scores.get("safety", item.get("safety_score", 100))
+                specificity = scores.get("specificity", item.get("specificity_score", 70))
+                actionability = scores.get("actionability", item.get("actionability_score", 70))
+                novelty = scores.get("novelty", item.get("novelty_score", 70))
+
                 # Determine if needs review based on scores
-                quality = item.get("quality_score", 0)
-                safety = item.get("safety_score", 100)
                 flagged = (
                     quality < settings.human_review_threshold or
                     safety < settings.min_safety_score
@@ -280,33 +304,80 @@ Return ONLY the JSON, no other text."""
                     safety < settings.min_safety_score):
                     status = InsightStatus.REJECTED
                 elif quality >= settings.human_review_threshold:
-                    status = InsightStatus.PENDING  # Auto-approve candidates still need review
+                    status = InsightStatus.PENDING
                 else:
                     status = InsightStatus.PENDING
 
-                # Extract emotional context if present
-                emotional_context = item.get("emotional_context", {})
+                # Build comprehensive emotional context from texture analysis
+                texture = item.get("texture_analysis", {})
+                coach_response = item.get("coach_response", {})
+                training_example = item.get("training_example", {})
+
+                emotional_context = {
+                    # Core texture markers
+                    "emotional_granularity": texture.get("emotional_granularity", "medium"),
+                    "self_protective_type": texture.get("self_protective_type", "none"),
+                    "temporal_orientation": texture.get("temporal_orientation", "present"),
+                    "ambivalence_present": texture.get("ambivalence_present", False),
+                    "somatic_language": texture.get("somatic_language", []),
+                    "what_not_said": texture.get("what_not_said", ""),
+                    # Legacy fields for backward compatibility
+                    "emotions": item.get("emotional_context", {}).get("emotions", []),
+                    "intensity": item.get("emotional_context", {}).get("intensity", 0.5),
+                    "incongruence": item.get("emotional_context", {}).get("incongruence", False),
+                }
+
+                # Build coaching implication from new format
+                coaching_implication = ""
+                if coach_response:
+                    coaching_implication = f"DO: {coach_response.get('what_to_do', '')} "
+                    coaching_implication += f"AVOID: {coach_response.get('what_to_avoid', '')} "
+                    if coach_response.get('example_response'):
+                        coaching_implication += f"EXAMPLE: \"{coach_response.get('example_response')}\""
+                else:
+                    coaching_implication = item.get("coaching_implication", "")
+
+                # Build insight text from new format
+                insight_text = ""
+                if texture.get("what_happened"):
+                    insight_text = texture.get("what_happened", "")
+                    if texture.get("why_human"):
+                        insight_text += f" — {texture.get('why_human')}"
+                else:
+                    insight_text = item.get("insight", "")
+
+                # Include raw quote if available
+                raw_quote = item.get("raw_quote", "")
+                if raw_quote and raw_quote not in insight_text:
+                    insight_text = f'"{raw_quote}" — {insight_text}'
 
                 insight = ExtractedInsight(
                     id=str(uuid.uuid4()),
                     video_id="",  # Set by caller
                     title=item.get("title", "Untitled")[:200],
-                    insight=item.get("insight", "")[:2000],
+                    insight=insight_text[:2000],
                     category=category,
-                    coaching_implication=item.get("coaching_implication", "")[:1000],
+                    coaching_implication=coaching_implication[:1500],
                     timestamp=item.get("timestamp"),
-                    quality_score=item.get("quality_score", 0),
-                    specificity_score=item.get("specificity_score", 0),
-                    actionability_score=item.get("actionability_score", 0),
-                    safety_score=item.get("safety_score", 100),
-                    novelty_score=item.get("novelty_score", 0),
-                    confidence=item.get("confidence", 0),
+                    quality_score=quality,
+                    specificity_score=specificity,
+                    actionability_score=actionability,
+                    safety_score=safety,
+                    novelty_score=novelty,
+                    confidence=item.get("confidence", 0.8),
                     status=status,
                     flagged_for_review=flagged,
                     created_at=datetime.utcnow(),
-                    emotional_context=emotional_context  # Include emotional context
+                    emotional_context=emotional_context,
+                    # New Aliveness fields
+                    training_example=training_example,
+                    coach_response=coach_response,
+                    texture_analysis=texture,
                 )
                 insights.append(insight)
+
+            # Store overall patterns if present
+            self._last_overall_patterns = data.get("overall_patterns", {})
 
         except json.JSONDecodeError as e:
             print(f"[Insights] JSON parse error: {e}")

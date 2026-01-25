@@ -148,6 +148,433 @@ EXTRACTION_CATEGORIES = {
 }
 
 
+# ============================================================================
+# ALIVENESS EXTRACTION CATEGORIES
+# ============================================================================
+# Rich extraction taxonomy based on the Aliveness Extraction research.
+# These capture the full TEXTURE of human conversation, not just content.
+# Each category includes coaching guidance for authentic AI response.
+
+ALIVENESS_CATEGORIES = {
+    # ══════════════════════════════════════════════════════════════════════════
+    # EMOTIONAL TEXTURE - How emotions actually show up in speech
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "emotional_granularity": {
+        "description": "The specificity of emotion words used - from vague ('bad') to precise ('dejected with a hint of embarrassment')",
+        "why_human": "High granularity predicts better emotional regulation; AI should match the user's level, not upgrade it",
+        "examples": [
+            "I feel bad → low granularity",
+            "I feel sad → medium granularity",
+            "I feel dejected and somewhat embarrassed → high granularity",
+            "There's this specific disappointment mixed with self-directed frustration → very high"
+        ],
+        "Coach_note": "Mirror the user's granularity level. If they say 'bad', don't translate to 'sounds like you're experiencing a complex mix of...' - that feels clinical"
+    },
+
+    "mixed_feelings": {
+        "description": "When someone holds contradictory emotions simultaneously without resolving them",
+        "why_human": "Ambivalence is the norm, not the exception. 'Both/and' thinking is emotionally mature",
+        "examples": [
+            "I love them AND they drive me crazy",
+            "I'm relieved it's over but also grieving what we had",
+            "Part of me wants to... but another part...",
+            "I know I should be happy but I also feel guilty"
+        ],
+        "Coach_note": "Don't resolve the contradiction. Say 'both of those can be true' rather than helping them pick a side"
+    },
+
+    "somatic_markers": {
+        "description": "Body-based language that reveals how emotions are physically experienced",
+        "why_human": "Emotions are fundamentally physical. Body metaphors reveal how someone FEELS their feelings",
+        "examples": [
+            "Pit in my stomach",
+            "Weight on my shoulders",
+            "My heart sinks",
+            "I felt frozen",
+            "Chest feels tight",
+            "I couldn't breathe"
+        ],
+        "Coach_note": "When someone uses body language, stay embodied: 'That weight sounds heavy' not 'It seems you're experiencing stress'"
+    },
+
+    "emotional_evolution": {
+        "description": "How emotions shift across a conversation - not a snapshot but a trajectory",
+        "why_human": "Feelings aren't static. Tracking movement reveals processing in real-time",
+        "examples": [
+            "At first I was angry, but now I just feel sad",
+            "I started defensive but I'm realizing...",
+            "The more I talk about it, the less scary it feels",
+            "I came in frustrated but now I feel... lighter"
+        ],
+        "Coach_note": "Name the movement: 'Something shifted while you were talking about that' - this helps people trust their own processing"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # COGNITIVE PATTERNS - How people think and frame experience
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "temporal_orientation": {
+        "description": "Whether someone is stuck in past, present, or future - and the quality of that focus",
+        "why_human": "Past-negative rumination differs from past-positive gratitude; future-anxiety differs from future-hope",
+        "examples": [
+            "Past-negative: 'If only I had...', 'I used to be better'",
+            "Past-positive: 'Remember when...', 'Those were good times'",
+            "Present-fatalistic: 'Whatever happens happens', 'It doesn't matter'",
+            "Future-anxious: 'What if...', 'I'm worried about...'",
+            "Future-hopeful: 'I'm looking forward to...', 'Planning to...'"
+        ],
+        "Coach_note": "Gently notice orientation without pathologizing. 'You're spending a lot of time in the what-ifs' is better than 'You're catastrophizing'"
+    },
+
+    "contradiction_holding": {
+        "description": "The ability to hold two conflicting truths without needing to resolve them",
+        "why_human": "69% of relationship conflicts are perpetual - meant to be managed, not solved. Tolerance of ambiguity is healthy",
+        "examples": [
+            "I don't know if it was the right decision - I probably never will",
+            "I still don't have answers and I've stopped needing them",
+            "It's something I think about but I've made peace with not knowing",
+            "Both things are true and I'm okay with that now"
+        ],
+        "Coach_note": "Don't rush to resolution. 'Sounds like you're learning to carry that question' honors the complexity"
+    },
+
+    "narrative_identity": {
+        "description": "How someone stories their life - as redemption, contamination, victim, or hero",
+        "why_human": "We are the stories we tell. Problem-saturated narratives differ from agency narratives",
+        "examples": [
+            "Problem-saturated: 'I've always been this way', 'This is just who I am'",
+            "Externalizing: 'The depression tells me...', 'My anxiety got the better of me'",
+            "Agency: 'I chose to...', 'I'm learning to...'",
+            "Redemption: 'That experience made me who I am'"
+        ],
+        "Coach_note": "Listen for unique outcomes - exceptions to the dominant story that get quickly dismissed. Those are entry points"
+    },
+
+    "cognitive_patterns": {
+        "description": "Distorted thinking patterns that show up in language - without pathologizing them",
+        "why_human": "These patterns are human, not broken. Everyone has them; they're only problematic when rigid",
+        "examples": [
+            "Catastrophizing: 'This is the worst', 'I can't survive this'",
+            "All-or-nothing: 'always', 'never', 'everyone', 'nobody'",
+            "Should statements: 'I should...', 'I have to...', 'I must...'",
+            "Mind-reading: 'They think...', 'Everyone knows that I...'"
+        ],
+        "Coach_note": "Notice patterns gently: 'I hear a lot of shoulds in there' not 'You're engaging in cognitive distortions'"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # SELF-PROTECTIVE LANGUAGE - How people hedge and protect themselves
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "micro_confession": {
+        "description": "Moments where someone prefaces vulnerability with self-doubt or apology",
+        "why_human": "Real humans hedge before revealing; these openings signal courage and need gentle reception",
+        "examples": [
+            "I know this sounds dumb but...",
+            "You're probably going to think I'm crazy...",
+            "This might not make sense but...",
+            "I shouldn't feel this way but...",
+            "Don't judge me but..."
+        ],
+        "Coach_note": "Acknowledge the courage in sharing, not the content of the hedge. 'Thank you for trusting me with that' not 'That's not dumb at all!'"
+    },
+
+    "hedging_shields": {
+        "description": "Language that creates distance from commitment - approximators, shields, minimizers",
+        "why_human": "Hedging serves self-protection. 'Just' and 'only' often signal discomfort with taking up space",
+        "examples": [
+            "Approximators: 'sort of', 'kind of', 'about'",
+            "Shields: 'I think', 'maybe', 'possibly'",
+            "Minimizers: 'just', 'only', 'a little'",
+            "Attribution: 'According to...', 'They say...'"
+        ],
+        "Coach_note": "Don't correct the hedging. 'I just wanted to ask...' deserves the same respect as a direct question"
+    },
+
+    "permission_seeking": {
+        "description": "Language that seeks permission to feel, need, or exist - signs of internalized invalidation",
+        "why_human": "These patterns develop from chronic invalidation. Movement toward self-authorization is growth",
+        "examples": [
+            "Is it okay if I feel...?",
+            "I'm sorry to feel this way",
+            "I know I'm overreacting",
+            "Others have it worse",
+            "Am I allowed to be upset about this?"
+        ],
+        "Coach_note": "Don't just grant permission - reflect their right: 'You don't need my permission to feel that' is more empowering than 'Yes, it's okay'"
+    },
+
+    "topic_circling": {
+        "description": "When someone approaches a topic, retreats, then approaches again - testing safety",
+        "why_human": "Trust builds through gradual disclosure. Circling is safety-testing, not avoidance",
+        "examples": [
+            "I've been thinking about... anyway, nevermind",
+            "There's something I want to talk about but... let me come back to that",
+            "Speaking of relationships... well, something happened but it's complicated",
+            "I keep meaning to bring up... you know what, it's not important"
+        ],
+        "Coach_note": "Notice the circling without pouncing: 'You've mentioned that a few times - would you like to go there, or not yet?' Leave the door open"
+    },
+
+    "retreat_signals": {
+        "description": "When someone starts to share then pulls back - a boundary that deserves respect",
+        "why_human": "Retreat mid-disclosure means they've hit their limit or gauged the environment as unsafe. Both deserve respect",
+        "examples": [
+            "Nevermind, it's not important",
+            "I don't know why I brought that up",
+            "Anyway, that's boring, what about you?",
+            "Let's change the subject",
+            "I shouldn't have said that"
+        ],
+        "Coach_note": "Honor the retreat: 'We can leave that there for now' not 'No, tell me more!' - Chasing undermines safety"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # RELATIONAL SIGNALS - How people connect, repair, and attach
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "repair_attempts": {
+        "description": "Efforts to reconnect after rupture - THE predictor of relationship success",
+        "why_human": "Recognizing repair bids matters more than conflict style. Repair attempts are often subtle because they're vulnerable",
+        "examples": [
+            "Can I try that again?",
+            "I'm feeling defensive. Could you rephrase that?",
+            "I'm sorry - I wasn't listening",
+            "Maybe I misunderstood...",
+            "I didn't mean it like that"
+        ],
+        "Coach_note": "Receive repair attempts warmly: 'I appreciate you wanting to try again' - don't require perfect communication"
+    },
+
+    "bids_for_witness": {
+        "description": "When someone needs to be seen/heard, not fixed - the request beneath the words",
+        "why_human": "Sometimes people just need someone to know. Jumping to solutions misses the bid",
+        "examples": [
+            "I just needed someone to know",
+            "I'm not looking for advice, I just want to vent",
+            "Can you just... listen for a minute?",
+            "I don't need you to fix it",
+            "I just want to feel less alone with this"
+        ],
+        "Coach_note": "Resist the fix: 'I hear you' or 'I'm here' is often enough. Ask 'Do you want me to just listen, or are you looking for input?'"
+    },
+
+    "attachment_echoes": {
+        "description": "Communication patterns that reveal underlying attachment style",
+        "why_human": "Attachment shows in how we bid for connection and respond to distance",
+        "examples": [
+            "Anxious: Over-explaining, repeated reassurance-seeking, difficulty ending conversations",
+            "Avoidant: Shutting down emotionally, minimizing ('it's not a big deal'), switching to logistics",
+            "Secure: Direct asks, comfortable with uncertainty, repair-focused",
+            "Disorganized: Contradictory statements, approach-withdrawal in single conversations"
+        ],
+        "Coach_note": "Don't label attachment style. Adapt pacing - anxious styles need more reassurance, avoidant styles need more space"
+    },
+
+    "pronoun_patterns": {
+        "description": "How I/we/you/they usage reveals relationship health and emotional processing",
+        "why_human": "High 'we' correlates with relationship health. 'You' in negative contexts predicts distress. 'I' in depression increases",
+        "examples": [
+            "'We decided' vs 'She decided' - reveals togetherness or distance",
+            "'I always mess up' vs 'Sometimes I mess up' - reveals rigidity",
+            "'You never listen' vs 'I don't feel heard' - reveals blame or ownership"
+        ],
+        "Coach_note": "Gently shift 'you' statements to 'I' statements: 'When you say she doesn't listen - what do YOU need in those moments?'"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # AUTHENTICITY MARKERS - Signs of genuine human expression
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "guarded_hope": {
+        "description": "Careful, protective hope that acknowledges things may not work out - distinct from naive optimism",
+        "why_human": "Hope fatigue is real. Guarded hope protects against disappointment while maintaining positive expectancy",
+        "examples": [
+            "I'm trying not to get my hopes up, but...",
+            "Part of me thinks it might work out",
+            "I want to believe it'll be different this time",
+            "I'm cautiously optimistic",
+            "I'm hoping but I'm also preparing myself"
+        ],
+        "Coach_note": "Don't pump up the hope or dismiss the guard. 'That sounds like wise hope - protecting yourself while still reaching' honors both"
+    },
+
+    "humor_function": {
+        "description": "Whether humor serves connection and coping, or deflection and avoidance",
+        "why_human": "Dark humor can build resilience OR cover pain. The function matters more than the content",
+        "examples": [
+            "Coping humor: Laughter after processing, shared dark humor that connects",
+            "Deflection humor: Jokes during serious moments, sarcasm as default",
+            "Connection humor: Self-deprecation that invites intimacy",
+            "Avoidance humor: 'Ha ha anyway...' pivot away from emotion"
+        ],
+        "Coach_note": "Ask gently: 'You made a joke there - was that to lighten the mood, or to move past it?' No judgment either way"
+    },
+
+    "performed_vs_authentic_vulnerability": {
+        "description": "The difference between genuine vulnerability and vulnerability performance",
+        "why_human": "Authentic vulnerability involves bidirectional risk; performed vulnerability seeks validation without true exposure",
+        "examples": [
+            "Authentic: Messy, uncertain, mutual exchange, matched to relationship level",
+            "Performed: Polished struggle narrative, disclosure without reciprocity",
+            "Authentic: 'I don't know how to say this'",
+            "Performed: 'I'm so broken' (said smoothly to many people)"
+        ],
+        "Coach_note": "Don't reward performance with excessive validation. Authentic messiness deserves more attentiveness than polished sharing"
+    },
+
+    "unresolved_questions": {
+        "description": "Questions people carry rather than answer - tolerating ambiguity as maturity",
+        "why_human": "Not all questions need answers. The ability to carry uncertainty without resolution is strength",
+        "examples": [
+            "I've stopped trying to figure it out",
+            "I'll probably never know why",
+            "I've made peace with not having an answer",
+            "Some things just don't get resolved",
+            "I think about it but I don't need to solve it anymore"
+        ],
+        "Coach_note": "Don't offer resolution. 'That sounds like a question you're learning to carry' honors the complexity"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # META-CONVERSATIONAL - What's happening in the conversation itself
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "tone_shifts": {
+        "description": "When someone's tone changes significantly - humor to serious, confident to hesitant",
+        "why_human": "Tone shifts signal emotional significance. The moment before or after the shift often matters most",
+        "examples": [
+            "Suddenly gets quiet after being animated",
+            "Shifts from joking to deadly serious",
+            "Voice gets smaller or softer",
+            "Changes from 'we' to 'I' suddenly",
+            "Laughs then goes silent"
+        ],
+        "Coach_note": "Name the shift gently: 'Something changed just then' gives them permission to explore or decline"
+    },
+
+    "meaningful_silence": {
+        "description": "Pauses that carry weight - processing, searching, or protecting",
+        "why_human": "Silence isn't empty. It can be contemplation, overwhelm, or safety-testing. Don't fill it automatically",
+        "examples": [
+            "Long pause before answering difficult question",
+            "Silence after sharing something vulnerable",
+            "Trailing off mid-sentence",
+            "Thoughtful pause while processing",
+            "Protective silence when topic feels unsafe"
+        ],
+        "Coach_note": "Resist filling silence. Wait. If needed: 'Take your time' or 'I'm here' - but silence itself can be supportive"
+    },
+
+    "what_not_said": {
+        "description": "Topics avoided, subject changes, the elephant in the room",
+        "why_human": "What people DON'T say often matters as much as what they do. Absence can be meaningful",
+        "examples": [
+            "Abrupt topic change when certain subject arises",
+            "Talking around something without naming it",
+            "Noticing what's conspicuously absent from a story",
+            "'We don't need to talk about that'",
+            "Consistently avoiding one relationship or topic"
+        ],
+        "Coach_note": "Notice but don't chase: 'I notice we haven't talked about X - is that intentional, or would you like to go there?' Respect either answer"
+    },
+
+    "readiness_signals": {
+        "description": "Signs someone is ready to go deeper - or needs to surface",
+        "why_human": "Depth without readiness causes harm. Surfacing without permission feels dismissive",
+        "examples": [
+            "Ready to go deeper: Leaning in, asking follow-ups, returning to topic",
+            "Ready to surface: Short answers, looking away, topic changes, checking time",
+            "Testing depth: 'I've never told anyone this...'",
+            "Signaling overwhelm: 'This is a lot', 'I need a minute'"
+        ],
+        "Coach_note": "Follow readiness cues. Offer exits: 'We can stay here or shift to something lighter - what do you need?' Don't assume they want to go deeper"
+    },
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # THE RARE GOLD - Precious moments that reveal deep humanity
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "self_kindness_moments": {
+        "description": "Rare moments when someone extends compassion to themselves - often fleeting",
+        "why_human": "Self-compassion is harder than other-compassion for most people. These moments are precious breakthroughs",
+        "examples": [
+            "I'm actually proud of myself for that",
+            "I'm doing the best I can",
+            "I gave myself permission to rest",
+            "I'm learning to be gentler with myself",
+            "That was hard and I got through it"
+        ],
+        "Coach_note": "Amplify gently without gushing: 'Say that again - you're proud of yourself' helps it land without overwhelming"
+    },
+
+    "values_in_conflict": {
+        "description": "When someone's values clash with each other - loyalty vs honesty, career vs family",
+        "why_human": "Value conflicts don't resolve neatly. They're managed, not solved. Forcing choice causes harm",
+        "examples": [
+            "I want to be honest but I also don't want to hurt them",
+            "My career needs this but my kids need me",
+            "I believe in loyalty but I also believe in truth",
+            "I want to help but I need to protect myself too"
+        ],
+        "Coach_note": "Don't help them choose. 'Both of those matter to you' validates the tension without forcing false resolution"
+    },
+
+    "identity_friction": {
+        "description": "The gap between who someone is and who they're expected to be",
+        "why_human": "Identity formation is ongoing. The friction between self and role reveals authentic struggle",
+        "examples": [
+            "I'm not who they think I am",
+            "I've been performing a version of myself",
+            "The real me is different from what I show",
+            "I don't know who I am outside of that role",
+            "I'm tired of pretending to be..."
+        ],
+        "Coach_note": "Create space for the real self: 'Who are you when no one's watching?' or 'What would you do if no one expected anything?'"
+    },
+
+    "memory_echoes": {
+        "description": "When current reactions are shaped by past experiences - often unconsciously",
+        "why_human": "We're all shaped by history. Recognizing echoes creates choice about response",
+        "examples": [
+            "This reminds me of...",
+            "I react this way because...",
+            "My family always did it this way",
+            "Whenever X happens I automatically feel Y",
+            "I learned early on that..."
+        ],
+        "Coach_note": "Connect gently: 'That sounds like an old echo - does this moment actually match that past?' Creates space for new choice"
+    },
+
+    "meaning_resistance": {
+        "description": "When someone doesn't want their experience turned into a lesson - just witnessed",
+        "why_human": "Not everything needs meaning-making. Sometimes pain is just pain. Premature meaning can feel dismissive",
+        "examples": [
+            "Don't turn this into a lesson",
+            "I don't need to find the silver lining",
+            "Not everything happens for a reason",
+            "I just want this to be witnessed, not interpreted",
+            "Please don't tell me what I learned from this"
+        ],
+        "Coach_note": "Honor the resistance: 'You don't have to make meaning of this. It can just be hard.' Stop reaching for growth narratives"
+    },
+
+    "integration_moments": {
+        "description": "When someone connects pieces of their experience into coherent understanding",
+        "why_human": "Integration is the goal of processing - when scattered experiences become coherent narrative",
+        "examples": [
+            "Oh, that's why I always...",
+            "It makes sense now",
+            "These things are connected",
+            "I finally see the pattern",
+            "That explains so much"
+        ],
+        "Coach_note": "Celebrate quietly: 'Something just clicked for you' reflects the moment without stealing it with interpretation"
+    },
+}
+
+
 # Recommended YouTube channels (from MoodLeaf interview processor)
 # Curated for MoodLeaf ethos: warm honesty, anti-toxic-positivity, full human experience,
 # embraces messy middle, non-clinical, pro-human-connection, neurodiversity aware

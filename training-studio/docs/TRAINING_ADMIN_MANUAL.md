@@ -973,3 +973,503 @@ They're separate systems with different purposes.
 4. **Export**: Get all data as JSON for training
 
 The goal is to capture what you learn from real users so the AI can serve people better.
+
+---
+
+# Full Setup Guide: Training Studio
+
+This section covers everything you need to install and run the Training Studio from scratch.
+
+---
+
+## Prerequisites
+
+Before starting, you need these installed on your computer:
+
+### Required Software
+
+| Software | Version | How to Install | Check If Installed |
+|----------|---------|----------------|-------------------|
+| **Python** | 3.10+ | [python.org](https://python.org) or `brew install python` | `python3 --version` |
+| **Node.js** | 18+ | [nodejs.org](https://nodejs.org) or `brew install node` | `node --version` |
+| **yt-dlp** | Latest | `pip install yt-dlp` or `brew install yt-dlp` | `yt-dlp --version` |
+| **FFmpeg** | Latest | `brew install ffmpeg` (Mac) or [ffmpeg.org](https://ffmpeg.org) | `ffmpeg -version` |
+
+### Optional (for advanced features)
+
+| Software | For | Install |
+|----------|-----|---------|
+| **Whisper** | Local transcription | `pip install openai-whisper` |
+| **CUDA** | GPU acceleration | [nvidia.com](https://developer.nvidia.com/cuda-downloads) |
+
+---
+
+## Step-by-Step Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/undothis/Mood-Leaf.git
+cd Mood-Leaf/training-studio
+```
+
+### 2. Set Up the Backend
+
+```bash
+# Navigate to backend folder
+cd backend
+
+# Create a virtual environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate  # Mac/Linux
+# OR on Windows:
+# venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+### 3. Set Up the Frontend
+
+```bash
+# Navigate to frontend folder (from training-studio root)
+cd frontend
+
+# Install Node dependencies
+npm install
+```
+
+### 4. Configure Environment
+
+Create a `.env` file in the `backend` folder:
+
+```bash
+cd backend
+touch .env
+```
+
+Add these lines to `.env`:
+
+```env
+# Required: Your Anthropic API key
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Optional: Change default ports
+PORT=8000
+FRONTEND_PORT=3000
+
+# Optional: Whisper model size (tiny, base, small, medium, large)
+WHISPER_MODEL=base
+
+# Optional: Enable debug logging
+DEBUG=false
+```
+
+**Getting an Anthropic API Key:**
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up or log in
+3. Go to "API Keys"
+4. Click "Create Key"
+5. Copy the key (starts with `sk-ant-` or `sk-`)
+
+---
+
+## Starting Training Studio
+
+### Option A: Using the Start Script (Recommended)
+
+From the `training-studio` folder:
+
+```bash
+./start.sh
+```
+
+This starts both backend and frontend automatically.
+
+### Option B: Manual Start
+
+**Terminal 1 - Backend:**
+```bash
+cd training-studio/backend
+source venv/bin/activate
+python main.py
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd training-studio/frontend
+npm run dev
+```
+
+### Option C: Using Docker (Coming Soon)
+
+```bash
+docker-compose up
+```
+
+---
+
+## Accessing Training Studio
+
+Once started, open your browser to:
+
+| Service | URL |
+|---------|-----|
+| **Frontend (UI)** | [http://localhost:3000](http://localhost:3000) |
+| **Backend (API)** | [http://localhost:8000](http://localhost:8000) |
+| **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) |
+
+---
+
+## First-Time Setup Walkthrough
+
+### 1. Set Your API Key
+
+If you didn't set it in `.env`:
+
+1. Open Training Studio (http://localhost:3000)
+2. Go to **Settings** (gear icon)
+3. Enter your Anthropic API key
+4. Click **Save**
+
+### 2. Add Your First Channel
+
+1. Go to **Channels** page
+2. Browse the **Recommended Channels** section
+3. Click **+ Add** on channels relevant to your training goals
+4. Or add a custom channel by entering a YouTube URL
+
+### 3. Process Your First Video
+
+1. Go to **Videos** page
+2. Click **Add Video**
+3. Paste a YouTube URL
+4. Click **Process**
+5. Wait for transcription and insight extraction
+
+### 4. Review Insights
+
+1. Go to **Insights** page
+2. Review extracted insights
+3. **Approve** good ones, **Reject** bad ones
+4. Only approved insights are used for training
+
+### 5. Export Training Data
+
+1. Go to **Export** page
+2. Choose format:
+   - **Aliveness** (recommended) - Full texture markers
+   - **ChatML** - For Llama 3+ fine-tuning
+   - **Alpaca** - Simple instruction format
+3. Click **Download**
+
+---
+
+## Troubleshooting Setup
+
+### "Command not found: python3"
+
+Install Python:
+- Mac: `brew install python`
+- Windows: Download from [python.org](https://python.org)
+- Linux: `sudo apt install python3`
+
+### "pip: command not found"
+
+Python might not be in your PATH:
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+### "yt-dlp: command not found"
+
+Install yt-dlp:
+```bash
+pip install yt-dlp
+# OR
+brew install yt-dlp  # Mac
+```
+
+### "Backend crashed with NameError"
+
+Make sure you have all dependencies:
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### "API key not saving"
+
+1. Check your key starts with `sk-ant-` or `sk-`
+2. Check the backend terminal for errors
+3. Try setting it in `.env` instead:
+   ```
+   ANTHROPIC_API_KEY=your-key-here
+   ```
+
+### "Port already in use"
+
+Another process is using port 8000 or 3000:
+```bash
+# Find what's using the port
+lsof -i :8000
+
+# Kill it
+kill -9 <PID>
+
+# Or change the port in .env
+PORT=8001
+```
+
+### "Database errors"
+
+Reset the database:
+```bash
+cd backend
+rm -f training_studio.db
+python main.py  # Will recreate
+```
+
+---
+
+# Aliveness Extraction System
+
+The Aliveness Extraction system captures the **texture** of human conversation - not just WHAT people say, but HOW they say it. This is what makes AI feel genuinely human.
+
+---
+
+## Why Aliveness Matters
+
+Current AI fails because it:
+- Resolves contradictions humans hold
+- Fills silences that carry meaning
+- Validates when challenge would help
+- Treats emotions as categories, not flowing experiences
+
+The Aliveness system captures:
+- **Hedging before vulnerability** ("I know this is dumb but...")
+- **Contradictions held without resolution** ("I love them AND they drive me crazy")
+- **Body language in speech** ("pit in my stomach")
+- **Topic circling before going direct**
+- **Permission-seeking and self-doubt**
+- **Repair attempts after rupture**
+
+---
+
+## The Six Tiers of Extraction
+
+### Tier 1: Emotional Texture
+
+| Category | What It Captures |
+|----------|------------------|
+| `emotional_granularity` | Specificity of emotion words (low → very high) |
+| `mixed_feelings` | Contradictory emotions held simultaneously |
+| `somatic_markers` | Body-based language ("weight on shoulders") |
+| `emotional_evolution` | How emotions shift during conversation |
+
+### Tier 2: Cognitive Patterns
+
+| Category | What It Captures |
+|----------|------------------|
+| `temporal_orientation` | Past-negative, past-positive, future-anxious, etc. |
+| `contradiction_holding` | Ability to hold unresolved tensions |
+| `narrative_identity` | Problem-saturated vs agency narratives |
+| `cognitive_patterns` | Distortions without pathologizing them |
+
+### Tier 3: Self-Protective Language
+
+| Category | What It Captures |
+|----------|------------------|
+| `micro_confession` | "I know this sounds dumb but..." |
+| `hedging_shields` | "sort of", "kind of", "just" |
+| `permission_seeking` | "Is it okay if I feel...?" |
+| `topic_circling` | Approaching then retreating from topics |
+| `retreat_signals` | "Nevermind, it's not important" |
+
+### Tier 4: Relational Signals
+
+| Category | What It Captures |
+|----------|------------------|
+| `repair_attempts` | "Can I try that again?" |
+| `bids_for_witness` | "I just needed someone to know" |
+| `attachment_echoes` | Anxious, avoidant, secure patterns |
+| `pronoun_patterns` | I/we/you/they usage |
+
+### Tier 5: Authenticity Markers
+
+| Category | What It Captures |
+|----------|------------------|
+| `guarded_hope` | Careful hope that protects against disappointment |
+| `humor_function` | Coping vs deflection |
+| `performed_vs_authentic` | Genuine vs validation-seeking vulnerability |
+| `unresolved_questions` | Questions carried, not answered |
+
+### Tier 6: The Rare Gold
+
+| Category | What It Captures |
+|----------|------------------|
+| `self_kindness_moments` | Rare self-compassion breakthroughs |
+| `values_in_conflict` | When values clash (loyalty vs honesty) |
+| `identity_friction` | Gap between who someone is vs expected |
+| `memory_echoes` | Past shaping present reactions |
+| `meaning_resistance` | "Don't turn this into a lesson" |
+| `integration_moments` | "Oh, that's why I always..." |
+
+---
+
+## How Extraction Works
+
+When you process a video or interview, the system:
+
+1. **Transcribes** the audio (using Whisper)
+2. **Analyzes prosody** (pitch, pace, pauses)
+3. **Extracts texture markers** (the 6 tiers above)
+4. **Generates training pairs** (user message → coach response)
+5. **Scores quality** (specificity, actionability, safety)
+
+Each extraction includes:
+
+```json
+{
+  "title": "Permission-seeking before sharing struggle",
+  "raw_quote": "I know this is probably stupid but I've been really struggling with...",
+  "category": "permission_seeking",
+  "texture_analysis": {
+    "emotional_granularity": "medium",
+    "self_protective_type": "hedging",
+    "temporal_orientation": "present",
+    "ambivalence_present": false,
+    "somatic_language": [],
+    "what_not_said": "Didn't name the specific struggle"
+  },
+  "coach_response": {
+    "what_to_do": "Acknowledge the courage in sharing, not the content of the hedge",
+    "what_to_avoid": "Don't correct the self-deprecation ('That's not stupid!')",
+    "example_response": "Thank you for trusting me with that. What's been weighing on you?"
+  },
+  "training_example": {
+    "user_message": "I know this is probably stupid but I've been really struggling lately",
+    "assistant_response": "It took courage to share that. What's been weighing on you?",
+    "system_context": "User is hedging with self-doubt; respond to the courage, not the content"
+  }
+}
+```
+
+---
+
+## Exporting Aliveness Data
+
+Use the **Aliveness export format** for the richest training data:
+
+```bash
+# API call
+GET /export?format=aliveness&status=approved
+
+# Or use the UI
+# Export → Format: Aliveness → Download
+```
+
+This format includes:
+- System prompts tailored to texture markers
+- Coach guidance (what to do, what to avoid)
+- Ready-to-use training pairs
+- MoodLeaf philosophy embedded
+
+---
+
+## MoodLeaf Coach Philosophy
+
+All extractions align with these principles:
+
+| Principle | What It Means |
+|-----------|---------------|
+| **Curious, not prescriptive** | Ask questions, don't give answers |
+| **Tentative language** | "It seems like...", "I wonder if..." |
+| **Goal: become unnecessary** | Help people help themselves |
+| **No toxic positivity** | Don't force silver linings |
+| **Meet people where they are** | Don't push, don't pull |
+| **Respect retreat** | Honor when someone pulls back |
+
+---
+
+## Using Aliveness Data for Training
+
+The exported data is ready for LLM fine-tuning:
+
+### For Llama 3+ (ChatML format)
+
+```python
+from datasets import load_dataset
+
+# Load your exported data
+data = load_dataset("json", data_files="aliveness_export.json")
+
+# Format for fine-tuning
+def format_example(example):
+    return {
+        "messages": example["messages"],
+        "texture": example["aliveness_metadata"]["texture_markers"]
+    }
+```
+
+### For Unsloth
+
+```python
+from unsloth import FastLanguageModel
+
+# Load base model
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="unsloth/llama-3-8b-bnb-4bit",
+    max_seq_length=2048,
+)
+
+# Load your Aliveness data
+# The system prompts include texture-aware guidance
+```
+
+### Quality Filtering
+
+Before training, filter for high-quality examples:
+
+```python
+# Only use high-quality extractions
+filtered = [
+    ex for ex in data
+    if ex["scores"]["quality"] >= 70
+    and ex["scores"]["safety"] >= 80
+    and ex["scores"]["specificity"] >= 60
+]
+```
+
+---
+
+## Best Practices
+
+### For Extraction
+
+1. **Use high-quality source material** - Therapy interviews, authentic conversations
+2. **Variety matters** - Different speakers, topics, emotional states
+3. **Review extractions** - AI isn't perfect, human review improves quality
+4. **Look for rare gold** - Self-kindness moments are precious
+
+### For Training
+
+1. **Balance categories** - Don't over-represent one texture type
+2. **Include edge cases** - Permission-seeking, retreat signals, etc.
+3. **Preserve Coach_notes** - They contain crucial guidance
+4. **Test with humans** - Does it feel more human? Ask real people.
+
+### For the AI
+
+1. **Don't over-engineer** - Sometimes "I hear you" is enough
+2. **Respect the texture** - If someone hedges, honor the hedge
+3. **Hold contradictions** - "Both of those can be true"
+4. **Follow readiness** - Don't push people deeper than they want
+
+---
+
+## Summary
+
+The Aliveness Extraction system transforms raw conversations into training data that captures the full texture of human experience. By extracting not just WHAT people say but HOW they say it, we train AI that feels genuinely human - not a chatbot performing empathy, but a presence that truly understands.

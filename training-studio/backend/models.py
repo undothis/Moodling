@@ -475,9 +475,58 @@ class ExtractionCategory(str, Enum):
     UNCOMFORTABLE_TRUTHS = "uncomfortable_truths"
     BEAUTIFUL_IMPERFECTION = "beautiful_imperfection"
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # ALIVENESS CATEGORIES - Texture of human conversation
+    # ══════════════════════════════════════════════════════════════════════════
+
+    # Emotional Texture
+    EMOTIONAL_GRANULARITY = "emotional_granularity"
+    MIXED_FEELINGS = "mixed_feelings"
+    SOMATIC_MARKERS = "somatic_markers"
+    EMOTIONAL_EVOLUTION = "emotional_evolution"
+
+    # Cognitive Patterns
+    TEMPORAL_ORIENTATION = "temporal_orientation"
+    CONTRADICTION_HOLDING = "contradiction_holding"
+    NARRATIVE_IDENTITY = "narrative_identity"
+    COGNITIVE_PATTERNS = "cognitive_patterns"
+
+    # Self-Protective Language
+    MICRO_CONFESSION = "micro_confession"
+    HEDGING_SHIELDS = "hedging_shields"
+    PERMISSION_SEEKING = "permission_seeking"
+    TOPIC_CIRCLING = "topic_circling"
+    RETREAT_SIGNALS = "retreat_signals"
+
+    # Relational Signals
+    REPAIR_ATTEMPTS = "repair_attempts"
+    BIDS_FOR_WITNESS = "bids_for_witness"
+    ATTACHMENT_ECHOES = "attachment_echoes"
+    PRONOUN_PATTERNS = "pronoun_patterns"
+
+    # Authenticity Markers
+    GUARDED_HOPE = "guarded_hope"
+    HUMOR_FUNCTION = "humor_function"
+    PERFORMED_VS_AUTHENTIC = "performed_vs_authentic_vulnerability"
+    UNRESOLVED_QUESTIONS = "unresolved_questions"
+
+    # Meta-Conversational
+    TONE_SHIFTS = "tone_shifts"
+    MEANINGFUL_SILENCE = "meaningful_silence"
+    WHAT_NOT_SAID = "what_not_said"
+    READINESS_SIGNALS = "readiness_signals"
+
+    # The Rare Gold
+    SELF_KINDNESS_MOMENTS = "self_kindness_moments"
+    VALUES_IN_CONFLICT = "values_in_conflict"
+    IDENTITY_FRICTION = "identity_friction"
+    MEMORY_ECHOES = "memory_echoes"
+    MEANING_RESISTANCE = "meaning_resistance"
+    INTEGRATION_MOMENTS = "integration_moments"
+
 
 class ExtractedInsight(BaseModel):
-    """An insight extracted from a video"""
+    """An insight extracted from a video with Aliveness texture markers"""
     id: str
     video_id: str
     title: str
@@ -498,7 +547,36 @@ class ExtractedInsight(BaseModel):
     prosody_context: Optional[Dict[str, Any]] = None
 
     # Emotional context from facial/voice analysis
-    emotional_context: Optional[Dict[str, Any]] = None  # {"emotions": [...], "intensity": 0.7, ...}
+    emotional_context: Optional[Dict[str, Any]] = None
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ALIVENESS EXTRACTION FIELDS - Captures texture of human conversation
+    # ══════════════════════════════════════════════════════════════════════════
+
+    # Texture analysis - HOW humans speak, not just WHAT
+    texture_analysis: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Aliveness texture: granularity, self-protection, temporal orientation"
+    )
+
+    # Coach response guidance - how AI should respond
+    coach_response: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="What to do, what to avoid, example response"
+    )
+
+    # Training example - ready-to-use LLM training pair
+    training_example: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="user_message, assistant_response, system_context"
+    )
+
+    # Raw quote from source
+    raw_quote: Optional[str] = Field(default=None, description="Exact words from source")
+
+    # Source tracking
+    channel_id: Optional[str] = None
+    source_token: Optional[str] = None
 
     # Status
     status: InsightStatus = InsightStatus.PENDING

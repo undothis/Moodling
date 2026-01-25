@@ -145,6 +145,25 @@ class InsightModel(Base):
     # Emotional context from facial/voice analysis
     emotional_context_json = Column(JSON, nullable=True)  # {"emotions": ["sad", "anxious"], "intensity": 0.7, ...}
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # ALIVENESS EXTRACTION FIELDS
+    # ══════════════════════════════════════════════════════════════════════════
+
+    # Texture analysis - HOW humans speak, not just WHAT
+    texture_analysis_json = Column(JSON, nullable=True)
+    # Example: {"emotional_granularity": "high", "self_protective_type": "hedging", ...}
+
+    # Coach response guidance - how AI should respond
+    coach_response_json = Column(JSON, nullable=True)
+    # Example: {"what_to_do": "...", "what_to_avoid": "...", "example_response": "..."}
+
+    # Training example - ready-to-use LLM training pair
+    training_example_json = Column(JSON, nullable=True)
+    # Example: {"user_message": "...", "assistant_response": "...", "system_context": "..."}
+
+    # Raw quote from source
+    raw_quote = Column(Text, nullable=True)
+
     # Status
     status = Column(String, default="pending")  # pending, approved, rejected
     flagged_for_review = Column(Boolean, default=False)
