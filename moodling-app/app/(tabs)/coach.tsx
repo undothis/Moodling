@@ -83,6 +83,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Storage key for pending voice message from tab bar
 const PENDING_COACH_MESSAGE_KEY = 'moodleaf_pending_coach_voice';
+const FIRST_TIME_COACH_KEY = 'moodleaf_first_time_coach_complete';
 
 // Initialize slash commands on module load
 initializeSlashCommands();
@@ -149,6 +150,66 @@ export default function CoachTabScreen() {
   // Ref for handleSend - initialized as null, updated after handleSend is defined
   const handleSendRef = useRef<((text?: string) => Promise<void>) | null>(null);
 
+  // First-time experience and tour state
+  const [isFirstTime, setIsFirstTime] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+
+  // Subscribe to tour state changes
+  useEffect(() => {
+    const unsubscribe = subscribeTourState((state) => {
+      setTourActive(state.isActive);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Show first-time content with profile reveal
+  const showFirstTimeContent = async () => {
+    await AsyncStorage.setItem(FIRST_TIME_COACH_KEY, 'true');
+
+    let profileText = "I'm still learning about you! As we chat more, I'll understand how you think and adapt my responses.";
+    try {
+      const profileReveal = await generateProfileReveal();
+      // Strip markdown for display
+      profileText = profileReveal
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/---/g, '—');
+    } catch (error) {
+      console.log('Could not generate profile:', error);
+    }
+
+    setMessages([
+      {
+        id: 'welcome-first',
+        text: `Welcome! 🌿\n\n${profileText}\n\n—\n\nWould you like a guided tour of the app? I can walk you through everything, or you can explore on your own.`,
+        source: 'system' as MessageSource,
+        timestamp: new Date(),
+      },
+    ]);
+    setIsFirstTime(false);
+  };
+
+  // Start the guided tour
+  const handleStartTour = async () => {
+    await startTour(
+      undefined,
+      () => {
+        setMessages(prev => {
+          if (prev.some(m => m.id.startsWith('tour-complete'))) return prev;
+          return [
+            ...prev,
+            {
+              id: `tour-complete-${Date.now()}`,
+              text: "Tour complete! 🎉 You're all set. Feel free to chat with me anytime or explore the app on your own.",
+              source: 'system' as MessageSource,
+              timestamp: new Date(),
+            },
+          ];
+        });
+      }
+    );
+  };
+
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
@@ -162,6 +223,13 @@ export default function CoachTabScreen() {
       setCoachSettings(settings);
       setCoachName(getCoachDisplayName(settings));
       setCoachEmoji(getCoachEmoji(settings));
+
+      // Check if this is first time after onboarding
+      const firstTimeComplete = await AsyncStorage.getItem(FIRST_TIME_COACH_KEY);
+      if (!firstTimeComplete && !entryContext) {
+        setIsFirstTime(true);
+        await showFirstTimeContent();
+      }
 
       setVoiceSupported(await isVoiceChatSupported());
 
@@ -552,6 +620,36 @@ export default function CoachTabScreen() {
           <Ionicons name="send" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {/* Tour Start Prompt - shown after first-time welcome, hidden during tour */}
+      {messages.length === 1 && messages[0].id === 'welcome-first' && !tourActive && (
+        <View style={[styles.tourPrompt, { backgroundColor: colors.card }]}>
+          <TouchableOpacity
+            style={[styles.tourStartButton, { backgroundColor: colors.tint }]}
+            onPress={handleStartTour}
+          >
+            <Ionicons name="compass" size={20} color="#FFFFFF" />
+            <Text style={styles.tourStartText}>Take the Guided Tour</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.tourDeclineButton}
+            onPress={() => {
+              setMessages([
+                {
+                  id: 'welcome',
+                  text: "No problem! Feel free to explore on your own. I'm here whenever you need me. 🌿\n\n💡 Tip: You can always ask for a tour later by saying \"show me around\" or \"walkthrough\".",
+                  source: 'system' as MessageSource,
+                  timestamp: new Date(),
+                },
+              ]);
+            }}
+          >
+            <Text style={[styles.tourDeclineText, { color: colors.secondaryText }]}>
+              I'll explore on my own
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -656,5 +754,34 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#856404',
     fontSize: 13,
+  },
+  tourPrompt: {
+    position: 'absolute',
+    bottom: 100,
+    left: 16,
+    right: 16,
+    padding: 16,
+    borderRadius: 16,
+    gap: 12,
+  },
+  tourStartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  tourStartText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tourDeclineButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  tourDeclineText: {
+    fontSize: 14,
   },
 });
