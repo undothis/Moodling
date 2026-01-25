@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchStatistics, fetchJobs, fetchInsights } from '@/lib/api';
+import { fetchStatistics, fetchJobs, fetchInsights, runDiagnostics } from '@/lib/api';
 import {
   Video,
   Clock,
@@ -9,6 +9,10 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Stethoscope,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -79,6 +83,125 @@ function JobCard({ job }: { job: any }) {
           {job.insights_count} insights extracted
         </p>
       )}
+    </div>
+  );
+}
+
+function DiagnosticsPanel() {
+  const { data, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['diagnostics'],
+    queryFn: runDiagnostics,
+    staleTime: 60000, // Cache for 1 minute
+  });
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case 'ok':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
+      case 'error':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const componentLabels: Record<string, string> = {
+    yt_dlp: 'YouTube Downloader',
+    ffmpeg: 'Audio Processing',
+    whisper: 'Whisper Transcription',
+    pyannote: 'Speaker Diarization',
+    prosody_librosa: 'Prosody (librosa)',
+    prosody_praat: 'Voice Quality (Praat)',
+    facial_pyfeat: 'Facial Analysis',
+    facial_mediapipe: 'MediaPipe (backup)',
+    claude: 'Claude API',
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-6 border border-gray-100">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Stethoscope className="w-5 h-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900">System Diagnostics</h2>
+        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isLoading || isRefetching}
+          className="text-sm text-leaf-600 hover:text-leaf-700 disabled:opacity-50"
+        >
+          {isRefetching ? 'Checking...' : 'Refresh'}
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        </div>
+      ) : data ? (
+        <>
+          {/* Summary */}
+          <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+            <span className="flex items-center gap-1 text-sm">
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              {data.summary.ok} OK
+            </span>
+            <span className="flex items-center gap-1 text-sm">
+              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+              {data.summary.warnings} Warnings
+            </span>
+            <span className="flex items-center gap-1 text-sm">
+              <XCircle className="w-4 h-4 text-red-500" />
+              {data.summary.errors} Errors
+            </span>
+          </div>
+
+          {/* Status Badges */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span
+              className={clsx(
+                'px-3 py-1 text-xs font-medium rounded-full',
+                data.summary.ready_for_simple_mode
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+              )}
+            >
+              Simple Mode: {data.summary.ready_for_simple_mode ? 'Ready' : 'Not Ready'}
+            </span>
+            <span
+              className={clsx(
+                'px-3 py-1 text-xs font-medium rounded-full',
+                data.summary.ready_for_full_mode
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              )}
+            >
+              Full Mode: {data.summary.ready_for_full_mode ? 'Ready' : 'Limited'}
+            </span>
+          </div>
+
+          {/* Components */}
+          <div className="space-y-2">
+            {Object.entries(data.components).map(([key, component]) => (
+              <div
+                key={key}
+                className="flex items-center justify-between p-2 rounded hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-2">
+                  {statusIcon(component.status)}
+                  <span className="text-sm font-medium text-gray-700">
+                    {componentLabels[key] || key}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 max-w-xs truncate">
+                  {component.version || component.message}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -185,6 +308,11 @@ export default function DashboardPage() {
             />
           </>
         )}
+      </div>
+
+      {/* Diagnostics */}
+      <div className="mb-8">
+        <DiagnosticsPanel />
       </div>
 
       {/* Active Jobs & Recent Insights */}

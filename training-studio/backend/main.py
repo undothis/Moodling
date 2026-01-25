@@ -25,7 +25,7 @@ from models import (
     ExtractedInsight, InsightStatus,
     ChannelCreateRequest, ProcessVideoRequest, BatchProcessRequest,
     InsightReviewRequest, StatisticsResponse, HealthResponse,
-    TranscriptResult, TrainingDataExport, TrainingExample
+    TranscriptResult, TranscriptSegment, TrainingDataExport, TrainingExample
 )
 from youtube import youtube_service
 from transcription import transcription_service
@@ -80,6 +80,212 @@ async def health_check():
             "claude": bool(settings.anthropic_api_key),
         }
     )
+
+
+@app.get("/diagnostics")
+async def run_diagnostics():
+    """
+    Run diagnostic tests on all pipeline components.
+    Returns status and any error messages for each component.
+    """
+    results = {}
+
+    # 1. Test yt-dlp
+    try:
+        result = await asyncio.create_subprocess_exec(
+            "yt-dlp", "--version",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await result.communicate()
+        if result.returncode == 0:
+            results["yt_dlp"] = {
+                "status": "ok",
+                "version": stdout.decode().strip(),
+                "message": "YouTube downloader ready"
+            }
+        else:
+            results["yt_dlp"] = {
+                "status": "error",
+                "message": f"yt-dlp error: {stderr.decode()}"
+            }
+    except FileNotFoundError:
+        results["yt_dlp"] = {
+            "status": "error",
+            "message": "yt-dlp not installed. Run: brew install yt-dlp"
+        }
+    except Exception as e:
+        results["yt_dlp"] = {"status": "error", "message": str(e)}
+
+    # 2. Test ffmpeg
+    try:
+        result = await asyncio.create_subprocess_exec(
+            "ffmpeg", "-version",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await result.communicate()
+        if result.returncode == 0:
+            version_line = stdout.decode().split('\n')[0]
+            results["ffmpeg"] = {
+                "status": "ok",
+                "version": version_line,
+                "message": "Audio processing ready"
+            }
+        else:
+            results["ffmpeg"] = {"status": "error", "message": "ffmpeg failed"}
+    except FileNotFoundError:
+        results["ffmpeg"] = {
+            "status": "error",
+            "message": "ffmpeg not installed. Run: brew install ffmpeg"
+        }
+    except Exception as e:
+        results["ffmpeg"] = {"status": "error", "message": str(e)}
+
+    # 3. Test Whisper
+    try:
+        import whisper
+        results["whisper"] = {
+            "status": "ok",
+            "message": "Whisper transcription available",
+            "note": "Model loads on first use"
+        }
+    except ImportError:
+        results["whisper"] = {
+            "status": "error",
+            "message": "Whisper not installed. Run: pip install openai-whisper"
+        }
+    except Exception as e:
+        results["whisper"] = {"status": "error", "message": str(e)}
+
+    # 4. Test pyannote (diarization)
+    try:
+        if settings.huggingface_token:
+            from pyannote.audio import Pipeline
+            results["pyannote"] = {
+                "status": "ok",
+                "message": "Speaker diarization available",
+                "note": "HuggingFace token configured"
+            }
+        else:
+            results["pyannote"] = {
+                "status": "warning",
+                "message": "No HuggingFace token - diarization disabled",
+                "note": "Set HUGGINGFACE_TOKEN in .env for speaker detection"
+            }
+    except ImportError:
+        results["pyannote"] = {
+            "status": "error",
+            "message": "pyannote.audio not installed"
+        }
+    except Exception as e:
+        results["pyannote"] = {"status": "error", "message": str(e)}
+
+    # 5. Test prosody (librosa)
+    try:
+        import librosa
+        import numpy as np
+        results["prosody_librosa"] = {
+            "status": "ok",
+            "version": librosa.__version__,
+            "message": "Audio analysis ready"
+        }
+    except ImportError:
+        results["prosody_librosa"] = {
+            "status": "error",
+            "message": "librosa not installed. Run: pip install librosa"
+        }
+    except Exception as e:
+        results["prosody_librosa"] = {"status": "error", "message": str(e)}
+
+    # 6. Test parselmouth (Praat)
+    try:
+        import parselmouth
+        results["prosody_praat"] = {
+            "status": "ok",
+            "message": "Voice quality analysis ready (Praat)"
+        }
+    except ImportError:
+        results["prosody_praat"] = {
+            "status": "warning",
+            "message": "parselmouth not installed - some voice analysis disabled",
+            "note": "Run: pip install praat-parselmouth"
+        }
+    except Exception as e:
+        results["prosody_praat"] = {"status": "error", "message": str(e)}
+
+    # 7. Test facial analysis (py-feat)
+    try:
+        from feat import Detector
+        results["facial_pyfeat"] = {
+            "status": "ok",
+            "message": "Facial expression analysis ready"
+        }
+    except ImportError:
+        results["facial_pyfeat"] = {
+            "status": "warning",
+            "message": "py-feat not installed - facial analysis disabled",
+            "note": "Run: pip install py-feat"
+        }
+    except Exception as e:
+        results["facial_pyfeat"] = {"status": "error", "message": str(e)}
+
+    # 8. Test MediaPipe (backup facial)
+    try:
+        import mediapipe
+        results["facial_mediapipe"] = {
+            "status": "ok",
+            "message": "MediaPipe face mesh available (backup)"
+        }
+    except ImportError:
+        results["facial_mediapipe"] = {
+            "status": "warning",
+            "message": "MediaPipe not installed",
+            "note": "Run: pip install mediapipe"
+        }
+    except Exception as e:
+        results["facial_mediapipe"] = {"status": "error", "message": str(e)}
+
+    # 9. Test Claude API
+    try:
+        if settings.anthropic_api_key:
+            import anthropic
+            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            # Just check if we can create a client
+            results["claude"] = {
+                "status": "ok",
+                "message": "Claude API configured",
+                "key_preview": f"...{settings.anthropic_api_key[-4:]}"
+            }
+        else:
+            results["claude"] = {
+                "status": "error",
+                "message": "No API key configured",
+                "note": "Set ANTHROPIC_API_KEY in .env or use the UI"
+            }
+    except ImportError:
+        results["claude"] = {
+            "status": "error",
+            "message": "anthropic package not installed. Run: pip install anthropic"
+        }
+    except Exception as e:
+        results["claude"] = {"status": "error", "message": str(e)}
+
+    # Summary
+    ok_count = sum(1 for r in results.values() if r["status"] == "ok")
+    warning_count = sum(1 for r in results.values() if r["status"] == "warning")
+    error_count = sum(1 for r in results.values() if r["status"] == "error")
+
+    return {
+        "summary": {
+            "ok": ok_count,
+            "warnings": warning_count,
+            "errors": error_count,
+            "ready_for_simple_mode": results.get("yt_dlp", {}).get("status") == "ok" and results.get("claude", {}).get("status") == "ok",
+            "ready_for_full_mode": error_count == 0
+        },
+        "components": results
+    }
 
 
 @app.get("/categories")
@@ -529,6 +735,69 @@ async def delete_insight(insight_id: str):
     return {"success": True}
 
 
+class BatchApproveRequest(BaseModel):
+    """Request for batch approval."""
+    min_quality: int = 85
+
+
+@app.post("/insights/batch-approve")
+async def batch_approve_insights(request: BatchApproveRequest):
+    """Approve all pending insights with quality score >= threshold."""
+    insights = await db.get_all_insights(status="pending")
+
+    approved_count = 0
+    for insight in insights:
+        if insight.quality_score >= request.min_quality:
+            await db.update_insight(insight.id, {
+                "status": "approved",
+                "review_notes": f"Auto-approved (quality >= {request.min_quality})",
+                "reviewed_at": datetime.utcnow(),
+            })
+            approved_count += 1
+
+    return {
+        "success": True,
+        "approved_count": approved_count,
+        "total_pending": len(insights)
+    }
+
+
+# ============================================================================
+# API KEY CONFIGURATION
+# ============================================================================
+
+class ApiKeyRequest(BaseModel):
+    """Request to set API key."""
+    api_key: str
+
+
+@app.post("/config/api-key")
+async def set_api_key(request: ApiKeyRequest):
+    """Set the Anthropic API key (stored in memory, not persisted)."""
+    if not request.api_key.startswith("sk-ant-"):
+        raise HTTPException(status_code=400, detail="Invalid API key format")
+
+    # Update the settings in memory
+    settings.anthropic_api_key = request.api_key
+
+    # Reinitialize the insight service with new key
+    insight_service.client = None  # Will be recreated on next use
+
+    return {"success": True, "message": "API key updated"}
+
+
+@app.get("/config/api-key-status")
+async def get_api_key_status():
+    """Check if API key is configured."""
+    has_key = bool(settings.anthropic_api_key)
+    # Show only last 4 chars for security
+    masked = f"...{settings.anthropic_api_key[-4:]}" if has_key else None
+    return {
+        "configured": has_key,
+        "masked_key": masked
+    }
+
+
 # ============================================================================
 # STATISTICS & EXPORT
 # ============================================================================
@@ -653,6 +922,166 @@ async def get_transcript(v: str = Query(..., description="Video ID")):
         "transcript": transcript,
         "charCount": len(transcript)
     }
+
+
+# ============================================================================
+# SIMPLE PROCESSING (Transcript + Claude only - no Whisper/prosody/facial)
+# ============================================================================
+
+class SimpleProcessRequest(BaseModel):
+    """Request for simple transcript-only processing."""
+    video_url: str
+    auto_approve: bool = False  # Auto-approve insights with quality > 85
+
+
+@app.post("/process-simple")
+async def process_video_simple(request: SimpleProcessRequest, background_tasks: BackgroundTasks):
+    """
+    Simple processing: YouTube transcript + Claude insight extraction only.
+    Much faster than full processing - no Whisper, prosody, or facial analysis.
+    """
+    # Extract video ID from URL
+    video_url = request.video_url
+    video_id = None
+
+    if "youtube.com/watch?v=" in video_url:
+        video_id = video_url.split("v=")[1].split("&")[0]
+    elif "youtu.be/" in video_url:
+        video_id = video_url.split("youtu.be/")[1].split("?")[0]
+
+    if not video_id:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+
+    # Get video info
+    video_info = await youtube_service.get_video_info(video_id)
+    if not video_info:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Create processing job
+    job_id = str(uuid.uuid4())
+    job = ProcessingJob(
+        id=job_id,
+        video_id=video_id,
+        channel_id=video_info.channel_id or "unknown",
+        status=ProcessingStatus.QUEUED,
+        progress=0,
+        current_step="Queued (simple mode)",
+        created_at=datetime.utcnow()
+    )
+
+    active_jobs[job_id] = job
+
+    # Start background processing
+    background_tasks.add_task(
+        process_video_simple_task,
+        job_id,
+        video_id,
+        video_info,
+        request.auto_approve
+    )
+
+    return {
+        "job_id": job_id,
+        "video_id": video_id,
+        "status": "queued",
+        "mode": "simple"
+    }
+
+
+async def process_video_simple_task(
+    job_id: str,
+    video_id: str,
+    video_info: VideoMetadata,
+    auto_approve: bool = False
+):
+    """Simple processing: transcript + Claude only."""
+    job = active_jobs[job_id]
+
+    try:
+        # Step 1: Get YouTube transcript
+        job.status = ProcessingStatus.TRANSCRIBING
+        job.current_step = "Fetching YouTube transcript..."
+        job.progress = 20
+        job.started_at = datetime.utcnow()
+
+        transcript_text = await youtube_service.download_transcript(video_id)
+
+        if not transcript_text:
+            raise Exception("No transcript available for this video")
+
+        print(f"[Simple] Got transcript: {len(transcript_text)} chars")
+
+        # Step 2: Extract insights with Claude
+        job.status = ProcessingStatus.EXTRACTING_INSIGHTS
+        job.current_step = "Extracting insights with Claude..."
+        job.progress = 50
+
+        # Create a simple transcript object for the insight service
+        from models import TranscriptResult, TranscriptSegment
+        transcript = TranscriptResult(
+            text=transcript_text,
+            segments=[TranscriptSegment(
+                text=transcript_text,
+                start=0.0,
+                end=0.0,
+                confidence=1.0
+            )],
+            language="en",
+            duration=video_info.duration_seconds or 0
+        )
+
+        insights = await insight_service.extract_insights(
+            transcript=transcript,
+            video_title=video_info.title,
+            channel_name=video_info.channel_id or "Unknown",
+            prosody=None  # No prosody in simple mode
+        )
+
+        # Set video ID and optionally auto-approve
+        for insight in insights:
+            insight.video_id = video_id
+            if auto_approve and insight.quality_score >= 85:
+                insight.status = InsightStatus.APPROVED
+
+        job.insights = insights
+
+        # Step 3: Save to database
+        job.current_step = "Saving insights..."
+        job.progress = 80
+
+        for insight in insights:
+            await db.create_insight({
+                "id": insight.id,
+                "video_id": insight.video_id,
+                "title": insight.title,
+                "insight": insight.insight,
+                "category": insight.category.value,
+                "coaching_implication": insight.coaching_implication,
+                "timestamp": insight.timestamp,
+                "quality_score": insight.quality_score,
+                "specificity_score": insight.specificity_score,
+                "actionability_score": insight.actionability_score,
+                "safety_score": insight.safety_score,
+                "novelty_score": insight.novelty_score,
+                "confidence": insight.confidence,
+                "status": insight.status.value,
+                "flagged_for_review": insight.flagged_for_review,
+            })
+
+        # Done!
+        job.status = ProcessingStatus.COMPLETED
+        job.current_step = "Complete"
+        job.progress = 100
+        job.completed_at = datetime.utcnow()
+
+        approved_count = len([i for i in insights if i.status == InsightStatus.APPROVED])
+        print(f"[Simple] Completed: {video_id} - {len(insights)} insights ({approved_count} auto-approved)")
+
+    except Exception as e:
+        job.status = ProcessingStatus.FAILED
+        job.error_message = str(e)
+        job.current_step = f"Failed: {str(e)[:100]}"
+        print(f"[Simple] Failed: {video_id} - {e}")
 
 
 # ============================================================================

@@ -127,6 +127,22 @@ export async function processVideo(
   return res.json();
 }
 
+export async function processVideoSimple(
+  videoUrl: string,
+  options: { autoApprove?: boolean } = {}
+): Promise<{ job_id: string; video_id: string; status: string; mode: string }> {
+  const res = await fetch(`${API_BASE}/process-simple`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      video_url: videoUrl,
+      auto_approve: options.autoApprove ?? false,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to start simple processing');
+  return res.json();
+}
+
 export async function fetchJobStatus(jobId: string): Promise<ProcessingJob> {
   const res = await fetch(`${API_BASE}/process/${jobId}`);
   if (!res.ok) throw new Error('Failed to fetch job status');
@@ -200,5 +216,61 @@ export async function fetchRecommendedChannels(): Promise<
 > {
   const res = await fetch(`${API_BASE}/recommended-channels`);
   if (!res.ok) throw new Error('Failed to fetch recommended channels');
+  return res.json();
+}
+
+export async function batchApproveInsights(
+  minQuality: number = 85
+): Promise<{ success: boolean; approved_count: number; total_pending: number }> {
+  const res = await fetch(`${API_BASE}/insights/batch-approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ min_quality: minQuality }),
+  });
+  if (!res.ok) throw new Error('Failed to batch approve');
+  return res.json();
+}
+
+export async function setApiKey(apiKey: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/config/api-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  if (!res.ok) throw new Error('Failed to set API key');
+  return res.json();
+}
+
+export async function getApiKeyStatus(): Promise<{
+  configured: boolean;
+  masked_key: string | null;
+}> {
+  const res = await fetch(`${API_BASE}/config/api-key-status`);
+  if (!res.ok) throw new Error('Failed to get API key status');
+  return res.json();
+}
+
+export interface DiagnosticResult {
+  status: 'ok' | 'warning' | 'error';
+  message: string;
+  version?: string;
+  note?: string;
+  key_preview?: string;
+}
+
+export interface DiagnosticsResponse {
+  summary: {
+    ok: number;
+    warnings: number;
+    errors: number;
+    ready_for_simple_mode: boolean;
+    ready_for_full_mode: boolean;
+  };
+  components: Record<string, DiagnosticResult>;
+}
+
+export async function runDiagnostics(): Promise<DiagnosticsResponse> {
+  const res = await fetch(`${API_BASE}/diagnostics`);
+  if (!res.ok) throw new Error('Failed to run diagnostics');
   return res.json();
 }

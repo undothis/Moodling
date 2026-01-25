@@ -80,13 +80,34 @@ export default function StatsPage() {
   // Calculate quality score distribution
   const qualityDistribution = allInsights
     ? [
-        { name: '90-100', count: allInsights.filter((i) => i.quality_score >= 90).length },
-        { name: '80-89', count: allInsights.filter((i) => i.quality_score >= 80 && i.quality_score < 90).length },
-        { name: '70-79', count: allInsights.filter((i) => i.quality_score >= 70 && i.quality_score < 80).length },
-        { name: '60-69', count: allInsights.filter((i) => i.quality_score >= 60 && i.quality_score < 70).length },
-        { name: '<60', count: allInsights.filter((i) => i.quality_score < 60).length },
+        { name: '90-100', count: allInsights.filter((i) => i.quality_score >= 90).length, fill: '#22c55e' },
+        { name: '80-89', count: allInsights.filter((i) => i.quality_score >= 80 && i.quality_score < 90).length, fill: '#84cc16' },
+        { name: '70-79', count: allInsights.filter((i) => i.quality_score >= 70 && i.quality_score < 80).length, fill: '#f59e0b' },
+        { name: '60-69', count: allInsights.filter((i) => i.quality_score >= 60 && i.quality_score < 70).length, fill: '#f97316' },
+        { name: '<60', count: allInsights.filter((i) => i.quality_score < 60).length, fill: '#ef4444' },
       ]
     : [];
+
+  // Calculate safety score distribution
+  const safetyDistribution = allInsights
+    ? [
+        { name: '90-100', count: allInsights.filter((i) => i.safety_score >= 90).length, fill: '#22c55e' },
+        { name: '80-89', count: allInsights.filter((i) => i.safety_score >= 80 && i.safety_score < 90).length, fill: '#84cc16' },
+        { name: '70-79', count: allInsights.filter((i) => i.safety_score >= 70 && i.safety_score < 80).length, fill: '#f59e0b' },
+        { name: '<70', count: allInsights.filter((i) => i.safety_score < 70).length, fill: '#ef4444' },
+      ]
+    : [];
+
+  // Calculate average scores
+  const avgQuality = allInsights?.length
+    ? Math.round(allInsights.reduce((sum, i) => sum + i.quality_score, 0) / allInsights.length)
+    : 0;
+  const avgSafety = allInsights?.length
+    ? Math.round(allInsights.reduce((sum, i) => sum + i.safety_score, 0) / allInsights.length)
+    : 0;
+  const avgConfidence = allInsights?.length
+    ? Math.round(allInsights.reduce((sum, i) => sum + i.confidence * 100, 0) / allInsights.length)
+    : 0;
 
   // Calculate category distribution
   const categoryData = stats?.category_distribution
@@ -154,7 +175,41 @@ export default function StatsPage() {
         />
       </div>
 
-      {/* Charts */}
+      {/* Score Averages */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 font-medium">Avg Quality Score</p>
+          <p className="text-4xl font-bold text-gray-900 mt-1">{avgQuality}</p>
+          <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
+            <div
+              className="bg-green-500 h-2 rounded-full transition-all"
+              style={{ width: `${avgQuality}%` }}
+            />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 font-medium">Avg Safety Score</p>
+          <p className="text-4xl font-bold text-gray-900 mt-1">{avgSafety}</p>
+          <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all"
+              style={{ width: `${avgSafety}%` }}
+            />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 font-medium">Avg Confidence</p>
+          <p className="text-4xl font-bold text-gray-900 mt-1">{avgConfidence}%</p>
+          <div className="w-full bg-gray-100 rounded-full h-2 mt-3">
+            <div
+              className="bg-purple-500 h-2 rounded-full transition-all"
+              style={{ width: `${avgConfidence}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Status Pie Chart */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -198,7 +253,11 @@ export default function StatsPage() {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {qualityDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -206,6 +265,70 @@ export default function StatsPage() {
               No data yet
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Safety Distribution */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h3 className="font-semibold text-gray-900 mb-4">Safety Score Distribution</h3>
+          {safetyDistribution.some((d) => d.count > 0) ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={safetyDistribution}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {safetyDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[250px] text-gray-400">
+              No data yet
+            </div>
+          )}
+        </div>
+
+        {/* Quick Stats */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h3 className="font-semibold text-gray-900 mb-4">Quick Stats</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">High Quality (85+)</span>
+              <span className="font-semibold text-green-600">
+                {allInsights?.filter((i) => i.quality_score >= 85).length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Flagged for Review</span>
+              <span className="font-semibold text-yellow-600">
+                {allInsights?.filter((i) => i.flagged_for_review).length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Low Safety (&lt;70)</span>
+              <span className="font-semibold text-red-600">
+                {allInsights?.filter((i) => i.safety_score < 70).length || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Unique Videos</span>
+              <span className="font-semibold text-blue-600">
+                {new Set(allInsights?.map((i) => i.video_id)).size || 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Ready for Export</span>
+              <span className="font-semibold text-green-600">
+                {allInsights?.filter((i) => i.status === 'approved').length || 0}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
