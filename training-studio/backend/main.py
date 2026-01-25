@@ -1263,12 +1263,16 @@ async def export_training_data(
     Export training data in various formats with source tracking.
 
     Formats:
-    - alpaca: Alpaca/ShareGPT format for fine-tuning
+    - alpaca: Classic Alpaca format (instruction/input/output) - basic Q&A
+    - chatml: ChatML format for Llama 3+, OpenAI - multi-turn with system prompt
+    - sharegpt: ShareGPT format for Unsloth - community standard
+    - conversations: Rich multi-turn with full emotional context
     - jsonl: JSON Lines format
-    - raw: Raw insight data
+    - raw: Raw insight data with all fields
 
     Features:
     - Includes source_token for tracking which data influenced model
+    - Includes emotional_context from facial/voice analysis when available
     - Applies channel influence_weight (set apply_weights=false to skip)
     - Filters out channels with include_in_training=false
     """
@@ -1358,6 +1362,147 @@ async def export_training_data(
             "data": lines
         }
 
+    elif format == "chatml":
+        # ChatML format - OpenAI/Llama 3+ compatible multi-turn conversations
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+
+            # Build emotional context string if available
+            emotion_prefix = ""
+            if emotional_context.get("emotions"):
+                emotions = ", ".join(emotional_context["emotions"])
+                intensity = emotional_context.get("intensity", 0.5)
+                emotion_prefix = f"[User appears {emotions} (intensity: {intensity:.1f})] "
+
+            # Generate multi-turn conversation
+            conversation = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are MoodLeaf, a compassionate AI wellness coach. You provide empathetic support, help users understand their emotions, and offer practical coping strategies. You respond warmly and validate feelings before offering guidance."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{emotion_prefix}{i.insight}"
+                    },
+                    {
+                        "role": "assistant",
+                        "content": i.coaching_implication
+                    }
+                ],
+                "_metadata": {
+                    "source_token": source_token,
+                    "category": i.category,
+                    "emotional_context": emotional_context,
+                    "quality_score": i.quality_score,
+                    "channel": ch_name,
+                    "weight": weight if apply_weights else 1.0
+                }
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "chatml",
+            "description": "ChatML format for Llama 3+, OpenAI fine-tuning",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
+    elif format == "sharegpt":
+        # ShareGPT format - Unsloth/community standard
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+
+            # Build emotional context string if available
+            emotion_prefix = ""
+            if emotional_context.get("emotions"):
+                emotions = ", ".join(emotional_context["emotions"])
+                emotion_prefix = f"[Detected emotions: {emotions}] "
+
+            conversation = {
+                "conversations": [
+                    {
+                        "from": "system",
+                        "value": "You are MoodLeaf, a compassionate AI wellness coach. You provide empathetic support, help users understand their emotions, and offer practical coping strategies."
+                    },
+                    {
+                        "from": "human",
+                        "value": f"{emotion_prefix}{i.insight}"
+                    },
+                    {
+                        "from": "gpt",
+                        "value": i.coaching_implication
+                    }
+                ],
+                "source_token": source_token,
+                "category": i.category,
+                "emotional_context": emotional_context
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "sharegpt",
+            "description": "ShareGPT format for Unsloth fine-tuning",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
+    elif format == "conversations":
+        # Full multi-turn therapeutic conversations with emotional context
+        examples = []
+        for i, weight, ch_name in filtered_insights:
+            source_token = i.source_token or f"ch{i.channel_id[:6]}_v{i.video_id[:8]}_i{i.id[:6]}"
+            emotional_context = i.emotional_context_json or {}
+            prosody_context = i.prosody_context_json or {}
+
+            # Create a realistic multi-turn conversation
+            conversation = {
+                "id": source_token,
+                "category": i.category,
+                "emotional_context": {
+                    "detected_emotions": emotional_context.get("emotions", []),
+                    "intensity": emotional_context.get("intensity", 0.5),
+                    "micro_expressions": emotional_context.get("micro_expressions", []),
+                    "voice_tone": prosody_context.get("tone", "neutral")
+                },
+                "conversation": [
+                    {
+                        "role": "user",
+                        "content": i.insight,
+                        "emotional_state": emotional_context.get("emotions", ["neutral"])
+                    },
+                    {
+                        "role": "assistant",
+                        "content": i.coaching_implication,
+                        "therapeutic_technique": i.category,
+                        "responds_to_emotions": emotional_context.get("emotions", [])
+                    }
+                ],
+                "metadata": {
+                    "source_token": source_token,
+                    "channel": ch_name,
+                    "video_id": i.video_id,
+                    "quality_score": i.quality_score,
+                    "safety_score": i.safety_score,
+                    "weight": weight if apply_weights else 1.0
+                }
+            }
+            examples.append(conversation)
+
+        return {
+            "format": "conversations",
+            "description": "Rich multi-turn conversations with emotional context for advanced training",
+            "count": len(examples),
+            "weights_applied": apply_weights,
+            "data": examples
+        }
+
     else:  # raw
         return {
             "format": "raw",
@@ -1374,6 +1519,8 @@ async def export_training_data(
                     "title": i.title,
                     "insight": i.insight,
                     "coaching_implication": i.coaching_implication,
+                    "emotional_context": i.emotional_context_json,
+                    "prosody_context": i.prosody_context_json,
                     "influence_weight": weight if apply_weights else 1.0,
                     "scores": {
                         "quality": i.quality_score,

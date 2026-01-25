@@ -142,6 +142,9 @@ class InsightModel(Base):
     # Prosody context
     prosody_context_json = Column(JSON, nullable=True)
 
+    # Emotional context from facial/voice analysis
+    emotional_context_json = Column(JSON, nullable=True)  # {"emotions": ["sad", "anxious"], "intensity": 0.7, ...}
+
     # Status
     status = Column(String, default="pending")  # pending, approved, rejected
     flagged_for_review = Column(Boolean, default=False)
