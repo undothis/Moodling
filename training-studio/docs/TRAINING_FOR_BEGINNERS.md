@@ -2,6 +2,8 @@
 
 A simple explanation of how MoodLeaf trains its AI, and how to fix problems.
 
+> **Need to set up Training Studio first?** See the [Complete Setup Guide](SETUP.md) for installation instructions.
+
 ---
 
 ## How Does AI Training Work? (Simple Version)

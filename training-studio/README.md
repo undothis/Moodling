@@ -527,6 +527,41 @@ This teaches the model to:
 
 ## Troubleshooting
 
+### "pip: Command not found" or "source: No such file"
+
+**You're in the wrong directory.** The virtual environment is in `backend/`:
+
+```bash
+# WRONG
+cd training-studio
+pip install ...  # FAILS
+
+# CORRECT
+cd training-studio/backend
+source venv/bin/activate   # bash/zsh
+source venv/bin/activate.csh  # tcsh (% prompt)
+pip install ...  # WORKS
+```
+
+### "venv/bin/activate: No such file or directory"
+
+**The virtual environment doesn't exist yet.** Create it first:
+
+```bash
+cd training-studio/backend
+python3.11 -m venv venv
+source venv/bin/activate  # or .csh for tcsh
+```
+
+### tcsh/csh Users (% prompt)
+
+If your terminal prompt ends with `%`, use `.csh` files:
+
+```tcsh
+source venv/bin/activate.csh   # NOT activate
+source start.csh               # NOT start.sh
+```
+
 ### "No videos found" when selecting channel
 - The channel URL format may not be working
 - Try adding the channel with full `/videos` URL
@@ -546,6 +581,8 @@ This teaches the model to:
 - API keys are stored in memory only
 - They reset when the backend restarts
 - For persistence, use the `.env` file
+
+> **Need more help?** See the [Complete Setup Guide](docs/SETUP.md) for detailed troubleshooting.
 
 ---
 

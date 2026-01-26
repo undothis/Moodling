@@ -4,6 +4,50 @@ A complete guide from data collection to deploying fine-tuned models across the 
 
 ---
 
+## Prerequisites
+
+Before starting the training workflow, ensure Training Studio is properly installed.
+
+### Quick Setup (macOS with Homebrew)
+
+```bash
+# 1. Install system dependencies
+brew install python@3.11 node yt-dlp ffmpeg
+
+# 2. Set up backend (MUST be in backend directory!)
+cd training-studio/backend
+python3.11 -m venv venv
+source venv/bin/activate       # bash/zsh
+# source venv/bin/activate.csh # tcsh users
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 3. (Optional) Install Full Mode dependencies
+pip install openai-whisper librosa praat-parselmouth py-feat mediapipe opencv-python
+
+# 4. Set up frontend
+cd ../frontend
+npm install
+
+# 5. Start Training Studio
+cd ..
+./start.sh   # or: source start.csh for tcsh
+```
+
+### API Keys Configuration
+
+Configure in the UI (http://localhost:3000 sidebar) or in `backend/.env`:
+
+| Key | Required | Purpose |
+|-----|----------|---------|
+| `ANTHROPIC_API_KEY` | Yes | Claude insight extraction |
+| `HUGGINGFACE_TOKEN` | No | Speaker diarization (pyannote) |
+
+> **Having issues?** See the [Complete Setup Guide](SETUP.md) for detailed troubleshooting.
+
+---
+
 ## Overview: The Full Pipeline
 
 ```
