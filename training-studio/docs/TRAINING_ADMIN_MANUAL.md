@@ -1473,3 +1473,287 @@ filtered = [
 ## Summary
 
 The Aliveness Extraction system transforms raw conversations into training data that captures the full texture of human experience. By extracting not just WHAT people say but HOW they say it, we train AI that feels genuinely human - not a chatbot performing empathy, but a presence that truly understands.
+
+---
+
+# Extraction Verification System
+
+The Extraction Verification dashboard helps you **monitor whether your extraction pipeline is working correctly** by showing all categories with percentages, checkmarks, and status indicators.
+
+---
+
+## Accessing the Verification Dashboard
+
+1. Open Training Studio (http://localhost:3000)
+2. Click **Verification** in the left sidebar (between Statistics and Tuning)
+3. The dashboard loads automatically and refreshes every 30 seconds
+
+---
+
+## Understanding the Dashboard
+
+### Summary Cards
+
+At the top of the page, you'll see four summary cards:
+
+| Card | What It Shows |
+|------|---------------|
+| **Overall Health** | Pipeline health status with emoji indicator |
+| **Total Insights** | Number of insights extracted across all sources |
+| **Categories Active** | How many categories have data (e.g., 45/76) |
+| **Coverage** | Percentage of categories with at least one insight |
+
+### Health Status Levels
+
+| Icon | Status | Meaning |
+|------|--------|---------|
+| ✅ | Excellent | 75%+ coverage, pipeline working great |
+| 🟢 | Good | 50-75% coverage, healthy pipeline |
+| 🟡 | Developing | 25-50% coverage, need more diverse content |
+| 🔴 | Needs Attention | <25% coverage, investigate issues |
+| ⚪ | Not Started | No data yet |
+
+---
+
+## Category Status Indicators
+
+Each category shows a status icon indicating its health:
+
+| Icon | Status | Meaning | Action Needed |
+|------|--------|---------|---------------|
+| ✅ | Excellent | High quality (80+), high safety (90+), good count | None - keep it up! |
+| 🟢 | Good | Quality 70+, sufficient data | None - healthy |
+| 🟡 | Moderate/Needs Data | Quality 60-70 or count < 3 | Add more content |
+| 🟠 | Low Quality | Average quality < 60 | Review extraction settings |
+| 🔴 | Safety Concern | Average safety < 70 | Manual review required |
+| ⚪ | Not Started | No insights in this category | Add relevant content |
+
+---
+
+## Aliveness Tier Sections
+
+The dashboard groups **Aliveness categories** (texture markers) by their psychological tier:
+
+### Tier 1: Emotional Texture
+How emotions show up in speech
+- Emotional Granularity
+- Mixed Feelings
+- Somatic Markers
+- Emotional Evolution
+
+### Tier 2: Cognitive Patterns
+How people think and frame experience
+- Temporal Orientation
+- Contradiction Holding
+- Narrative Identity
+- Cognitive Patterns
+
+### Tier 3: Self-Protective Language
+How people hedge and protect themselves
+- Micro Confession
+- Hedging Shields
+- Permission Seeking
+- Topic Circling
+- Retreat Signals
+
+### Tier 4: Relational Signals
+How people connect, repair, and attach
+- Repair Attempts
+- Bids for Witness
+- Attachment Echoes
+- Pronoun Patterns
+
+### Tier 5: Authenticity Markers
+Signs of genuine human expression
+- Guarded Hope
+- Humor Function
+- Performed vs Authentic Vulnerability
+- Unresolved Questions
+
+### Tier 6: Meta-Conversational
+What's happening in the conversation itself
+- Tone Shifts
+- Meaningful Silence
+- What Not Said
+- Readiness Signals
+
+### Tier 7: The Rare Gold
+Precious moments revealing deep humanity
+- Self-Kindness Moments
+- Values in Conflict
+- Identity Friction
+- Memory Echoes
+- Meaning Resistance
+- Integration Moments
+
+Each tier shows:
+- **Total insight count** across all categories in the tier
+- **Number of active categories** with data
+- **Health indicator** (emoji)
+- Click to expand and see individual categories
+
+---
+
+## Standard Categories Section
+
+Below the aliveness tiers, you'll see **Standard Extraction Categories** covering:
+- Pain domain (emotional struggles, coping, grief, etc.)
+- Joy domain (humor, celebration, gratitude, etc.)
+- Connection domain (relationships, belonging, boundaries, etc.)
+- Growth domain (self-discovery, life lessons, meaning, etc.)
+- Body domain (health, aging, sleep, etc.)
+- Context domain (work, money, spirituality, etc.)
+- Authenticity domain (real quotes, messy middle, etc.)
+
+---
+
+## Expanding Category Details
+
+Click any category row to see detailed information:
+
+### Metrics Shown
+- **Quality Avg**: Average quality score (higher = better)
+- **Safety Avg**: Average safety score (higher = safer)
+- **Status**: Current status text
+
+### For Aliveness Categories
+- **Why This Matters**: Explanation of psychological significance
+- **Coach Note**: Guidance for how the AI should respond
+
+---
+
+## Recommendations Panel
+
+The dashboard automatically generates recommendations based on your data:
+
+| Recommendation | What It Means |
+|----------------|---------------|
+| "⚠️ X categories have no data..." | Need more diverse content sources |
+| "📊 X categories have low quality..." | Review extraction prompt or source quality |
+| "⚠️ X categories have safety concerns..." | Manual review of flagged insights needed |
+| "📝 No data for [Tier] tier..." | Add content with these emotional textures |
+| "✅ Extraction pipeline is healthy..." | Everything is working well! |
+
+---
+
+## Using Verification Effectively
+
+### Daily Workflow
+
+1. **Check overall health** - Quick glance at top cards
+2. **Review recommendations** - Address any warnings
+3. **Expand low-coverage tiers** - Identify gaps
+4. **Add targeted content** - Process videos that fill gaps
+
+### Weekly Review
+
+1. **Compare coverage trends** - Is coverage improving?
+2. **Check quality averages** - Are scores stable?
+3. **Review safety flags** - Address any concerns
+4. **Balance categories** - Avoid over-representing any category
+
+### Before Export
+
+1. **Verify coverage** - Ensure balanced representation
+2. **Check tier health** - All tiers should be green or better
+3. **Review recommendations** - No critical warnings
+4. **Export with confidence** - Your training data is balanced
+
+---
+
+## Troubleshooting Verification
+
+### "All categories show Not Started"
+
+Your database is empty. Process some videos first:
+1. Go to **Channels** → Add recommended channels
+2. Go to **Process** → Add video URLs
+3. Wait for processing to complete
+4. Return to Verification
+
+### "Coverage is low despite many insights"
+
+You might be processing similar content. Try:
+1. Add channels from different categories
+2. Process videos on diverse topics
+3. Look for content covering rare gold (self-kindness, integration, etc.)
+
+### "Safety scores are low"
+
+Some content may be flagged as potentially harmful:
+1. Go to **Review** → Filter by "flagged"
+2. Manually review flagged insights
+3. Reject unsafe content, approve safe content
+4. Consider removing problematic source channels
+
+### "Tier shows 0 insights but categories have data"
+
+The insight categories might not match the aliveness taxonomy:
+1. Check if insights are using standard categories instead
+2. Review extraction settings in backend config
+3. Re-process videos with updated extraction prompt
+
+---
+
+## API Endpoint Reference
+
+The verification data comes from this endpoint:
+
+```
+GET /extraction-verification
+```
+
+Response structure:
+```json
+{
+  "summary": {
+    "total_insights": 1234,
+    "categories_with_data": 45,
+    "total_categories": 76,
+    "overall_health": "good",
+    "overall_health_icon": "🟢",
+    "coverage_percentage": 59.2
+  },
+  "categories": {
+    "emotional_granularity": {
+      "name": "Emotional Granularity",
+      "description": "The specificity of emotion words used...",
+      "type": "aliveness",
+      "tier": "emotional_texture",
+      "count": 23,
+      "percentage": 1.86,
+      "status": "good",
+      "status_icon": "🟢",
+      "quality_avg": 78.5,
+      "safety_avg": 92.3,
+      "why_human": "High granularity predicts...",
+      "coach_note": "Mirror the user's granularity level..."
+    }
+  },
+  "tiers": {
+    "emotional_texture": {
+      "count": 87,
+      "categories": 4,
+      "health": "healthy",
+      "health_icon": "✅"
+    }
+  },
+  "recommendations": [
+    "✅ Extraction pipeline is healthy - continue monitoring"
+  ]
+}
+```
+
+---
+
+## Summary
+
+The Extraction Verification dashboard gives you visibility into:
+
+1. **Overall pipeline health** - Is extraction working?
+2. **Category coverage** - Are you getting balanced data?
+3. **Quality metrics** - Is the data good enough for training?
+4. **Safety monitoring** - Are there any concerns?
+5. **Actionable recommendations** - What should you do next?
+
+Use it regularly to ensure your training data is comprehensive, high-quality, and safe for fine-tuning your AI coach.
