@@ -8,7 +8,9 @@ import {
   deleteChannel,
   fetchRecommendedChannels,
   getAIChannelRecommendations,
+  batchProcessVideos,
   AIChannelRecommendation,
+  Channel,
 } from '@/lib/api';
 import {
   Plus,
@@ -27,6 +29,8 @@ import {
   MessageSquare,
   Lightbulb,
   CheckCircle,
+  Play,
+  Zap,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -135,9 +139,13 @@ function AddChannelModal({
 function ChannelCard({
   channel,
   onDelete,
+  onBatchProcess,
+  isProcessing,
 }: {
-  channel: any;
+  channel: Channel;
   onDelete: () => void;
+  onBatchProcess: () => void;
+  isProcessing?: boolean;
 }) {
   const trustColors: Record<string, string> = {
     low: 'bg-red-100 text-red-700',
@@ -187,7 +195,7 @@ function ChannelCard({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
           <p className="text-gray-500">Videos Processed</p>
           <p className="font-semibold text-gray-900">{channel.videos_processed}</p>
@@ -197,6 +205,29 @@ function ChannelCard({
           <p className="font-semibold text-gray-900">{channel.insights_extracted}</p>
         </div>
       </div>
+
+      <button
+        onClick={onBatchProcess}
+        disabled={isProcessing}
+        className={clsx(
+          "w-full px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors",
+          isProcessing
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-leaf-50 text-leaf-700 hover:bg-leaf-100"
+        )}
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4" />
+            Batch Process Videos
+          </>
+        )}
+      </button>
     </div>
   );
 }
@@ -204,14 +235,18 @@ function ChannelCard({
 function RecommendedChannelCard({
   channel,
   onAdd,
+  onAddAndProcess,
   isAdded,
   isAdding,
+  isProcessing,
   description,
 }: {
   channel: { name: string; category: string; url: string; description?: string };
   onAdd: () => void;
+  onAddAndProcess?: () => void;
   isAdded: boolean;
   isAdding?: boolean;
+  isProcessing?: boolean;
   description?: string;
 }) {
   const desc = description || channel.description;
@@ -229,18 +264,30 @@ function RecommendedChannelCard({
           <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full flex-shrink-0">
             Added
           </span>
-        ) : isAdding ? (
+        ) : isAdding || isProcessing ? (
           <span className="px-3 py-1 text-xs bg-gray-100 text-gray-500 rounded-full flex-shrink-0 flex items-center gap-1">
             <Loader2 className="w-3 h-3 animate-spin" />
-            Adding...
+            {isProcessing ? 'Processing...' : 'Adding...'}
           </span>
         ) : (
-          <button
-            onClick={onAdd}
-            className="px-3 py-1 text-xs bg-leaf-50 text-leaf-700 rounded-full hover:bg-leaf-100 transition-colors flex-shrink-0"
-          >
-            Add
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={onAdd}
+              className="px-3 py-1 text-xs bg-leaf-50 text-leaf-700 rounded-full hover:bg-leaf-100 transition-colors"
+            >
+              Add
+            </button>
+            {onAddAndProcess && (
+              <button
+                onClick={onAddAndProcess}
+                className="px-3 py-1 text-xs bg-purple-50 text-purple-700 rounded-full hover:bg-purple-100 transition-colors flex items-center gap-1"
+                title="Add channel and immediately start batch processing"
+              >
+                <Zap className="w-3 h-3" />
+                Add & Process
+              </button>
+            )}
+          </div>
         )}
       </div>
       {desc && (
@@ -301,6 +348,11 @@ export default function ChannelsPage() {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [showAIRecommender, setShowAIRecommender] = useState(false);
 
+  // Batch processing state
+  const [processingChannels, setProcessingChannels] = useState<Set<string>>(new Set());
+  const [batchResults, setBatchResults] = useState<{ channelId: string; jobCount: number } | null>(null);
+  const [pendingProcessChannel, setPendingProcessChannel] = useState<string | null>(null);
+
   const { data: channels, isLoading } = useQuery({
     queryKey: ['channels'],
     queryFn: fetchChannels,
@@ -351,6 +403,56 @@ export default function ChannelsPage() {
       extraction_categories: [],
     });
   };
+
+  // Batch processing handler
+  const handleBatchProcess = async (channelId: string) => {
+    setProcessingChannels(prev => new Set(prev).add(channelId));
+    setBatchResults(null);
+
+    try {
+      const result = await batchProcessVideos({
+        channel_id: channelId,
+        max_videos: 10,
+        strategy: 'balanced',
+      });
+
+      if (result.success) {
+        setBatchResults({ channelId, jobCount: result.total_queued });
+        // Show success notification
+        setTimeout(() => setBatchResults(null), 5000);
+      }
+    } catch (error) {
+      alert('Failed to start batch processing. Please try again.');
+    } finally {
+      setProcessingChannels(prev => {
+        const next = new Set(prev);
+        next.delete(channelId);
+        return next;
+      });
+    }
+  };
+
+  // Add channel and then batch process
+  const handleAddAndProcess = (channel: { url: string; category: string }) => {
+    setPendingProcessChannel(channel.url);
+    handleAddChannel(channel);
+  };
+
+  // Watch for channel being added to trigger batch processing
+  const channelToProcess = useMemo(() => {
+    if (!pendingProcessChannel || !channels) return null;
+    const normalizedPending = pendingProcessChannel.replace('https://youtube.com/', '').replace('https://www.youtube.com/', '');
+    return channels.find(ch => {
+      const normalizedUrl = ch.url.replace('https://youtube.com/', '').replace('https://www.youtube.com/', '');
+      return normalizedUrl === normalizedPending;
+    });
+  }, [channels, pendingProcessChannel]);
+
+  // Effect to trigger batch processing after channel is added
+  if (channelToProcess && pendingProcessChannel) {
+    setPendingProcessChannel(null);
+    handleBatchProcess(channelToProcess.id);
+  }
 
   // Group recommended channels by category
   const groupedRecommended = useMemo(() => {
@@ -457,9 +559,21 @@ export default function ChannelsPage() {
               key={channel.id}
               channel={channel}
               onDelete={() => remove(channel.id)}
+              onBatchProcess={() => handleBatchProcess(channel.id)}
+              isProcessing={processingChannels.has(channel.id)}
             />
           ))}
         </div>
+
+        {/* Batch Processing Success Message */}
+        {batchResults && (
+          <div className="fixed bottom-6 right-6 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-5">
+            <CheckCircle className="w-5 h-5" />
+            <span>
+              Started processing {batchResults.jobCount} videos! Check Jobs page for progress.
+            </span>
+          </div>
+        )}
       )}
 
       {/* AI Channel Recommender */}
@@ -521,13 +635,28 @@ export default function ChannelsPage() {
               </button>
 
               {aiRecommendations.length > 0 && (
-                <button
-                  onClick={handleAddAllAIRecommendations}
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Add All Recommended
-                </button>
+                <>
+                  <button
+                    onClick={handleAddAllAIRecommendations}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Add All
+                  </button>
+                  <button
+                    onClick={() => {
+                      aiRecommendations.forEach(channel => {
+                        if (!addedChannelUrls.has(channel.url)) {
+                          handleAddAndProcess(channel);
+                        }
+                      });
+                    }}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Add All & Process
+                  </button>
+                </>
               )}
             </div>
 
@@ -570,18 +699,28 @@ export default function ChannelsPage() {
                           <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full">
                             Added
                           </span>
-                        ) : addingChannels.has(channel.url) ? (
+                        ) : addingChannels.has(channel.url) || pendingProcessChannel === channel.url ? (
                           <span className="px-2 py-1 text-xs bg-gray-100 text-gray-500 rounded-full flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" />
-                            Adding...
+                            {pendingProcessChannel === channel.url ? 'Processing...' : 'Adding...'}
                           </span>
                         ) : (
-                          <button
-                            onClick={() => handleAddChannel(channel)}
-                            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
-                          >
-                            Add
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleAddChannel(channel)}
+                              className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
+                            >
+                              Add
+                            </button>
+                            <button
+                              onClick={() => handleAddAndProcess(channel)}
+                              className="px-3 py-1 text-xs bg-leaf-100 text-leaf-700 rounded-full hover:bg-leaf-200 flex items-center gap-1"
+                              title="Add and start batch processing"
+                            >
+                              <Zap className="w-3 h-3" />
+                              Process
+                            </button>
+                          </div>
                         )}
                       </div>
                       <span className="inline-block px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full mb-2">
@@ -675,7 +814,9 @@ export default function ChannelsPage() {
                           channel={channel}
                           isAdded={addedChannelUrls.has(channel.url)}
                           isAdding={addingChannels.has(channel.url)}
+                          isProcessing={pendingProcessChannel === channel.url}
                           onAdd={() => handleAddChannel(channel)}
+                          onAddAndProcess={() => handleAddAndProcess(channel)}
                         />
                       ))}
                     </div>
@@ -692,7 +833,9 @@ export default function ChannelsPage() {
                   channel={channel}
                   isAdded={addedChannelUrls.has(channel.url)}
                   isAdding={addingChannels.has(channel.url)}
+                  isProcessing={pendingProcessChannel === channel.url}
                   onAdd={() => handleAddChannel(channel)}
+                  onAddAndProcess={() => handleAddAndProcess(channel)}
                 />
               ))}
             </div>
@@ -788,7 +931,9 @@ export default function ChannelsPage() {
                         channel={channel}
                         isAdded={addedChannelUrls.has(channel.url)}
                         isAdding={addingChannels.has(channel.url)}
+                        isProcessing={pendingProcessChannel === channel.url}
                         onAdd={() => handleAddChannel(channel)}
+                        onAddAndProcess={() => handleAddAndProcess(channel)}
                       />
                     ))
                   }
