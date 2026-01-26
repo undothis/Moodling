@@ -451,3 +451,50 @@ export async function uploadMovie(
   return res.json();
 }
 
+// ============================================================================
+// EXTRACTION VERIFICATION
+// ============================================================================
+
+export interface CategoryVerification {
+  name: string;
+  description: string;
+  type: 'standard' | 'aliveness';
+  tier?: string;
+  why_human?: string;
+  coach_note?: string;
+  count: number;
+  percentage: number;
+  status: string;
+  status_icon: string;
+  quality_avg: number;
+  safety_avg: number;
+}
+
+export interface TierStats {
+  count: number;
+  categories: number;
+  category_list?: string[];
+  health: string;
+  health_icon?: string;
+}
+
+export interface ExtractionVerificationResponse {
+  summary: {
+    total_insights: number;
+    categories_with_data: number;
+    total_categories: number;
+    overall_health: string;
+    overall_health_icon: string;
+    coverage_percentage: number;
+  };
+  categories: Record<string, CategoryVerification>;
+  tiers: Record<string, TierStats>;
+  recommendations: string[];
+}
+
+export async function fetchExtractionVerification(): Promise<ExtractionVerificationResponse> {
+  const res = await fetch(`${API_BASE}/extraction-verification`);
+  if (!res.ok) throw new Error('Failed to fetch extraction verification');
+  return res.json();
+}
+

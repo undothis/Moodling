@@ -1417,6 +1417,288 @@ async def get_source_tokens():
 
 
 # ============================================================================
+# EXTRACTION VERIFICATION - Testing System for Category Coverage
+# ============================================================================
+
+@app.get("/extraction-verification")
+async def get_extraction_verification():
+    """
+    Get extraction verification statistics showing all categories with
+    percentages and checkmarks/status indicators.
+
+    This endpoint helps verify that the harvesting pipeline is working
+    correctly by showing coverage across all extraction categories.
+    """
+    insights = await db.get_all_insights()
+    total_insights = len(insights)
+
+    if total_insights == 0:
+        # Return empty state with all categories marked as not started
+        all_categories = {}
+
+        # Add standard extraction categories
+        for cat_key, cat_desc in EXTRACTION_CATEGORIES.items():
+            all_categories[cat_key] = {
+                "name": cat_key.replace("_", " ").title(),
+                "description": cat_desc,
+                "type": "standard",
+                "count": 0,
+                "percentage": 0.0,
+                "status": "not_started",
+                "status_icon": "⚪",
+                "quality_avg": 0,
+                "safety_avg": 0,
+            }
+
+        # Add aliveness categories
+        for cat_key, cat_data in ALIVENESS_CATEGORIES.items():
+            all_categories[f"aliveness_{cat_key}"] = {
+                "name": cat_key.replace("_", " ").title(),
+                "description": cat_data["description"],
+                "type": "aliveness",
+                "tier": _get_aliveness_tier(cat_key),
+                "why_human": cat_data.get("why_human", ""),
+                "count": 0,
+                "percentage": 0.0,
+                "status": "not_started",
+                "status_icon": "⚪",
+                "quality_avg": 0,
+                "safety_avg": 0,
+            }
+
+        return {
+            "summary": {
+                "total_insights": 0,
+                "categories_with_data": 0,
+                "total_categories": len(all_categories),
+                "overall_health": "not_started",
+                "overall_health_icon": "⚪",
+                "coverage_percentage": 0.0,
+            },
+            "categories": all_categories,
+            "tiers": {
+                "emotional_texture": {"count": 0, "categories": 0, "health": "not_started"},
+                "cognitive_patterns": {"count": 0, "categories": 0, "health": "not_started"},
+                "self_protective": {"count": 0, "categories": 0, "health": "not_started"},
+                "relational_signals": {"count": 0, "categories": 0, "health": "not_started"},
+                "authenticity_markers": {"count": 0, "categories": 0, "health": "not_started"},
+                "meta_conversational": {"count": 0, "categories": 0, "health": "not_started"},
+                "rare_gold": {"count": 0, "categories": 0, "health": "not_started"},
+            },
+            "recommendations": [
+                "Start by adding some YouTube channels or processing videos",
+                "Use the recommended channels list for quality sources",
+                "Run diagnostics to ensure all components are working"
+            ]
+        }
+
+    # Count insights per category
+    category_counts = {}
+    category_quality = {}
+    category_safety = {}
+
+    for insight in insights:
+        cat = insight.category or "unknown"
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        if cat not in category_quality:
+            category_quality[cat] = []
+            category_safety[cat] = []
+        category_quality[cat].append(insight.quality_score)
+        category_safety[cat].append(insight.safety_score)
+
+    # Build comprehensive category report
+    all_categories = {}
+
+    # Add standard extraction categories
+    for cat_key, cat_desc in EXTRACTION_CATEGORIES.items():
+        count = category_counts.get(cat_key, 0)
+        percentage = (count / total_insights * 100) if total_insights > 0 else 0
+        quality_avg = sum(category_quality.get(cat_key, [0])) / max(len(category_quality.get(cat_key, [1])), 1)
+        safety_avg = sum(category_safety.get(cat_key, [0])) / max(len(category_safety.get(cat_key, [1])), 1)
+
+        status, status_icon = _get_category_status(count, percentage, quality_avg, safety_avg)
+
+        all_categories[cat_key] = {
+            "name": cat_key.replace("_", " ").title(),
+            "description": cat_desc,
+            "type": "standard",
+            "count": count,
+            "percentage": round(percentage, 2),
+            "status": status,
+            "status_icon": status_icon,
+            "quality_avg": round(quality_avg, 1),
+            "safety_avg": round(safety_avg, 1),
+        }
+
+    # Add aliveness categories
+    for cat_key, cat_data in ALIVENESS_CATEGORIES.items():
+        count = category_counts.get(cat_key, 0)
+        percentage = (count / total_insights * 100) if total_insights > 0 else 0
+        quality_avg = sum(category_quality.get(cat_key, [0])) / max(len(category_quality.get(cat_key, [1])), 1)
+        safety_avg = sum(category_safety.get(cat_key, [0])) / max(len(category_safety.get(cat_key, [1])), 1)
+
+        status, status_icon = _get_category_status(count, percentage, quality_avg, safety_avg)
+
+        all_categories[f"aliveness_{cat_key}"] = {
+            "name": cat_key.replace("_", " ").title(),
+            "description": cat_data["description"],
+            "type": "aliveness",
+            "tier": _get_aliveness_tier(cat_key),
+            "why_human": cat_data.get("why_human", ""),
+            "coach_note": cat_data.get("Coach_note", ""),
+            "count": count,
+            "percentage": round(percentage, 2),
+            "status": status,
+            "status_icon": status_icon,
+            "quality_avg": round(quality_avg, 1),
+            "safety_avg": round(safety_avg, 1),
+        }
+
+    # Calculate tier statistics for aliveness categories
+    tier_stats = {
+        "emotional_texture": {"count": 0, "categories": 0, "category_list": []},
+        "cognitive_patterns": {"count": 0, "categories": 0, "category_list": []},
+        "self_protective": {"count": 0, "categories": 0, "category_list": []},
+        "relational_signals": {"count": 0, "categories": 0, "category_list": []},
+        "authenticity_markers": {"count": 0, "categories": 0, "category_list": []},
+        "meta_conversational": {"count": 0, "categories": 0, "category_list": []},
+        "rare_gold": {"count": 0, "categories": 0, "category_list": []},
+    }
+
+    for cat_key, cat_info in all_categories.items():
+        if cat_info.get("type") == "aliveness":
+            tier = cat_info.get("tier", "other")
+            if tier in tier_stats:
+                tier_stats[tier]["count"] += cat_info["count"]
+                tier_stats[tier]["categories"] += 1
+                if cat_info["count"] > 0:
+                    tier_stats[tier]["category_list"].append(cat_info["name"])
+
+    # Calculate tier health
+    for tier, stats in tier_stats.items():
+        if stats["count"] == 0:
+            stats["health"] = "not_started"
+            stats["health_icon"] = "⚪"
+        elif stats["count"] < 5:
+            stats["health"] = "needs_data"
+            stats["health_icon"] = "🟡"
+        elif stats["count"] < 20:
+            stats["health"] = "growing"
+            stats["health_icon"] = "🟢"
+        else:
+            stats["health"] = "healthy"
+            stats["health_icon"] = "✅"
+
+    # Calculate overall health
+    categories_with_data = sum(1 for c in all_categories.values() if c["count"] > 0)
+    coverage_percentage = (categories_with_data / len(all_categories) * 100) if all_categories else 0
+
+    if coverage_percentage == 0:
+        overall_health = "not_started"
+        overall_health_icon = "⚪"
+    elif coverage_percentage < 25:
+        overall_health = "needs_attention"
+        overall_health_icon = "🔴"
+    elif coverage_percentage < 50:
+        overall_health = "developing"
+        overall_health_icon = "🟡"
+    elif coverage_percentage < 75:
+        overall_health = "good"
+        overall_health_icon = "🟢"
+    else:
+        overall_health = "excellent"
+        overall_health_icon = "✅"
+
+    # Generate recommendations
+    recommendations = []
+
+    # Find categories with no data
+    empty_categories = [k for k, v in all_categories.items() if v["count"] == 0]
+    if len(empty_categories) > 10:
+        recommendations.append(f"⚠️ {len(empty_categories)} categories have no data - consider processing more diverse content")
+
+    # Find low quality categories
+    low_quality = [k for k, v in all_categories.items() if v["count"] > 0 and v["quality_avg"] < 70]
+    if low_quality:
+        recommendations.append(f"📊 {len(low_quality)} categories have low quality scores - review extraction settings")
+
+    # Find low safety categories
+    low_safety = [k for k, v in all_categories.items() if v["count"] > 0 and v["safety_avg"] < 80]
+    if low_safety:
+        recommendations.append(f"⚠️ {len(low_safety)} categories have safety concerns - manual review recommended")
+
+    # Tier-specific recommendations
+    for tier, stats in tier_stats.items():
+        if stats["count"] == 0:
+            tier_name = tier.replace("_", " ").title()
+            recommendations.append(f"📝 No data for {tier_name} tier - add content with these emotional textures")
+
+    if not recommendations:
+        recommendations.append("✅ Extraction pipeline is healthy - continue monitoring")
+
+    return {
+        "summary": {
+            "total_insights": total_insights,
+            "categories_with_data": categories_with_data,
+            "total_categories": len(all_categories),
+            "overall_health": overall_health,
+            "overall_health_icon": overall_health_icon,
+            "coverage_percentage": round(coverage_percentage, 1),
+        },
+        "categories": all_categories,
+        "tiers": tier_stats,
+        "recommendations": recommendations,
+    }
+
+
+def _get_category_status(count: int, percentage: float, quality_avg: float, safety_avg: float) -> tuple:
+    """Determine status and icon for a category based on metrics."""
+    if count == 0:
+        return "not_started", "⚪"
+    elif safety_avg < 70:
+        return "safety_concern", "🔴"
+    elif quality_avg < 60:
+        return "low_quality", "🟠"
+    elif count < 3:
+        return "needs_data", "🟡"
+    elif quality_avg >= 80 and safety_avg >= 90:
+        return "excellent", "✅"
+    elif quality_avg >= 70:
+        return "good", "🟢"
+    else:
+        return "moderate", "🟡"
+
+
+def _get_aliveness_tier(category_key: str) -> str:
+    """Map aliveness category to its tier."""
+    emotional_texture = ["emotional_granularity", "mixed_feelings", "somatic_markers", "emotional_evolution"]
+    cognitive_patterns = ["temporal_orientation", "contradiction_holding", "narrative_identity", "cognitive_patterns"]
+    self_protective = ["micro_confession", "hedging_shields", "permission_seeking", "topic_circling", "retreat_signals"]
+    relational_signals = ["repair_attempts", "bids_for_witness", "attachment_echoes", "pronoun_patterns"]
+    authenticity_markers = ["guarded_hope", "humor_function", "performed_vs_authentic_vulnerability", "unresolved_questions"]
+    meta_conversational = ["tone_shifts", "meaningful_silence", "what_not_said", "readiness_signals"]
+    rare_gold = ["self_kindness_moments", "values_in_conflict", "identity_friction", "memory_echoes", "meaning_resistance", "integration_moments"]
+
+    if category_key in emotional_texture:
+        return "emotional_texture"
+    elif category_key in cognitive_patterns:
+        return "cognitive_patterns"
+    elif category_key in self_protective:
+        return "self_protective"
+    elif category_key in relational_signals:
+        return "relational_signals"
+    elif category_key in authenticity_markers:
+        return "authenticity_markers"
+    elif category_key in meta_conversational:
+        return "meta_conversational"
+    elif category_key in rare_gold:
+        return "rare_gold"
+    else:
+        return "other"
+
+
+# ============================================================================
 # COMPREHENSIVE ANALYSIS STATISTICS
 # ============================================================================
 
