@@ -539,6 +539,41 @@ This teaches the model to:
 - They reset when the backend restarts
 - For persistence, use the `.env` file
 
+### "Failed to add channel" error
+- Check the terminal running the backend for the actual error
+- Common causes:
+  - Database schema mismatch (delete `backend/*.db` and restart)
+  - Invalid channel URL format
+  - Network issues reaching YouTube
+
+### Backend won't start / "greenlet" error
+- Install missing dependency: `pip install greenlet`
+- Or reinstall all dependencies:
+  ```bash
+  cd backend
+  source venv/bin/activate  # or activate.csh for tcsh
+  pip install -r requirements.txt
+  ```
+
+### Viewing Logs
+- **Terminal**: The terminal running `./start.sh` shows all logs in real-time
+- **API**: Visit http://localhost:8000/logs to view recent logs (if logging is enabled)
+- **Log files**: Check `backend/logs/` directory for persistent logs
+
+### tcsh Shell Issues
+If you use tcsh (common on Mac), use `activate.csh` instead of `activate`:
+```tcsh
+source venv/bin/activate.csh
+```
+
+### Database Reset
+If you get database errors about missing columns, reset the database:
+```bash
+rm backend/*.db
+./start.sh
+```
+This creates a fresh database with the correct schema.
+
 ---
 
 ## Architecture
