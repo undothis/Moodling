@@ -30,28 +30,39 @@ This will:
 
 ### Prerequisites
 
-1. **Python 3.9+**
+1. **Python 3.10+** (3.11 recommended)
 2. **Node.js 18+**
-3. **yt-dlp** - YouTube downloader
-   ```bash
-   brew install yt-dlp
-   ```
-4. **ffmpeg** - Audio/video processing
-   ```bash
-   brew install ffmpeg
-   ```
+
+### Homebrew Installation (macOS)
+
+Install all system dependencies with Homebrew:
+
+```bash
+# Required: Core tools
+brew install python@3.11    # Python 3.11 (recommended)
+brew install node           # Node.js
+brew install yt-dlp         # YouTube downloader
+brew install ffmpeg         # Audio/video processing
+
+# Optional: For Full Mode features
+brew install portaudio      # Required for audio recording (librosa)
+brew install libsndfile     # Audio file format support
+```
 
 ### Backend Setup
 
 ```bash
 cd training-studio/backend
 
-# Create virtual environment
-python3 -m venv venv
+# Create virtual environment with Python 3.11
+python3.11 -m venv venv
 
 # Activate (choose based on your shell)
 source venv/bin/activate      # bash/zsh
 source venv/bin/activate.csh  # tcsh
+
+# Upgrade pip first
+pip install --upgrade pip
 
 # Install dependencies
 pip install -r requirements.txt
@@ -59,6 +70,46 @@ pip install -r requirements.txt
 # Start server
 python3 main.py
 ```
+
+### Installing Full Mode Dependencies
+
+If you want **Full Mode** (local transcription, speaker diarization, facial analysis), install these additional packages:
+
+```bash
+# Make sure your venv is activated first!
+source venv/bin/activate
+
+# Whisper (local transcription)
+pip install openai-whisper
+
+# Audio analysis (prosody)
+pip install librosa
+pip install praat-parselmouth
+
+# Speaker diarization (requires HuggingFace token)
+pip install pyannote.audio
+
+# Facial analysis
+pip install py-feat
+pip install mediapipe
+pip install opencv-python
+```
+
+> **Note**: Some packages like `torch` and `openai-whisper` are large (several GB). The first time you run Whisper, it will download the model which can take a few minutes.
+
+### HuggingFace Token (for Speaker Diarization)
+
+Speaker diarization requires a HuggingFace token with access to pyannote models:
+
+1. Create account at https://huggingface.co
+2. Accept terms for `pyannote/speaker-diarization-3.1` model
+3. Generate access token at https://huggingface.co/settings/tokens
+4. Add to `backend/.env`:
+   ```
+   HUGGINGFACE_TOKEN=hf_...
+   ```
+
+> **Having trouble?** See the [Complete Setup Guide](docs/SETUP.md) for detailed troubleshooting.
 
 ### Frontend Setup
 

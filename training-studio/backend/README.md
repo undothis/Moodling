@@ -16,12 +16,31 @@ This backend provides:
 
 ## Prerequisites
 
-1. **Python 3.10+**
-2. **yt-dlp**: `brew install yt-dlp` (macOS) or `pip install yt-dlp`
-3. **ffmpeg**: `brew install ffmpeg` (macOS)
-4. **API Keys**:
-   - Anthropic API key (required for insight extraction)
-   - HuggingFace token (optional, for pyannote speaker diarization)
+### System Dependencies (Homebrew - macOS)
+
+```bash
+# Required
+brew install python@3.11    # Python 3.11 recommended
+brew install yt-dlp         # YouTube downloader
+brew install ffmpeg         # Audio/video processing
+
+# Optional (for audio analysis)
+brew install portaudio      # Audio recording support
+brew install libsndfile     # Audio file format support
+```
+
+### System Dependencies (Linux)
+
+```bash
+sudo apt install python3.11 python3.11-venv python3-pip ffmpeg
+sudo pip3 install yt-dlp
+sudo apt install portaudio19-dev libsndfile1-dev  # Optional
+```
+
+### API Keys
+
+- **Anthropic API key** (required for insight extraction)
+- **HuggingFace token** (optional, for pyannote speaker diarization)
 
 ## Setup
 
@@ -29,11 +48,15 @@ This backend provides:
 # Navigate to backend directory
 cd training-studio/backend
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+# Create virtual environment with Python 3.11
+python3.11 -m venv venv
+source venv/bin/activate  # bash/zsh
+# OR: source venv/bin/activate.csh  # tcsh
 
-# Install dependencies
+# Upgrade pip
+pip install --upgrade pip
+
+# Install base dependencies
 pip install -r requirements.txt
 
 # Copy environment file and configure
@@ -45,6 +68,36 @@ python main.py
 # or
 uvicorn main:app --reload --port 8000
 ```
+
+## Installing Full Mode Dependencies
+
+For local transcription, speaker diarization, and facial analysis:
+
+```bash
+# Ensure venv is activated first
+source venv/bin/activate
+
+# Whisper (local transcription)
+pip install openai-whisper
+
+# Audio analysis
+pip install librosa
+pip install praat-parselmouth
+
+# Speaker diarization (requires HuggingFace token)
+pip install pyannote.audio
+
+# Facial analysis
+pip install py-feat mediapipe opencv-python
+```
+
+**Or install all at once:**
+
+```bash
+pip install openai-whisper librosa praat-parselmouth pyannote.audio py-feat mediapipe opencv-python
+```
+
+> **See also**: [Complete Setup Guide](../docs/SETUP.md) for detailed installation instructions.
 
 ## API Endpoints
 
