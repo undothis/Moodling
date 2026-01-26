@@ -498,3 +498,43 @@ export async function fetchExtractionVerification(): Promise<ExtractionVerificat
   return res.json();
 }
 
+// ============================================================================
+// BATCH PROCESSING
+// ============================================================================
+
+export interface BatchProcessRequest {
+  channel_id: string;
+  max_videos?: number;
+  strategy?: 'random' | 'popular' | 'recent' | 'engagement' | 'balanced';
+  skip_facial?: boolean;
+  skip_prosody?: boolean;
+}
+
+export interface BatchProcessJob {
+  job_id: string;
+  video_id: string;
+  title: string;
+}
+
+export interface BatchProcessResponse {
+  success: boolean;
+  channel_id?: string;
+  channel_name?: string;
+  strategy?: string;
+  jobs: BatchProcessJob[];
+  total_queued: number;
+  message: string;
+}
+
+export async function batchProcessVideos(
+  request: BatchProcessRequest
+): Promise<BatchProcessResponse> {
+  const res = await fetch(`${API_BASE}/process-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error('Failed to start batch processing');
+  return res.json();
+}
+

@@ -760,6 +760,65 @@ RECOMMENDED_CHANNELS = [
     # --- Neurodivergent Experience ---
     {"name": "Yo Samdy Sam", "url": "@YoSamdySam", "channel_id": "UCwVr5NHzQ4GqPuvViLoXLgw", "category": "neurodivergence", "trust": "high", "description": "Autism, late diagnosis, neurodivergent identity"},
     {"name": "The Aspie World", "url": "@TheAspieWorld", "channel_id": "UCkpYu4pKJWY2PLe7a6o7G6A", "category": "neurodivergence", "trust": "high", "description": "Dan Jones - autism, ADHD, neurodivergent experience"},
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # JOY, HUMOR & POSITIVE CONTENT
+    # Human experience includes celebration, laughter, adventure, and delight!
+    # ══════════════════════════════════════════════════════════════════════════════
+
+    # --- Comedy & Humor ---
+    {"name": "Conan O'Brien", "url": "@TeamCoco", "channel_id": "UCi7GJNg51C3jgmYTUwqoUXA", "category": "humor_comedy", "trust": "high", "description": "Comedy interviews - humor as connection, self-deprecation, joy"},
+    {"name": "Key & Peele", "url": "@KeyAndPeele", "channel_id": "UCddiUEwnjkEjSwV6Jp2krVw", "category": "humor_comedy", "trust": "high", "description": "Sketch comedy exploring social dynamics with wit and heart"},
+    {"name": "Trevor Noah", "url": "@TrevorNoah", "channel_id": "UCwWhs_6x42TyRM4Wstoq8HA", "category": "humor_comedy", "trust": "high", "description": "Commentary with humor, perspective across cultures"},
+    {"name": "Drew Gooden", "url": "@DrewGooden", "channel_id": "UCTSRIY3GLFYIpkR2QwyeklA", "category": "humor_comedy", "trust": "high", "description": "Commentary comedy, observational humor about internet culture"},
+    {"name": "Kurtis Conner", "url": "@KurtisConner", "channel_id": "UC7zsxKqd5MicTf4VhS9Y74g", "category": "humor_comedy", "trust": "high", "description": "Comedy commentary, wholesome humor, internet culture"},
+    {"name": "Danny Gonzalez", "url": "@DannyGonzalez", "channel_id": "UC-lHJZR3Gqxm24_Vd_AJ5Yw", "category": "humor_comedy", "trust": "high", "description": "Comedy commentary, music, internet culture with heart"},
+
+    # --- Adventure & Exploration ---
+    {"name": "Mark Rober", "url": "@MarkRober", "channel_id": "UCY1kMZp36IQSyNx_9h4mpCg", "category": "adventure_exploration", "trust": "high", "description": "Engineering adventures, wonder at science, playful curiosity"},
+    {"name": "Mr. Beast", "url": "@MrBeast", "channel_id": "UCX6OQ3DkcsbYNE6H8uQQuVA", "category": "adventure_exploration", "trust": "medium", "description": "Grand adventures, generosity, positive challenges"},
+    {"name": "Casey Neistat", "url": "@CaseyNeistat", "channel_id": "UCFWjEwhX6cSAKBQ28pufG3w", "category": "adventure_exploration", "trust": "high", "description": "Daily adventure, creativity, embracing life fully"},
+    {"name": "Sailing La Vagabonde", "url": "@SailingLaVagabonde", "channel_id": "UCZdQjaSoLjIzFnWsDQOv4ww", "category": "adventure_exploration", "trust": "high", "description": "Family sailing the world - adventure, partnership, freedom"},
+    {"name": "Kara and Nate", "url": "@KaraandNate", "channel_id": "UC4ijq8Cg-8zQKx8OH12dUSw", "category": "adventure_exploration", "trust": "high", "description": "Couple traveling the world, adventure as lifestyle"},
+    {"name": "Lost LeBlanc", "url": "@LostLeBlanc", "channel_id": "UCt_NLJ4McJlCyYM-dSPRo7Q", "category": "adventure_exploration", "trust": "high", "description": "Travel adventures, embracing uncertainty, finding yourself"},
+    {"name": "Nas Daily", "url": "@NasDaily", "channel_id": "UCvjgEDvShRsADJfCXrPdKjg", "category": "adventure_exploration", "trust": "high", "description": "One-minute stories from around the world, human connection"},
+
+    # --- Science & Wonder ---
+    {"name": "SmarterEveryDay", "url": "@smartereveryday", "channel_id": "UC6107grRI4m0o2-emgoDnAA", "category": "awe_wonder", "trust": "high", "description": "Science exploration with childlike wonder, curiosity in action"},
+    {"name": "Primitive Technology", "url": "@PrimitiveTechnology", "channel_id": "UCAL3JXZSzSm8AlZyD3nQdBA", "category": "awe_wonder", "trust": "high", "description": "Building from scratch - patience, skill, quiet accomplishment"},
+    {"name": "Real Engineering", "url": "@RealEngineering", "channel_id": "UCR1IuLEqb6UEA_zQ81kwXfg", "category": "awe_wonder", "trust": "high", "description": "Engineering marvels - human achievement, problem solving"},
+    {"name": "PBS Space Time", "url": "@pbsspacetime", "channel_id": "UC7_gcs09iThXybpVgjHZ_7g", "category": "awe_wonder", "trust": "high", "description": "Cosmology and physics - awe at universe, big questions"},
+    {"name": "Steve Mould", "url": "@SteveMould", "channel_id": "UCEIwxahdLz7bap-VDs9h35A", "category": "awe_wonder", "trust": "high", "description": "Science experiments - curiosity, discovery, playful learning"},
+
+    # --- Creativity & Passion ---
+    {"name": "Adam Savage's Tested", "url": "@tested", "channel_id": "UCiDJtJKMICpb9B1qf7qjEOA", "category": "creativity_passion", "trust": "high", "description": "Making things, creative passion, joy in craft"},
+    {"name": "Simone Giertz", "url": "@simonegiertz", "channel_id": "UC3KEoMzNz8eYnwBC34RaKCQ", "category": "creativity_passion", "trust": "high", "description": "Queen of Shitty Robots - failure as fun, creativity without perfectionism"},
+    {"name": "Baumgartner Restoration", "url": "@BaumgartnerRestoration", "channel_id": "UCvyvdEGuzS6saPfHRqIkJGw", "category": "creativity_passion", "trust": "high", "description": "Art restoration - patience, reverence, quiet mastery"},
+    {"name": "Wintergatan", "url": "@Wintergatan", "channel_id": "UCcXhhVwCT6_WqjkEniejRJQ", "category": "creativity_passion", "trust": "high", "description": "Marble machine - obsessive passion, creative journey, music and engineering"},
+    {"name": "Peter McKinnon", "url": "@PeterMcKinnon", "channel_id": "UC3DkFux8Iv-aYnTRWzwaiBA", "category": "creativity_passion", "trust": "high", "description": "Photography and filmmaking - creative passion, teaching with energy"},
+    {"name": "The Try Guys", "url": "@tryguys", "channel_id": "UCpi8TJfiA4lKGkaXs__YdBA", "category": "creativity_passion", "trust": "high", "description": "Trying new things - vulnerability, humor, growth through challenge"},
+
+    # --- Inspiration & Motivation ---
+    {"name": "Prince Ea", "url": "@PrinceEa", "channel_id": "UCqqJQ_cXSat0KIAVfIfKkVA", "category": "inspiration", "trust": "high", "description": "Spoken word on human potential, environment, connection"},
+    {"name": "Goalcast", "url": "@goalcast", "channel_id": "UCqDLucEfEALwvZSVBaTJT9w", "category": "inspiration", "trust": "high", "description": "Motivational speeches, human triumph, overcoming adversity"},
+    {"name": "Eddie Woo", "url": "@misterwootube", "channel_id": "UCq0EGvLTyy-LLT1oUSO_0FQ", "category": "inspiration", "trust": "high", "description": "Math teacher with infectious joy - passion transforms teaching"},
+    {"name": "Derek Sivers", "url": "@silosophy", "channel_id": "UC9cqxKT9X5bDqe6IVAf7RUA", "category": "inspiration", "trust": "high", "description": "Life philosophy, unconventional wisdom, simple living"},
+
+    # --- Music & Arts ---
+    {"name": "Tiny Desk Concerts (NPR)", "url": "@nprmusic", "channel_id": "UC4eYXhJI4-7wSWc8UNRwD4A", "category": "arts_music", "trust": "high", "description": "Intimate music performances - raw talent, authentic expression"},
+    {"name": "COLORS", "url": "@COLORSxSTUDIOS", "channel_id": "UC2Qw1dzXDBAZPwS7zm37g8g", "category": "arts_music", "trust": "high", "description": "Minimalist music sessions - pure artistic expression"},
+    {"name": "Jacob Collier", "url": "@jacobcollier", "channel_id": "UC9ImTi0cbFHs7PQ4l2jGO1g", "category": "arts_music", "trust": "high", "description": "Musical genius with joy - creativity, complexity, pure delight"},
+
+    # --- Wholesome & Heartwarming ---
+    {"name": "Daily Dose of Internet", "url": "@DailyDoseOfInternet", "channel_id": "UCdC0An4ZPNr_YiFiYoVbwaw", "category": "wholesome", "trust": "high", "description": "Short wholesome videos - daily joy, simple pleasures"},
+    {"name": "The Dodo", "url": "@TheDodo", "channel_id": "UCINb0wqPz-A0dV9nARjJlOQ", "category": "wholesome", "trust": "high", "description": "Animal rescue stories - compassion, connection, heartwarming"},
+    {"name": "GoPro", "url": "@GoPro", "channel_id": "UCqhnX4jA0A5paNd1v-zEysw", "category": "wholesome", "trust": "high", "description": "POV adventures - living fully, human achievement, awe"},
+    {"name": "People Are Awesome", "url": "@PeopleAreAwesome", "channel_id": "UCKlnmOoT-XLc3O7483URKmg", "category": "wholesome", "trust": "high", "description": "Human skill and achievement - capability, practice, triumph"},
+
+    # --- Sports & Achievement ---
+    {"name": "JxmyHighroller", "url": "@JxmyHighroller", "channel_id": "UCHbwGZT0W1CVwqhJk_7s9BA", "category": "sports_achievement", "trust": "high", "description": "Basketball analysis with storytelling - athletic excellence, narrative"},
+    {"name": "Secret Base", "url": "@SecretBaseSBN", "channel_id": "UCDRmGMSgrtZkOsh_NQl4_xw", "category": "sports_achievement", "trust": "high", "description": "Sports storytelling - triumph, failure, human drama"},
+    {"name": "Olympic", "url": "@Olympics", "channel_id": "UCTl3QQTvqHFjurroKxexy2Q", "category": "sports_achievement", "trust": "high", "description": "Olympic moments - human achievement, dedication, triumph"},
 ]
 
 
@@ -831,4 +890,146 @@ RECOMMENDED_MOVIES = [
     {"title": "Rain Man", "year": 1988, "category": "neurodivergence", "description": "Autistic savant and his brother. Understanding difference.", "why_train": "Foundational autism representation. Shows both gifts and challenges of neurodivergence."},
     {"title": "Temple Grandin", "year": 2010, "category": "neurodivergence", "description": "Autistic scientist's life. Different thinking as strength.", "why_train": "Neurodivergence as different, not less. Finding ways to thrive by leaning into difference."},
     {"title": "Adam", "year": 2009, "category": "neurodivergence", "description": "Man with Asperger's navigating romance. Social challenges, authenticity.", "why_train": "Relationship challenges with neurodivergence, the beauty of direct communication."},
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # JOY, HUMOR & POSITIVE EXPERIENCES
+    # The human condition includes celebration, laughter, adventure, and triumph!
+    # ═══════════════════════════════════════════════════════════════════════════
+
+    # --- COMEDY & HUMOR ---
+    {"title": "The Grand Budapest Hotel", "year": 2014, "category": "humor_joy", "description": "Whimsical comedy about friendship, loyalty, and adventure. Visually delightful.", "why_train": "Teaches humor as connection, the joy in eccentricity, and how laughter bonds people."},
+    {"title": "When Harry Met Sally", "year": 1989, "category": "humor_joy", "description": "Classic romantic comedy about friendship evolving into love. Witty banter.", "why_train": "Natural humor in relationships, the playfulness of connection, comfortable vulnerability."},
+    {"title": "Groundhog Day", "year": 1993, "category": "humor_joy", "description": "Man relives the same day until he finds meaning. Comedy with depth.", "why_train": "Humor as vehicle for growth, finding joy in small things, transformation through service."},
+    {"title": "The Princess Bride", "year": 1987, "category": "humor_joy", "description": "Fairy tale adventure with wit, romance, and heart. Beloved classic.", "why_train": "Pure joy, playful love, the delight of storytelling and adventure."},
+    {"title": "Amélie", "year": 2001, "category": "humor_joy", "description": "Whimsical French film about spreading joy and finding love. Visually magical.", "why_train": "The joy of small kindnesses, finding wonder in everyday life, playful connection."},
+    {"title": "School of Rock", "year": 2003, "category": "humor_joy", "description": "Fake teacher inspires kids through music. Pure fun and passion.", "why_train": "Joy of passion and creativity, inspiring others, finding your tribe."},
+    {"title": "Paddington", "year": 2014, "category": "humor_joy", "description": "Polite bear brings joy to grumpy family. Heartwarming comedy.", "why_train": "Kindness transforming cynicism, the power of good manners and optimism."},
+    {"title": "Singing in the Rain", "year": 1952, "category": "humor_joy", "description": "Classic musical full of joy, romance, and showmanship.", "why_train": "Pure exuberance, the joy of creative expression, optimism in action."},
+    {"title": "Ferris Bueller's Day Off", "year": 1986, "category": "humor_joy", "description": "Teen plays hooky with friends. Carpe diem celebration.", "why_train": "The importance of spontaneity, friendship, and seizing joyful moments."},
+    {"title": "Clueless", "year": 1995, "category": "humor_joy", "description": "Charming teen comedy with heart. Growth through connection.", "why_train": "Humor with warmth, personal growth, the joy of helping others."},
+
+    # --- ADVENTURE & EXPLORATION ---
+    {"title": "The Secret Life of Walter Mitty", "year": 2013, "category": "adventure_awe", "description": "Daydreamer finally lives his adventures. Stunning visuals.", "why_train": "Taking leaps, living fully, the courage to pursue adventure over safety."},
+    {"title": "Up", "year": 2009, "category": "adventure_awe", "description": "Elderly man's adventure with young scout. Joy after loss.", "why_train": "Adventure at any age, unexpected friendship, finding new purpose after grief."},
+    {"title": "Into the Wild", "year": 2007, "category": "adventure_awe", "description": "Young man's journey into Alaska wilderness. Freedom and meaning.", "why_train": "The call to adventure, questioning convention, the complexity of freedom."},
+    {"title": "Wild", "year": 2014, "category": "adventure_awe", "description": "Woman hikes Pacific Crest Trail after loss. Healing through nature.", "why_train": "Nature as healer, physical challenge as processing, reclaiming oneself."},
+    {"title": "The Way", "year": 2010, "category": "adventure_awe", "description": "Father walks Camino de Santiago after son's death. Pilgrimage.", "why_train": "Healing through journey, unexpected community, physical/spiritual connection."},
+    {"title": "Free Solo", "year": 2018, "category": "adventure_awe", "description": "Alex Honnold climbs El Capitan without ropes. Awe-inspiring.", "why_train": "Human potential, pursuing passion despite fear, awe at human achievement."},
+    {"title": "Chef", "year": 2014, "category": "adventure_awe", "description": "Chef rediscovers passion on food truck road trip. Joy of craft.", "why_train": "Rekindling passion, father-son bonding, the joy of doing what you love."},
+    {"title": "Eat Pray Love", "year": 2010, "category": "adventure_awe", "description": "Woman travels to find herself after divorce. Self-discovery journey.", "why_train": "Permission to seek joy, exploring different life philosophies, self-reclamation."},
+
+    # --- SCI-FI WITH HUMAN HEART ---
+    {"title": "E.T. the Extra-Terrestrial", "year": 1982, "category": "scifi_wonder", "description": "Boy befriends alien. Pure-hearted connection across difference.", "why_train": "Connection transcending difference, childhood wonder, the pain and beauty of goodbye."},
+    {"title": "WALL-E", "year": 2008, "category": "scifi_wonder", "description": "Robot finds love in abandoned Earth. Hope and connection.", "why_train": "Love in unexpected places, environmental hope, the persistence of connection."},
+    {"title": "Arrival", "year": 2016, "category": "scifi_wonder", "description": "Linguist communicates with aliens. Time, loss, and choice.", "why_train": "Would you choose joy knowing pain follows? The beauty of accepting the full human experience."},
+    {"title": "Contact", "year": 1997, "category": "scifi_wonder", "description": "Scientist's journey to meet alien intelligence. Faith and science.", "why_train": "Awe and wonder at the universe, reconciling faith and reason, humanity's place in cosmos."},
+    {"title": "Interstellar", "year": 2014, "category": "scifi_wonder", "description": "Father's cosmic journey to save humanity. Love transcends time.", "why_train": "Love as cosmic force, sacrifice for future generations, awe at universe's mystery."},
+    {"title": "The Martian", "year": 2015, "category": "scifi_wonder", "description": "Astronaut survives alone on Mars with humor and ingenuity.", "why_train": "Resilience with humor, problem-solving optimism, humanity rallying together."},
+    {"title": "Big Hero 6", "year": 2014, "category": "scifi_wonder", "description": "Boy and healthcare robot form bond after loss. Grief and healing.", "why_train": "Processing grief through connection, the healing power of purpose and friendship."},
+    {"title": "Coco", "year": 2017, "category": "scifi_wonder", "description": "Boy visits land of the dead. Family, memory, and music.", "why_train": "Joy in honoring ancestors, music as expression, family bonds across death."},
+
+    # --- TRIUMPH & ACHIEVEMENT ---
+    {"title": "Rocky", "year": 1976, "category": "triumph_achievement", "description": "Underdog boxer gets shot at championship. Heart over talent.", "why_train": "The triumph of showing up, self-respect through effort, going the distance."},
+    {"title": "Rudy", "year": 1993, "category": "triumph_achievement", "description": "Undersized dreamer makes Notre Dame football team. Persistence.", "why_train": "Dreams don't require talent, just heart. The power of refusing to quit."},
+    {"title": "Hidden Figures", "year": 2016, "category": "triumph_achievement", "description": "Black women mathematicians at NASA. Breaking barriers with brilliance.", "why_train": "Triumph over systemic barriers, excellence as resistance, finding allies."},
+    {"title": "The Pursuit of Happyness", "year": 2006, "category": "triumph_achievement", "description": "Homeless father fights for better life. Perseverance pays off.", "why_train": "Hope in desperation, protecting your child's dreams, earned success."},
+    {"title": "Slumdog Millionaire", "year": 2008, "category": "triumph_achievement", "description": "Mumbai orphan wins game show. Life experiences as knowledge.", "why_train": "Every experience teaches something, love as ultimate motivation, hope against odds."},
+    {"title": "Billy Elliot", "year": 2000, "category": "triumph_achievement", "description": "Coal miner's son pursues ballet. Following passion against expectations.", "why_train": "Being yourself despite pressure, unexpected support, passion transcending class."},
+    {"title": "Erin Brockovich", "year": 2000, "category": "triumph_achievement", "description": "Single mom takes on corporation. Underdog justice victory.", "why_train": "Persistence and authenticity win, using your unique strengths, David vs Goliath."},
+    {"title": "The King's Speech", "year": 2010, "category": "triumph_achievement", "description": "King overcomes stammer with unconventional therapist. Triumph over limitation.", "why_train": "Overcoming personal limitations, the power of the right support, courage to be vulnerable."},
+
+    # --- FRIENDSHIP & CONNECTION (POSITIVE) ---
+    {"title": "Stand By Me", "year": 1986, "category": "friendship_connection", "description": "Four boys' journey to find a body. Formative friendship.", "why_train": "The depth of childhood friendship, adventures that bond, being truly known."},
+    {"title": "The Shawshank Redemption", "year": 1994, "category": "friendship_connection", "description": "Prison friendship and hope. Enduring connection against all odds.", "why_train": "Hope as life force, friendship that sustains, the long game of integrity."},
+    {"title": "Toy Story", "year": 1995, "category": "friendship_connection", "description": "Toys navigate jealousy and loyalty. Friendship through conflict.", "why_train": "Working through jealousy, loyalty and change, accepting new relationships."},
+    {"title": "The Intouchables", "year": 2011, "category": "friendship_connection", "description": "Wealthy quadriplegic and caregiver form unlikely bond. Joy in connection.", "why_train": "Friendship across difference, humor healing, mutual growth in relationships."},
+    {"title": "Thelma & Louise", "year": 1991, "category": "friendship_connection", "description": "Two women's transformative road trip. Liberation and loyalty.", "why_train": "Friendship as liberation, finding courage together, authentic self-expression."},
+    {"title": "Bridesmaids", "year": 2011, "category": "friendship_connection", "description": "Messy friendships around a wedding. Jealousy, loyalty, and love.", "why_train": "Navigating friendship jealousy, being honest about struggles, authentic female friendship."},
+    {"title": "Juno", "year": 2007, "category": "friendship_connection", "description": "Pregnant teen navigates choices with wit and heart.", "why_train": "Support systems in crisis, humor in difficulty, unconventional family."},
+    {"title": "Good Will Hunting", "year": 1997, "category": "friendship_connection", "description": "Genius finds connection through therapy and friendship.", "why_train": "The power of being truly seen, friendship that calls you higher, breaking through walls."},
+
+    # --- ROMANCE (POSITIVE & HOPEFUL) ---
+    {"title": "The Notebook", "year": 2004, "category": "romance_love", "description": "Epic love story across decades. Devotion and memory.", "why_train": "Love that endures, devotion through difficulty, the power of shared history."},
+    {"title": "About Time", "year": 2013, "category": "romance_love", "description": "Time traveler learns love is about presence. Beautiful life philosophy.", "why_train": "Living each day fully, love in ordinary moments, father-son wisdom."},
+    {"title": "Pride and Prejudice", "year": 2005, "category": "romance_love", "description": "Elizabeth and Darcy's journey from judgment to love.", "why_train": "Growth through relationship, overcoming first impressions, love requiring change."},
+    {"title": "50 First Dates", "year": 2004, "category": "romance_love", "description": "Man woos woman with short-term memory loss. Commitment as daily choice.", "why_train": "Love as daily recommitment, creativity in connection, accepting limitations."},
+    {"title": "Notting Hill", "year": 1999, "category": "romance_love", "description": "Ordinary man and movie star fall in love. Vulnerability in fame.", "why_train": "Being seen beyond surface, the courage to pursue unlikely love."},
+    {"title": "Crazy Rich Asians", "year": 2018, "category": "romance_love", "description": "Woman meets boyfriend's wealthy family. Love across culture and class.", "why_train": "Navigating family expectations, choosing love, cultural identity in relationships."},
+    {"title": "La La Land", "year": 2016, "category": "romance_love", "description": "Dreamers in love support each other's ambitions. Bittersweet beauty.", "why_train": "Love that transforms even when it doesn't last, supporting dreams, beautiful impermanence."},
+
+    # --- COMING OF AGE (POSITIVE) ---
+    {"title": "Dead Poets Society", "year": 1989, "category": "coming_of_age", "description": "Teacher inspires students to seize the day. Carpe diem.", "why_train": "Finding your voice, the impact of one inspiring person, courage to be different."},
+    {"title": "The Breakfast Club", "year": 1985, "category": "coming_of_age", "description": "Five teens in detention find unexpected connection.", "why_train": "Breaking past stereotypes, everyone has depth, connection across difference."},
+    {"title": "Little Miss Sunshine", "year": 2006, "category": "coming_of_age", "description": "Dysfunctional family's road trip to beauty pageant. Loving imperfection.", "why_train": "Family as messy but loving, celebrating authenticity over perfection."},
+    {"title": "Almost Famous", "year": 2000, "category": "coming_of_age", "description": "Teen journalist tours with rock band. Innocence meets reality.", "why_train": "Finding your tribe, disillusionment as growth, the magic and mess of passion."},
+    {"title": "Frances Ha", "year": 2012, "category": "coming_of_age", "description": "27-year-old navigates friendship and dreams in New York.", "why_train": "The messiness of becoming yourself, friendship in transition, embracing uncertainty."},
+    {"title": "The Perks of Being a Wallflower", "year": 2012, "category": "coming_of_age", "description": "Teen finds belonging with misfit friends. The power of being seen.", "why_train": "Finding your people, processing pain through connection, infinite moments."},
+
+    # --- AWE & WONDER ---
+    {"title": "Life of Pi", "year": 2012, "category": "awe_wonder", "description": "Boy survives at sea with tiger. Faith, survival, and story.", "why_train": "The power of story to survive, finding meaning in adversity, awe at existence."},
+    {"title": "Avatar", "year": 2009, "category": "awe_wonder", "description": "Human connects with alien world. Environmental awe and transformation.", "why_train": "Awe at nature, transformation through connection, choosing new identity."},
+    {"title": "Gravity", "year": 2013, "category": "awe_wonder", "description": "Astronaut fights to survive in space. Rebirth and will to live.", "why_train": "Choosing life after loss, the will to survive, rebirth through struggle."},
+    {"title": "Planet Earth (series)", "year": 2006, "category": "awe_wonder", "description": "Stunning nature documentary. Pure wonder at our world.", "why_train": "Awe at nature, perspective on human problems, the beauty of existence."},
+    {"title": "The Tree of Life", "year": 2011, "category": "awe_wonder", "description": "Family story intertwined with creation of universe. Cosmic perspective.", "why_train": "Human experience in cosmic context, grace vs nature, memory and meaning."},
+    {"title": "Baraka", "year": 1992, "category": "awe_wonder", "description": "Wordless documentary of human experience worldwide. Pure visual poetry.", "why_train": "Human commonality across cultures, beauty in diversity, non-verbal emotional impact."},
+
+    # --- MORE COMEDY & FEEL-GOOD ---
+    {"title": "The Big Lebowski", "year": 1998, "category": "humor_joy", "description": "Slacker gets caught up in absurd crime caper. Cult comedy classic.", "why_train": "Finding peace in chaos, not taking life too seriously, absurdist humor as coping."},
+    {"title": "Legally Blonde", "year": 2001, "category": "humor_joy", "description": "Sorority girl conquers Harvard Law. Never underestimate kindness.", "why_train": "Being underestimated, kindness as strength, staying true to yourself."},
+    {"title": "Mean Girls", "year": 2004, "category": "humor_joy", "description": "New student navigates high school cliques. Social dynamics with wit.", "why_train": "Navigating social complexity, authenticity vs fitting in, humor about human behavior."},
+    {"title": "Superbad", "year": 2007, "category": "humor_joy", "description": "Teen boys' last hurrah before college. Friendship and growing up.", "why_train": "Male friendship and vulnerability, the fear of change, humor masking emotion."},
+    {"title": "Knocked Up", "year": 2007, "category": "humor_joy", "description": "Unexpected pregnancy forces growth. Comedy about stepping up.", "why_train": "Rising to responsibility, unexpected partnerships, growth through challenge."},
+    {"title": "The Hangover", "year": 2009, "category": "humor_joy", "description": "Bachelor party gone wrong. Friendship through chaos.", "why_train": "Friendship loyalty, piecing together mess, humor in disaster."},
+    {"title": "Bridesmaids", "year": 2011, "category": "humor_joy", "description": "Female friendship through wedding chaos. Raw and hilarious.", "why_train": "Jealousy in friendship, competition vs support, vulnerability in comedy."},
+    {"title": "21 Jump Street", "year": 2012, "category": "humor_joy", "description": "Cops go undercover in high school. Second chances and growth.", "why_train": "Reinventing yourself, unexpected friendship, not being defined by past."},
+    {"title": "Pitch Perfect", "year": 2012, "category": "humor_joy", "description": "College a cappella competition. Finding your voice and tribe.", "why_train": "Finding community, expressing yourself, friendly competition."},
+    {"title": "The Lego Movie", "year": 2014, "category": "humor_joy", "description": "Ordinary guy becomes hero. Everything is awesome!", "why_train": "Ordinary people matter, creativity over conformity, joy in play."},
+    {"title": "Inside Out", "year": 2015, "category": "humor_joy", "description": "Emotions personified in girl's mind. Sadness has value.", "why_train": "All emotions have purpose, sadness enables connection, emotional intelligence."},
+    {"title": "Hunt for the Wilderpeople", "year": 2016, "category": "humor_joy", "description": "Foster kid and grumpy uncle on the run. Heart with humor.", "why_train": "Found family, unlikely connections, adventure healing trauma."},
+    {"title": "Game Night", "year": 2018, "category": "humor_joy", "description": "Competitive couple's game night goes wrong. Smart comedy.", "why_train": "Healthy competition, couples working together, humor under pressure."},
+    {"title": "Booksmart", "year": 2019, "category": "humor_joy", "description": "Overachievers decide to have fun before graduation.", "why_train": "Balance in life, female friendship, it's never too late to change."},
+    {"title": "Knives Out", "year": 2019, "category": "humor_joy", "description": "Murder mystery with wit and heart. Kindness wins.", "why_train": "Integrity matters, kindness as strength, seeing through facades."},
+
+    # --- MORE ADVENTURE & INSPIRATION ---
+    {"title": "The Bucket List", "year": 2007, "category": "adventure_awe", "description": "Two dying men complete their bucket lists. Living before dying.", "why_train": "Making the most of time, unlikely friendship, what really matters."},
+    {"title": "127 Hours", "year": 2010, "category": "adventure_awe", "description": "Climber trapped by boulder makes impossible choice. Survival.", "why_train": "Human will to live, accepting help, the value of human connection."},
+    {"title": "Soul Surfer", "year": 2011, "category": "adventure_awe", "description": "Surfer returns after shark attack. Resilience and faith.", "why_train": "Comeback from disaster, finding purpose in adversity, sport as healing."},
+    {"title": "Everest", "year": 2015, "category": "adventure_awe", "description": "1996 Everest disaster. Human limits and determination.", "why_train": "Pushing limits, teamwork in crisis, respecting nature's power."},
+    {"title": "Eddie the Eagle", "year": 2016, "category": "adventure_awe", "description": "Unlikely ski jumper pursues Olympic dream. Pure determination.", "why_train": "Pursuing dreams despite ridicule, the joy of participation, never giving up."},
+    {"title": "Lion", "year": 2016, "category": "adventure_awe", "description": "Adopted man searches for birth family. Journey home.", "why_train": "Identity and belonging, technology enabling connection, multiple families."},
+    {"title": "A Beautiful Day in the Neighborhood", "year": 2019, "category": "adventure_awe", "description": "Mr. Rogers transforms cynical journalist. Radical kindness.", "why_train": "Kindness as revolutionary, presence over performance, healing through acceptance."},
+    {"title": "Soul", "year": 2020, "category": "adventure_awe", "description": "Jazz musician discovers what makes life worth living.", "why_train": "Purpose isn't one thing, joy in ordinary moments, passion vs obsession."},
+
+    # --- MORE SCI-FI WITH HEART ---
+    {"title": "Back to the Future", "year": 1985, "category": "scifi_wonder", "description": "Teen travels to past, must ensure parents meet. Fun time travel.", "why_train": "Actions have consequences, family dynamics, adventure with heart."},
+    {"title": "Jurassic Park", "year": 1993, "category": "scifi_wonder", "description": "Dinosaurs brought back to life. Wonder and hubris.", "why_train": "Awe at nature, humility about control, wonder alongside danger."},
+    {"title": "The Iron Giant", "year": 1999, "category": "scifi_wonder", "description": "Boy befriends giant robot. Choice over programming.", "why_train": "Choosing who you want to be, friendship across difference, sacrifice for love."},
+    {"title": "Galaxy Quest", "year": 1999, "category": "scifi_wonder", "description": "TV actors become real space heroes. Belief becomes reality.", "why_train": "Rising to the occasion, fandom as connection, becoming who others see."},
+    {"title": "Minority Report", "year": 2002, "category": "scifi_wonder", "description": "Future crime prevention vs free will. Choice matters.", "why_train": "Free will vs determinism, everyone can change, questioning systems."},
+    {"title": "Eternal Sunshine of the Spotless Mind", "year": 2004, "category": "scifi_wonder", "description": "Couple erases memories of relationship. Would you choose pain?", "why_train": "Pain is part of experience, memory shapes us, choosing feeling over numbness."},
+    {"title": "Ratatouille", "year": 2007, "category": "scifi_wonder", "description": "Rat becomes chef in Paris. Anyone can create.", "why_train": "Talent can come from anywhere, pursuing passion, unlikely partnerships."},
+    {"title": "District 9", "year": 2009, "category": "scifi_wonder", "description": "Alien refugees in South Africa. Prejudice and transformation.", "why_train": "Seeing the other as person, transformation through empathy, systemic oppression."},
+    {"title": "Inception", "year": 2010, "category": "scifi_wonder", "description": "Thieves enter dreams. Grief, memory, letting go.", "why_train": "Holding onto vs letting go, the prison of guilt, reality of emotions."},
+    {"title": "Blade Runner 2049", "year": 2017, "category": "scifi_wonder", "description": "Android discovers he might be special. Identity and purpose.", "why_train": "What makes someone real, purpose without uniqueness, sacrifice for others."},
+    {"title": "Spider-Man: Into the Spider-Verse", "year": 2018, "category": "scifi_wonder", "description": "Teen becomes Spider-Man. Anyone can wear the mask.", "why_train": "Anyone can be a hero, finding mentors, becoming who you're meant to be."},
+    {"title": "Everything Everywhere All at Once", "year": 2022, "category": "scifi_wonder", "description": "Mother discovers multiverse. Family, meaning, and chaos.", "why_train": "Family connection matters most, finding meaning in chaos, kindness across universes."},
+
+    # --- MORE TRIUMPH & FEEL-GOOD ---
+    {"title": "Miracle", "year": 2004, "category": "triumph_achievement", "description": "1980 US hockey team defeats Soviets. Belief against odds.", "why_train": "Team becoming family, belief making impossible possible, coach as mentor."},
+    {"title": "The Blind Side", "year": 2009, "category": "triumph_achievement", "description": "Homeless teen finds family and football success. Found family.", "why_train": "Family is who loves you, potential needing opportunity, mutual transformation."},
+    {"title": "The Fighter", "year": 2010, "category": "triumph_achievement", "description": "Boxer overcomes family dysfunction to succeed. Breaking patterns.", "why_train": "Breaking family patterns, finding your own path, loyalty vs self-preservation."},
+    {"title": "The Help", "year": 2011, "category": "triumph_achievement", "description": "Black maids in 1960s South tell their stories. Finding voice.", "why_train": "Speaking truth to power, unlikely alliances, stories changing hearts."},
+    {"title": "Moneyball", "year": 2011, "category": "triumph_achievement", "description": "Baseball team wins with unconventional methods. Changing the game.", "why_train": "Challenging conventional wisdom, valuing the undervalued, innovation."},
+    {"title": "The Imitation Game", "year": 2014, "category": "triumph_achievement", "description": "Alan Turing breaks Nazi code. Genius and isolation.", "why_train": "Being different as strength, teamwork despite difficulty, hidden heroism."},
+    {"title": "Whiplash", "year": 2014, "category": "triumph_achievement", "description": "Drummer pushes limits under demanding teacher. Cost of greatness.", "why_train": "The cost of excellence, toxic vs inspiring mentorship, defining success."},
+    {"title": "Queen of Katwe", "year": 2016, "category": "triumph_achievement", "description": "Ugandan girl becomes chess champion. Mind over circumstance.", "why_train": "Potential exists everywhere, mentorship changes lives, mind as escape."},
+    {"title": "I, Tonya", "year": 2017, "category": "triumph_achievement", "description": "Skater's rise despite abuse and obstacles. Complicated triumph.", "why_train": "Triumph despite system, complicated heroes, class and opportunity."},
+    {"title": "Ford v Ferrari", "year": 2019, "category": "triumph_achievement", "description": "Team builds car to beat Ferrari. Passion vs corporate.", "why_train": "Passion vs bureaucracy, perfectionism, friendship in competition."},
+    {"title": "CODA", "year": 2021, "category": "triumph_achievement", "description": "Hearing daughter of deaf family pursues singing. Finding voice.", "why_train": "Honoring family while pursuing dreams, being bridge between worlds."},
+
+    # --- INSPIRATIONAL DOCUMENTARIES ---
+    {"title": "Won't You Be My Neighbor?", "year": 2018, "category": "awe_wonder", "description": "Documentary about Mr. Rogers. Radical kindness in action.", "why_train": "Kindness as revolution, presence matters, respecting children."},
+    {"title": "My Octopus Teacher", "year": 2020, "category": "awe_wonder", "description": "Man bonds with octopus. Interspecies connection.", "why_train": "Connection across species, nature as teacher, healing through nature."},
+    {"title": "The Social Dilemma", "year": 2020, "category": "awe_wonder", "description": "Tech insiders on social media dangers. Awareness.", "why_train": "Understanding modern challenges, tech and mental health, conscious choices."},
+    {"title": "Crip Camp", "year": 2020, "category": "awe_wonder", "description": "Disabled campers spark rights movement. Community creates change.", "why_train": "Community as power, disability rights, joy in activism."},
 ]

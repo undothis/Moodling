@@ -4,6 +4,7 @@ Handles video/audio download, transcript fetching, and channel RSS parsing.
 """
 
 import asyncio
+import hashlib
 import json
 import re
 import subprocess
@@ -161,8 +162,13 @@ class YouTubeService:
         fallback_name = parsed.get("handle", "").lstrip("@") or parsed.get("name") or "Unknown Channel"
         print(f"[YouTube] Using fallback name: {fallback_name}")
 
+        # Generate a deterministic channel_id from URL to prevent duplicates
+        # Use hash of channel_url for consistency across attempts
+        url_hash = hashlib.md5(channel_url.encode()).hexdigest()[:16]
+        fallback_channel_id = parsed.get("channel_id") or f"ch_{url_hash}"
+
         return {
-            "channel_id": parsed.get("channel_id", str(uuid.uuid4())[:8]),
+            "channel_id": fallback_channel_id,
             "channel_name": fallback_name,
             "channel_url": channel_url,
         }

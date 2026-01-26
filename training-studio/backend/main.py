@@ -671,12 +671,39 @@ async def add_channel(request: ChannelCreateRequest):
         # Get channel info from YouTube
         info = await youtube_service.get_channel_info(request.url)
 
-        # Check if channel already exists by URL pattern
+        # Normalize URL for comparison - extract the core identifier
+        def normalize_channel_url(url: str) -> str:
+            """Extract the core channel identifier for comparison."""
+            url = url.lower().replace("https://", "").replace("http://", "").replace("www.", "")
+            url = url.rstrip("/")
+            # Extract handle or channel ID
+            if "/@" in url:
+                # Handle URL like youtube.com/@channelname
+                return url.split("/@")[1].split("/")[0].split("?")[0]
+            elif "/channel/" in url:
+                # Channel ID URL like youtube.com/channel/UC...
+                return url.split("/channel/")[1].split("/")[0].split("?")[0]
+            elif "/c/" in url:
+                # Custom URL like youtube.com/c/channelname
+                return url.split("/c/")[1].split("/")[0].split("?")[0]
+            elif "/user/" in url:
+                # User URL like youtube.com/user/username
+                return url.split("/user/")[1].split("/")[0].split("?")[0]
+            elif url.startswith("@"):
+                # Just a handle like @channelname
+                return url.lstrip("@").split("/")[0].split("?")[0]
+            return url
+
+        # Check if channel already exists by normalized URL or channel_id
         existing_channels = await db.get_all_channels()
-        normalized_url = request.url.lower().replace("https://", "").replace("http://", "").replace("www.", "")
+        request_normalized = normalize_channel_url(request.url)
+        channel_id_from_info = info.get("channel_id", "")
+
         for existing in existing_channels:
-            existing_normalized = existing.url.lower().replace("https://", "").replace("http://", "").replace("www.", "")
-            if normalized_url in existing_normalized or existing_normalized in normalized_url:
+            existing_normalized = normalize_channel_url(existing.url)
+            # Check both normalized URL and channel_id match
+            if (request_normalized == existing_normalized or
+                (channel_id_from_info and existing.channel_id == channel_id_from_info)):
                 return {
                     "success": True,
                     "channel": {"id": existing.id, "name": existing.name},
@@ -685,7 +712,7 @@ async def add_channel(request: ChannelCreateRequest):
 
         channel_data = {
             "id": str(uuid.uuid4()),
-            "channel_id": info.get("channel_id", str(uuid.uuid4())[:8]),
+            "channel_id": info.get("channel_id", str(uuid.uuid4())),  # Use full UUID as fallback
             "name": info.get("channel_name", "Unknown"),
             "url": info.get("channel_url", request.url),
             "category": request.category,
@@ -700,7 +727,12 @@ async def add_channel(request: ChannelCreateRequest):
 
         return {
             "success": True,
-            "channel": channel_data
+            "channel": {
+                "id": channel.id,
+                "name": channel.name,
+                "channel_id": channel.channel_id,
+                "url": channel.url,
+            }
         }
 
     except Exception as e:
@@ -824,6 +856,77 @@ async def get_job_status(job_id: str):
         "error_message": job.error_message,
         "insights_count": len(job.insights),
         "completed_at": job.completed_at,
+    }
+
+
+@app.post("/process-batch")
+async def batch_process_videos(request: BatchProcessRequest, background_tasks: BackgroundTasks):
+    """
+    Start batch processing of multiple videos from a channel.
+    Fetches videos from channel and queues them for processing.
+    Returns immediately with batch info, processing happens in background.
+    """
+    # Get channel
+    channel = await db.get_channel(request.channel_id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Fetch videos from channel
+    try:
+        videos = await youtube_service.fetch_channel_videos(
+            channel.url,
+            max_videos=request.max_videos,
+            strategy=request.strategy
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch videos: {str(e)}")
+
+    if not videos:
+        return {
+            "success": False,
+            "message": "No videos found in channel",
+            "jobs": [],
+            "total_queued": 0
+        }
+
+    # Create processing jobs for each video
+    jobs = []
+    for video_info in videos[:request.max_videos]:
+        job_id = str(uuid.uuid4())
+        job = ProcessingJob(
+            id=job_id,
+            video_id=video_info.video_id,
+            channel_id=request.channel_id,
+            status=ProcessingStatus.QUEUED,
+            progress=0,
+            current_step="Queued for batch processing",
+            created_at=datetime.utcnow()
+        )
+        active_jobs[job_id] = job
+        jobs.append({
+            "job_id": job_id,
+            "video_id": video_info.video_id,
+            "title": video_info.title,
+        })
+
+        # Start background processing with delay to avoid rate limiting
+        background_tasks.add_task(
+            process_video_task,
+            job_id,
+            video_info.video_id,
+            video_info,
+            skip_facial=request.skip_facial,
+            skip_prosody=request.skip_prosody
+        )
+
+    return {
+        "success": True,
+        "channel_id": request.channel_id,
+        "channel_name": channel.name,
+        "strategy": request.strategy,
+        "jobs": jobs,
+        "total_queued": len(jobs),
+        "message": f"Queued {len(jobs)} videos for processing"
     }
 
 
