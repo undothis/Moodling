@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchChannels,
@@ -439,20 +439,19 @@ export default function ChannelsPage() {
   };
 
   // Watch for channel being added to trigger batch processing
-  const channelToProcess = useMemo(() => {
-    if (!pendingProcessChannel || !channels) return null;
+  useEffect(() => {
+    if (!pendingProcessChannel || !channels) return;
     const normalizedPending = pendingProcessChannel.replace('https://youtube.com/', '').replace('https://www.youtube.com/', '');
-    return channels.find(ch => {
+    const channelToProcess = channels.find(ch => {
       const normalizedUrl = ch.url.replace('https://youtube.com/', '').replace('https://www.youtube.com/', '');
       return normalizedUrl === normalizedPending;
     });
-  }, [channels, pendingProcessChannel]);
 
-  // Effect to trigger batch processing after channel is added
-  if (channelToProcess && pendingProcessChannel) {
-    setPendingProcessChannel(null);
-    handleBatchProcess(channelToProcess.id);
-  }
+    if (channelToProcess) {
+      setPendingProcessChannel(null);
+      handleBatchProcess(channelToProcess.id);
+    }
+  }, [channels, pendingProcessChannel]);
 
   // Group recommended channels by category
   const groupedRecommended = useMemo(() => {
