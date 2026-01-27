@@ -688,7 +688,7 @@ RECOMMENDED_CHANNELS = [
     # ══════════════════════════════════════════════════════════════════════════════
 
     # --- Awe & Wonder ---
-    {"name": "The School of Life", "url": "@theschooloflife", "channel_id": "UC7IcJI8PUf5Z3zKxnZvTBog", "category": "philosophy_meaning", "trust": "high", "description": "Alain de Botton - philosophy for everyday emotional life"},
+    {"name": "The School of Life", "url": "https://www.youtube.com/channel/UC7IcJI8PUf5Z3zKxnZvTBog", "channel_id": "UC7IcJI8PUf5Z3zKxnZvTBog", "category": "philosophy_meaning", "trust": "high", "description": "Alain de Botton - philosophy for everyday emotional life"},
     {"name": "Shots of Awe", "url": "@ShotsOfAwe", "channel_id": "UClYb9NpXnRemxYoWbcYANsA", "category": "philosophy_meaning", "trust": "high", "description": "Jason Silva - micro-documentaries on wonder, consciousness"},
 
     # --- Joy & Delight ---

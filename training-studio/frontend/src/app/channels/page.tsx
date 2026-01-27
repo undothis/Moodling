@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchChannels,
@@ -11,8 +11,11 @@ import {
   getAIChannelRecommendations,
   fetchChannelVideos,
   processVideoSimple,
+  fetchJobs,
+  fetchJobStatus,
   AIChannelRecommendation,
   Video as VideoType,
+  ProcessingJob,
 } from '@/lib/api';
 import {
   Plus,
@@ -35,8 +38,74 @@ import {
   Video,
   X,
   RefreshCw,
+  Clock,
+  XCircle,
+  AlertCircle,
+  Download,
+  Mic,
+  Brain,
 } from 'lucide-react';
 import clsx from 'clsx';
+
+// Processing step icons and colors
+const STEP_CONFIG: Record<string, { icon: any; color: string; label: string }> = {
+  queued: { icon: Clock, color: 'text-gray-500', label: 'Queued' },
+  downloading: { icon: Download, color: 'text-blue-500', label: 'Downloading' },
+  transcribing: { icon: Mic, color: 'text-purple-500', label: 'Transcribing (Whisper)' },
+  diarizing: { icon: Mic, color: 'text-indigo-500', label: 'Speaker Diarization' },
+  extracting_prosody: { icon: Mic, color: 'text-pink-500', label: 'Prosody Analysis' },
+  analyzing_facial: { icon: Video, color: 'text-orange-500', label: 'Facial Analysis' },
+  extracting_insights: { icon: Brain, color: 'text-yellow-600', label: 'Extracting Insights (Claude)' },
+  completed: { icon: CheckCircle, color: 'text-green-500', label: 'Complete' },
+  failed: { icon: XCircle, color: 'text-red-500', label: 'Failed' },
+};
+
+// Detailed progress card for a single processing job
+function ProcessingJobCard({ job }: { job: ProcessingJob }) {
+  const config = STEP_CONFIG[job.status] || { icon: AlertCircle, color: 'text-gray-500', label: job.status };
+  const Icon = config.icon;
+  const isActive = !['completed', 'failed'].includes(job.status);
+
+  return (
+    <div className="bg-gradient-to-r from-leaf-50 to-white rounded-lg p-4 border border-leaf-200 shadow-sm">
+      <div className="flex items-center gap-3 mb-3">
+        <div className={clsx('p-2 rounded-full', job.status === 'failed' ? 'bg-red-100' : 'bg-leaf-100')}>
+          <Icon className={clsx('w-4 h-4', config.color, isActive && 'animate-spin')} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-gray-900 text-sm truncate">{job.video_id}</p>
+          <p className="text-xs text-gray-600">{config.label}</p>
+        </div>
+        <span className="text-sm font-bold text-leaf-600">{job.progress}%</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+        <div
+          className={clsx(
+            'h-2.5 rounded-full transition-all duration-500',
+            job.status === 'failed' ? 'bg-red-500' : 'bg-gradient-to-r from-leaf-400 to-leaf-600'
+          )}
+          style={{ width: `${job.progress}%` }}
+        />
+      </div>
+
+      {/* Step indicator */}
+      <p className="text-xs text-gray-500">{job.current_step}</p>
+
+      {job.error_message && (
+        <p className="text-xs text-red-500 mt-2 bg-red-50 p-2 rounded">{job.error_message}</p>
+      )}
+
+      {job.insights_count > 0 && (
+        <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" />
+          {job.insights_count} insights extracted
+        </p>
+      )}
+    </div>
+  );
+}
 
 function AddChannelModal({
   isOpen,
@@ -152,6 +221,7 @@ function BrowseVideosModal({
   const queryClient = useQueryClient();
   const [videoCount, setVideoCount] = useState(20);
   const [processingVideos, setProcessingVideos] = useState<Set<string>>(new Set());
+  const [activeJobIds, setActiveJobIds] = useState<Map<string, string>>(new Map()); // videoId -> jobId
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['channel-videos', channel?.id, videoCount],
@@ -159,24 +229,59 @@ function BrowseVideosModal({
     enabled: isOpen && !!channel?.id,
   });
 
+  // Poll for active jobs
+  const { data: jobsData } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: fetchJobs,
+    refetchInterval: activeJobIds.size > 0 ? 1000 : false, // Poll every second if there are active jobs
+    enabled: isOpen,
+  });
+
+  // Filter jobs relevant to this modal's videos
+  const activeJobs = useMemo(() => {
+    if (!jobsData) return [];
+    return jobsData.filter(
+      (job) => !['completed', 'failed'].includes(job.status) ||
+      (Date.now() - new Date(job.completed_at || 0).getTime() < 10000) // Show completed for 10s
+    );
+  }, [jobsData]);
+
   const { mutate: startProcessing } = useMutation({
     mutationFn: (videoId: string) => processVideoSimple(`https://youtube.com/watch?v=${videoId}`),
     onMutate: (videoId) => {
       setProcessingVideos((prev) => new Set(prev).add(videoId));
     },
-    onSuccess: () => {
+    onSuccess: (result, videoId) => {
+      // Track the job ID for this video
+      if (result?.job_id) {
+        setActiveJobIds((prev) => new Map(prev).set(videoId, result.job_id));
+      }
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     },
     onSettled: (_, __, videoId) => {
-      setTimeout(() => {
-        setProcessingVideos((prev) => {
-          const next = new Set(prev);
-          next.delete(videoId);
-          return next;
-        });
-      }, 2000);
+      // Keep it in processing state until job completes
     },
   });
+
+  // Update processing state based on job status
+  useEffect(() => {
+    if (!jobsData) return;
+
+    const completedVideoIds = new Set<string>();
+    jobsData.forEach((job) => {
+      if (['completed', 'failed'].includes(job.status)) {
+        completedVideoIds.add(job.video_id);
+      }
+    });
+
+    if (completedVideoIds.size > 0) {
+      setProcessingVideos((prev) => {
+        const next = new Set(prev);
+        completedVideoIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+  }, [jobsData]);
 
   const processAll = () => {
     data?.videos?.forEach((video) => {
@@ -233,6 +338,21 @@ function BrowseVideosModal({
           )}
         </div>
 
+        {/* Active Processing Jobs */}
+        {activeJobs.length > 0 && (
+          <div className="mb-4 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-leaf-500" />
+              Processing ({activeJobs.length} active)
+            </h3>
+            <div className="space-y-3 max-h-48 overflow-auto">
+              {activeJobs.map((job) => (
+                <ProcessingJobCard key={job.job_id} job={job} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -245,10 +365,21 @@ function BrowseVideosModal({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {data.videos.map((video) => (
+              {data.videos.map((video) => {
+                const videoJob = jobsData?.find((j) => j.video_id === video.video_id);
+                const isProcessing = processingVideos.has(video.video_id);
+                const isCompleted = videoJob?.status === 'completed';
+                const isFailed = videoJob?.status === 'failed';
+
+                return (
                 <div
                   key={video.video_id}
-                  className="bg-gray-50 rounded-lg p-3 flex items-start gap-3"
+                  className={clsx(
+                    "bg-gray-50 rounded-lg p-3 flex items-start gap-3 border-2 transition-colors",
+                    isCompleted && "border-green-300 bg-green-50",
+                    isFailed && "border-red-300 bg-red-50",
+                    !isCompleted && !isFailed && "border-transparent"
+                  )}
                 >
                   {video.thumbnail_url && (
                     <img
@@ -268,13 +399,48 @@ function BrowseVideosModal({
                           ).padStart(2, '0')}`
                         : 'Duration unknown'}
                     </p>
+                    {/* Show mini progress for this video */}
+                    {videoJob && !['completed', 'failed'].includes(videoJob.status) && (
+                      <div className="mt-2">
+                        <div className="flex items-center gap-2 text-xs text-leaf-600">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>{videoJob.current_step}</span>
+                          <span className="font-bold">{videoJob.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                          <div
+                            className="h-1 rounded-full bg-leaf-500 transition-all"
+                            style={{ width: `${videoJob.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {isCompleted && videoJob?.insights_count > 0 && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        {videoJob.insights_count} insights
+                      </p>
+                    )}
+                    {isFailed && (
+                      <p className="text-xs text-red-500 mt-1">Processing failed</p>
+                    )}
                   </div>
                   <button
                     onClick={() => startProcessing(video.video_id)}
-                    disabled={processingVideos.has(video.video_id)}
-                    className="px-3 py-1.5 text-xs bg-leaf-500 text-white rounded-lg hover:bg-leaf-600 disabled:opacity-50 flex items-center gap-1"
+                    disabled={isProcessing || isCompleted}
+                    className={clsx(
+                      "px-3 py-1.5 text-xs rounded-lg flex items-center gap-1",
+                      isCompleted
+                        ? "bg-green-100 text-green-700 cursor-default"
+                        : "bg-leaf-500 text-white hover:bg-leaf-600 disabled:opacity-50"
+                    )}
                   >
-                    {processingVideos.has(video.video_id) ? (
+                    {isCompleted ? (
+                      <>
+                        <CheckCircle className="w-3 h-3" />
+                        Done
+                      </>
+                    ) : isProcessing ? (
                       <>
                         <Loader2 className="w-3 h-3 animate-spin" />
                         Processing
@@ -287,7 +453,8 @@ function BrowseVideosModal({
                     )}
                   </button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

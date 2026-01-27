@@ -418,8 +418,19 @@ async def get_categories():
 
 @app.get("/recommended-channels")
 async def get_recommended_channels():
-    """Get list of recommended YouTube channels."""
-    return RECOMMENDED_CHANNELS
+    """Get list of recommended YouTube channels.
+
+    Transforms URLs to use channel_id when available for reliability,
+    since @handles can be claimed by different channels than expected.
+    """
+    transformed = []
+    for ch in RECOMMENDED_CHANNELS:
+        channel = dict(ch)  # Copy to avoid modifying original
+        # If we have a channel_id, use it for the URL (more reliable than @handles)
+        if channel.get("channel_id") and not channel.get("url", "").startswith("https://www.youtube.com/channel/"):
+            channel["url"] = f"https://www.youtube.com/channel/{channel['channel_id']}"
+        transformed.append(channel)
+    return transformed
 
 
 class AIRecommendRequest(BaseModel):

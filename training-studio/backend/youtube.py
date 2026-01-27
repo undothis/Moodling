@@ -273,6 +273,10 @@ class YouTubeService:
             lines = stdout_text.strip().split("\n") if stdout_text.strip() else []
             logger.info(f"[YouTube] Parsing {len(lines)} JSON lines")
 
+            # Track the actual channel we're getting videos from
+            actual_channel_name = None
+            actual_channel_id = None
+
             for i, line in enumerate(lines):
                 if line:
                     try:
@@ -282,6 +286,11 @@ class YouTubeService:
                         if i == 0:
                             logger.info(f"[YouTube] DEBUG: First JSON keys: {list(data.keys())[:15]}")
                             logger.info(f"[YouTube] DEBUG: _type={data.get('_type')}, id={data.get('id')}, title={data.get('title', 'NO TITLE')[:50] if data.get('title') else 'NONE'}")
+                            # Log the actual channel info from the video
+                            actual_channel_name = data.get("channel") or data.get("uploader") or "Unknown"
+                            actual_channel_id = data.get("channel_id") or data.get("uploader_id") or "Unknown"
+                            logger.info(f"[YouTube] ACTUAL CHANNEL: '{actual_channel_name}' (ID: {actual_channel_id})")
+                            print(f"[YouTube] ACTUAL CHANNEL: '{actual_channel_name}' (ID: {actual_channel_id})")
 
                         # Skip playlist/channel metadata entries (not actual videos)
                         # Note: --flat-playlist returns _type="url" for video entries
