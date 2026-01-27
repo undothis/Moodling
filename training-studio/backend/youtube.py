@@ -191,13 +191,14 @@ class YouTubeService:
 
             print(f"[YouTube] Fetching videos from: {normalized_url}")
 
-            # Use yt-dlp to get playlist info
+            # Use yt-dlp to get playlist info - request more data for thumbnails
             cmd = [
                 "yt-dlp",
                 "--dump-json",
                 "--flat-playlist",
                 "--playlist-end", str(max_videos * 2),  # Get extra for filtering
                 "--no-warnings",
+                "--extractor-args", "youtube:player_client=web",
                 normalized_url
             ]
 
@@ -245,9 +246,15 @@ class YouTubeService:
                         if duration and duration < 60:
                             continue
 
+                        video_id = data.get("id", "")
+                        # Use standard YouTube thumbnail URL format
+                        thumbnail = data.get("thumbnail") or data.get("thumbnails", [{}])[0].get("url") if data.get("thumbnails") else None
+                        if not thumbnail and video_id:
+                            thumbnail = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+
                         videos.append(VideoMetadata(
                             id=str(uuid.uuid4()),
-                            video_id=data.get("id", ""),
+                            video_id=video_id,
                             channel_id=data.get("channel_id") or "unknown",
                             title=data.get("title", ""),
                             description=data.get("description", ""),
@@ -255,7 +262,7 @@ class YouTubeService:
                             view_count=data.get("view_count", 0) or 0,
                             like_count=data.get("like_count", 0) or 0,
                             published_at=None,  # Would need additional call
-                            thumbnail_url=data.get("thumbnail"),
+                            thumbnail_url=thumbnail,
                         ))
                     except json.JSONDecodeError:
                         continue
