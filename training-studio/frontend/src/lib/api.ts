@@ -29,6 +29,11 @@ export interface Video {
   thumbnail_url: string | null;
 }
 
+export interface ComponentStatus {
+  status: 'pending' | 'running' | 'ok' | 'warning' | 'error' | 'skipped';
+  message: string;
+}
+
 export interface ProcessingJob {
   job_id: string;
   video_id: string;
@@ -38,6 +43,8 @@ export interface ProcessingJob {
   error_message: string | null;
   insights_count: number;
   completed_at: string | null;
+  component_status?: Record<string, ComponentStatus>;
+  aliveness_scores?: Record<string, number>;
 }
 
 export interface Insight {

@@ -1044,6 +1044,8 @@ async def get_job_status(job_id: str):
         "error_message": job.error_message,
         "insights_count": len(job.insights),
         "completed_at": job.completed_at,
+        "component_status": job.component_status,
+        "aliveness_scores": job.aliveness_scores,
     }
 
 
@@ -1059,6 +1061,9 @@ async def list_jobs():
             "current_step": job.current_step,
             "created_at": job.created_at,
             "completed_at": job.completed_at,
+            "component_status": job.component_status,
+            "aliveness_scores": job.aliveness_scores,
+            "insights_count": len(job.insights),
         }
         for job_id, job in active_jobs.items()
     ]
@@ -1074,12 +1079,24 @@ async def process_video_task(
     """Background task for video processing."""
     job = active_jobs[job_id]
 
+    # Initialize component status tracking
+    job.component_status = {
+        "yt_dlp": {"status": "pending", "message": "Waiting to download"},
+        "ffmpeg": {"status": "pending", "message": "Waiting for audio extraction"},
+        "whisper": {"status": "pending", "message": "Waiting to transcribe"},
+        "diarization": {"status": "pending", "message": "Waiting for speaker detection"},
+        "prosody": {"status": "pending" if not skip_prosody else "skipped", "message": "Waiting for voice analysis" if not skip_prosody else "Skipped"},
+        "facial": {"status": "pending" if not skip_facial else "skipped", "message": "Waiting for facial analysis" if not skip_facial else "Skipped"},
+        "claude": {"status": "pending", "message": "Waiting for insight extraction"},
+    }
+
     try:
         # Step 1: Download video/audio
         job.status = ProcessingStatus.DOWNLOADING
         job.current_step = "Downloading video..."
         job.progress = 5
         job.started_at = datetime.utcnow()
+        job.component_status["yt_dlp"] = {"status": "running", "message": "Downloading from YouTube..."}
 
         downloads = await youtube_service.download_video(
             video_id,
@@ -1088,27 +1105,37 @@ async def process_video_task(
         )
 
         if not downloads.get("audio_path"):
+            job.component_status["yt_dlp"] = {"status": "error", "message": "Failed to download audio"}
             raise Exception("Failed to download audio")
 
         audio_path = downloads["audio_path"]
         video_path = downloads.get("video_path")
+        job.component_status["yt_dlp"] = {"status": "ok", "message": "Video downloaded"}
+        job.component_status["ffmpeg"] = {"status": "ok", "message": "Audio extracted to WAV"}
 
         # Step 2: Transcription
         job.status = ProcessingStatus.TRANSCRIBING
-        job.current_step = "Transcribing audio..."
+        job.current_step = "Transcribing audio with Whisper..."
         job.progress = 20
+        job.component_status["whisper"] = {"status": "running", "message": "Transcribing audio..."}
 
         # Try Whisper, fall back to YouTube transcript
+        whisper_used = False
         try:
             transcript = await transcription_service.transcribe(audio_path)
+            whisper_used = True
+            word_count = len(transcript.text.split())
+            job.component_status["whisper"] = {"status": "ok", "message": f"Transcribed {word_count} words"}
         except Exception as e:
             print(f"[Process] Whisper failed: {e}, trying YouTube transcript")
+            job.component_status["whisper"] = {"status": "warning", "message": f"Whisper failed, using YouTube captions"}
             yt_transcript = await youtube_service.download_transcript(video_id)
             if yt_transcript:
                 transcript = await transcription_service.transcribe_with_fallback(
                     audio_path, yt_transcript
                 )
             else:
+                job.component_status["whisper"] = {"status": "error", "message": "No transcript available"}
                 raise Exception("No transcript available")
 
         job.transcript = transcript
@@ -1117,6 +1144,7 @@ async def process_video_task(
         job.status = ProcessingStatus.DIARIZING
         job.current_step = "Identifying speakers..."
         job.progress = 40
+        job.component_status["diarization"] = {"status": "running", "message": "Detecting speakers..."}
 
         diarization = await diarization_service.diarize(audio_path)
         if diarization:
@@ -1125,24 +1153,37 @@ async def process_video_task(
             )
             speaker_stats = diarization_service.calculate_speaker_statistics(diarization)
             job.speaker_profiles = list(speaker_stats.values())
+            job.component_status["diarization"] = {"status": "ok", "message": f"Found {len(speaker_stats)} speakers"}
+        else:
+            job.component_status["diarization"] = {"status": "warning", "message": "No HF token or diarization failed"}
 
         # Step 4: Prosody extraction
         if not skip_prosody:
             job.status = ProcessingStatus.EXTRACTING_PROSODY
-            job.current_step = "Analyzing voice patterns..."
+            job.current_step = "Analyzing voice patterns (prosody)..."
             job.progress = 55
+            job.component_status["prosody"] = {"status": "running", "message": "Analyzing pitch, rhythm, pauses..."}
 
-            prosody = await prosody_service.extract_prosody(audio_path)
-            distress = await prosody_service.detect_distress_markers(audio_path)
+            try:
+                prosody = await prosody_service.extract_prosody(audio_path)
+                distress = await prosody_service.detect_distress_markers(audio_path)
 
-            # Calculate aliveness scores
-            job.aliveness_scores = {
-                "aliveness": prosody.aliveness_score,
-                "naturalness": prosody.naturalness_score,
-                "expressiveness": prosody.emotional_expressiveness,
-                "engagement": prosody.engagement_score,
-                "distress_level": distress.overall_distress_level * 100
-            }
+                # Calculate aliveness scores
+                job.aliveness_scores = {
+                    "aliveness": prosody.aliveness_score,
+                    "naturalness": prosody.naturalness_score,
+                    "expressiveness": prosody.emotional_expressiveness,
+                    "engagement": prosody.engagement_score,
+                    "distress_level": distress.overall_distress_level * 100
+                }
+                job.component_status["prosody"] = {
+                    "status": "ok",
+                    "message": f"Aliveness: {prosody.aliveness_score:.0f}%, Naturalness: {prosody.naturalness_score:.0f}%"
+                }
+            except Exception as e:
+                print(f"[Process] Prosody extraction failed: {e}")
+                job.component_status["prosody"] = {"status": "error", "message": str(e)[:50]}
+                prosody = None
         else:
             prosody = None
 
@@ -1152,6 +1193,7 @@ async def process_video_task(
             job.status = ProcessingStatus.ANALYZING_FACIAL
             job.current_step = "Analyzing facial expressions..."
             job.progress = 70
+            job.component_status["facial"] = {"status": "running", "message": "Detecting faces and expressions..."}
 
             try:
                 frame_results = await facial_service.analyze_video(
@@ -1160,8 +1202,12 @@ async def process_video_task(
                 )
                 if frame_results:
                     facial_features = await facial_service.aggregate_analysis(frame_results)
+                    job.component_status["facial"] = {"status": "ok", "message": f"Analyzed {len(frame_results)} frames"}
+                else:
+                    job.component_status["facial"] = {"status": "warning", "message": "No faces detected"}
             except Exception as e:
                 print(f"[Process] Facial analysis failed: {e}")
+                job.component_status["facial"] = {"status": "error", "message": str(e)[:50]}
 
         # Step 6: Interview classification
         job.current_step = "Classifying interview type..."
@@ -1173,21 +1219,28 @@ async def process_video_task(
 
         # Step 7: Insight extraction
         job.status = ProcessingStatus.EXTRACTING_INSIGHTS
-        job.current_step = "Extracting insights..."
+        job.current_step = "Extracting insights with Claude..."
         job.progress = 85
+        job.component_status["claude"] = {"status": "running", "message": "Claude is analyzing transcript..."}
 
-        insights = await insight_service.extract_insights(
-            transcript=transcript,
-            video_title=video_info.title,
-            channel_name=video_info.channel_id or "Unknown",
-            prosody=prosody
-        )
+        try:
+            insights = await insight_service.extract_insights(
+                transcript=transcript,
+                video_title=video_info.title,
+                channel_name=video_info.channel_id or "Unknown",
+                prosody=prosody
+            )
 
-        # Set video ID on insights
-        for insight in insights:
-            insight.video_id = video_id
+            # Set video ID on insights
+            for insight in insights:
+                insight.video_id = video_id
 
-        job.insights = insights
+            job.insights = insights
+            job.component_status["claude"] = {"status": "ok", "message": f"Extracted {len(insights)} insights"}
+        except Exception as e:
+            print(f"[Process] Insight extraction failed: {e}")
+            job.component_status["claude"] = {"status": "error", "message": str(e)[:50]}
+            raise
 
         # Step 8: Save to database
         job.current_step = "Saving results..."

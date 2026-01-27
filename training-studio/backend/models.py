@@ -644,6 +644,10 @@ class ProcessingJob(BaseModel):
     # Aliveness scores
     aliveness_scores: Dict[str, float] = Field(default_factory=dict)
 
+    # Component status tracking (shows which components ran and their status)
+    component_status: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    # Example: {"whisper": {"status": "ok", "duration": 12.5}, "prosody": {"status": "running"}}
+
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None

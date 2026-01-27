@@ -58,6 +58,29 @@ function JobCard({ job }: { job: any }) {
     failed: 'bg-red-100 text-red-700',
   };
 
+  const componentLabels: Record<string, string> = {
+    yt_dlp: 'Download',
+    ffmpeg: 'Audio',
+    whisper: 'Transcribe',
+    diarization: 'Speakers',
+    prosody: 'Prosody',
+    facial: 'Facial',
+    claude: 'Claude',
+  };
+
+  const componentStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ok': return <CheckCircle2 className="w-3 h-3 text-green-500" />;
+      case 'running': return <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />;
+      case 'warning': return <AlertTriangle className="w-3 h-3 text-yellow-500" />;
+      case 'error': return <XCircle className="w-3 h-3 text-red-500" />;
+      case 'skipped': return <span className="w-3 h-3 text-gray-300">—</span>;
+      default: return <span className="w-3 h-3 text-gray-300">○</span>;
+    }
+  };
+
+  const isActive = !['completed', 'failed', 'queued'].includes(job.status);
+
   return (
     <div className="bg-white rounded-lg p-4 border border-gray-100">
       <div className="flex items-center justify-between mb-2">
@@ -78,6 +101,43 @@ function JobCard({ job }: { job: any }) {
           style={{ width: `${job.progress}%` }}
         />
       </div>
+
+      {/* Component Status Grid - show when processing */}
+      {job.component_status && Object.keys(job.component_status).length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-7 gap-1">
+            {Object.entries(job.component_status).map(([key, comp]: [string, any]) => (
+              <div
+                key={key}
+                className="flex flex-col items-center gap-0.5"
+                title={comp.message}
+              >
+                {componentStatusIcon(comp.status)}
+                <span className="text-[9px] text-gray-400 truncate w-full text-center">
+                  {componentLabels[key] || key}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Aliveness Scores - show when available */}
+      {job.aliveness_scores && Object.keys(job.aliveness_scores).length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {job.aliveness_scores.aliveness !== undefined && (
+            <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded">
+              Alive: {job.aliveness_scores.aliveness.toFixed(0)}%
+            </span>
+          )}
+          {job.aliveness_scores.naturalness !== undefined && (
+            <span className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">
+              Natural: {job.aliveness_scores.naturalness.toFixed(0)}%
+            </span>
+          )}
+        </div>
+      )}
+
       {job.insights_count > 0 && (
         <p className="text-xs text-gray-400 mt-2">
           {job.insights_count} insights extracted
@@ -87,11 +147,12 @@ function JobCard({ job }: { job: any }) {
   );
 }
 
-function DiagnosticsPanel() {
+function DiagnosticsPanel({ hasActiveJobs }: { hasActiveJobs?: boolean }) {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['diagnostics'],
     queryFn: runDiagnostics,
-    staleTime: 60000, // Cache for 1 minute
+    staleTime: hasActiveJobs ? 5000 : 60000, // Refresh faster when jobs are active
+    refetchInterval: hasActiveJobs ? 10000 : false, // Auto-refresh every 10s when jobs active
   });
 
   const statusIcon = (status: string) => {
@@ -125,6 +186,12 @@ function DiagnosticsPanel() {
         <div className="flex items-center gap-2">
           <Stethoscope className="w-5 h-5 text-gray-600" />
           <h2 className="text-lg font-semibold text-gray-900">System Diagnostics</h2>
+          {hasActiveJobs && (
+            <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Live
+            </span>
+          )}
         </div>
         <button
           onClick={() => refetch()}
@@ -312,7 +379,7 @@ export default function DashboardPage() {
 
       {/* Diagnostics */}
       <div className="mb-8">
-        <DiagnosticsPanel />
+        <DiagnosticsPanel hasActiveJobs={activeJobs.length > 0} />
       </div>
 
       {/* Active Jobs & Recent Insights */}
