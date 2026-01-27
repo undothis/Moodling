@@ -810,22 +810,27 @@ async def delete_channel(channel_id: str):
 @app.get("/channels/{channel_id}/videos")
 async def get_channel_videos(
     channel_id: str,
-    max_videos: int = Query(default=20, le=50),
+    max_videos: int = Query(default=20, le=100),
     strategy: str = Query(default="balanced")
 ):
     """Fetch videos from a channel for processing."""
+    logger.info(f"Brain Studio: Fetching videos for channel {channel_id} (max={max_videos}, strategy={strategy})")
     channel = await db.get_channel(channel_id)
     if not channel:
+        logger.warning(f"Brain Studio: Channel {channel_id} not found")
         raise HTTPException(status_code=404, detail="Channel not found")
 
+    logger.info(f"Brain Studio: Fetching from URL: {channel.url}")
     videos = await youtube_service.fetch_channel_videos(
         channel.url,
         max_videos=max_videos,
         strategy=strategy
     )
+    logger.info(f"Brain Studio: Found {len(videos)} videos for channel {channel.name}")
 
     return {
         "channel_id": channel_id,
+        "channel_name": channel.name,
         "videos": [v.model_dump() for v in videos]
     }
 
@@ -3033,48 +3038,6 @@ async def get_brain_statistics():
     return stats
 
 
-# ============================================================================
-# BRAIN STUDIO - VIDEO COUNT SELECTOR FOR CHANNELS
-# ============================================================================
-
-@app.get("/channels/{channel_id}/videos")
-async def get_channel_videos_with_count(
-    channel_id: str,
-    max_videos: int = Query(20, ge=1, le=100),
-    strategy: str = Query("balanced", regex="^(recent|popular|balanced)$")
-):
-    """Get videos from a channel with configurable count."""
-    # Get channel info
-    channel = await db.get_channel(channel_id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-
-    # Fetch videos with the specified limit
-    videos = await youtube_service.get_channel_videos(
-        channel.channel_id,
-        max_results=max_videos,
-        strategy=strategy
-    )
-
-    return {
-        "channel_id": channel_id,
-        "channel_name": channel.name,
-        "videos": [
-            {
-                "video_id": v.video_id,
-                "title": v.title,
-                "description": v.description[:200] if v.description else "",
-                "duration_seconds": v.duration_seconds,
-                "view_count": v.view_count,
-                "like_count": v.like_count,
-                "thumbnail_url": v.thumbnail_url,
-                "published_at": v.published_at.isoformat() if v.published_at else None
-            }
-            for v in videos
-        ],
-        "count": len(videos),
-        "requested": max_videos
-    }
 
 
 # ============================================================================

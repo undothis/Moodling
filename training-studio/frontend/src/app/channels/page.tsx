@@ -192,7 +192,7 @@ function BrowseVideosModal({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">Browse Videos</h2>
-            <p className="text-sm text-gray-500">{channel?.name}</p>
+            <p className="text-sm text-gray-500">{data?.channel_name || channel?.name || 'Loading...'}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5" />
