@@ -277,6 +277,137 @@ async def init_db():
     """Initialize the database and create all tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Run migrations to add any missing columns
+        await conn.run_sync(_run_migrations)
+
+    # Initialize default brain goals if none exist
+    await _init_default_brain_goals()
+
+
+def _run_migrations(conn):
+    """Add any missing columns to existing tables."""
+    import sqlite3
+
+    # Get raw sqlite connection
+    raw_conn = conn.connection.dbapi_connection
+
+    # Check if we're using SQLite
+    if not isinstance(raw_conn, sqlite3.Connection):
+        return
+
+    cursor = raw_conn.cursor()
+
+    # Define columns to check/add for each table
+    # Format: (table_name, column_name, column_definition)
+    columns_to_add = [
+        ("insights", "marker", "TEXT"),
+        ("insights", "influence_weight", "REAL DEFAULT 1.0"),
+        ("insights", "is_active", "INTEGER DEFAULT 1"),
+        ("insights", "raw_quote", "TEXT"),
+        ("insights", "texture_analysis_json", "TEXT"),
+        ("insights", "coach_response_json", "TEXT"),
+        ("insights", "training_example_json", "TEXT"),
+        ("channels", "influence_weight", "REAL DEFAULT 1.0"),
+        ("channels", "include_in_training", "INTEGER DEFAULT 1"),
+        ("channels", "notes", "TEXT"),
+    ]
+
+    for table_name, column_name, column_def in columns_to_add:
+        try:
+            # Check if column exists
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            if column_name not in columns:
+                cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}")
+                print(f"[DB Migration] Added column {column_name} to {table_name}")
+        except Exception as e:
+            print(f"[DB Migration] Warning: Could not add {column_name} to {table_name}: {e}")
+
+    raw_conn.commit()
+
+
+async def _init_default_brain_goals():
+    """Initialize default brain goals for MoodLeaf if none exist."""
+    async with async_session() as session:
+        from sqlalchemy import select, func
+
+        # Check if any goals exist
+        count_result = await session.execute(select(func.count(BrainGoalModel.id)))
+        count = count_result.scalar() or 0
+
+        if count > 0:
+            return  # Already have goals
+
+        print("[DB] Initializing default MoodLeaf brain goals...")
+
+        # Define the ideal MoodLeaf brain configuration
+        # These represent what percentage of training data should come from each category
+        default_goals = [
+            # Core emotional processing - highest priority
+            {"category": "emotional_struggles", "target_percentage": 15, "priority": 1,
+             "description": "How people experience difficult emotions - the core of coaching",
+             "recommended_sources": "Therapy channels, Brené Brown, Esther Perel"},
+            {"category": "coping_strategies", "target_percentage": 12, "priority": 1,
+             "description": "What people do to get through hard times",
+             "recommended_sources": "Therapy in a Nutshell, Kati Morton"},
+            {"category": "vulnerability", "target_percentage": 10, "priority": 1,
+             "description": "Moments of openness and raw honesty",
+             "recommended_sources": "Brené Brown, Diary of a CEO"},
+
+            # Growth and wisdom - high priority
+            {"category": "growth_moments", "target_percentage": 8, "priority": 1,
+             "description": "Turning points and breakthroughs",
+             "recommended_sources": "The Moth, StoryCorps"},
+            {"category": "wisdom_perspective", "target_percentage": 7, "priority": 2,
+             "description": "Insights about life from experience",
+             "recommended_sources": "School of Life, Ram Dass"},
+
+            # Connection and relationships - high priority
+            {"category": "communication_patterns", "target_percentage": 8, "priority": 1,
+             "description": "How people communicate in relationships",
+             "recommended_sources": "Gottman Institute, Esther Perel"},
+            {"category": "belonging_community", "target_percentage": 5, "priority": 2,
+             "description": "Feeling part of something larger",
+             "recommended_sources": "Humans of New York, SoulPancake"},
+
+            # Aliveness categories - medium priority
+            {"category": "emotional_granularity", "target_percentage": 5, "priority": 2,
+             "description": "Specific emotion words - from vague to precise",
+             "recommended_sources": "Therapy channels"},
+            {"category": "somatic_markers", "target_percentage": 4, "priority": 2,
+             "description": "Body-based language revealing physical emotions",
+             "recommended_sources": "Bessel van der Kolk, Tara Brach"},
+            {"category": "self_kindness_moments", "target_percentage": 5, "priority": 2,
+             "description": "Rare moments of self-compassion - precious gold",
+             "recommended_sources": "Tara Brach, Kristin Neff"},
+
+            # Joy and positive emotions - important for balance
+            {"category": "joy_celebration", "target_percentage": 5, "priority": 2,
+             "description": "What brings genuine happiness",
+             "recommended_sources": "Yes Theory, SoulPancake"},
+            {"category": "gratitude_appreciation", "target_percentage": 4, "priority": 3,
+             "description": "What people are thankful for",
+             "recommended_sources": "StoryCorps"},
+
+            # Specific challenges - medium priority
+            {"category": "fear_anxiety", "target_percentage": 5, "priority": 2,
+             "description": "Fear and anxiety experiences",
+             "recommended_sources": "The Anxiety Guy, Therapy in a Nutshell"},
+            {"category": "grief_loss", "target_percentage": 4, "priority": 2,
+             "description": "Experiences of loss and grieving",
+             "recommended_sources": "Refuge in Grief, Nora McInerny"},
+        ]
+
+        for goal_data in default_goals:
+            goal = BrainGoalModel(
+                id=str(uuid.uuid4())[:8],
+                **goal_data
+            )
+            session.add(goal)
+
+        await session.commit()
+        print(f"[DB] Created {len(default_goals)} default brain goals")
 
 
 async def get_session() -> AsyncSession:

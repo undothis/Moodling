@@ -54,7 +54,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
-type TabType = 'philosophy' | 'tenants' | 'compliance' | 'influence' | 'goals' | 'prompt-lab';
+type TabType = 'philosophy' | 'tenants' | 'compliance' | 'influence' | 'goals' | 'visualization' | 'prompt-lab';
 
 // ============================================================================
 // PHILOSOPHY TAB
@@ -734,6 +734,497 @@ function GoalsTab() {
 }
 
 // ============================================================================
+// BRAIN VISUALIZATION TAB - Two Brains Showing Goal vs Current State
+// ============================================================================
+
+// Brain region mappings to insight categories
+const BRAIN_REGIONS = {
+  prefrontal: {
+    name: 'Prefrontal Cortex',
+    description: 'Decision making, planning, self-control',
+    categories: ['decision_making', 'cognitive_patterns', 'self_discovery', 'values_beliefs'],
+    color: '#8B5CF6', // purple
+    position: { x: 50, y: 15 },
+  },
+  temporal: {
+    name: 'Temporal Lobe',
+    description: 'Communication, language, social understanding',
+    categories: ['communication_patterns', 'friendship_dynamics', 'belonging_community', 'companionship'],
+    color: '#3B82F6', // blue
+    position: { x: 20, y: 45 },
+  },
+  limbic: {
+    name: 'Limbic System',
+    description: 'Emotional regulation, joy, motivation',
+    categories: ['joy_celebration', 'excitement_passion', 'gratitude_appreciation', 'hope_optimism', 'emotional_evolution'],
+    color: '#10B981', // green
+    position: { x: 50, y: 50 },
+  },
+  amygdala: {
+    name: 'Amygdala',
+    description: 'Fear, anxiety, emotional memories',
+    categories: ['fear_anxiety', 'emotional_struggles', 'trauma_recovery', 'anger_frustration', 'depression_hopelessness'],
+    color: '#EF4444', // red
+    position: { x: 55, y: 60 },
+  },
+  hippocampus: {
+    name: 'Hippocampus',
+    description: 'Memory, learning, growth',
+    categories: ['growth_moments', 'life_lessons', 'wisdom_perspective', 'memory_echoes', 'integration_moments'],
+    color: '#F59E0B', // amber
+    position: { x: 45, y: 60 },
+  },
+  parietal: {
+    name: 'Parietal Lobe',
+    description: 'Self-awareness, body perception',
+    categories: ['embodied_emotion', 'somatic_markers', 'body_health', 'rest_burnout'],
+    color: '#EC4899', // pink
+    position: { x: 50, y: 30 },
+  },
+  occipital: {
+    name: 'Occipital Lobe',
+    description: 'Perception, insight, creativity',
+    categories: ['creativity_expression', 'awe_wonder', 'spirituality_faith', 'meaning_purpose'],
+    color: '#6366F1', // indigo
+    position: { x: 75, y: 45 },
+  },
+  brainstem: {
+    name: 'Brainstem',
+    description: 'Core survival, basic needs',
+    categories: ['coping_strategies', 'what_helps_hurts', 'vulnerability', 'boundaries'],
+    color: '#14B8A6', // teal
+    position: { x: 50, y: 80 },
+  },
+};
+
+// SVG Brain Component
+function BrainSVG({
+  regionFills,
+  title,
+  isGoal = false,
+}: {
+  regionFills: Record<string, { fill: string; opacity: number; hasAlert?: boolean }>;
+  title: string;
+  isGoal?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <h3 className={clsx(
+        "text-center font-semibold mb-2",
+        isGoal ? "text-green-600" : "text-blue-600"
+      )}>
+        {title}
+      </h3>
+      <svg viewBox="0 0 100 100" className="w-full h-auto max-w-xs mx-auto">
+        {/* Brain outline - simplified side view */}
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Brain base shape */}
+        <path
+          d="M15,50 C15,25 30,10 50,10 C70,10 85,25 85,45 C85,55 80,65 75,70 C70,75 60,85 50,85 C40,85 30,80 25,70 C20,60 15,55 15,50 Z"
+          fill="#f3f4f6"
+          stroke="#d1d5db"
+          strokeWidth="1"
+        />
+
+        {/* Prefrontal Cortex - front top */}
+        <ellipse
+          cx={BRAIN_REGIONS.prefrontal.position.x}
+          cy={BRAIN_REGIONS.prefrontal.position.y}
+          rx="18"
+          ry="10"
+          fill={regionFills.prefrontal?.fill || BRAIN_REGIONS.prefrontal.color}
+          opacity={regionFills.prefrontal?.opacity || 0.3}
+          stroke={regionFills.prefrontal?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.prefrontal?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Parietal Lobe - top middle */}
+        <ellipse
+          cx={BRAIN_REGIONS.parietal.position.x}
+          cy={BRAIN_REGIONS.parietal.position.y}
+          rx="15"
+          ry="10"
+          fill={regionFills.parietal?.fill || BRAIN_REGIONS.parietal.color}
+          opacity={regionFills.parietal?.opacity || 0.3}
+          stroke={regionFills.parietal?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.parietal?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Temporal Lobe - side */}
+        <ellipse
+          cx={BRAIN_REGIONS.temporal.position.x}
+          cy={BRAIN_REGIONS.temporal.position.y}
+          rx="12"
+          ry="15"
+          fill={regionFills.temporal?.fill || BRAIN_REGIONS.temporal.color}
+          opacity={regionFills.temporal?.opacity || 0.3}
+          stroke={regionFills.temporal?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.temporal?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Occipital Lobe - back */}
+        <ellipse
+          cx={BRAIN_REGIONS.occipital.position.x}
+          cy={BRAIN_REGIONS.occipital.position.y}
+          rx="12"
+          ry="15"
+          fill={regionFills.occipital?.fill || BRAIN_REGIONS.occipital.color}
+          opacity={regionFills.occipital?.opacity || 0.3}
+          stroke={regionFills.occipital?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.occipital?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Limbic System - center */}
+        <ellipse
+          cx={BRAIN_REGIONS.limbic.position.x}
+          cy={BRAIN_REGIONS.limbic.position.y}
+          rx="12"
+          ry="8"
+          fill={regionFills.limbic?.fill || BRAIN_REGIONS.limbic.color}
+          opacity={regionFills.limbic?.opacity || 0.3}
+          stroke={regionFills.limbic?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.limbic?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Hippocampus - inner */}
+        <ellipse
+          cx={BRAIN_REGIONS.hippocampus.position.x}
+          cy={BRAIN_REGIONS.hippocampus.position.y}
+          rx="8"
+          ry="5"
+          fill={regionFills.hippocampus?.fill || BRAIN_REGIONS.hippocampus.color}
+          opacity={regionFills.hippocampus?.opacity || 0.3}
+          stroke={regionFills.hippocampus?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.hippocampus?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Amygdala - inner */}
+        <ellipse
+          cx={BRAIN_REGIONS.amygdala.position.x}
+          cy={BRAIN_REGIONS.amygdala.position.y}
+          rx="6"
+          ry="5"
+          fill={regionFills.amygdala?.fill || BRAIN_REGIONS.amygdala.color}
+          opacity={regionFills.amygdala?.opacity || 0.3}
+          stroke={regionFills.amygdala?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.amygdala?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Brainstem - bottom */}
+        <ellipse
+          cx={BRAIN_REGIONS.brainstem.position.x}
+          cy={BRAIN_REGIONS.brainstem.position.y}
+          rx="8"
+          ry="10"
+          fill={regionFills.brainstem?.fill || BRAIN_REGIONS.brainstem.color}
+          opacity={regionFills.brainstem?.opacity || 0.3}
+          stroke={regionFills.brainstem?.hasAlert ? '#ef4444' : 'none'}
+          strokeWidth="2"
+          filter={regionFills.brainstem?.hasAlert ? 'url(#glow)' : 'none'}
+        />
+
+        {/* Alert indicators (red dots for misalignment) */}
+        {Object.entries(regionFills).map(([region, data]) => {
+          if (!data.hasAlert) return null;
+          const pos = BRAIN_REGIONS[region as keyof typeof BRAIN_REGIONS]?.position;
+          if (!pos) return null;
+          return (
+            <g key={region}>
+              <circle
+                cx={pos.x + 5}
+                cy={pos.y - 5}
+                r="4"
+                fill="#ef4444"
+                className="animate-pulse"
+              />
+              <circle
+                cx={pos.x + 5}
+                cy={pos.y - 5}
+                r="2"
+                fill="#fff"
+              />
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function BrainVisualizationTab() {
+  const { data: comparison, isLoading } = useQuery({
+    queryKey: ['brain-comparison'],
+    queryFn: fetchBrainComparison
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // Calculate region fills based on current data
+  const calculateRegionState = (categories: string[], currentState: Record<string, number>, goalState: Record<string, number>) => {
+    let totalCurrent = 0;
+    let totalGoal = 0;
+    let count = 0;
+
+    categories.forEach(cat => {
+      // Check all possible variations of category name
+      const catVariants = [cat, cat.replace(/_/g, '-'), cat.replace(/-/g, '_')];
+      for (const variant of catVariants) {
+        if (currentState[variant] !== undefined) {
+          totalCurrent += currentState[variant];
+          count++;
+          break;
+        }
+      }
+      for (const variant of catVariants) {
+        if (goalState[variant] !== undefined) {
+          totalGoal += goalState[variant];
+          break;
+        }
+      }
+    });
+
+    const avgCurrent = count > 0 ? totalCurrent / count : 0;
+    const avgGoal = totalGoal > 0 ? totalGoal / categories.length : 0;
+
+    return { current: avgCurrent, goal: avgGoal, count };
+  };
+
+  // Generate fills for current brain
+  const currentBrainFills: Record<string, { fill: string; opacity: number; hasAlert?: boolean }> = {};
+  // Generate fills for goal brain
+  const goalBrainFills: Record<string, { fill: string; opacity: number; hasAlert?: boolean }> = {};
+
+  const misalignments: { region: string; name: string; current: number; goal: number; gap: number; description: string }[] = [];
+
+  Object.entries(BRAIN_REGIONS).forEach(([regionKey, region]) => {
+    const state = calculateRegionState(
+      region.categories,
+      comparison?.current_state || {},
+      comparison?.goal_state || {}
+    );
+
+    // Current brain - intensity based on how much data we have
+    const currentIntensity = Math.min(1, state.current / 30); // 30% = full intensity
+    currentBrainFills[regionKey] = {
+      fill: region.color,
+      opacity: 0.2 + (currentIntensity * 0.6),
+    };
+
+    // Goal brain - full intensity based on goal
+    const goalIntensity = state.goal > 0 ? Math.min(1, state.goal / 30) : 0.3;
+    goalBrainFills[regionKey] = {
+      fill: region.color,
+      opacity: 0.2 + (goalIntensity * 0.6),
+    };
+
+    // Check for misalignment (gap > 5%)
+    const gap = state.goal - state.current;
+    if (gap > 5) {
+      currentBrainFills[regionKey].hasAlert = true;
+      misalignments.push({
+        region: regionKey,
+        name: region.name,
+        current: Math.round(state.current * 10) / 10,
+        goal: Math.round(state.goal * 10) / 10,
+        gap: Math.round(gap * 10) / 10,
+        description: region.description,
+      });
+    }
+  });
+
+  // Sort misalignments by gap
+  misalignments.sort((a, b) => b.gap - a.gap);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold opacity-90">Brain Alignment Visualization</h2>
+            <p className="text-sm opacity-75">Compare your current training state to your ideal goal state</p>
+          </div>
+          <div className="text-right">
+            <p className="text-4xl font-bold">{comparison?.health_score || 0}%</p>
+            <p className="text-sm opacity-75">Brain Health</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Two Brains Side by Side */}
+      <div className="grid grid-cols-2 gap-8">
+        {/* Current Brain */}
+        <div className="bg-white border rounded-xl p-6">
+          <BrainSVG
+            regionFills={currentBrainFills}
+            title="Current State"
+            isGoal={false}
+          />
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500">{comparison?.total_insights || 0} insights trained</p>
+            {misalignments.length > 0 && (
+              <p className="text-sm text-red-500 mt-1">
+                {misalignments.length} region{misalignments.length !== 1 ? 's' : ''} with gaps
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Goal Brain */}
+        <div className="bg-white border rounded-xl p-6">
+          <BrainSVG
+            regionFills={goalBrainFills}
+            title="Goal State"
+            isGoal={true}
+          />
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500">Target brain configuration</p>
+            <p className="text-sm text-green-600 mt-1">Fully aligned state</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Misalignment Alert Section */}
+      {misalignments.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+            <h3 className="font-semibold text-gray-900">Regions Needing Attention</h3>
+          </div>
+          <div className="space-y-3">
+            {misalignments.map((m) => (
+              <div key={m.region} className="bg-white rounded-lg p-4 border border-red-100">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: BRAIN_REGIONS[m.region as keyof typeof BRAIN_REGIONS]?.color }}
+                    />
+                    <span className="font-medium text-gray-900">{m.name}</span>
+                  </div>
+                  <span className="text-red-600 font-medium">-{m.gap}%</span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{m.description}</p>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-blue-600">Current: {m.current}%</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                  <span className="text-green-600">Goal: {m.goal}%</span>
+                </div>
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">
+                    Related categories: {BRAIN_REGIONS[m.region as keyof typeof BRAIN_REGIONS]?.categories.slice(0, 3).join(', ')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {misalignments.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-yellow-600" />
+            <h3 className="font-semibold text-gray-900">Recommendations to Fill Gaps</h3>
+          </div>
+          <div className="space-y-3">
+            {misalignments.slice(0, 3).map((m) => {
+              const region = BRAIN_REGIONS[m.region as keyof typeof BRAIN_REGIONS];
+              return (
+                <div key={m.region} className="bg-white rounded-lg p-4 border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium text-gray-900">Strengthen {m.name}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Process more videos with content about: {region?.categories.slice(0, 4).map(c => c.replace(/_/g, ' ')).join(', ')}
+                  </p>
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {getSuggestedChannels(m.region).map((suggestion, i) => (
+                      <span key={i} className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">
+                        {suggestion}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="bg-gray-50 border rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Brain Region Legend</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.entries(BRAIN_REGIONS).map(([key, region]) => (
+            <div key={key} className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: region.color }}
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">{region.name}</p>
+                <p className="text-xs text-gray-500">{region.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Health Score Explanation */}
+      {misalignments.length === 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+          <h3 className="font-semibold text-green-700 mb-2">Brain is Well-Aligned!</h3>
+          <p className="text-sm text-green-600">
+            Your current training data matches your goal configuration. Keep monitoring as you add more content.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Helper function to suggest channels based on brain region
+function getSuggestedChannels(region: string): string[] {
+  const suggestions: Record<string, string[]> = {
+    prefrontal: ['Philosophy channels', 'Decision making podcasts', 'CBT therapy content'],
+    temporal: ['Communication skills', 'Relationship therapy', 'Social psychology'],
+    limbic: ['Joy & gratitude content', 'Positive psychology', 'Mindfulness channels'],
+    amygdala: ['Anxiety management', 'Trauma recovery', 'Emotional regulation'],
+    hippocampus: ['Personal growth', 'Life coaching', 'Wisdom traditions'],
+    parietal: ['Somatic therapy', 'Body-based healing', 'Mind-body connection'],
+    occipital: ['Creativity channels', 'Spiritual content', 'Meaning & purpose'],
+    brainstem: ['Coping strategies', 'Boundaries content', 'Self-care'],
+  };
+  return suggestions[region] || ['Wellness content'];
+}
+
+// ============================================================================
 // PROMPT LAB TAB
 // ============================================================================
 
@@ -847,9 +1338,10 @@ function PromptLabTab() {
 // ============================================================================
 
 export default function BrainStudioPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('goals');
+  const [activeTab, setActiveTab] = useState<TabType>('visualization');
 
   const tabs: { id: TabType; label: string; icon: any }[] = [
+    { id: 'visualization', label: 'Brain View', icon: Brain },
     { id: 'goals', label: 'Goals', icon: Target },
     { id: 'philosophy', label: 'Philosophy', icon: FileText },
     { id: 'tenants', label: 'Tenants', icon: Shield },
@@ -892,6 +1384,7 @@ export default function BrainStudioPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
+        {activeTab === 'visualization' && <BrainVisualizationTab />}
         {activeTab === 'goals' && <GoalsTab />}
         {activeTab === 'philosophy' && <PhilosophyTab />}
         {activeTab === 'tenants' && <TenantsTab />}

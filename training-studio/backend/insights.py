@@ -284,7 +284,20 @@ Extract {max_insights} high-quality texture markers. Return ONLY the JSON."""
             elif "```" in response_text:
                 json_text = response_text.split("```")[1].split("```")[0]
 
-            data = json.loads(json_text.strip())
+            json_text = json_text.strip()
+
+            # Clean up common JSON issues from LLM responses
+            import re
+            # Remove trailing commas before ] or }
+            json_text = re.sub(r',(\s*[\]}])', r'\1', json_text)
+            # Remove any remaining backticks
+            json_text = json_text.replace('`', '')
+            # Fix double commas
+            json_text = re.sub(r',\s*,', ',', json_text)
+
+            logger.info(f"[Insights] Cleaned JSON length: {len(json_text)} chars")
+
+            data = json.loads(json_text)
 
             # Handle both old format (insights) and new format (extractions)
             items = data.get("extractions", data.get("insights", []))
