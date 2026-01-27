@@ -106,6 +106,7 @@ class ProcessingJobModel(Base):
     therapeutic_approach = Column(String, nullable=True)
     emotional_arc_json = Column(JSON, nullable=True)
     aliveness_scores_json = Column(JSON, nullable=True)
+    component_status_json = Column(JSON, nullable=True)  # Tracks status of each processing component
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
