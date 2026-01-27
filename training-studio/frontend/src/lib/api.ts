@@ -174,6 +174,18 @@ export async function fetchJobs(): Promise<ProcessingJob[]> {
   return res.json();
 }
 
+export async function cancelJob(jobId: string): Promise<{ message: string; job_id?: string; status?: string }> {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to cancel job');
+  return res.json();
+}
+
+export async function removeJob(jobId: string): Promise<{ message: string; job_id?: string }> {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to remove job');
+  return res.json();
+}
+
 export async function fetchInsights(
   status?: string,
   category?: string,
@@ -959,6 +971,82 @@ export async function fetchChannelsForCategory(category: string): Promise<{
 }> {
   const res = await fetch(`${API_BASE}/brain-studio/channels-for-category/${encodeURIComponent(category)}`);
   if (!res.ok) throw new Error('Failed to fetch channels for category');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - TRAINING ROADMAP
+// ============================================================================
+
+export interface TrainingRecommendation {
+  priority: 'critical' | 'high' | 'medium' | 'warning';
+  action: string;
+  detail: string;
+  suggestion: string;
+}
+
+export interface TierChannelRecommendation {
+  name: string;
+  url: string;
+  why: string;
+}
+
+export interface TierRecommendation {
+  name: string;
+  description: string;
+  quality_multiplier: number;
+  max_percentage?: number;
+  examples: Array<{ name: string; note: string }>;
+  youtube_channels: TierChannelRecommendation[];
+}
+
+export interface TrainingRoadmap {
+  current_stats: {
+    total_insights: number;
+    dialogue_chains: number;
+    avg_quality_score: number;
+    avg_burstiness: number | null;
+    contractions_percentage: number;
+    tentative_language_percentage: number;
+  };
+  progress: {
+    minimum_viable: number;
+    therapeutic_competence: number;
+    optimal: number;
+    dialogue_chains: number;
+  };
+  needed: {
+    to_minimum: number;
+    to_therapeutic: number;
+    to_optimal: number;
+    dialogue_chains_needed: number;
+  };
+  videos_needed: {
+    to_minimum: number;
+    to_therapeutic: number;
+    to_optimal: number;
+  };
+  milestones: {
+    minimum_viable: number;
+    therapeutic_competence: number;
+    optimal: number;
+    saturation: number;
+    dialogue_chains_min: number;
+    dialogue_chains_optimal: number;
+  };
+  current_phase: 'building' | 'minimum_viable' | 'therapeutic_competence' | 'optimal';
+  phase_description: string;
+  empathy_distribution: Record<string, number>;
+  tier_distribution: Record<string, number>;
+  tier_5_percentage: number;
+  tier_5_warning: boolean;
+  recommendations: TrainingRecommendation[];
+  channel_recommendations: Record<string, TierRecommendation>;
+}
+
+export async function fetchTrainingRoadmap(): Promise<TrainingRoadmap> {
+  const res = await fetch(`${API_BASE}/brain-studio/training-roadmap`);
+  if (!res.ok) throw new Error('Failed to fetch training roadmap');
   return res.json();
 }
 

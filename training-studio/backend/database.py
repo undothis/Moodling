@@ -60,6 +60,15 @@ class ChannelModel(Base):
     include_in_training = Column(Boolean, default=True)  # Quick toggle to exclude from exports
     notes = Column(Text, nullable=True)  # Notes about this channel's contribution
 
+    # Data Source Tier (per LIMA research - quality hierarchy)
+    # Tier 1: Real therapy transcripts (highest value)
+    # Tier 2: Peer support conversations
+    # Tier 3: Structured therapeutic content
+    # Tier 4: YouTube therapy/coaching (default)
+    # Tier 5: Movies/entertainment (use sparingly)
+    data_source_tier = Column(Integer, default=4)  # 1-5, lower = higher quality
+    tier_notes = Column(String, nullable=True)  # Why this tier was assigned
+
     # Relationships
     videos = relationship("VideoModel", back_populates="channel")
 
@@ -171,6 +180,20 @@ class InsightModel(Base):
 
     # Raw quote from source
     raw_quote = Column(Text, nullable=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # EMPATHY COMPONENT TRACKING (per EPITOME framework)
+    # ══════════════════════════════════════════════════════════════════════════
+    empathy_type = Column(String, nullable=True)  # emotional_reaction, interpretation, exploration
+    # emotional_reaction: expressing warmth, compassion
+    # interpretation: paraphrasing feelings, reflecting
+    # exploration: asking questions, probing deeper
+
+    # Quality metrics for humanness
+    burstiness_score = Column(Float, nullable=True)  # Sentence length variation (higher = more human)
+    has_contractions = Column(Boolean, default=False)  # Contains I'm, don't, etc.
+    has_tentative_language = Column(Boolean, default=False)  # Contains "I wonder", "maybe", "it seems"
+    is_dialogue_chain = Column(Boolean, default=False)  # Part of multi-turn conversation
 
     # Status
     status = Column(String, default="pending")  # pending, approved, rejected
@@ -312,6 +335,16 @@ def _run_migrations(conn):
         ("channels", "influence_weight", "REAL DEFAULT 1.0"),
         ("channels", "include_in_training", "INTEGER DEFAULT 1"),
         ("channels", "notes", "TEXT"),
+        # New columns for LIMA research training roadmap
+        ("channels", "data_source_tier", "INTEGER DEFAULT 4"),
+        ("channels", "tier_notes", "TEXT"),
+        ("processing_jobs", "component_status_json", "TEXT"),
+        ("processing_jobs", "insights_count", "INTEGER DEFAULT 0"),
+        ("insights", "empathy_type", "TEXT"),
+        ("insights", "burstiness_score", "REAL"),
+        ("insights", "has_contractions", "INTEGER DEFAULT 0"),
+        ("insights", "has_tentative_language", "INTEGER DEFAULT 0"),
+        ("insights", "is_dialogue_chain", "INTEGER DEFAULT 0"),
     ]
 
     for table_name, column_name, column_def in columns_to_add:

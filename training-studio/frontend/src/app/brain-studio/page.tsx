@@ -25,6 +25,7 @@ import {
   fetchBrainComparison,
   fetchBrainCategories,
   testPromptInLab,
+  fetchTrainingRoadmap,
 } from '@/lib/api';
 import {
   Brain,
@@ -56,10 +57,20 @@ import {
   ExternalLink,
   Lightbulb,
   Video,
+  Map,
+  Heart,
+  MessageCircle,
+  HelpCircle,
+  Star,
+  Youtube,
+  Database,
+  Rocket,
+  Award,
+  Zap,
 } from 'lucide-react';
 import clsx from 'clsx';
 
-type TabType = 'philosophy' | 'tenants' | 'compliance' | 'influence' | 'goals' | 'visualization' | 'prompt-lab';
+type TabType = 'philosophy' | 'tenants' | 'compliance' | 'influence' | 'goals' | 'visualization' | 'prompt-lab' | 'roadmap';
 
 // ============================================================================
 // PHILOSOPHY TAB
@@ -1710,13 +1721,470 @@ function PromptLabTab() {
 }
 
 // ============================================================================
+// TRAINING ROADMAP TAB - LIMA Research Based Progress Tracking
+// ============================================================================
+
+function TrainingRoadmapTab() {
+  const { data: roadmap, isLoading, error } = useQuery({
+    queryKey: ['training-roadmap'],
+    queryFn: fetchTrainingRoadmap,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <span className="ml-3 text-gray-500">Loading training roadmap...</span>
+      </div>
+    );
+  }
+
+  if (error || !roadmap) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+        <p className="text-red-700 font-medium">Failed to load training roadmap</p>
+        <p className="text-red-500 text-sm mt-1">Make sure the backend is running</p>
+      </div>
+    );
+  }
+
+  const phaseColors = {
+    building: 'from-orange-500 to-red-500',
+    minimum_viable: 'from-yellow-500 to-orange-500',
+    therapeutic_competence: 'from-blue-500 to-purple-500',
+    optimal: 'from-green-500 to-teal-500',
+  };
+
+  const phaseIcons = {
+    building: Rocket,
+    minimum_viable: Award,
+    therapeutic_competence: Heart,
+    optimal: Star,
+  };
+
+  const PhaseIcon = phaseIcons[roadmap.current_phase];
+
+  // Calculate empathy percentages
+  const empathyTotal = Object.values(roadmap.empathy_distribution).reduce((a, b) => a + b, 0);
+  const empathyTypes = [
+    { key: 'emotional_reaction', label: 'Emotional Reaction', icon: Heart, color: 'bg-pink-500', description: 'Warmth, compassion, validation' },
+    { key: 'interpretation', label: 'Interpretation', icon: MessageCircle, color: 'bg-blue-500', description: 'Reflective paraphrasing' },
+    { key: 'exploration', label: 'Exploration', icon: HelpCircle, color: 'bg-green-500', description: 'Probing questions, curiosity' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Current Phase Banner */}
+      <div className={clsx(
+        "rounded-xl p-6 text-white",
+        `bg-gradient-to-r ${phaseColors[roadmap.current_phase]}`
+      )}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+              <PhaseIcon className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-sm opacity-75 uppercase tracking-wide">Current Phase</p>
+              <h2 className="text-2xl font-bold capitalize">
+                {roadmap.current_phase.replace(/_/g, ' ')}
+              </h2>
+              <p className="text-sm opacity-90 mt-1">{roadmap.phase_description}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-5xl font-bold">{roadmap.current_stats.total_insights}</p>
+            <p className="text-sm opacity-75">Total Insights</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Milestone Progress */}
+      <div className="bg-white border rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Target className="w-5 h-5 text-purple-500" />
+          Training Milestones (LIMA Research)
+        </h3>
+        <div className="space-y-4">
+          {/* Minimum Viable */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Minimum Viable</span>
+                <span className="text-xs text-gray-500">(1,000 insights)</span>
+              </div>
+              <span className={clsx(
+                "font-medium",
+                roadmap.progress.minimum_viable >= 100 ? "text-green-600" : "text-gray-600"
+              )}>
+                {roadmap.progress.minimum_viable}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 relative">
+              <div
+                className={clsx(
+                  "h-3 rounded-full transition-all",
+                  roadmap.progress.minimum_viable >= 100 ? "bg-green-500" : "bg-yellow-500"
+                )}
+                style={{ width: `${Math.min(100, roadmap.progress.minimum_viable)}%` }}
+              />
+              {roadmap.needed.to_minimum > 0 && (
+                <span className="absolute right-0 top-4 text-xs text-gray-500">
+                  Need {roadmap.needed.to_minimum} more (~{roadmap.videos_needed.to_minimum} videos)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Therapeutic Competence */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Therapeutic Competence</span>
+                <span className="text-xs text-gray-500">(2,000 insights)</span>
+              </div>
+              <span className={clsx(
+                "font-medium",
+                roadmap.progress.therapeutic_competence >= 100 ? "text-green-600" : "text-gray-600"
+              )}>
+                {roadmap.progress.therapeutic_competence}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 relative">
+              <div
+                className={clsx(
+                  "h-3 rounded-full transition-all",
+                  roadmap.progress.therapeutic_competence >= 100 ? "bg-green-500" : "bg-blue-500"
+                )}
+                style={{ width: `${Math.min(100, roadmap.progress.therapeutic_competence)}%` }}
+              />
+              {roadmap.needed.to_therapeutic > 0 && (
+                <span className="absolute right-0 top-4 text-xs text-gray-500">
+                  Need {roadmap.needed.to_therapeutic} more (~{roadmap.videos_needed.to_therapeutic} videos)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Optimal */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Optimal Training</span>
+                <span className="text-xs text-gray-500">(5,000 insights)</span>
+              </div>
+              <span className={clsx(
+                "font-medium",
+                roadmap.progress.optimal >= 100 ? "text-green-600" : "text-gray-600"
+              )}>
+                {roadmap.progress.optimal}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 relative">
+              <div
+                className={clsx(
+                  "h-3 rounded-full transition-all",
+                  roadmap.progress.optimal >= 100 ? "bg-green-500" : "bg-purple-500"
+                )}
+                style={{ width: `${Math.min(100, roadmap.progress.optimal)}%` }}
+              />
+              {roadmap.needed.to_optimal > 0 && (
+                <span className="absolute right-0 top-4 text-xs text-gray-500">
+                  Need {roadmap.needed.to_optimal} more (~{roadmap.videos_needed.to_optimal} videos)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Dialogue Chains */}
+          <div className="border-t pt-4 mt-4">
+            <div className="flex justify-between text-sm mb-1">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-purple-500" />
+                <span className="font-medium">Dialogue Chains</span>
+                <span className="text-xs text-gray-500">(min 30, optimal 100)</span>
+              </div>
+              <span className="font-medium text-gray-600">
+                {roadmap.current_stats.dialogue_chains} / {roadmap.milestones.dialogue_chains_optimal}
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3">
+              <div
+                className={clsx(
+                  "h-3 rounded-full transition-all",
+                  roadmap.progress.dialogue_chains >= 100 ? "bg-green-500" : "bg-indigo-500"
+                )}
+                style={{ width: `${Math.min(100, roadmap.progress.dialogue_chains)}%` }}
+              />
+            </div>
+            {roadmap.needed.dialogue_chains_needed > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Need {roadmap.needed.dialogue_chains_needed} more dialogue chains for multi-turn competence
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quality Stats & Empathy Distribution Side by Side */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Quality Metrics */}
+        <div className="bg-white border rounded-xl p-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-500" />
+            Quality Metrics
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Average Quality Score</span>
+              <span className={clsx(
+                "font-bold text-lg",
+                roadmap.current_stats.avg_quality_score >= 80 ? "text-green-600" :
+                roadmap.current_stats.avg_quality_score >= 60 ? "text-yellow-600" : "text-red-600"
+              )}>
+                {roadmap.current_stats.avg_quality_score}%
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Has Contractions</span>
+              <span className="font-medium text-gray-900">
+                {roadmap.current_stats.contractions_percentage}%
+                <span className="text-xs text-gray-500 ml-1">(human-like)</span>
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Tentative Language</span>
+              <span className="font-medium text-gray-900">
+                {roadmap.current_stats.tentative_language_percentage}%
+                <span className="text-xs text-gray-500 ml-1">(therapeutic)</span>
+              </span>
+            </div>
+            {roadmap.current_stats.avg_burstiness !== null && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Burstiness Score</span>
+                <span className="font-medium text-gray-900">
+                  {roadmap.current_stats.avg_burstiness}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Empathy Distribution (EPITOME Framework) */}
+        <div className="bg-white border rounded-xl p-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-pink-500" />
+            Empathy Distribution (EPITOME)
+          </h3>
+          {empathyTotal === 0 ? (
+            <p className="text-gray-500 text-sm">No empathy classifications yet. Process more videos to see distribution.</p>
+          ) : (
+            <div className="space-y-3">
+              {empathyTypes.map(({ key, label, icon: Icon, color, description }) => {
+                const count = roadmap.empathy_distribution[key] || 0;
+                const percentage = empathyTotal > 0 ? Math.round((count / empathyTotal) * 100) : 0;
+                const isLow = percentage < 20;
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium">{label}</span>
+                      </div>
+                      <span className={clsx("font-medium", isLow ? "text-yellow-600" : "text-gray-900")}>
+                        {percentage}% ({count})
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className={clsx("h-2 rounded-full", color)} style={{ width: `${percentage}%` }} />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                  </div>
+                );
+              })}
+              {roadmap.empathy_distribution.unclassified > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  + {roadmap.empathy_distribution.unclassified} unclassified insights
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Data Source Tier Distribution */}
+      <div className="bg-white border rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Database className="w-5 h-5 text-blue-500" />
+          Data Source Tier Distribution
+        </h3>
+
+        {roadmap.tier_5_warning && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-yellow-800 font-medium">Entertainment Content Warning</p>
+              <p className="text-yellow-700 text-sm">
+                Tier 5 (movies/entertainment) is at {roadmap.tier_5_percentage}%. Should be &lt;15% for quality training.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((tier) => {
+            const count = roadmap.tier_distribution[`tier_${tier}`] || 0;
+            const percentage = roadmap.current_stats.total_insights > 0
+              ? Math.round((count / roadmap.current_stats.total_insights) * 100)
+              : 0;
+            const tierInfo = roadmap.channel_recommendations[tier];
+            const tierColors = [
+              'bg-green-500', // Tier 1
+              'bg-teal-500',  // Tier 2
+              'bg-blue-500',  // Tier 3
+              'bg-purple-500', // Tier 4
+              'bg-orange-500', // Tier 5
+            ];
+            const isWarning = tier === 5 && percentage > 15;
+            return (
+              <div key={tier} className={clsx(
+                "bg-gray-50 rounded-lg p-3 text-center",
+                isWarning && "ring-2 ring-yellow-500"
+              )}>
+                <div className={clsx("w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold", tierColors[tier - 1])}>
+                  {tier}
+                </div>
+                <p className="text-xs text-gray-500 truncate" title={tierInfo?.name}>
+                  {tierInfo?.name?.split(' ')[0] || `Tier ${tier}`}
+                </p>
+                <p className="text-lg font-bold text-gray-900">{count}</p>
+                <p className="text-xs text-gray-500">{percentage}%</p>
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          Tier 1 = Highest quality (real therapy), Tier 5 = Entertainment (use sparingly &lt;15%)
+        </p>
+      </div>
+
+      {/* Recommendations */}
+      {roadmap.recommendations.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-yellow-600" />
+            Recommendations
+          </h3>
+          <div className="space-y-3">
+            {roadmap.recommendations.map((rec, idx) => {
+              const priorityColors = {
+                critical: 'bg-red-100 border-red-300 text-red-800',
+                high: 'bg-orange-100 border-orange-300 text-orange-800',
+                medium: 'bg-blue-100 border-blue-300 text-blue-800',
+                warning: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+              };
+              const priorityIcons = {
+                critical: AlertTriangle,
+                high: TrendingUp,
+                medium: Target,
+                warning: AlertTriangle,
+              };
+              const Icon = priorityIcons[rec.priority];
+              return (
+                <div key={idx} className={clsx("rounded-lg border p-4", priorityColors[rec.priority])}>
+                  <div className="flex items-start gap-3">
+                    <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">{rec.action}</p>
+                      <p className="text-sm mt-1 opacity-80">{rec.detail}</p>
+                      <p className="text-sm mt-2">
+                        <span className="font-medium">Suggestion:</span> {rec.suggestion}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Channel Recommendations by Tier */}
+      <div className="bg-white border rounded-xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Youtube className="w-5 h-5 text-red-500" />
+          Recommended Channels by Tier
+        </h3>
+        <div className="space-y-4">
+          {Object.entries(roadmap.channel_recommendations).map(([tierKey, tier]) => {
+            const tierNum = parseInt(tierKey);
+            if (!tier.youtube_channels || tier.youtube_channels.length === 0) return null;
+            return (
+              <div key={tierKey} className="border-b pb-4 last:border-0 last:pb-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={clsx(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold",
+                    tierNum === 1 ? "bg-green-500" :
+                    tierNum === 2 ? "bg-teal-500" :
+                    tierNum === 3 ? "bg-blue-500" :
+                    tierNum === 4 ? "bg-purple-500" : "bg-orange-500"
+                  )}>
+                    {tierNum}
+                  </span>
+                  <span className="font-medium text-gray-900">{tier.name}</span>
+                  <span className="text-xs text-gray-500">({tier.quality_multiplier}x quality)</span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{tier.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  {tier.youtube_channels.map((channel, idx) => (
+                    <a
+                      key={idx}
+                      href={`https://youtube.com/${channel.url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <Youtube className="w-4 h-4 text-gray-400 group-hover:text-red-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 group-hover:text-red-600">
+                          {channel.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{channel.why}</p>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-gray-300 group-hover:text-red-400" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Action Button */}
+      <div className="flex justify-center">
+        <Link
+          href="/channels"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-colors font-medium"
+        >
+          <Plus className="w-5 h-5" />
+          Add Channels & Process Videos
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN PAGE
 // ============================================================================
 
 export default function BrainStudioPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('visualization');
+  const [activeTab, setActiveTab] = useState<TabType>('roadmap');
 
   const tabs: { id: TabType; label: string; icon: any }[] = [
+    { id: 'roadmap', label: 'Roadmap', icon: Map },
     { id: 'visualization', label: 'Brain View', icon: Brain },
     { id: 'goals', label: 'Goals', icon: Target },
     { id: 'philosophy', label: 'Philosophy', icon: FileText },
@@ -1760,6 +2228,7 @@ export default function BrainStudioPage() {
 
       {/* Tab Content */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
+        {activeTab === 'roadmap' && <TrainingRoadmapTab />}
         {activeTab === 'visualization' && <BrainVisualizationTab />}
         {activeTab === 'goals' && <GoalsTab />}
         {activeTab === 'philosophy' && <PhilosophyTab />}

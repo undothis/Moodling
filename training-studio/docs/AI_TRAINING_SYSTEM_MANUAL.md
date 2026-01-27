@@ -128,8 +128,8 @@ HF_TOKEN=hf_your-token-here
 6. [Advanced Research Methods](#6-advanced-research-methods)
 7. [Data Persistence & Backup](#7-data-persistence--backup)
 8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
-9. [Brain Studio & Visualization](#9-brain-studio--visualization)
-10. [Dashboard & Processing Monitor](#10-dashboard--processing-monitor) ⭐ **NEW**
+9. [Brain Studio & Visualization](#9-brain-studio--visualization) ⭐ **INCLUDES NEW ROADMAP**
+10. [Dashboard & Processing Monitor](#10-dashboard--processing-monitor)
 11. [Llama Integration](#11-llama-integration)
 12. [Status Monitoring](#12-status-monitoring)
 13. [Admin Interfaces Reference](#13-admin-interfaces-reference)
@@ -1512,6 +1512,175 @@ Training Gaps now includes **intelligent video suggestions**:
 - Example: 100 insights, 10% gap = ~3 videos needed
 
 Use these suggestions to prioritize which channels to process first.
+
+### 9.9 Training Roadmap - LIMA Research-Based Progress Tracking ⭐ NEW
+
+The **Training Roadmap** tab provides comprehensive guidance for building a complete therapeutic AI brain based on the LIMA (Less Is More for Alignment) research. It tracks your progress toward optimal training milestones and suggests specific channels to process.
+
+#### Opening the Roadmap Tab
+1. Go to **Brain Studio** in the navigation
+2. Click the **Roadmap** tab (first tab on the left)
+
+#### Why LIMA Research Matters
+
+The LIMA research demonstrates that **quality of training data matters more than quantity**. For therapeutic AI:
+
+| Milestone | Insights Needed | What You Get |
+|-----------|-----------------|--------------|
+| **Minimum Viable** | 1,000 | Basic therapeutic responses |
+| **Therapeutic Competence** | 2,000 | Reliable, nuanced conversations |
+| **Optimal** | 5,000 | Full therapeutic capability |
+| **Saturation** | 6,500+ | Diminishing returns |
+
+**Key insight**: With 2,000-5,000 high-quality, curated insights, you can achieve therapeutic AI performance comparable to models trained on 100x more uncurated data.
+
+#### Training Phases
+
+The roadmap shows your current phase:
+
+| Phase | Color | Description |
+|-------|-------|-------------|
+| **Building** | Orange/Red | Below 1,000 insights - focus on quantity |
+| **Minimum Viable** | Yellow/Orange | 1,000-2,000 insights - focus on quality and diversity |
+| **Therapeutic Competence** | Blue/Purple | 2,000-5,000 insights - you're ready for fine-tuning |
+| **Optimal** | Green/Teal | 5,000+ insights - excellent training foundation |
+
+#### Milestone Progress Bars
+
+Each progress bar shows:
+- **Percentage complete** toward the milestone
+- **Insights needed** to reach the milestone
+- **Estimated videos** to process (~4 insights per video average)
+
+#### Dialogue Chains
+
+Multi-turn conversation examples are critical for therapeutic AI:
+
+| Target | Count | Purpose |
+|--------|-------|---------|
+| **Minimum** | 30 chains | Basic conversation flow |
+| **Optimal** | 100 chains | Natural multi-turn competence |
+
+**What are dialogue chains?** Sequential exchanges showing how a conversation evolves (greeting → problem statement → exploration → reflection → action).
+
+#### Data Source Tier System
+
+Not all training data is equal. The tier system helps you prioritize quality:
+
+| Tier | Name | Quality Multiplier | Max % | Examples |
+|------|------|-------------------|-------|----------|
+| **1** | Real Therapy Transcripts | 2.0x | Unlimited | MentalChat16K, EPITOME dataset |
+| **2** | Peer Support Conversations | 1.5x | Unlimited | HealthyGamerGG, Soft White Underbelly |
+| **3** | Structured Therapeutic Content | 1.2x | Unlimited | Therapy in a Nutshell, Kati Morton, Dr. Ramani |
+| **4** | YouTube Therapy/Coaching | 1.0x | Unlimited | Brené Brown, Mel Robbins, Jay Shetty |
+| **5** | Movies/Entertainment | 0.5x | **15% MAX** | The Moth, StoryCorps |
+
+**Critical Rule**: Keep Tier 5 (entertainment) content below 15% to avoid scripted responses.
+
+#### Empathy Distribution (EPITOME Framework)
+
+The EPITOME framework identifies three types of empathetic responses:
+
+| Type | Icon | What It Is | Target |
+|------|------|------------|--------|
+| **Emotional Reaction** | Heart | Warmth, compassion, validation | ~33% |
+| **Interpretation** | Message | Reflective paraphrasing, naming emotions | ~33% |
+| **Exploration** | Question | Probing questions, curiosity | ~33% |
+
+A well-balanced therapeutic AI needs all three types. If one is below 20%, the roadmap will recommend channels that emphasize that empathy style.
+
+#### Quality Metrics
+
+The roadmap tracks key quality indicators:
+
+| Metric | What It Measures | Ideal Value |
+|--------|------------------|-------------|
+| **Average Quality Score** | Overall insight quality | 80%+ |
+| **Has Contractions** | Human-like language ("I'm" vs "I am") | Higher = more natural |
+| **Tentative Language** | Therapeutic phrasing ("perhaps", "I wonder") | Higher = more therapeutic |
+| **Burstiness Score** | Sentence length variation | Higher = more human-like |
+
+#### Recommendations Section
+
+The roadmap provides prioritized recommendations:
+
+| Priority | Color | Meaning |
+|----------|-------|---------|
+| **Critical** | Red | Blocking issue - must address first |
+| **High** | Orange | Important for quality |
+| **Medium** | Blue | Would improve results |
+| **Warning** | Yellow | Something to watch |
+
+Each recommendation includes:
+- **Action**: What to do
+- **Detail**: Specific numbers and context
+- **Suggestion**: Concrete next step
+
+#### Recommended Channels by Tier
+
+The roadmap includes curated channel recommendations organized by tier:
+
+**Tier 2 - Peer Support:**
+- **HealthyGamerGG** (@HealthyGamerGG) - Dr. K's authentic peer-style therapeutic conversations
+- **Soft White Underbelly** (@SoftWhiteUnderbelly) - Raw life stories, authentic human experience
+
+**Tier 3 - Structured Therapeutic:**
+- **Therapy in a Nutshell** (@TherapyinaNutshell) - Licensed LMFT, evidence-based techniques
+- **Kati Morton** (@KatiMorton) - Licensed therapist, accessible mental health
+- **Dr. Ramani** (@DoctorRamani) - Clinical psychology, emotional healing
+- **Psychology In Seattle** (@PsychologyInSeattle) - Dr. Kirk Honda, nuanced emotional analysis
+- **Tara Brach** (@TaraBrach) - Self-compassion, mindfulness
+
+**Tier 4 - Coaching/Self-Help:**
+- **Brené Brown** (@BreneBrown) - Vulnerability research
+- **Mel Robbins** (@melrobbins) - Personal growth without toxic positivity
+- **Jay Shetty** (@JayShetty) - Wisdom traditions, meaning
+- **Diary of a CEO** (@TheDiaryOfACEO) - Deep conversations on vulnerability
+
+**Tier 5 - Entertainment (use sparingly):**
+- **The Moth** (@TheMoth) - True stories with emotional range
+- **StoryCorps** (@storycorps) - Personal narratives
+
+#### Roadmap Workflow
+
+Follow this workflow to build a complete therapeutic brain:
+
+1. **Check your current phase** - Where are you now?
+2. **Review milestone progress** - How many more insights do you need?
+3. **Check tier distribution** - Are you balanced across quality tiers?
+4. **Check empathy distribution** - Do you have all three types?
+5. **Review recommendations** - What should you focus on?
+6. **Add suggested channels** - Click through to add recommended channels
+7. **Process videos** - Target channels that fill your gaps
+8. **Return to roadmap** - Monitor progress and repeat
+
+#### Example: Building a Complete Brain
+
+**Starting Point**: 0 insights
+
+**Phase 1: Building (0 → 1,000)**
+1. Add 2-3 Tier 3 channels (Therapy in a Nutshell, Kati Morton)
+2. Add 1-2 Tier 2 channels (HealthyGamerGG)
+3. Process ~250 videos
+4. Expected insights: ~1,000
+
+**Phase 2: Minimum Viable (1,000 → 2,000)**
+1. Check empathy distribution - add channels to balance
+2. Add more diverse Tier 3-4 channels
+3. Process ~250 more videos
+4. Start reviewing quality metrics
+
+**Phase 3: Therapeutic Competence (2,000 → 5,000)**
+1. Focus on dialogue chains (process interview-style content)
+2. Balance tier distribution
+3. Process ~750 more videos
+4. Monitor quality scores
+
+**Phase 4: Optimal (5,000+)**
+1. Fine-tune empathy balance
+2. Add any missing emotional categories
+3. Consider Tier 1 data if available
+4. Ready for model fine-tuning!
 
 ---
 
