@@ -8,7 +8,10 @@ import {
   deleteChannel,
   fetchRecommendedChannels,
   getAIChannelRecommendations,
+  fetchChannelVideos,
+  processVideoSimple,
   AIChannelRecommendation,
+  Video as VideoType,
 } from '@/lib/api';
 import {
   Plus,
@@ -27,6 +30,9 @@ import {
   MessageSquare,
   Lightbulb,
   CheckCircle,
+  Play,
+  Video,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -132,12 +138,170 @@ function AddChannelModal({
   );
 }
 
+function BrowseVideosModal({
+  isOpen,
+  onClose,
+  channel,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  channel: any;
+}) {
+  const queryClient = useQueryClient();
+  const [videoCount, setVideoCount] = useState(20);
+  const [processingVideos, setProcessingVideos] = useState<Set<string>>(new Set());
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['channel-videos', channel?.id, videoCount],
+    queryFn: () => fetchChannelVideos(channel.id, videoCount),
+    enabled: isOpen && !!channel?.id,
+  });
+
+  const { mutate: startProcessing } = useMutation({
+    mutationFn: (videoId: string) => processVideoSimple(`https://youtube.com/watch?v=${videoId}`),
+    onMutate: (videoId) => {
+      setProcessingVideos((prev) => new Set(prev).add(videoId));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+    onSettled: (_, __, videoId) => {
+      setTimeout(() => {
+        setProcessingVideos((prev) => {
+          const next = new Set(prev);
+          next.delete(videoId);
+          return next;
+        });
+      }, 2000);
+    },
+  });
+
+  const processAll = () => {
+    data?.videos?.forEach((video) => {
+      if (!processingVideos.has(video.video_id)) {
+        startProcessing(video.video_id);
+      }
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold">Browse Videos</h2>
+            <p className="text-sm text-gray-500">{channel?.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Show:</span>
+            <select
+              value={videoCount}
+              onChange={(e) => setVideoCount(Number(e.target.value))}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value={10}>10 videos</option>
+              <option value={20}>20 videos</option>
+              <option value={50}>50 videos</option>
+              <option value={100}>100 videos</option>
+            </select>
+          </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+          >
+            Refresh
+          </button>
+          {data?.videos && data.videos.length > 0 && (
+            <button
+              onClick={processAll}
+              className="px-4 py-1.5 text-sm bg-leaf-500 text-white rounded-lg hover:bg-leaf-600 flex items-center gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Process All ({data.videos.length})
+            </button>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+          ) : !data?.videos || data.videos.length === 0 ? (
+            <div className="text-center py-12">
+              <Video className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500">No videos found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {data.videos.map((video) => (
+                <div
+                  key={video.video_id}
+                  className="bg-gray-50 rounded-lg p-3 flex items-start gap-3"
+                >
+                  {video.thumbnail_url && (
+                    <img
+                      src={video.thumbnail_url}
+                      alt=""
+                      className="w-24 h-16 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-gray-900 line-clamp-2">
+                      {video.title}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {video.duration_seconds
+                        ? `${Math.floor(video.duration_seconds / 60)}:${String(
+                            video.duration_seconds % 60
+                          ).padStart(2, '0')}`
+                        : 'Duration unknown'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => startProcessing(video.video_id)}
+                    disabled={processingVideos.has(video.video_id)}
+                    className="px-3 py-1.5 text-xs bg-leaf-500 text-white rounded-lg hover:bg-leaf-600 disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {processingVideos.has(video.video_id) ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Processing
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        Process
+                      </>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChannelCard({
   channel,
   onDelete,
+  onBrowseVideos,
 }: {
   channel: any;
   onDelete: () => void;
+  onBrowseVideos: () => void;
 }) {
   const trustColors: Record<string, string> = {
     low: 'bg-red-100 text-red-700',
@@ -187,7 +351,7 @@ function ChannelCard({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
         <div>
           <p className="text-gray-500">Videos Processed</p>
           <p className="font-semibold text-gray-900">{channel.videos_processed}</p>
@@ -197,6 +361,14 @@ function ChannelCard({
           <p className="font-semibold text-gray-900">{channel.insights_extracted}</p>
         </div>
       </div>
+
+      <button
+        onClick={onBrowseVideos}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-leaf-50 text-leaf-700 rounded-lg hover:bg-leaf-100 transition-colors"
+      >
+        <Video className="w-4 h-4" />
+        Browse Videos
+      </button>
     </div>
   );
 }
@@ -287,6 +459,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function ChannelsPage() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [browseVideoChannel, setBrowseVideoChannel] = useState<any>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showAllRecommended, setShowAllRecommended] = useState(false);
@@ -457,6 +630,7 @@ export default function ChannelsPage() {
               key={channel.id}
               channel={channel}
               onDelete={() => remove(channel.id)}
+              onBrowseVideos={() => setBrowseVideoChannel(channel)}
             />
           ))}
         </div>
@@ -811,6 +985,12 @@ export default function ChannelsPage() {
       <AddChannelModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+      />
+
+      <BrowseVideosModal
+        isOpen={!!browseVideoChannel}
+        onClose={() => setBrowseVideoChannel(null)}
+        channel={browseVideoChannel}
       />
     </div>
   );
