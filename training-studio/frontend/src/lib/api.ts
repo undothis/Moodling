@@ -518,3 +518,381 @@ export async function fetchExtractionVerification(): Promise<ExtractionVerificat
   return res.json();
 }
 
+// ============================================================================
+// BATCH VIDEO PROCESSING
+// ============================================================================
+
+export interface BatchProcessResponse {
+  success: boolean;
+  queued_count: number;
+  jobs: Array<{
+    job_id: string;
+    video_id: string;
+    title: string;
+    status: string;
+  }>;
+  invalid_urls: string[];
+  mode: string;
+}
+
+export async function processBatchVideos(
+  videoUrls: string[],
+  options: { autoApprove?: boolean; simpleMode?: boolean } = {}
+): Promise<BatchProcessResponse> {
+  const res = await fetch(`${API_BASE}/process-batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      video_urls: videoUrls,
+      auto_approve: options.autoApprove ?? false,
+      simple_mode: options.simpleMode ?? true,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to start batch processing');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - PHILOSOPHY & TENANTS
+// ============================================================================
+
+export interface Philosophy {
+  id: string;
+  program_name: string;
+  program_description: string | null;
+  core_philosophy: string | null;
+  updated_at: string | null;
+}
+
+export interface Tenant {
+  id: string;
+  order_index: number;
+  name: string;
+  description: string;
+  category: string;
+  is_active: boolean;
+  created_at: string | null;
+}
+
+export async function fetchPhilosophy(): Promise<Philosophy> {
+  const res = await fetch(`${API_BASE}/brain-studio/philosophy`);
+  if (!res.ok) throw new Error('Failed to fetch philosophy');
+  return res.json();
+}
+
+export async function updatePhilosophy(data: {
+  program_name?: string;
+  program_description?: string;
+  core_philosophy?: string;
+}): Promise<{ success: boolean; philosophy: Philosophy }> {
+  const res = await fetch(`${API_BASE}/brain-studio/philosophy`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update philosophy');
+  return res.json();
+}
+
+export async function fetchTenants(): Promise<{ tenants: Tenant[] }> {
+  const res = await fetch(`${API_BASE}/brain-studio/tenants`);
+  if (!res.ok) throw new Error('Failed to fetch tenants');
+  return res.json();
+}
+
+export async function createTenant(data: {
+  name: string;
+  description: string;
+  category?: string;
+}): Promise<{ success: boolean; tenant: Tenant }> {
+  const res = await fetch(`${API_BASE}/brain-studio/tenants`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create tenant');
+  return res.json();
+}
+
+export async function updateTenant(
+  tenantId: string,
+  data: { name?: string; description?: string; category?: string; is_active?: boolean }
+): Promise<{ success: boolean; tenant: Tenant }> {
+  const res = await fetch(`${API_BASE}/brain-studio/tenants/${tenantId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update tenant');
+  return res.json();
+}
+
+export async function deleteTenant(tenantId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/tenants/${tenantId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete tenant');
+  return res.json();
+}
+
+export async function uploadTenants(
+  tenants: Array<{ name: string; description: string; category?: string }>,
+  replaceExisting: boolean = false
+): Promise<{ success: boolean; created_count: number; tenants: Tenant[] }> {
+  const res = await fetch(`${API_BASE}/brain-studio/tenants/upload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenants, replace_existing: replaceExisting }),
+  });
+  if (!res.ok) throw new Error('Failed to upload tenants');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - COMPLIANCE CHECKING
+// ============================================================================
+
+export interface ComplianceViolation {
+  compliance_id: string;
+  insight_id: string;
+  insight_marker: string;
+  insight_text: string;
+  insight_category: string;
+  tenant_id: string;
+  tenant_name: string;
+  tenant_description: string;
+  alignment_score: number;
+  violation_reason: string;
+  influence_weight: number;
+  is_active: boolean;
+}
+
+export async function checkCompliance(): Promise<{
+  success: boolean;
+  message: string;
+  insights_to_check?: number;
+  tenants_to_check?: number;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/check-compliance`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to start compliance check');
+  return res.json();
+}
+
+export async function fetchViolations(): Promise<{
+  violations: ComplianceViolation[];
+  total: number;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/violations`);
+  if (!res.ok) throw new Error('Failed to fetch violations');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - INFLUENCE & WEIGHTS
+// ============================================================================
+
+export interface BrainInsight {
+  id: string;
+  marker: string;
+  title: string;
+  insight: string;
+  category: string;
+  channel_id: string;
+  video_id: string;
+  influence_weight: number;
+  is_active: boolean;
+  quality_score: number;
+  source_token: string | null;
+}
+
+export interface ChannelInfluence {
+  channel_id: string;
+  channel_name: string;
+  approved_insights: number;
+  influence_weight: number;
+  include_in_training: boolean;
+  weighted_contribution: number;
+  percentage: number;
+  category_distribution: Record<string, number>;
+}
+
+export async function fetchBrainInsights(
+  limit: number = 100,
+  channelId?: string
+): Promise<{ insights: BrainInsight[]; total: number }> {
+  const params = new URLSearchParams({ limit: limit.toString() });
+  if (channelId) params.set('channel_id', channelId);
+  const res = await fetch(`${API_BASE}/brain-studio/insights?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch brain insights');
+  return res.json();
+}
+
+export async function updateInsightWeight(
+  insightId: string,
+  weight: number,
+  isActive: boolean = true
+): Promise<{ success: boolean; insight_id: string; weight: number; is_active: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/insights/${insightId}/weight`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ weight, is_active: isActive }),
+  });
+  if (!res.ok) throw new Error('Failed to update insight weight');
+  return res.json();
+}
+
+export async function fetchChannelInfluence(): Promise<{
+  total_weighted_influence: number;
+  channels: ChannelInfluence[];
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/influence`);
+  if (!res.ok) throw new Error('Failed to fetch channel influence');
+  return res.json();
+}
+
+export async function fetchBrainStatistics(): Promise<{
+  total_insights: number;
+  active_insights: number;
+  total_channels: number;
+  total_tenants: number;
+  total_violations: number;
+  average_weight: number;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/statistics`);
+  if (!res.ok) throw new Error('Failed to fetch brain statistics');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - GOALS & COMPARISON
+// ============================================================================
+
+export interface BrainGoal {
+  id: string;
+  category: string;
+  target_percentage: number;
+  priority: number;
+  description: string | null;
+  recommended_sources: string | null;
+  is_active: boolean;
+}
+
+export interface BrainComparison {
+  total_insights: number;
+  current_state: Record<string, number>;
+  goal_state: Record<string, number>;
+  goals_detail: Record<string, {
+    target: number;
+    priority: number;
+    description: string | null;
+    recommended_sources: string | null;
+  }>;
+  gaps: Array<{
+    category: string;
+    current: number;
+    target: number;
+    gap: number;
+    priority: number;
+    recommended_sources: string | null;
+  }>;
+  health_score: number;
+}
+
+export async function fetchBrainGoals(): Promise<{ goals: BrainGoal[] }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals`);
+  if (!res.ok) throw new Error('Failed to fetch brain goals');
+  return res.json();
+}
+
+export async function createBrainGoal(data: {
+  category: string;
+  target_percentage: number;
+  priority?: number;
+  description?: string;
+  recommended_sources?: string;
+}): Promise<{ success: boolean; goal: BrainGoal }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create goal');
+  return res.json();
+}
+
+export async function updateBrainGoal(
+  goalId: string,
+  data: Partial<BrainGoal>
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals/${goalId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update goal');
+  return res.json();
+}
+
+export async function deleteBrainGoal(goalId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals/${goalId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete goal');
+  return res.json();
+}
+
+export async function fetchBrainComparison(): Promise<BrainComparison> {
+  const res = await fetch(`${API_BASE}/brain-studio/comparison`);
+  if (!res.ok) throw new Error('Failed to fetch brain comparison');
+  return res.json();
+}
+
+export async function fetchBrainCategories(): Promise<{
+  categories: Array<{ name: string; count: number }>;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/categories`);
+  if (!res.ok) throw new Error('Failed to fetch categories');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - PROMPT LAB
+// ============================================================================
+
+export interface PromptLabResult {
+  prompt: string;
+  response: string;
+  influences: Array<{
+    marker: string;
+    title: string;
+    category: string;
+    relevance_score: number;
+    influence_weight: number;
+    snippet: string;
+  }>;
+  total_relevant_insights: number;
+  brain_stats: {
+    total_insights: number;
+    categories_represented: number;
+  };
+}
+
+export async function testPromptInLab(
+  prompt: string,
+  options: { showInfluences?: boolean; systemPrompt?: string } = {}
+): Promise<PromptLabResult> {
+  const res = await fetch(`${API_BASE}/brain-studio/prompt-lab`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      show_influences: options.showInfluences ?? true,
+      system_prompt: options.systemPrompt,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to test prompt');
+  return res.json();
+}
+

@@ -232,12 +232,37 @@ Training Studio can also process movies for rich emotional training data.
 - Facial expression analysis
 - More detailed but requires more dependencies
 
-**Batch Processing**
+**Video Count Selector**
+- Choose how many videos to fetch from a channel (5, 10, 20, 50, 100)
+- Sort by: Balanced, Most Recent, or Most Popular
+- Quickly adjust scope without re-adding channels
+
+**Batch Processing (from channel)**
 - Process multiple videos from a channel at once
 - Click "Batch Process" to enter batch mode
 - Select individual videos or "Select All"
 - Click "Process X Videos" to start batch
 - Videos are queued with automatic pacing to avoid overload
+
+### Batch Video Mode (NEW)
+
+A dedicated page for processing multiple videos by URL:
+
+**Paste Multiple URLs**
+- Paste any number of YouTube URLs (one per line)
+- Supports full URLs, short URLs (youtu.be), and video IDs
+- Auto-detects and validates all URLs
+
+**Batch Processing**
+- All videos are queued and processed in sequence
+- Real-time progress tracking for each video
+- See completed and failed jobs in one view
+- Option to auto-approve quality 85+ insights
+
+**Use Cases**
+- Process a playlist of related videos
+- Quickly add content from multiple sources
+- Bulk import training data from curated video lists
 
 ### Review Insights
 - View extracted insights
@@ -278,6 +303,46 @@ The Tuning page helps you control how each channel influences your training data
 - Track which channel/video each training example came from
 - If your fine-tuned model behaves strangely, trace it back to the source
 - Delete all insights from a problematic channel or video with one click
+
+### Brain Studio (NEW)
+
+A comprehensive dashboard for monitoring and tuning the LLM "brain":
+
+**Philosophy Tab**
+- Define your program's core philosophy
+- Document what your program does
+- Store guiding principles that all training data should align with
+
+**Tenants Tab**
+- Create, edit, and delete core tenants (principles)
+- Categorize tenants: ethics, safety, tone, boundaries, approach
+- Upload tenants from a file (text or JSON)
+- Each tenant describes a principle training data must follow
+
+**Compliance Tab**
+- **"Compare Knowledge to Tenants" button** - Scans all insights against your tenants
+- Shows misaligned insights with violation details
+- Alignment scores (0-100%) for each violation
+- Quick actions: Lower weight, Deactivate, or Delete problematic insights
+- Uses Claude AI to intelligently assess alignment
+
+**Influence Tab**
+- **Channel influence percentages** - See how much each channel affects training
+- **Weight controls** - Adjust influence from 0x to 2x per channel
+- **Include/Exclude toggles** - Quickly remove channels from training
+- **Category distribution** - See what topics each channel contributes
+
+**Identification Markers**
+Every approved insight gets a unique marker like `ML-CH0042-V0156-I003`:
+- Trace any model behavior back to its source
+- Weight or delete individual insights
+- Track provenance across the entire training pipeline
+
+**Use Cases**
+- Ensure all training data aligns with your ethical guidelines
+- Find and fix insights that violate core principles
+- Balance channel influence to avoid bias
+- Maintain training data quality over time
 
 ### Export
 
@@ -425,11 +490,14 @@ The Dashboard shows status for each component:
 ## Workflow
 
 1. **Add Channels** - Add YouTube channels with interview content
-2. **Process Videos** - Either paste URLs or select from channel listings
+2. **Process Videos** - Either paste URLs or select from channel listings (use Batch mode for multiple URLs)
 3. **Review Insights** - Approve good insights, reject bad ones
 4. **Tune Data** - Adjust channel weights, remove bad sources
-5. **Export Data** - Export approved insights for model training
-6. **Test in MoodLeaf** - Test the fine-tuned model in the actual app
+5. **Define Philosophy** - Set up core tenants in Brain Studio
+6. **Check Compliance** - Use "Compare Knowledge to Tenants" to find misaligned data
+7. **Fix Violations** - Lower weights or deactivate problematic insights
+8. **Export Data** - Export approved insights for model training
+9. **Test in MoodLeaf** - Test the fine-tuned model in the actual app
 
 ### Tuning Workflow
 
@@ -440,6 +508,26 @@ After processing several channels, use the Tuning page to:
 3. **Adjust Weights** - Reduce influence of channels pushing the model in unwanted directions
 4. **Remove Bad Data** - Delete insights from problematic videos/channels
 5. **Re-export** - Export with updated weights applied
+
+### Brain Studio Workflow
+
+Use Brain Studio to ensure training data aligns with your core principles:
+
+1. **Define Philosophy** - Write your program description and core philosophy
+2. **Create Tenants** - Add principles that all training must follow:
+   - "Never diagnose mental health conditions"
+   - "Always use tentative language"
+   - "Encourage professional help for crisis situations"
+   - etc.
+3. **Run Compliance Check** - Click "Compare Knowledge to Tenants"
+4. **Review Violations** - See which insights don't align
+5. **Take Action** - For each violation:
+   - Lower its weight (reduce influence)
+   - Deactivate it (exclude from training)
+   - Delete it (remove entirely)
+   - Or approve anyway (false positive)
+6. **Monitor Influence** - Check channel percentages to ensure balance
+7. **Repeat** - Run compliance checks periodically as you add more data
 
 ### Testing Strategy
 
@@ -594,15 +682,20 @@ training-studio/
 ├── frontend/          # Next.js 14
 │   └── src/
 │       ├── app/
-│       │   ├── page.tsx      # Dashboard
-│       │   ├── channels/     # Channel management
-│       │   ├── process/      # Video processing
-│       │   ├── review/       # Insight review
-│       │   ├── stats/        # Statistics
-│       │   ├── tuning/       # Tuning dashboard
-│       │   └── export/       # Data export
+│       │   ├── page.tsx        # Dashboard
+│       │   ├── channels/       # Channel management
+│       │   ├── movies/         # Movie processing
+│       │   ├── process/        # Video processing
+│       │   ├── batch/          # Batch video processing (NEW)
+│       │   ├── review/         # Insight review
+│       │   ├── stats/          # Statistics
+│       │   ├── verification/   # Extraction verification
+│       │   ├── tuning/         # Tuning dashboard
+│       │   ├── brain-studio/   # Brain Studio (NEW)
+│       │   ├── test/           # Model testing
+│       │   └── export/         # Data export
 │       └── lib/
-│           └── api.ts        # API client
+│           └── api.ts          # API client
 │
 ├── start.sh           # One-button startup (bash)
 ├── start.csh          # One-button startup (tcsh)
