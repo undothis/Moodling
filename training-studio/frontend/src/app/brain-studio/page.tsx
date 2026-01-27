@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import {
   fetchPhilosophy,
   updatePhilosophy,
@@ -51,6 +52,10 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowRight,
+  Download,
+  ExternalLink,
+  Lightbulb,
+  Video,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -532,6 +537,8 @@ function GoalsTab() {
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newGoal, setNewGoal] = useState({ category: '', target_percentage: 10, priority: 2, description: '', recommended_sources: '' });
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [editGoalData, setEditGoalData] = useState({ target_percentage: 10, priority: 2, description: '', recommended_sources: '' });
 
   const { data: comparison, isLoading } = useQuery({ queryKey: ['brain-comparison'], queryFn: fetchBrainComparison });
   const { data: goalsData } = useQuery({ queryKey: ['brain-goals'], queryFn: fetchBrainGoals });
@@ -547,6 +554,15 @@ function GoalsTab() {
     },
   });
 
+  const { mutate: editGoal, isPending: isEditing } = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateBrainGoal(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brain-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['brain-comparison'] });
+      setEditingGoalId(null);
+    },
+  });
+
   const { mutate: removeGoal } = useMutation({
     mutationFn: deleteBrainGoal,
     onSuccess: () => {
@@ -554,6 +570,16 @@ function GoalsTab() {
       queryClient.invalidateQueries({ queryKey: ['brain-comparison'] });
     },
   });
+
+  const startEditing = (goal: any) => {
+    setEditingGoalId(goal.id);
+    setEditGoalData({
+      target_percentage: goal.target_percentage,
+      priority: goal.priority || 2,
+      description: goal.description || '',
+      recommended_sources: goal.recommended_sources || '',
+    });
+  };
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>;
 
@@ -681,52 +707,202 @@ function GoalsTab() {
         </div>
       )}
 
-      {/* Gaps / Recommendations */}
+      {/* Gaps / Recommendations with Smart Suggestions */}
       {comparison?.gaps && comparison.gaps.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-yellow-600" />
-            <h3 className="font-semibold text-gray-900">Training Gaps - What You Need More Of</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-semibold text-gray-900">Training Gaps - What You Need More Of</h3>
+            </div>
+            <Link href="/channels" className="text-xs px-3 py-1.5 bg-yellow-200 text-yellow-800 rounded-lg hover:bg-yellow-300 flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" /> Find Channels
+            </Link>
           </div>
-          <div className="space-y-3">
-            {comparison.gaps.slice(0, 5).map((gap) => (
-              <div key={gap.category} className="flex items-center justify-between bg-white rounded-lg p-3 border">
+
+          {/* Smart Suggestion Summary */}
+          {comparison.total_insights > 0 && (
+            <div className="bg-white rounded-lg p-3 mb-4 border border-yellow-200">
+              <div className="flex items-start gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className={clsx("w-2 h-2 rounded-full", gap.priority === 1 ? "bg-red-500" : gap.priority === 2 ? "bg-yellow-500" : "bg-gray-400")} />
-                    <span className="font-medium text-gray-900">{gap.category}</span>
-                  </div>
-                  {gap.recommended_sources && <p className="text-xs text-gray-500 mt-1">{gap.recommended_sources}</p>}
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">{gap.current}%</span>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium text-green-600">{gap.target}%</span>
-                  </div>
-                  <span className="text-xs text-yellow-600">Need +{gap.gap}%</span>
+                  <p className="text-sm text-gray-700 font-medium">Smart Suggestion</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    You have {comparison.total_insights} insights. To fill all gaps, process approximately{' '}
+                    <span className="font-semibold text-yellow-700">
+                      {Math.ceil(comparison.gaps.reduce((sum, g) => sum + (comparison.total_insights * g.gap / 100 / 4), 0))} videos
+                    </span>{' '}
+                    (~4 insights per video average).
+                  </p>
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {comparison.gaps.slice(0, 5).map((gap) => {
+              // Calculate suggested videos: (total_insights * gap%) / (100 * avg_insights_per_video)
+              const videosNeeded = comparison.total_insights > 0
+                ? Math.ceil((comparison.total_insights * gap.gap) / 100 / 4)
+                : Math.ceil(gap.gap / 5); // Default to gap/5 if no insights yet
+              return (
+                <div key={gap.category} className="bg-white rounded-lg p-3 border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={clsx("w-2 h-2 rounded-full", gap.priority === 1 ? "bg-red-500" : gap.priority === 2 ? "bg-yellow-500" : "bg-gray-400")} />
+                        <span className="font-medium text-gray-900">{gap.category}</span>
+                      </div>
+                      {gap.recommended_sources && <p className="text-xs text-gray-500 mt-1">{gap.recommended_sources}</p>}
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">{gap.current}%</span>
+                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm font-medium text-green-600">{gap.target}%</span>
+                      </div>
+                      <span className="text-xs text-yellow-600">Need +{gap.gap}%</span>
+                    </div>
+                  </div>
+                  {/* Video Suggestion Row */}
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Video className="w-3 h-3" />
+                      <span>Process ~{videosNeeded} {videosNeeded === 1 ? 'video' : 'videos'} to fill gap</span>
+                    </div>
+                    <Link
+                      href={`/batch?category=${encodeURIComponent(gap.category)}`}
+                      className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" /> Batch Process
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          {comparison.gaps.length > 5 && (
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              + {comparison.gaps.length - 5} more gaps • Total videos needed: ~{Math.ceil(comparison.gaps.reduce((sum, g) => sum + (comparison.total_insights > 0 ? (comparison.total_insights * g.gap / 100 / 4) : g.gap / 5), 0))}
+            </p>
+          )}
         </div>
       )}
 
       {/* Goal List */}
       {goalsData?.goals && goalsData.goals.length > 0 && (
         <div>
-          <h3 className="font-medium text-gray-900 mb-3">All Goals</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-gray-900">All Goals ({goalsData.goals.length})</h3>
+            <button onClick={() => setShowAddForm(true)} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add Goal
+            </button>
+          </div>
+          <div className="space-y-3">
             {goalsData.goals.map((goal) => (
-              <div key={goal.id} className="bg-white border rounded-lg p-3 flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-gray-900">{goal.category}</span>
-                  <span className="ml-2 text-sm text-gray-500">{goal.target_percentage}%</span>
-                </div>
-                <button onClick={() => removeGoal(goal.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+              <div key={goal.id} className="bg-white border rounded-lg p-4">
+                {editingGoalId === goal.id ? (
+                  // Edit Mode
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">{goal.category}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => editGoal({ id: goal.id, data: editGoalData })}
+                          disabled={isEditing}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setEditingGoalId(null)} className="text-gray-400 hover:text-gray-600">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Target %</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={editGoalData.target_percentage}
+                          onChange={(e) => setEditGoalData({ ...editGoalData, target_percentage: parseInt(e.target.value) || 0 })}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Priority</label>
+                        <select
+                          value={editGoalData.priority}
+                          onChange={(e) => setEditGoalData({ ...editGoalData, priority: parseInt(e.target.value) })}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                        >
+                          <option value={1}>High</option>
+                          <option value={2}>Medium</option>
+                          <option value={3}>Low</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Recommended Sources</label>
+                      <input
+                        type="text"
+                        value={editGoalData.recommended_sources}
+                        onChange={(e) => setEditGoalData({ ...editGoalData, recommended_sources: e.target.value })}
+                        placeholder="e.g., Therapy channels, Interview podcasts"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className={clsx(
+                          "w-2 h-2 rounded-full",
+                          goal.priority === 1 ? "bg-red-500" : goal.priority === 2 ? "bg-yellow-500" : "bg-gray-400"
+                        )} />
+                        <span className="font-medium text-gray-900">{goal.category}</span>
+                        <span className="text-sm text-green-600 font-medium">{goal.target_percentage}%</span>
+                      </div>
+                      {goal.recommended_sources && (
+                        <p className="text-xs text-gray-500 mt-1 ml-4">{goal.recommended_sources}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => startEditing(goal)} className="text-gray-400 hover:text-blue-500">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => removeGoal(goal.id)} className="text-gray-400 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Empty State - No Goals */}
+      {(!goalsData?.goals || goalsData.goals.length === 0) && !showAddForm && (
+        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+          <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="font-medium text-gray-700 mb-2">No Training Goals Set</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Define target percentages for each category to guide your training data collection.
+          </p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+          >
+            <Plus className="w-4 h-4" />
+            Add Your First Goal
+          </button>
         </div>
       )}
     </div>

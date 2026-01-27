@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   Brain,
   ListVideo,
+  BookOpen,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getApiKeyStatus, setApiKey, getHuggingFaceStatus, setHuggingFaceToken } from '@/lib/api';
@@ -40,6 +41,7 @@ const navItems = [
   { href: '/brain-studio', label: 'Brain Studio', icon: Brain },
   { href: '/test', label: 'Test Model', icon: FlaskConical },
   { href: '/export', label: 'Export', icon: Download },
+  { href: '/manual', label: 'Manual', icon: BookOpen },
 ];
 
 function ApiKeyConfig() {
