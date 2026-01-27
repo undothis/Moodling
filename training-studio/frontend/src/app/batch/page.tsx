@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import { processBatchVideos, fetchJobs, fetchChannels, fetchChannelVideos } from '@/lib/api';
 import {
   Play,
@@ -16,6 +17,8 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
+  Target,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -245,10 +248,14 @@ function ChannelVideoSelector({
 
 export default function BatchPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const categoryFromGap = searchParams.get('category');
+
   const [videoUrls, setVideoUrls] = useState('');
   const [autoApprove, setAutoApprove] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
   const [showChannels, setShowChannels] = useState(true);
+  const [showGapBanner, setShowGapBanner] = useState(!!categoryFromGap);
 
   const { data: jobs } = useQuery({
     queryKey: ['jobs'],
@@ -303,6 +310,29 @@ export default function BatchPage() {
           Select videos from your channels or paste YouTube URLs
         </p>
       </div>
+
+      {/* Training Gap Context Banner */}
+      {showGapBanner && categoryFromGap && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <Target className="w-5 h-5 text-yellow-600 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-gray-900">Filling Training Gap: {categoryFromGap}</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Select videos that focus on <strong>{categoryFromGap}</strong> content to fill this gap in your brain training.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Look for therapy channels, interview podcasts, or educational content that covers this topic.
+                </p>
+              </div>
+            </div>
+            <button onClick={() => setShowGapBanner(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Channel Selector */}
       <div className="bg-white rounded-xl p-6 border border-gray-100 mb-6">
