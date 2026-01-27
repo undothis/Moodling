@@ -3577,6 +3577,244 @@ async def get_channels_for_category(category: str):
 
 
 # ============================================================================
+# TRAINING ROADMAP - Progress toward therapeutic AI training goals
+# ============================================================================
+
+# Training milestones based on LIMA research
+TRAINING_MILESTONES = {
+    "minimum_viable": 1000,      # Basic style transfer
+    "therapeutic_competence": 2000,  # Reliable therapeutic conversation
+    "optimal": 5000,              # Full humanness capability
+    "saturation": 6500,           # Diminishing returns after this
+    "dialogue_chains_min": 30,    # Minimum multi-turn chains
+    "dialogue_chains_optimal": 100,  # Optimal dialogue chains
+}
+
+# Recommended channels by tier with descriptions
+TIER_CHANNEL_RECOMMENDATIONS = {
+    1: {
+        "name": "Real Therapy Transcripts",
+        "description": "Actual counselor-client conversations",
+        "quality_multiplier": 2.0,
+        "examples": [
+            {"name": "MentalChat16K Dataset", "note": "6,300 clinical trial conversations - import manually"},
+            {"name": "EPITOME Dataset", "note": "10,000 peer support exchanges with empathy annotations"},
+        ],
+        "youtube_channels": []  # Not available on YouTube
+    },
+    2: {
+        "name": "Peer Support Conversations",
+        "description": "Mental health community support content",
+        "quality_multiplier": 1.5,
+        "examples": [],
+        "youtube_channels": [
+            {"name": "HealthyGamerGG", "url": "@HealthyGamerGG", "why": "Dr. K - authentic peer-style therapeutic conversations"},
+            {"name": "Soft White Underbelly", "url": "@SoftWhiteUnderbelly", "why": "Raw life stories, authentic human experience"},
+        ]
+    },
+    3: {
+        "name": "Structured Therapeutic Content",
+        "description": "Professional therapy education and techniques",
+        "quality_multiplier": 1.2,
+        "examples": [],
+        "youtube_channels": [
+            {"name": "Therapy in a Nutshell", "url": "@TherapyinaNutshell", "why": "Licensed LMFT - evidence-based techniques"},
+            {"name": "Kati Morton", "url": "@KatiMorton", "why": "Licensed therapist - accessible mental health"},
+            {"name": "Dr. Ramani", "url": "@DoctorRamani", "why": "Clinical psychology - emotional healing"},
+            {"name": "Psychology In Seattle", "url": "@PsychologyInSeattle", "why": "Dr. Kirk Honda - nuanced emotional analysis"},
+            {"name": "Tara Brach", "url": "@TaraBrach", "why": "Self-compassion, mindfulness"},
+        ]
+    },
+    4: {
+        "name": "YouTube Therapy/Coaching",
+        "description": "General coaching and self-help content",
+        "quality_multiplier": 1.0,
+        "examples": [],
+        "youtube_channels": [
+            {"name": "Brené Brown", "url": "@BreneBrown", "why": "Vulnerability research"},
+            {"name": "Mel Robbins", "url": "@melrobbins", "why": "Personal growth without toxic positivity"},
+            {"name": "Jay Shetty", "url": "@JayShetty", "why": "Wisdom traditions, meaning"},
+            {"name": "Diary of a CEO", "url": "@TheDiaryOfACEO", "why": "Deep conversations on vulnerability"},
+        ]
+    },
+    5: {
+        "name": "Movies/Entertainment",
+        "description": "Scripted emotional content - use sparingly (10-15% max)",
+        "quality_multiplier": 0.5,
+        "max_percentage": 15,
+        "examples": [],
+        "youtube_channels": [
+            {"name": "The Moth", "url": "@TheMoth", "why": "True stories - emotional range"},
+            {"name": "StoryCorps", "url": "@storycorps", "why": "Personal narratives"},
+        ]
+    }
+}
+
+
+@app.get("/brain-studio/training-roadmap")
+async def get_training_roadmap():
+    """Get comprehensive training progress and recommendations."""
+    logger.info("Brain Studio: Generating training roadmap")
+
+    async with async_session() as session:
+        from sqlalchemy import select, func, and_
+
+        # Get total approved insights
+        total_result = await session.execute(
+            select(func.count(InsightModel.id)).where(InsightModel.status == "approved")
+        )
+        total_insights = total_result.scalar() or 0
+
+        # Get insights by empathy type
+        empathy_result = await session.execute(
+            select(InsightModel.empathy_type, func.count(InsightModel.id))
+            .where(InsightModel.status == "approved")
+            .group_by(InsightModel.empathy_type)
+        )
+        empathy_distribution = {row[0] or "unclassified": row[1] for row in empathy_result}
+
+        # Get dialogue chains count (insights marked as dialogue chains)
+        chains_result = await session.execute(
+            select(func.count(InsightModel.id))
+            .where(and_(InsightModel.status == "approved", InsightModel.is_dialogue_chain == True))
+        )
+        dialogue_chains = chains_result.scalar() or 0
+
+        # Get insights by channel tier
+        tier_result = await session.execute(
+            select(ChannelModel.data_source_tier, func.count(InsightModel.id))
+            .join(ChannelModel, InsightModel.channel_id == ChannelModel.id)
+            .where(InsightModel.status == "approved")
+            .group_by(ChannelModel.data_source_tier)
+        )
+        tier_distribution = {f"tier_{row[0]}": row[1] for row in tier_result}
+
+        # Get quality metrics averages
+        quality_result = await session.execute(
+            select(
+                func.avg(InsightModel.quality_score),
+                func.avg(InsightModel.burstiness_score),
+                func.count(InsightModel.id).filter(InsightModel.has_contractions == True),
+                func.count(InsightModel.id).filter(InsightModel.has_tentative_language == True),
+            ).where(InsightModel.status == "approved")
+        )
+        quality_row = quality_result.fetchone()
+        avg_quality = quality_row[0] or 0
+        avg_burstiness = quality_row[1] or 0
+        contractions_count = quality_row[2] or 0
+        tentative_count = quality_row[3] or 0
+
+        # Calculate progress percentages
+        progress = {
+            "minimum_viable": min(100, round(total_insights / TRAINING_MILESTONES["minimum_viable"] * 100, 1)),
+            "therapeutic_competence": min(100, round(total_insights / TRAINING_MILESTONES["therapeutic_competence"] * 100, 1)),
+            "optimal": min(100, round(total_insights / TRAINING_MILESTONES["optimal"] * 100, 1)),
+            "dialogue_chains": min(100, round(dialogue_chains / TRAINING_MILESTONES["dialogue_chains_optimal"] * 100, 1)),
+        }
+
+        # Calculate what's needed
+        needed = {
+            "to_minimum": max(0, TRAINING_MILESTONES["minimum_viable"] - total_insights),
+            "to_therapeutic": max(0, TRAINING_MILESTONES["therapeutic_competence"] - total_insights),
+            "to_optimal": max(0, TRAINING_MILESTONES["optimal"] - total_insights),
+            "dialogue_chains_needed": max(0, TRAINING_MILESTONES["dialogue_chains_min"] - dialogue_chains),
+        }
+
+        # Estimate videos needed (assuming ~4 high-quality insights per video)
+        insights_per_video = 4
+        videos_needed = {
+            "to_minimum": max(0, needed["to_minimum"] // insights_per_video),
+            "to_therapeutic": max(0, needed["to_therapeutic"] // insights_per_video),
+            "to_optimal": max(0, needed["to_optimal"] // insights_per_video),
+        }
+
+        # Calculate tier 5 (entertainment) percentage warning
+        tier_5_count = tier_distribution.get("tier_5", 0)
+        tier_5_percentage = round(tier_5_count / total_insights * 100, 1) if total_insights > 0 else 0
+        tier_5_warning = tier_5_percentage > 15
+
+        # Generate recommendations
+        recommendations = []
+
+        if total_insights < TRAINING_MILESTONES["minimum_viable"]:
+            recommendations.append({
+                "priority": "critical",
+                "action": "Add more training data",
+                "detail": f"You need {needed['to_minimum']} more insights to reach minimum viable (1,000)",
+                "suggestion": "Focus on Tier 3 channels (Therapy in a Nutshell, Kati Morton) for structured content"
+            })
+
+        if dialogue_chains < TRAINING_MILESTONES["dialogue_chains_min"]:
+            recommendations.append({
+                "priority": "high",
+                "action": "Add multi-turn dialogue examples",
+                "detail": f"You need {needed['dialogue_chains_needed']} more dialogue chains (current: {dialogue_chains})",
+                "suggestion": "Process interview-style content from HealthyGamerGG or Diary of a CEO"
+            })
+
+        if tier_5_warning:
+            recommendations.append({
+                "priority": "warning",
+                "action": "Reduce entertainment content",
+                "detail": f"Entertainment content is {tier_5_percentage}% (should be <15%)",
+                "suggestion": "Add more Tier 2-3 content to balance"
+            })
+
+        empathy_total = sum(empathy_distribution.values())
+        for empathy_type in ["emotional_reaction", "interpretation", "exploration"]:
+            count = empathy_distribution.get(empathy_type, 0)
+            percentage = round(count / empathy_total * 100, 1) if empathy_total > 0 else 0
+            if percentage < 20:
+                recommendations.append({
+                    "priority": "medium",
+                    "action": f"Increase {empathy_type.replace('_', ' ')} content",
+                    "detail": f"Only {percentage}% of insights are {empathy_type.replace('_', ' ')}s",
+                    "suggestion": "Look for content with more " + (
+                        "warmth and compassion" if empathy_type == "emotional_reaction"
+                        else "reflective paraphrasing" if empathy_type == "interpretation"
+                        else "probing questions"
+                    )
+                })
+
+        # Get current phase
+        if total_insights >= TRAINING_MILESTONES["optimal"]:
+            current_phase = "optimal"
+            phase_description = "You have enough data for optimal therapeutic AI training!"
+        elif total_insights >= TRAINING_MILESTONES["therapeutic_competence"]:
+            current_phase = "therapeutic_competence"
+            phase_description = "You can achieve reliable therapeutic conversations. Consider adding more for optimal results."
+        elif total_insights >= TRAINING_MILESTONES["minimum_viable"]:
+            current_phase = "minimum_viable"
+            phase_description = "You have minimum viable data. Focus on quality and diversity."
+        else:
+            current_phase = "building"
+            phase_description = f"Building dataset. {needed['to_minimum']} more insights to minimum viable."
+
+        return {
+            "current_stats": {
+                "total_insights": total_insights,
+                "dialogue_chains": dialogue_chains,
+                "avg_quality_score": round(avg_quality, 1),
+                "avg_burstiness": round(avg_burstiness, 2) if avg_burstiness else None,
+                "contractions_percentage": round(contractions_count / total_insights * 100, 1) if total_insights > 0 else 0,
+                "tentative_language_percentage": round(tentative_count / total_insights * 100, 1) if total_insights > 0 else 0,
+            },
+            "progress": progress,
+            "needed": needed,
+            "videos_needed": videos_needed,
+            "milestones": TRAINING_MILESTONES,
+            "current_phase": current_phase,
+            "phase_description": phase_description,
+            "empathy_distribution": empathy_distribution,
+            "tier_distribution": tier_distribution,
+            "tier_5_percentage": tier_5_percentage,
+            "tier_5_warning": tier_5_warning,
+            "recommendations": recommendations,
+            "channel_recommendations": TIER_CHANNEL_RECOMMENDATIONS,
+        }
+
+
+# ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
 
