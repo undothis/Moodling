@@ -185,12 +185,16 @@ class YouTubeService:
         - engagement: Prioritize high like/view ratio
         - balanced: 40% popular + 40% recent + 20% random
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         try:
             # Normalize the URL - ensure it ends with /videos for channel listings
             normalized_url = channel_url.rstrip('/')
             if not normalized_url.endswith('/videos'):
                 normalized_url = f"{normalized_url}/videos"
 
+            logger.info(f"[YouTube] Fetching videos from: {normalized_url}")
             print(f"[YouTube] Fetching videos from: {normalized_url}")
 
             # Use yt-dlp to get playlist info - request more data for thumbnails
@@ -213,8 +217,15 @@ class YouTubeService:
             )
             stdout, stderr = await result.communicate()
 
+            stdout_text = stdout.decode() if stdout else ""
+            stderr_text = stderr.decode() if stderr else ""
+
+            logger.info(f"[YouTube] yt-dlp returncode: {result.returncode}")
+            logger.info(f"[YouTube] stdout length: {len(stdout_text)} chars")
+            if stderr_text:
+                logger.warning(f"[YouTube] stderr: {stderr_text[:500]}")
+
             if result.returncode != 0:
-                stderr_text = stderr.decode()
                 print(f"[YouTube] Error fetching videos: {stderr_text}")
 
                 # Try alternate URL format if first attempt failed
@@ -249,13 +260,17 @@ class YouTubeService:
 
             # Parse JSON lines
             videos = []
-            for line in stdout.decode().strip().split("\n"):
+            lines = stdout_text.strip().split("\n") if stdout_text.strip() else []
+            logger.info(f"[YouTube] Parsing {len(lines)} JSON lines")
+
+            for i, line in enumerate(lines):
                 if line:
                     try:
                         data = json.loads(line)
-                        # Skip shorts (duration < 60 seconds if available)
+                        # Skip very short videos (< 45 seconds) - likely YouTube Shorts
                         duration = data.get("duration")
-                        if duration and duration < 60:
+                        if duration and duration < 45:
+                            logger.debug(f"[YouTube] Skipping short video ({duration}s): {data.get('title', 'unknown')}")
                             continue
 
                         video_id = data.get("id", "")
@@ -276,8 +291,13 @@ class YouTubeService:
                             published_at=None,  # Would need additional call
                             thumbnail_url=thumbnail,
                         ))
-                    except json.JSONDecodeError:
+                        if i == 0:
+                            logger.info(f"[YouTube] First video: {data.get('title', 'no title')[:50]}")
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"[YouTube] JSON parse error on line {i}: {str(e)[:100]}")
                         continue
+
+            logger.info(f"[YouTube] Parsed {len(videos)} videos (after filtering shorts)")
 
             # Apply strategy
             if strategy == "popular":

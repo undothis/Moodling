@@ -339,15 +339,51 @@ async def get_logs(
                 all_lines = f.readlines()
                 # Get last N lines
                 recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
-                result["entries"] = [line.strip() for line in recent_lines]
+
+                # Parse log lines into structured format
+                import re
+                entries = []
+                for line in recent_lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # Try to parse standard log format: YYYY-MM-DD HH:MM:SS - LEVEL - message
+                    # Also handles: YYYY-MM-DD HH:MM:SS,mmm - LEVEL - message
+                    match = re.match(r'^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d{3})?)\s*-?\s*(\w+)\s*-?\s*(.*)$', line)
+                    if match:
+                        entries.append({
+                            "timestamp": match.group(1),
+                            "level": match.group(2).upper(),
+                            "message": match.group(3)
+                        })
+                    else:
+                        # Fallback: treat entire line as message
+                        entries.append({
+                            "timestamp": "",
+                            "level": "INFO",
+                            "message": line
+                        })
+
+                result["entries"] = entries
                 result["total_lines"] = len(all_lines)
-                result["returned_lines"] = len(recent_lines)
+                result["returned_lines"] = len(entries)
         else:
             result["message"] = f"Log file not found: {log_file}"
+            result["entries"] = [{
+                "timestamp": "",
+                "level": "WARNING",
+                "message": f"Log file not found: {log_file}. Start the backend to generate logs."
+            }]
             logger.warning(f"Log file not found: {log_file}")
     except Exception as e:
         logger.error(f"Error reading log file: {e}")
         result["error"] = str(e)
+        result["entries"] = [{
+            "timestamp": "",
+            "level": "ERROR",
+            "message": f"Error reading logs: {str(e)}"
+        }]
 
     return result
 
