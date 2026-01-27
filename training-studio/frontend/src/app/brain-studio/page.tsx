@@ -686,16 +686,49 @@ function GoalsTab() {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Category</label>
-              <select value={newGoal.category} onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="">Select or type...</option>
-                {categories?.categories.map(c => <option key={c.name} value={c.name}>{c.name} ({c.count})</option>)}
-              </select>
-              <input type="text" value={newGoal.category} onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })} placeholder="Or type custom category" className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg" />
+              <label className="block text-sm text-gray-600 mb-1">Category *</label>
+              {categories?.categories && categories.categories.length > 0 ? (
+                <select
+                  value={newGoal.category}
+                  onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">-- Select a category --</option>
+                  {categories.categories.map(c => (
+                    <option key={c.name} value={c.name}>{c.name} ({c.count} insights)</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={newGoal.category}
+                  onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })}
+                  placeholder="Enter category name (e.g., emotional_struggles)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              )}
+              <input
+                type="text"
+                value={newGoal.category}
+                onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })}
+                placeholder="Or type custom category"
+                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Target %</label>
-              <input type="number" min="1" max="100" value={newGoal.target_percentage} onChange={(e) => setNewGoal({ ...newGoal, target_percentage: parseInt(e.target.value) })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              <label className="block text-sm text-gray-600 mb-1">Target % *</label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={newGoal.target_percentage}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setNewGoal({ ...newGoal, target_percentage: isNaN(val) ? 10 : Math.min(100, Math.max(1, val)) });
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+              <p className="text-xs text-gray-400 mt-1">What % of training data should be this category?</p>
             </div>
           </div>
           <div>
@@ -710,11 +743,24 @@ function GoalsTab() {
             <label className="block text-sm text-gray-600 mb-1">Recommended Sources</label>
             <input type="text" value={newGoal.recommended_sources} onChange={(e) => setNewGoal({ ...newGoal, recommended_sources: e.target.value })} placeholder="e.g., Therapy channels, Interview podcasts" className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
           </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setShowAddForm(false)} className="px-4 py-2 text-gray-600">Cancel</button>
-            <button onClick={() => addGoal(newGoal)} disabled={!newGoal.category || isAdding} className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50">
-              {isAdding ? 'Adding...' : 'Add Goal'}
-            </button>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-400">
+              {!newGoal.category && <span className="text-red-500">Enter a category name</span>}
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowAddForm(false)} className="px-4 py-2 text-gray-600">Cancel</button>
+              <button
+                onClick={() => {
+                  console.log('Adding goal:', newGoal);
+                  setAddError(null);
+                  addGoal(newGoal);
+                }}
+                disabled={!newGoal.category || isAdding}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAdding ? 'Adding...' : 'Add Goal'}
+              </button>
+            </div>
           </div>
         </div>
       )}

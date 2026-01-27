@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
-import { processBatchVideos, fetchJobs, fetchChannels, fetchChannelVideos } from '@/lib/api';
+import { processBatchVideos, fetchJobs, fetchChannels, fetchChannelVideos, fetchChannelsForCategory } from '@/lib/api';
 import {
   Play,
   Loader2,
@@ -263,6 +263,13 @@ export default function BatchPage() {
     refetchInterval: 3000,
   });
 
+  // Fetch recommended channels for the category
+  const { data: recommendedChannels } = useQuery({
+    queryKey: ['channels-for-category', categoryFromGap],
+    queryFn: () => fetchChannelsForCategory(categoryFromGap!),
+    enabled: !!categoryFromGap,
+  });
+
   const addVideosFromChannel = (urls: string[]) => {
     const currentUrls = videoUrls.split('\n').filter((u) => u.trim());
     const newUrls = urls.filter((u) => !currentUrls.includes(u));
@@ -317,14 +324,38 @@ export default function BatchPage() {
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               <Target className="w-5 h-5 text-yellow-600 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <h3 className="font-medium text-gray-900">Filling Training Gap: {categoryFromGap}</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Select videos that focus on <strong>{categoryFromGap}</strong> content to fill this gap in your brain training.
                 </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Look for therapy channels, interview podcasts, or educational content that covers this topic.
-                </p>
+
+                {/* Recommended Channels */}
+                {recommendedChannels && recommendedChannels.channels.length > 0 ? (
+                  <div className="mt-3 p-3 bg-white rounded-lg border border-yellow-200">
+                    <p className="text-xs font-medium text-gray-700 mb-2">
+                      Channels that have produced "{categoryFromGap}" insights:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {recommendedChannels.channels.slice(0, 5).map((ch) => (
+                        <span
+                          key={ch.channel_id}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full"
+                        >
+                          <Youtube className="w-3 h-3" />
+                          {ch.name} ({ch.category_insights})
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Expand these channels below to select videos for processing.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-2">
+                    No channels have produced "{categoryFromGap}" insights yet. Look for therapy channels, interview podcasts, or educational content that covers this topic.
+                  </p>
+                )}
               </div>
             </div>
             <button onClick={() => setShowGapBanner(false)} className="text-gray-400 hover:text-gray-600">

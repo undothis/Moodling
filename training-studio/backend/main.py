@@ -1006,7 +1006,7 @@ async def process_video(request: ProcessVideoRequest, background_tasks: Backgrou
     if not video_info:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # Create processing job
+    # Create processing job with initial component status
     job_id = str(uuid.uuid4())
     job = ProcessingJob(
         id=job_id,
@@ -1015,7 +1015,16 @@ async def process_video(request: ProcessVideoRequest, background_tasks: Backgrou
         status=ProcessingStatus.QUEUED,
         progress=0,
         current_step="Queued",
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
+        component_status={
+            "yt_dlp": {"status": "pending", "message": "Waiting to download"},
+            "ffmpeg": {"status": "pending", "message": "Waiting for audio extraction"},
+            "whisper": {"status": "pending", "message": "Waiting to transcribe"},
+            "diarization": {"status": "pending", "message": "Waiting for speaker detection"},
+            "prosody": {"status": "pending" if not request.skip_prosody else "skipped", "message": "Waiting for voice analysis" if not request.skip_prosody else "Skipped"},
+            "facial": {"status": "pending" if not request.skip_facial else "skipped", "message": "Waiting for facial analysis" if not request.skip_facial else "Skipped"},
+            "claude": {"status": "pending", "message": "Waiting for insight extraction"},
+        }
     )
 
     active_jobs[job_id] = job
@@ -2575,7 +2584,7 @@ async def process_video_simple(request: SimpleProcessRequest, background_tasks: 
     if not video_info:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # Create processing job
+    # Create processing job with initial component status
     job_id = str(uuid.uuid4())
     job = ProcessingJob(
         id=job_id,
@@ -2584,7 +2593,16 @@ async def process_video_simple(request: SimpleProcessRequest, background_tasks: 
         status=ProcessingStatus.QUEUED,
         progress=0,
         current_step="Queued (simple mode)",
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
+        component_status={
+            "yt_dlp": {"status": "pending", "message": "Waiting to download"},
+            "ffmpeg": {"status": "skipped", "message": "Simple mode - no audio extraction"},
+            "whisper": {"status": "pending", "message": "Waiting to transcribe"},
+            "diarization": {"status": "skipped", "message": "Simple mode - no diarization"},
+            "prosody": {"status": "skipped", "message": "Simple mode - no prosody"},
+            "facial": {"status": "skipped", "message": "Simple mode - no facial"},
+            "claude": {"status": "pending", "message": "Waiting for insight extraction"},
+        }
     )
 
     active_jobs[job_id] = job
@@ -2764,7 +2782,16 @@ async def process_batch_videos(request: BatchVideoURLsRequest, background_tasks:
                 status=ProcessingStatus.QUEUED,
                 progress=0,
                 current_step="Queued (batch mode)",
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
+                component_status={
+                    "yt_dlp": {"status": "pending", "message": "Waiting to download"},
+                    "ffmpeg": {"status": "skipped", "message": "Batch mode - no audio extraction"},
+                    "whisper": {"status": "pending", "message": "Waiting to transcribe"},
+                    "diarization": {"status": "skipped", "message": "Batch mode - no diarization"},
+                    "prosody": {"status": "skipped", "message": "Batch mode - no prosody"},
+                    "facial": {"status": "skipped", "message": "Batch mode - no facial"},
+                    "claude": {"status": "pending", "message": "Waiting for insight extraction"},
+                }
             )
             active_jobs[job_id] = job
 
@@ -3453,6 +3480,43 @@ async def get_all_categories():
         )
         categories = [{"name": cat, "count": count} for cat, count in result]
         return {"categories": sorted(categories, key=lambda x: x["count"], reverse=True)}
+
+
+@app.get("/brain-studio/channels-for-category/{category}")
+async def get_channels_for_category(category: str):
+    """Get channels that have historically produced insights in a given category."""
+    logger.info(f"Brain Studio: Finding channels for category '{category}'")
+    async with async_session() as session:
+        from sqlalchemy import select, func
+
+        # Find channels that have produced approved insights in this category
+        result = await session.execute(
+            select(InsightModel.channel_id, func.count(InsightModel.id).label("count"))
+            .where(InsightModel.status == "approved", InsightModel.category == category)
+            .group_by(InsightModel.channel_id)
+            .order_by(func.count(InsightModel.id).desc())
+        )
+
+        channel_stats = []
+        for channel_id, count in result:
+            # Get channel details
+            channel_result = await session.execute(
+                select(ChannelModel).where(ChannelModel.id == channel_id)
+            )
+            channel = channel_result.scalar_one_or_none()
+            if channel:
+                channel_stats.append({
+                    "channel_id": channel.id,
+                    "name": channel.name,
+                    "youtube_channel_id": channel.channel_id,
+                    "category_insights": count,
+                })
+
+        return {
+            "category": category,
+            "channels": channel_stats,
+            "total_channels": len(channel_stats)
+        }
 
 
 # ============================================================================

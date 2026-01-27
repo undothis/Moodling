@@ -941,3 +941,24 @@ export async function fetchManual(): Promise<{ content: string }> {
   return res.json();
 }
 
+// ============================================================================
+// BRAIN STUDIO - CHANNEL SUGGESTIONS
+// ============================================================================
+
+export interface ChannelForCategory {
+  channel_id: string;
+  name: string;
+  youtube_channel_id: string;
+  category_insights: number;
+}
+
+export async function fetchChannelsForCategory(category: string): Promise<{
+  category: string;
+  channels: ChannelForCategory[];
+  total_channels: number;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/channels-for-category/${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error('Failed to fetch channels for category');
+  return res.json();
+}
+
