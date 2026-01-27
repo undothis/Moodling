@@ -1430,6 +1430,89 @@ To fill gaps in your brain:
 - Process 10-20 videos before checking alignment again
 - Use the Goals tab to customize your target distribution
 
+### 9.8 Goals Tab - Managing Training Goals
+
+The **Goals Tab** in Brain Studio allows you to define, edit, and manage your training goals. This is where you customize what balance of content your AI should learn.
+
+#### Opening Goals Tab
+1. Go to **Brain Studio** in the navigation
+2. Click the **Goals** tab at the top
+
+#### Goals Tab Layout
+
+| Section | Description |
+|---------|-------------|
+| **Brain Health Score** | Percentage showing how close your current data matches your goals |
+| **Current Brain** | Left column showing your actual training data distribution |
+| **Goal Brain** | Right column showing your target percentages (with Add Goal button) |
+| **Training Gaps** | Yellow section listing what categories need more content |
+| **All Goals** | Complete list of your goals with Add, Edit, and Delete options |
+
+#### Adding a Goal
+
+**Method 1: From Goal Brain header**
+1. Click the green **+ Add Goal** button in the Goal Brain section header
+
+**Method 2: From All Goals section**
+1. Scroll to "All Goals" section
+2. Click the green **+ Add Goal** button
+
+**Method 3: Empty state**
+1. If no goals exist, click **Add Your First Goal** in the empty state
+
+**Add Goal Form Fields:**
+| Field | Description | Example |
+|-------|-------------|---------|
+| **Category** | Select existing or type custom | "emotional_struggles" |
+| **Target %** | Percentage of training data (1-100) | 15 |
+| **Priority** | High (must have), Medium (important), Low (nice to have) | High |
+| **Recommended Sources** | Types of channels that provide this content | "Therapy channels, Interview podcasts" |
+
+#### Editing a Goal
+
+1. Find the goal in the **All Goals** list
+2. Click the **pencil icon** (Edit) on the right
+3. Modify the values:
+   - Target percentage
+   - Priority level
+   - Recommended sources
+4. Click the **checkmark** (Save) to save changes
+5. Click **X** to cancel
+
+**Note:** You cannot change the category name when editing. Delete and create a new goal if needed.
+
+#### Deleting a Goal
+
+1. Find the goal in the **All Goals** list
+2. Click the **trash icon** (Delete) on the right
+3. The goal is immediately removed (no confirmation dialog)
+
+#### Understanding Training Gaps
+
+The **Training Gaps** section shows:
+- Categories where `current < target`
+- Priority indicator (red = high, yellow = medium, gray = low)
+- Current → Target percentages with gap amount
+- Recommended sources for each gap
+
+#### Smart Suggestions
+
+Training Gaps now includes **intelligent video suggestions**:
+
+| Feature | Description |
+|---------|-------------|
+| **Smart Summary** | Shows total videos needed to fill all gaps based on your current insight count |
+| **Per-Gap Estimate** | Each gap shows "Process ~X videos to fill gap" calculated from your data |
+| **Find Channels** | Quick link to Channels page to add new content sources |
+| **Batch Process** | Direct link to process videos for specific categories |
+
+**How estimates work:**
+- Average: ~4 insights per video
+- Formula: `(total_insights × gap%) / (100 × 4)`
+- Example: 100 insights, 10% gap = ~3 videos needed
+
+Use these suggestions to prioritize which channels to process first.
+
 ---
 
 ## 10. Dashboard & Processing Monitor
