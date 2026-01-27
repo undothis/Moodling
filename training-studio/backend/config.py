@@ -83,8 +83,34 @@ def setup_logging():
 
 # Initialize logging
 logger = setup_logging()
+
+# ============================================================================
+# VERSION INFO
+# ============================================================================
+
+VERSION = "1.1.0"
+VERSION_DATE = "2026-01-26"
+BUILD_FEATURES = [
+    "logging",
+    "diagnostics",
+    "simple_mode",
+    "full_mode",
+    "batch_processing",
+    "ai_recommendations"
+]
+
+def get_version_info():
+    """Return version information dictionary."""
+    return {
+        "version": VERSION,
+        "version_date": VERSION_DATE,
+        "features": BUILD_FEATURES,
+        "python_version": f"{__import__('sys').version_info.major}.{__import__('sys').version_info.minor}.{__import__('sys').version_info.micro}",
+        "log_file": str(LOG_FILE),
+    }
+
 logger.info("=" * 60)
-logger.info("Training Studio starting up")
+logger.info(f"Training Studio v{VERSION} starting up")
 logger.info(f"Log file: {LOG_FILE}")
 logger.info("=" * 60)
 

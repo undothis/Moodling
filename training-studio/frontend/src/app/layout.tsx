@@ -22,7 +22,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { getApiKeyStatus, setApiKey } from '@/lib/api';
+import { getApiKeyStatus, setApiKey, getHuggingFaceStatus, setHuggingFaceToken } from '@/lib/api';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -112,6 +112,85 @@ function ApiKeyConfig() {
   );
 }
 
+function HuggingFaceConfig() {
+  const queryClient = useQueryClient();
+  const [showInput, setShowInput] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
+
+  const { data: tokenStatus } = useQuery({
+    queryKey: ['huggingface-status'],
+    queryFn: getHuggingFaceStatus,
+  });
+
+  const { mutate: saveToken, isPending } = useMutation({
+    mutationFn: setHuggingFaceToken,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['huggingface-status'] });
+      queryClient.invalidateQueries({ queryKey: ['diagnostics'] });
+      setShowInput(false);
+      setTokenInput('');
+    },
+  });
+
+  const handleSave = () => {
+    if (tokenInput.trim()) {
+      saveToken(tokenInput.trim());
+    }
+  };
+
+  return (
+    <div className="px-4 pb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Key className="w-4 h-4 text-gray-400" />
+        <span className="text-xs font-medium text-gray-600">HuggingFace Token</span>
+      </div>
+
+      {showInput ? (
+        <div className="space-y-2">
+          <input
+            type="password"
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="hf_..."
+            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+          />
+          <div className="flex gap-1">
+            <button
+              onClick={handleSave}
+              disabled={isPending || !tokenInput.trim()}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600 disabled:opacity-50"
+            >
+              <Check className="w-3 h-3" />
+              Save
+            </button>
+            <button
+              onClick={() => setShowInput(false)}
+              className="px-2 py-1 text-gray-500 text-xs hover:text-gray-700"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          <p className="text-xs text-gray-400">
+            Get token at huggingface.co/settings/tokens
+          </p>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowInput(true)}
+          className={clsx(
+            'w-full px-2 py-1 text-xs rounded border transition-colors',
+            tokenStatus?.configured
+              ? 'border-green-300 bg-green-50 text-green-700'
+              : 'border-gray-300 bg-gray-50 text-gray-600'
+          )}
+        >
+          {tokenStatus?.configured ? `Configured ${tokenStatus.masked_token}` : 'Not configured (optional)'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Sidebar() {
   const pathname = usePathname();
 
@@ -152,8 +231,9 @@ function Sidebar() {
         })}
       </nav>
 
-      {/* API Key Config */}
+      {/* API Key Configs */}
       <ApiKeyConfig />
+      <HuggingFaceConfig />
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">

@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 import shutil
 import tempfile
 
-from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES
+from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES, VERSION, get_version_info
 from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -74,7 +74,7 @@ async def health_check():
     """Health check endpoint."""
     return HealthResponse(
         status="ok",
-        version="1.0.0",
+        version=VERSION,
         services={
             "database": True,
             "whisper": True,
@@ -82,6 +82,12 @@ async def health_check():
             "claude": bool(settings.anthropic_api_key),
         }
     )
+
+
+@app.get("/version")
+async def get_version():
+    """Get detailed version information."""
+    return get_version_info()
 
 
 @app.get("/diagnostics")
@@ -1223,6 +1229,34 @@ async def get_api_key_status():
     return {
         "configured": has_key,
         "masked_key": masked
+    }
+
+
+class HuggingFaceTokenRequest(BaseModel):
+    token: str
+
+
+@app.post("/config/huggingface-token")
+async def set_huggingface_token(request: HuggingFaceTokenRequest):
+    """Set the HuggingFace token (stored in memory, not persisted)."""
+    if not request.token.startswith("hf_"):
+        raise HTTPException(status_code=400, detail="Invalid token format. Token should start with 'hf_'")
+
+    # Update the settings in memory
+    settings.huggingface_token = request.token
+
+    return {"success": True, "message": "HuggingFace token updated"}
+
+
+@app.get("/config/huggingface-status")
+async def get_huggingface_status():
+    """Check if HuggingFace token is configured."""
+    has_token = bool(settings.huggingface_token)
+    # Show only last 4 chars for security
+    masked = f"...{settings.huggingface_token[-4:]}" if has_token else None
+    return {
+        "configured": has_token,
+        "masked_token": masked
     }
 
 

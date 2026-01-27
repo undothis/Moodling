@@ -250,6 +250,26 @@ export async function getApiKeyStatus(): Promise<{
   return res.json();
 }
 
+// HuggingFace Token
+export async function setHuggingFaceToken(token: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/config/huggingface-token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw new Error('Failed to set HuggingFace token');
+  return res.json();
+}
+
+export async function getHuggingFaceStatus(): Promise<{
+  configured: boolean;
+  masked_token: string | null;
+}> {
+  const res = await fetch(`${API_BASE}/config/huggingface-status`);
+  if (!res.ok) throw new Error('Failed to get HuggingFace status');
+  return res.json();
+}
+
 export interface DiagnosticResult {
   status: 'ok' | 'warning' | 'error';
   message: string;
