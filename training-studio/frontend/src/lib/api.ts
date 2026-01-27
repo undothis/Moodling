@@ -174,6 +174,18 @@ export async function fetchJobs(): Promise<ProcessingJob[]> {
   return res.json();
 }
 
+export async function cancelJob(jobId: string): Promise<{ message: string; job_id?: string; status?: string }> {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to cancel job');
+  return res.json();
+}
+
+export async function removeJob(jobId: string): Promise<{ message: string; job_id?: string }> {
+  const res = await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to remove job');
+  return res.json();
+}
+
 export async function fetchInsights(
   status?: string,
   category?: string,

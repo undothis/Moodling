@@ -295,6 +295,36 @@ async def run_diagnostics():
     except Exception as e:
         results["claude"] = {"status": "error", "message": str(e)}
 
+    # 10. Test Database Health
+    try:
+        async with async_session() as session:
+            # Try to query a table with new columns to ensure schema is up to date
+            from sqlalchemy import text
+            # Test channels table with new column
+            await session.execute(text("SELECT data_source_tier FROM channels LIMIT 1"))
+            # Test processing_jobs table with new columns
+            await session.execute(text("SELECT component_status_json, insights_count FROM processing_jobs LIMIT 1"))
+            # Test insights table with new columns
+            await session.execute(text("SELECT empathy_type, is_dialogue_chain FROM insights LIMIT 1"))
+            results["database"] = {
+                "status": "ok",
+                "message": "Database schema up to date"
+            }
+    except Exception as e:
+        error_msg = str(e)
+        if "no such column" in error_msg.lower():
+            results["database"] = {
+                "status": "error",
+                "message": "Database schema needs migration",
+                "note": "Restart the backend to run migrations automatically",
+                "detail": error_msg.split(":")[-1].strip() if ":" in error_msg else error_msg
+            }
+        else:
+            results["database"] = {
+                "status": "error",
+                "message": f"Database error: {error_msg}"
+            }
+
     # Summary
     ok_count = sum(1 for r in results.values() if r["status"] == "ok")
     warning_count = sum(1 for r in results.values() if r["status"] == "warning")
@@ -1094,6 +1124,43 @@ async def list_jobs():
 
     # Combine and return
     return active + db_jobs
+
+
+@app.post("/jobs/{job_id}/cancel")
+async def cancel_job(job_id: str):
+    """Cancel a processing job."""
+    if job_id not in active_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job = active_jobs[job_id]
+
+    if job.status in [ProcessingStatus.COMPLETED, ProcessingStatus.FAILED]:
+        return {"message": "Job already finished", "status": job.status.value}
+
+    # Mark as cancelled
+    job.status = ProcessingStatus.FAILED
+    job.error_message = "Cancelled by user"
+    job.current_step = "Cancelled"
+    job.completed_at = datetime.now().isoformat()
+
+    logger.info(f"Job {job_id} cancelled by user")
+
+    return {"message": "Job cancelled", "job_id": job_id}
+
+
+@app.delete("/jobs/{job_id}")
+async def remove_job(job_id: str):
+    """Remove a job from the active jobs list."""
+    if job_id in active_jobs:
+        job = active_jobs[job_id]
+        if job.status not in [ProcessingStatus.COMPLETED, ProcessingStatus.FAILED]:
+            # Cancel it first
+            job.status = ProcessingStatus.FAILED
+            job.error_message = "Removed by user"
+        del active_jobs[job_id]
+        return {"message": "Job removed", "job_id": job_id}
+
+    raise HTTPException(status_code=404, detail="Job not found")
 
 
 async def process_video_task(

@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { fetchStatistics, fetchJobs, fetchInsights, runDiagnostics } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchStatistics, fetchJobs, fetchInsights, runDiagnostics, cancelJob, removeJob } from '@/lib/api';
 import {
   Video,
   Clock,
@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  StopCircle,
+  Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -45,7 +47,7 @@ function StatCard({
   );
 }
 
-function JobCard({ job }: { job: any }) {
+function JobCard({ job, onCancel, onRemove, isCancelling }: { job: any; onCancel?: (jobId: string) => void; onRemove?: (jobId: string) => void; isCancelling?: boolean }) {
   const statusColors: Record<string, string> = {
     queued: 'bg-gray-100 text-gray-700',
     downloading: 'bg-blue-100 text-blue-700',
@@ -79,20 +81,47 @@ function JobCard({ job }: { job: any }) {
     }
   };
 
-  const isActive = !['completed', 'failed', 'queued'].includes(job.status);
+  const isActive = !['completed', 'failed'].includes(job.status);
+  const canCancel = isActive && onCancel;
+  const canRemove = !isActive && onRemove;
 
   return (
     <div className="bg-white rounded-lg p-4 border border-gray-100">
       <div className="flex items-center justify-between mb-2">
         <code className="text-sm text-gray-600">{job.video_id}</code>
-        <span
-          className={clsx(
-            'px-2 py-1 text-xs font-medium rounded-full',
-            statusColors[job.status] || 'bg-gray-100'
+        <div className="flex items-center gap-2">
+          {canCancel && (
+            <button
+              onClick={() => onCancel(job.job_id)}
+              disabled={isCancelling}
+              className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+              title="Cancel processing"
+            >
+              {isCancelling ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <StopCircle className="w-4 h-4" />
+              )}
+            </button>
           )}
-        >
-          {job.status}
-        </span>
+          {canRemove && (
+            <button
+              onClick={() => onRemove(job.job_id)}
+              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+              title="Remove from list"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          <span
+            className={clsx(
+              'px-2 py-1 text-xs font-medium rounded-full',
+              statusColors[job.status] || 'bg-gray-100'
+            )}
+          >
+            {job.status}
+          </span>
+        </div>
       </div>
       <p className="text-sm text-gray-500 mb-2">{job.current_step}</p>
       <div className="w-full bg-gray-100 rounded-full h-2">
@@ -178,6 +207,7 @@ function DiagnosticsPanel({ hasActiveJobs }: { hasActiveJobs?: boolean }) {
     facial_pyfeat: 'Facial Analysis',
     facial_mediapipe: 'MediaPipe (backup)',
     claude: 'Claude API',
+    database: 'Database',
   };
 
   return (
@@ -307,6 +337,8 @@ function RecentInsight({ insight }: { insight: any }) {
 }
 
 export default function DashboardPage() {
+  const queryClient = useQueryClient();
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['statistics'],
     queryFn: fetchStatistics,
@@ -321,6 +353,22 @@ export default function DashboardPage() {
   const { data: insights, isLoading: insightsLoading } = useQuery({
     queryKey: ['insights', 'pending'],
     queryFn: () => fetchInsights('pending', undefined, 5),
+  });
+
+  // Cancel job mutation
+  const { mutate: handleCancelJob, isPending: isCancelling } = useMutation({
+    mutationFn: cancelJob,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
+  });
+
+  // Remove job mutation
+  const { mutate: handleRemoveJob } = useMutation({
+    mutationFn: removeJob,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
   });
 
   const activeJobs = jobs?.filter((j) => !['completed', 'failed'].includes(j.status)) || [];
@@ -412,7 +460,13 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {recentJobs.map((job) => (
-                <JobCard key={job.job_id} job={job} />
+                <JobCard
+                  key={job.job_id}
+                  job={job}
+                  onCancel={handleCancelJob}
+                  onRemove={handleRemoveJob}
+                  isCancelling={isCancelling}
+                />
               ))}
             </div>
           )}

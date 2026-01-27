@@ -335,6 +335,16 @@ def _run_migrations(conn):
         ("channels", "influence_weight", "REAL DEFAULT 1.0"),
         ("channels", "include_in_training", "INTEGER DEFAULT 1"),
         ("channels", "notes", "TEXT"),
+        # New columns for LIMA research training roadmap
+        ("channels", "data_source_tier", "INTEGER DEFAULT 4"),
+        ("channels", "tier_notes", "TEXT"),
+        ("processing_jobs", "component_status_json", "TEXT"),
+        ("processing_jobs", "insights_count", "INTEGER DEFAULT 0"),
+        ("insights", "empathy_type", "TEXT"),
+        ("insights", "burstiness_score", "REAL"),
+        ("insights", "has_contractions", "INTEGER DEFAULT 0"),
+        ("insights", "has_tentative_language", "INTEGER DEFAULT 0"),
+        ("insights", "is_dialogue_chain", "INTEGER DEFAULT 0"),
     ]
 
     for table_name, column_name, column_def in columns_to_add:
