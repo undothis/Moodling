@@ -643,6 +643,42 @@ This teaches the model to:
   pip install -r requirements.txt
   ```
 
+### "No module named 'fastapi'" or "No module named 'uvicorn'"
+This means Python dependencies aren't installed.
+
+**If venv exists:**
+```bash
+cd training-studio/backend
+source venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn main:app --reload
+```
+
+**If venv doesn't exist (quick setup):**
+```bash
+cd training-studio/backend
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install all dependencies (full install)
+pip install -r requirements.txt
+
+# OR install just core dependencies (faster, for basic features)
+pip install fastapi uvicorn sqlalchemy aiosqlite pydantic pydantic-settings python-dotenv yt-dlp httpx
+
+# Start the server
+python -m uvicorn main:app --reload
+```
+
+**Minimal install for video fetching only:**
+```bash
+pip install fastapi uvicorn sqlalchemy aiosqlite pydantic pydantic-settings yt-dlp
+```
+
+Note: The full `requirements.txt` includes heavy ML dependencies (Whisper, PyTorch, etc.) which are only needed for Full Mode processing. Simple Mode (using YouTube transcripts) works with just the core dependencies.
+
 ### Viewing Logs
 - **Terminal**: The terminal running `./start.sh` shows all logs in real-time
 - **API**: Visit http://localhost:8000/logs to view recent logs (if logging is enabled)
