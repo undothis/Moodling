@@ -2638,8 +2638,10 @@ class InsightWeightRequest(BaseModel):
 @app.get("/brain-studio/philosophy")
 async def get_philosophy():
     """Get the current philosophy document."""
+    logger.info("Brain Studio: Fetching philosophy document")
     philosophy = await db.get_philosophy()
     if not philosophy:
+        logger.debug("Brain Studio: No philosophy found, returning defaults")
         return {
             "id": "main",
             "program_name": "Mood Leaf",
@@ -2659,8 +2661,10 @@ async def get_philosophy():
 @app.put("/brain-studio/philosophy")
 async def update_philosophy(request: PhilosophyUpdateRequest):
     """Update the philosophy document."""
+    logger.info(f"Brain Studio: Updating philosophy - fields: {list(request.dict().keys())}")
     data = {k: v for k, v in request.dict().items() if v is not None}
     philosophy = await db.upsert_philosophy(data)
+    logger.info(f"Brain Studio: Philosophy updated successfully")
     return {
         "success": True,
         "philosophy": {
@@ -2676,7 +2680,9 @@ async def update_philosophy(request: PhilosophyUpdateRequest):
 @app.get("/brain-studio/tenants")
 async def get_tenants():
     """Get all tenants."""
+    logger.info("Brain Studio: Fetching all tenants")
     tenants = await db.get_all_tenants()
+    logger.debug(f"Brain Studio: Found {len(tenants)} tenants")
     return {
         "tenants": [
             {
@@ -2696,6 +2702,7 @@ async def get_tenants():
 @app.post("/brain-studio/tenants")
 async def create_tenant(request: TenantCreateRequest):
     """Create a new tenant."""
+    logger.info(f"Brain Studio: Creating tenant '{request.name}' in category '{request.category}'")
     tenant = await db.create_tenant({
         "name": request.name,
         "description": request.description,
@@ -2716,10 +2723,13 @@ async def create_tenant(request: TenantCreateRequest):
 @app.put("/brain-studio/tenants/{tenant_id}")
 async def update_tenant(tenant_id: str, request: TenantUpdateRequest):
     """Update a tenant."""
+    logger.info(f"Brain Studio: Updating tenant {tenant_id}")
     updates = {k: v for k, v in request.dict().items() if v is not None}
     tenant = await db.update_tenant(tenant_id, updates)
     if not tenant:
+        logger.warning(f"Brain Studio: Tenant {tenant_id} not found")
         raise HTTPException(status_code=404, detail="Tenant not found")
+    logger.info(f"Brain Studio: Tenant {tenant_id} updated successfully")
     return {
         "success": True,
         "tenant": {
@@ -2735,15 +2745,19 @@ async def update_tenant(tenant_id: str, request: TenantUpdateRequest):
 @app.delete("/brain-studio/tenants/{tenant_id}")
 async def delete_tenant(tenant_id: str):
     """Delete a tenant."""
+    logger.info(f"Brain Studio: Deleting tenant {tenant_id}")
     success = await db.delete_tenant(tenant_id)
     if not success:
+        logger.warning(f"Brain Studio: Tenant {tenant_id} not found for deletion")
         raise HTTPException(status_code=404, detail="Tenant not found")
+    logger.info(f"Brain Studio: Tenant {tenant_id} deleted successfully")
     return {"success": True}
 
 
 @app.post("/brain-studio/tenants/upload")
 async def upload_tenants(request: TenantsUploadRequest):
     """Bulk upload tenants from a list."""
+    logger.info(f"Brain Studio: Bulk uploading {len(request.tenants)} tenants (replace_existing={request.replace_existing})")
     if request.replace_existing:
         # Delete all existing tenants first
         existing = await db.get_all_tenants()
@@ -2771,20 +2785,25 @@ async def check_compliance_against_tenants(background_tasks: BackgroundTasks):
     Compare all approved insights against core tenants.
     Uses Claude to check if each insight aligns with each tenant.
     """
+    logger.info("Brain Studio: Starting compliance check")
     # Get active tenants
     tenants = await db.get_active_tenants()
     if not tenants:
+        logger.warning("Brain Studio: Compliance check aborted - no tenants defined")
         raise HTTPException(status_code=400, detail="No tenants defined. Add tenants first.")
 
     # Get all approved insights
     insights = await db.get_insights_with_markers()
     if not insights:
+        logger.info("Brain Studio: No approved insights to check")
         return {
             "success": True,
             "message": "No approved insights to check",
             "insights_checked": 0,
             "violations_found": 0
         }
+
+    logger.info(f"Brain Studio: Found {len(insights)} insights to check against {len(tenants)} tenants")
 
     # Clear previous compliance results
     await db.clear_compliance_results()
@@ -2796,6 +2815,7 @@ async def check_compliance_against_tenants(background_tasks: BackgroundTasks):
         tenants
     )
 
+    logger.info(f"Brain Studio: Compliance check task started in background")
     return {
         "success": True,
         "message": "Compliance check started",
@@ -2896,7 +2916,9 @@ If all tenants align well, return {{"results": []}}
 @app.get("/brain-studio/violations")
 async def get_violations():
     """Get all compliance violations."""
+    logger.info("Brain Studio: Fetching compliance violations")
     violations = await db.get_non_compliant_insights()
+    logger.info(f"Brain Studio: Found {len(violations)} compliance violations")
     return {
         "violations": violations,
         "total": len(violations)
@@ -2913,7 +2935,9 @@ async def get_brain_insights(
     channel_id: Optional[str] = None
 ):
     """Get all insights with their markers and weights."""
+    logger.info(f"Brain Studio: Fetching insights (limit={limit}, channel_id={channel_id})")
     insights = await db.get_insights_with_markers()
+    logger.debug(f"Brain Studio: Retrieved {len(insights)} insights from database")
 
     # Filter by channel if provided
     if channel_id:
@@ -2943,13 +2967,16 @@ async def get_brain_insights(
 @app.put("/brain-studio/insights/{insight_id}/weight")
 async def update_insight_weight(insight_id: str, request: InsightWeightRequest):
     """Update an insight's influence weight."""
+    logger.info(f"Brain Studio: Updating insight {insight_id} weight to {request.weight} (active={request.is_active})")
     insight = await db.update_insight_weight(
         insight_id,
         request.weight,
         request.is_active
     )
     if not insight:
+        logger.warning(f"Brain Studio: Insight {insight_id} not found for weight update")
         raise HTTPException(status_code=404, detail="Insight not found")
+    logger.info(f"Brain Studio: Insight {insight_id} weight updated successfully")
     return {
         "success": True,
         "insight_id": insight_id,
@@ -2961,6 +2988,7 @@ async def update_insight_weight(insight_id: str, request: InsightWeightRequest):
 @app.get("/brain-studio/influence")
 async def get_channel_influence():
     """Get influence breakdown by channel."""
+    logger.info("Brain Studio: Calculating channel influence breakdown")
     stats = await db.get_channel_statistics()
 
     # Calculate total weighted influence
@@ -3075,7 +3103,9 @@ class BrainGoalUpdateRequest(BaseModel):
 @app.get("/brain-studio/goals")
 async def get_brain_goals():
     """Get all brain training goals."""
+    logger.info("Brain Studio: Fetching all brain training goals")
     goals = await db.get_all_goals()
+    logger.debug(f"Brain Studio: Found {len(goals)} goals")
     return {
         "goals": [
             {
@@ -3095,6 +3125,7 @@ async def get_brain_goals():
 @app.post("/brain-studio/goals")
 async def create_brain_goal(request: BrainGoalCreateRequest):
     """Create a new brain training goal."""
+    logger.info(f"Brain Studio: Creating goal for category '{request.category}' (target={request.target_percentage}%)")
     goal = await db.create_goal({
         "category": request.category,
         "target_percentage": request.target_percentage,
@@ -3116,32 +3147,44 @@ async def create_brain_goal(request: BrainGoalCreateRequest):
 @app.put("/brain-studio/goals/{goal_id}")
 async def update_brain_goal(goal_id: str, request: BrainGoalUpdateRequest):
     """Update a brain training goal."""
+    logger.info(f"Brain Studio: Updating goal {goal_id}")
     updates = {k: v for k, v in request.dict().items() if v is not None}
     goal = await db.update_goal(goal_id, updates)
     if not goal:
+        logger.warning(f"Brain Studio: Goal {goal_id} not found for update")
         raise HTTPException(status_code=404, detail="Goal not found")
+    logger.info(f"Brain Studio: Goal {goal_id} updated successfully")
     return {"success": True, "goal_id": goal_id}
 
 
 @app.delete("/brain-studio/goals/{goal_id}")
 async def delete_brain_goal(goal_id: str):
     """Delete a brain training goal."""
+    logger.info(f"Brain Studio: Deleting goal {goal_id}")
     success = await db.delete_goal(goal_id)
     if not success:
+        logger.warning(f"Brain Studio: Goal {goal_id} not found for deletion")
         raise HTTPException(status_code=404, detail="Goal not found")
+    logger.info(f"Brain Studio: Goal {goal_id} deleted successfully")
     return {"success": True}
 
 
 @app.get("/brain-studio/brain-state")
 async def get_brain_state():
     """Get current brain state (category distribution)."""
-    return await db.get_current_brain_state()
+    logger.info("Brain Studio: Fetching current brain state")
+    result = await db.get_current_brain_state()
+    logger.debug(f"Brain Studio: Brain state retrieved with {len(result.get('categories', []))} categories")
+    return result
 
 
 @app.get("/brain-studio/comparison")
 async def get_brain_comparison():
     """Get brain comparison - current state vs goals."""
-    return await db.get_brain_comparison()
+    logger.info("Brain Studio: Generating brain comparison (current vs goals)")
+    result = await db.get_brain_comparison()
+    logger.info(f"Brain Studio: Comparison complete - health_score={result.get('health_score', 0)}")
+    return result
 
 
 # ============================================================================
@@ -3163,7 +3206,10 @@ async def test_prompt_in_lab(request: PromptLabRequest):
     """
     import anthropic
 
+    logger.info(f"Brain Studio: Prompt Lab - Testing prompt ({len(request.prompt)} chars)")
+
     if not settings.anthropic_api_key:
+        logger.error("Brain Studio: Prompt Lab failed - Claude API key not configured")
         raise HTTPException(status_code=400, detail="Claude API key not configured")
 
     # Get relevant insights that might influence this response
@@ -3220,9 +3266,12 @@ Be genuine, empathetic, and supportive."""
         )
 
         generated_response = response.content[0].text
+        logger.info(f"Brain Studio: Prompt Lab - Response generated successfully ({len(generated_response)} chars)")
     except Exception as e:
+        logger.error(f"Brain Studio: Prompt Lab - Error generating response: {e}")
         generated_response = f"Error generating response: {str(e)}"
 
+    logger.debug(f"Brain Studio: Prompt Lab - Found {len(relevant_insights)} relevant insights, showing top {len(top_influences)}")
     return {
         "prompt": request.prompt,
         "response": generated_response,
@@ -3238,6 +3287,7 @@ Be genuine, empathetic, and supportive."""
 @app.get("/brain-studio/categories")
 async def get_all_categories():
     """Get all unique categories in the brain."""
+    logger.info("Brain Studio: Fetching all categories")
     async with async_session() as session:
         from sqlalchemy import select, func
         result = await session.execute(
