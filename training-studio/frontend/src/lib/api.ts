@@ -896,3 +896,19 @@ export async function testPromptInLab(
   return res.json();
 }
 
+// ============================================================================
+// LOGS
+// ============================================================================
+
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+}
+
+export async function fetchLogs(lines: number = 50): Promise<{ entries: LogEntry[]; total: number }> {
+  const res = await fetch(`${API_BASE}/logs?lines=${lines}`);
+  if (!res.ok) throw new Error('Failed to fetch logs');
+  return res.json();
+}
+

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getApiKeyStatus, setApiKey, getHuggingFaceStatus, setHuggingFaceToken } from '@/lib/api';
+import LogsPanel from '@/components/LogsPanel';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -272,7 +273,8 @@ export default function RootLayout({
         <QueryClientProvider client={queryClient}>
           <div className="flex h-screen bg-gray-50">
             <Sidebar />
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main className="flex-1 overflow-auto pb-12">{children}</main>
+            <LogsPanel />
           </div>
         </QueryClientProvider>
       </body>
