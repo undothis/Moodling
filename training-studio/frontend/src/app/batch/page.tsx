@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { processBatchVideos, fetchJobs } from '@/lib/api';
+import { processBatchVideos, fetchJobs, fetchChannels, fetchChannelVideos } from '@/lib/api';
 import {
   Play,
   Loader2,
@@ -12,6 +12,10 @@ import {
   Clock,
   ListVideo,
   Trash2,
+  Youtube,
+  ChevronDown,
+  ChevronUp,
+  Plus,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -66,17 +70,190 @@ function JobStatusCard({ job }: { job: any }) {
   );
 }
 
+function ChannelVideoSelector({
+  onAddVideos,
+}: {
+  onAddVideos: (urls: string[]) => void;
+}) {
+  const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
+  const [videoCount, setVideoCount] = useState(20);
+
+  const { data: channels, isLoading: channelsLoading } = useQuery({
+    queryKey: ['channels'],
+    queryFn: fetchChannels,
+  });
+
+  const { data: channelVideos, isLoading: videosLoading } = useQuery({
+    queryKey: ['channel-videos', expandedChannel, videoCount],
+    queryFn: () => fetchChannelVideos(expandedChannel!, videoCount),
+    enabled: !!expandedChannel,
+  });
+
+  const toggleVideo = (videoId: string) => {
+    setSelectedVideos((prev) => {
+      const next = new Set(prev);
+      if (next.has(videoId)) {
+        next.delete(videoId);
+      } else {
+        next.add(videoId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllVideos = () => {
+    if (channelVideos?.videos) {
+      setSelectedVideos(new Set(channelVideos.videos.map((v) => v.video_id)));
+    }
+  };
+
+  const addSelectedToQueue = () => {
+    const urls = Array.from(selectedVideos).map(
+      (id) => `https://youtube.com/watch?v=${id}`
+    );
+    onAddVideos(urls);
+    setSelectedVideos(new Set());
+  };
+
+  if (channelsLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!channels || channels.length === 0) {
+    return (
+      <div className="text-center py-8 bg-gray-50 rounded-lg">
+        <Youtube className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+        <p className="text-gray-500 text-sm">No channels added yet</p>
+        <a href="/channels" className="text-leaf-600 hover:underline text-sm">
+          Add channels first →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {channels.map((channel) => (
+        <div key={channel.id} className="border border-gray-200 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setExpandedChannel(expandedChannel === channel.id ? null : channel.id)}
+            className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <Youtube className="w-5 h-5 text-red-500" />
+              <span className="font-medium text-gray-900">{channel.name}</span>
+              <span className="text-xs px-2 py-0.5 bg-gray-200 rounded-full text-gray-600">
+                {channel.videos_processed} processed
+              </span>
+            </div>
+            {expandedChannel === channel.id ? (
+              <ChevronUp className="w-5 h-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            )}
+          </button>
+
+          {expandedChannel === channel.id && (
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <select
+                    value={videoCount}
+                    onChange={(e) => setVideoCount(Number(e.target.value))}
+                    className="px-2 py-1 text-sm border border-gray-300 rounded"
+                  >
+                    <option value={10}>10 videos</option>
+                    <option value={20}>20 videos</option>
+                    <option value={50}>50 videos</option>
+                    <option value={100}>100 videos</option>
+                  </select>
+                  <button
+                    onClick={selectAllVideos}
+                    className="text-sm text-leaf-600 hover:underline"
+                  >
+                    Select All
+                  </button>
+                </div>
+                {selectedVideos.size > 0 && (
+                  <button
+                    onClick={addSelectedToQueue}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-leaf-500 text-white text-sm rounded-lg hover:bg-leaf-600"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add {selectedVideos.size} to Queue
+                  </button>
+                )}
+              </div>
+
+              {videosLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+              ) : channelVideos?.videos && channelVideos.videos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-auto">
+                  {channelVideos.videos.map((video) => (
+                    <label
+                      key={video.video_id}
+                      className={clsx(
+                        'flex items-center gap-2 p-2 rounded cursor-pointer',
+                        selectedVideos.has(video.video_id)
+                          ? 'bg-leaf-50 border border-leaf-200'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedVideos.has(video.video_id)}
+                        onChange={() => toggleVideo(video.video_id)}
+                        className="rounded border-gray-300 text-leaf-500"
+                      />
+                      {video.thumbnail_url && (
+                        <img
+                          src={video.thumbnail_url}
+                          alt=""
+                          className="w-16 h-10 object-cover rounded"
+                        />
+                      )}
+                      <span className="text-sm text-gray-700 line-clamp-2 flex-1">
+                        {video.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-4">No videos found</p>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BatchPage() {
   const queryClient = useQueryClient();
   const [videoUrls, setVideoUrls] = useState('');
   const [autoApprove, setAutoApprove] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
+  const [showChannels, setShowChannels] = useState(true);
 
   const { data: jobs } = useQuery({
     queryKey: ['jobs'],
     queryFn: fetchJobs,
     refetchInterval: 3000,
   });
+
+  const addVideosFromChannel = (urls: string[]) => {
+    const currentUrls = videoUrls.split('\n').filter((u) => u.trim());
+    const newUrls = urls.filter((u) => !currentUrls.includes(u));
+    setVideoUrls([...currentUrls, ...newUrls].join('\n'));
+  };
 
   const { mutate: processBatch, isPending } = useMutation({
     mutationFn: (urls: string[]) => processBatchVideos(urls, { autoApprove }),
@@ -116,8 +293,22 @@ export default function BatchPage() {
           <h1 className="text-2xl font-bold text-gray-900">Batch Video Processing</h1>
         </div>
         <p className="text-gray-500">
-          Paste multiple YouTube URLs and process them all at once
+          Select videos from your channels or paste YouTube URLs
         </p>
+      </div>
+
+      {/* Channel Selector */}
+      <div className="bg-white rounded-xl p-6 border border-gray-100 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900">Your Channels</h2>
+          <button
+            onClick={() => setShowChannels(!showChannels)}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            {showChannels ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showChannels && <ChannelVideoSelector onAddVideos={addVideosFromChannel} />}
       </div>
 
       {/* URL Input */}
