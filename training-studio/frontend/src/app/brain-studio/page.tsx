@@ -540,6 +540,8 @@ function GoalsTab() {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editGoalData, setEditGoalData] = useState({ target_percentage: 10, priority: 2, description: '', recommended_sources: '' });
 
+  const [addError, setAddError] = useState<string | null>(null);
+
   const { data: comparison, isLoading } = useQuery({ queryKey: ['brain-comparison'], queryFn: fetchBrainComparison });
   const { data: goalsData } = useQuery({ queryKey: ['brain-goals'], queryFn: fetchBrainGoals });
   const { data: categories } = useQuery({ queryKey: ['brain-categories'], queryFn: fetchBrainCategories });
@@ -551,6 +553,11 @@ function GoalsTab() {
       queryClient.invalidateQueries({ queryKey: ['brain-comparison'] });
       setShowAddForm(false);
       setNewGoal({ category: '', target_percentage: 10, priority: 2, description: '', recommended_sources: '' });
+      setAddError(null);
+    },
+    onError: (error: Error) => {
+      setAddError(error.message || 'Failed to add goal. Check console for details.');
+      console.error('Add goal error:', error);
     },
   });
 
@@ -672,6 +679,11 @@ function GoalsTab() {
       {showAddForm && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-4">
           <h4 className="font-medium text-gray-900">Add Training Goal</h4>
+          {addError && (
+            <div className="bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded text-sm">
+              {addError}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-600 mb-1">Category</label>
@@ -766,9 +778,16 @@ function GoalsTab() {
                   </div>
                   {/* Video Suggestion Row */}
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 text-xs text-gray-500 group relative">
                       <Video className="w-3 h-3" />
-                      <span>Process ~{videosNeeded} {videosNeeded === 1 ? 'video' : 'videos'} to fill gap</span>
+                      <span className="cursor-help border-b border-dotted border-gray-400">
+                        Process ~{videosNeeded} {videosNeeded === 1 ? 'video' : 'videos'} to fill gap
+                      </span>
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 bg-gray-900 text-white text-xs rounded-lg p-2 z-10">
+                        <p className="font-medium mb-1">How this is calculated:</p>
+                        <p>({comparison.total_insights} insights × {gap.gap}% gap) ÷ 4 insights/video</p>
+                        <p className="mt-1 text-gray-300">Average: ~4 insights per video</p>
+                      </div>
                     </div>
                     <Link
                       href={`/batch?category=${encodeURIComponent(gap.category)}`}
