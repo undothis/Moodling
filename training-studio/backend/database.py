@@ -254,6 +254,21 @@ class BrainSnapshotModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class BrainGoalModel(Base):
+    """Target goals for brain training - what percentage of each category we want."""
+    __tablename__ = "brain_goals"
+
+    id = Column(String, primary_key=True)
+    category = Column(String, nullable=False)  # e.g., "emotional_regulation", "coping_strategies"
+    target_percentage = Column(Float, default=0.0)  # Target % of total training
+    priority = Column(Integer, default=1)  # 1=high, 2=medium, 3=low
+    description = Column(Text, nullable=True)  # What this category should cover
+    recommended_sources = Column(Text, nullable=True)  # Suggested channels/content types
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ============================================================================
 # DATABASE UTILITIES
 # ============================================================================
@@ -869,6 +884,206 @@ class DatabaseService:
                 "total_violations": total_violations,
                 "average_weight": round(average_weight, 2),
             }
+
+    # ========================================================================
+    # BRAIN GOALS DATABASE METHODS
+    # ========================================================================
+
+    @staticmethod
+    async def get_all_goals() -> List[BrainGoalModel]:
+        """Get all brain training goals."""
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(BrainGoalModel)
+                .where(BrainGoalModel.is_active == True)
+                .order_by(BrainGoalModel.priority, BrainGoalModel.category)
+            )
+            return result.scalars().all()
+
+    @staticmethod
+    async def create_goal(goal_data: dict) -> BrainGoalModel:
+        """Create a new brain training goal."""
+        async with async_session() as session:
+            goal = BrainGoalModel(
+                id=str(uuid.uuid4())[:8],
+                **goal_data
+            )
+            session.add(goal)
+            await session.commit()
+            await session.refresh(goal)
+            return goal
+
+    @staticmethod
+    async def update_goal(goal_id: str, updates: dict) -> Optional[BrainGoalModel]:
+        """Update a goal."""
+        async with async_session() as session:
+            from sqlalchemy import select
+            result = await session.execute(
+                select(BrainGoalModel).where(BrainGoalModel.id == goal_id)
+            )
+            goal = result.scalar_one_or_none()
+            if goal:
+                for key, value in updates.items():
+                    if hasattr(goal, key):
+                        setattr(goal, key, value)
+                goal.updated_at = datetime.utcnow()
+                await session.commit()
+                await session.refresh(goal)
+            return goal
+
+    @staticmethod
+    async def delete_goal(goal_id: str) -> bool:
+        """Delete a goal."""
+        async with async_session() as session:
+            from sqlalchemy import delete
+            result = await session.execute(
+                delete(BrainGoalModel).where(BrainGoalModel.id == goal_id)
+            )
+            await session.commit()
+            return result.rowcount > 0
+
+    @staticmethod
+    async def get_current_brain_state() -> dict:
+        """Get the current state of the brain (category distribution of approved insights)."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            # Get total approved insights
+            total_result = await session.execute(
+                select(func.count(InsightModel.id))
+                .where(InsightModel.status == "approved", InsightModel.is_active == True)
+            )
+            total_insights = total_result.scalar() or 0
+
+            if total_insights == 0:
+                return {"total": 0, "categories": {}}
+
+            # Get category breakdown
+            category_result = await session.execute(
+                select(InsightModel.category, func.count(InsightModel.id))
+                .where(InsightModel.status == "approved", InsightModel.is_active == True)
+                .group_by(InsightModel.category)
+            )
+
+            categories = {}
+            for cat, count in category_result:
+                percentage = (count / total_insights) * 100
+                categories[cat] = {
+                    "count": count,
+                    "percentage": round(percentage, 1)
+                }
+
+            return {
+                "total": total_insights,
+                "categories": categories
+            }
+
+    @staticmethod
+    async def get_brain_comparison() -> dict:
+        """Compare current brain state to goals - returns both for visualization."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            # Get current state
+            total_result = await session.execute(
+                select(func.count(InsightModel.id))
+                .where(InsightModel.status == "approved", InsightModel.is_active == True)
+            )
+            total_insights = total_result.scalar() or 0
+
+            # Get category breakdown for current state
+            category_result = await session.execute(
+                select(InsightModel.category, func.count(InsightModel.id))
+                .where(InsightModel.status == "approved", InsightModel.is_active == True)
+                .group_by(InsightModel.category)
+            )
+
+            current_state = {}
+            for cat, count in category_result:
+                percentage = (count / total_insights * 100) if total_insights > 0 else 0
+                current_state[cat] = round(percentage, 1)
+
+            # Get goals
+            goals_result = await session.execute(
+                select(BrainGoalModel)
+                .where(BrainGoalModel.is_active == True)
+            )
+            goals = goals_result.scalars().all()
+
+            goal_state = {}
+            for g in goals:
+                goal_state[g.category] = {
+                    "target": g.target_percentage,
+                    "priority": g.priority,
+                    "description": g.description,
+                    "recommended_sources": g.recommended_sources
+                }
+
+            # Calculate gaps
+            gaps = []
+            all_categories = set(list(current_state.keys()) + list(goal_state.keys()))
+
+            for cat in all_categories:
+                current = current_state.get(cat, 0)
+                target_data = goal_state.get(cat, {"target": 0, "priority": 3})
+                target = target_data.get("target", 0) if isinstance(target_data, dict) else 0
+                gap = target - current
+
+                if gap > 0:  # We need more of this
+                    gaps.append({
+                        "category": cat,
+                        "current": current,
+                        "target": target,
+                        "gap": round(gap, 1),
+                        "priority": target_data.get("priority", 3) if isinstance(target_data, dict) else 3,
+                        "recommended_sources": target_data.get("recommended_sources") if isinstance(target_data, dict) else None
+                    })
+
+            # Sort gaps by priority then by gap size
+            gaps.sort(key=lambda x: (x["priority"], -x["gap"]))
+
+            return {
+                "total_insights": total_insights,
+                "current_state": current_state,
+                "goal_state": {k: v["target"] for k, v in goal_state.items()},
+                "goals_detail": goal_state,
+                "gaps": gaps,
+                "health_score": calculate_brain_health(current_state, goal_state)
+            }
+
+
+def calculate_brain_health(current: dict, goals: dict) -> int:
+    """Calculate overall brain health score (0-100) based on how close we are to goals."""
+    if not goals:
+        return 100  # No goals defined = healthy by default
+
+    total_weight = 0
+    weighted_score = 0
+
+    for category, goal_data in goals.items():
+        target = goal_data.get("target", 0) if isinstance(goal_data, dict) else 0
+        priority = goal_data.get("priority", 2) if isinstance(goal_data, dict) else 2
+
+        if target == 0:
+            continue
+
+        current_val = current.get(category, 0)
+        # Score is how close we are to target (100 = at or above target)
+        if current_val >= target:
+            score = 100
+        else:
+            score = (current_val / target) * 100
+
+        # Weight by inverse priority (priority 1 = weight 3, priority 3 = weight 1)
+        weight = 4 - priority
+        weighted_score += score * weight
+        total_weight += weight
+
+    if total_weight == 0:
+        return 100
+
+    return round(weighted_score / total_weight)
 
 
 # Export database service

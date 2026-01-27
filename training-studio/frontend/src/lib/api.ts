@@ -765,3 +765,134 @@ export async function fetchBrainStatistics(): Promise<{
   return res.json();
 }
 
+// ============================================================================
+// BRAIN STUDIO - GOALS & COMPARISON
+// ============================================================================
+
+export interface BrainGoal {
+  id: string;
+  category: string;
+  target_percentage: number;
+  priority: number;
+  description: string | null;
+  recommended_sources: string | null;
+  is_active: boolean;
+}
+
+export interface BrainComparison {
+  total_insights: number;
+  current_state: Record<string, number>;
+  goal_state: Record<string, number>;
+  goals_detail: Record<string, {
+    target: number;
+    priority: number;
+    description: string | null;
+    recommended_sources: string | null;
+  }>;
+  gaps: Array<{
+    category: string;
+    current: number;
+    target: number;
+    gap: number;
+    priority: number;
+    recommended_sources: string | null;
+  }>;
+  health_score: number;
+}
+
+export async function fetchBrainGoals(): Promise<{ goals: BrainGoal[] }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals`);
+  if (!res.ok) throw new Error('Failed to fetch brain goals');
+  return res.json();
+}
+
+export async function createBrainGoal(data: {
+  category: string;
+  target_percentage: number;
+  priority?: number;
+  description?: string;
+  recommended_sources?: string;
+}): Promise<{ success: boolean; goal: BrainGoal }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create goal');
+  return res.json();
+}
+
+export async function updateBrainGoal(
+  goalId: string,
+  data: Partial<BrainGoal>
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals/${goalId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update goal');
+  return res.json();
+}
+
+export async function deleteBrainGoal(goalId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/brain-studio/goals/${goalId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete goal');
+  return res.json();
+}
+
+export async function fetchBrainComparison(): Promise<BrainComparison> {
+  const res = await fetch(`${API_BASE}/brain-studio/comparison`);
+  if (!res.ok) throw new Error('Failed to fetch brain comparison');
+  return res.json();
+}
+
+export async function fetchBrainCategories(): Promise<{
+  categories: Array<{ name: string; count: number }>;
+}> {
+  const res = await fetch(`${API_BASE}/brain-studio/categories`);
+  if (!res.ok) throw new Error('Failed to fetch categories');
+  return res.json();
+}
+
+// ============================================================================
+// BRAIN STUDIO - PROMPT LAB
+// ============================================================================
+
+export interface PromptLabResult {
+  prompt: string;
+  response: string;
+  influences: Array<{
+    marker: string;
+    title: string;
+    category: string;
+    relevance_score: number;
+    influence_weight: number;
+    snippet: string;
+  }>;
+  total_relevant_insights: number;
+  brain_stats: {
+    total_insights: number;
+    categories_represented: number;
+  };
+}
+
+export async function testPromptInLab(
+  prompt: string,
+  options: { showInfluences?: boolean; systemPrompt?: string } = {}
+): Promise<PromptLabResult> {
+  const res = await fetch(`${API_BASE}/brain-studio/prompt-lab`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      show_influences: options.showInfluences ?? true,
+      system_prompt: options.systemPrompt,
+    }),
+  });
+  if (!res.ok) throw new Error('Failed to test prompt');
+  return res.json();
+}
+

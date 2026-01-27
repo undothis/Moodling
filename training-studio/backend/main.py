@@ -27,7 +27,7 @@ import tempfile
 from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES, VERSION, get_version_info
 from database import (
     init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel,
-    PhilosophyModel, TenantModel, InsightComplianceModel, BrainSnapshotModel
+    PhilosophyModel, TenantModel, InsightComplianceModel, BrainSnapshotModel, BrainGoalModel
 )
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
@@ -3047,6 +3047,206 @@ async def get_channel_videos_with_count(
         "count": len(videos),
         "requested": max_videos
     }
+
+
+# ============================================================================
+# BRAIN STUDIO - GOALS & BRAIN COMPARISON
+# ============================================================================
+
+class BrainGoalCreateRequest(BaseModel):
+    """Request to create a brain training goal."""
+    category: str
+    target_percentage: float = Field(ge=0, le=100)
+    priority: int = Field(ge=1, le=3, default=2)
+    description: Optional[str] = None
+    recommended_sources: Optional[str] = None
+
+
+class BrainGoalUpdateRequest(BaseModel):
+    """Request to update a brain training goal."""
+    category: Optional[str] = None
+    target_percentage: Optional[float] = Field(ge=0, le=100, default=None)
+    priority: Optional[int] = Field(ge=1, le=3, default=None)
+    description: Optional[str] = None
+    recommended_sources: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+@app.get("/brain-studio/goals")
+async def get_brain_goals():
+    """Get all brain training goals."""
+    goals = await db.get_all_goals()
+    return {
+        "goals": [
+            {
+                "id": g.id,
+                "category": g.category,
+                "target_percentage": g.target_percentage,
+                "priority": g.priority,
+                "description": g.description,
+                "recommended_sources": g.recommended_sources,
+                "is_active": g.is_active,
+            }
+            for g in goals
+        ]
+    }
+
+
+@app.post("/brain-studio/goals")
+async def create_brain_goal(request: BrainGoalCreateRequest):
+    """Create a new brain training goal."""
+    goal = await db.create_goal({
+        "category": request.category,
+        "target_percentage": request.target_percentage,
+        "priority": request.priority,
+        "description": request.description,
+        "recommended_sources": request.recommended_sources,
+    })
+    return {
+        "success": True,
+        "goal": {
+            "id": goal.id,
+            "category": goal.category,
+            "target_percentage": goal.target_percentage,
+            "priority": goal.priority,
+        }
+    }
+
+
+@app.put("/brain-studio/goals/{goal_id}")
+async def update_brain_goal(goal_id: str, request: BrainGoalUpdateRequest):
+    """Update a brain training goal."""
+    updates = {k: v for k, v in request.dict().items() if v is not None}
+    goal = await db.update_goal(goal_id, updates)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return {"success": True, "goal_id": goal_id}
+
+
+@app.delete("/brain-studio/goals/{goal_id}")
+async def delete_brain_goal(goal_id: str):
+    """Delete a brain training goal."""
+    success = await db.delete_goal(goal_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return {"success": True}
+
+
+@app.get("/brain-studio/brain-state")
+async def get_brain_state():
+    """Get current brain state (category distribution)."""
+    return await db.get_current_brain_state()
+
+
+@app.get("/brain-studio/comparison")
+async def get_brain_comparison():
+    """Get brain comparison - current state vs goals."""
+    return await db.get_brain_comparison()
+
+
+# ============================================================================
+# BRAIN STUDIO - PROMPT LAB
+# ============================================================================
+
+class PromptLabRequest(BaseModel):
+    """Request to test a prompt in the lab."""
+    prompt: str
+    show_influences: bool = True  # Show which insights would influence the response
+    system_prompt: Optional[str] = None  # Optional custom system prompt
+
+
+@app.post("/brain-studio/prompt-lab")
+async def test_prompt_in_lab(request: PromptLabRequest):
+    """
+    Test a prompt against the current brain state.
+    Shows what insights would influence the response and generates a sample response.
+    """
+    import anthropic
+
+    if not settings.anthropic_api_key:
+        raise HTTPException(status_code=400, detail="Claude API key not configured")
+
+    # Get relevant insights that might influence this response
+    insights = await db.get_insights_with_markers()
+
+    # Find insights that might be relevant to this prompt (simple keyword matching)
+    prompt_lower = request.prompt.lower()
+    relevant_insights = []
+
+    for insight in insights[:200]:  # Limit to 200 most recent
+        # Check if any words from the prompt appear in the insight
+        insight_text = f"{insight.title} {insight.insight} {insight.category}".lower()
+        relevance_score = 0
+
+        for word in prompt_lower.split():
+            if len(word) > 3 and word in insight_text:
+                relevance_score += 1
+
+        if relevance_score > 0:
+            relevant_insights.append({
+                "marker": insight.marker or f"ML-{insight.id[:8]}",
+                "title": insight.title,
+                "category": insight.category,
+                "relevance_score": relevance_score,
+                "influence_weight": insight.influence_weight or 1.0,
+                "snippet": insight.insight[:150] + "..." if len(insight.insight) > 150 else insight.insight
+            })
+
+    # Sort by relevance and weight
+    relevant_insights.sort(key=lambda x: (x["relevance_score"] * x["influence_weight"]), reverse=True)
+    top_influences = relevant_insights[:10]
+
+    # Build context from top influences
+    influence_context = ""
+    if top_influences:
+        influence_context = "\n\nRelevant training insights that should inform your response:\n"
+        for i, inf in enumerate(top_influences[:5]):
+            influence_context += f"\n[{inf['marker']}] ({inf['category']}): {inf['snippet']}"
+
+    # Generate a response using Claude
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+    system = request.system_prompt or """You are MoodLeaf's AI coach - a warm, compassionate wellness companion.
+You help people with emotional wellbeing using therapeutic techniques.
+Use the training insights provided to inform your response style and approach.
+Be genuine, empathetic, and supportive."""
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            system=system + influence_context,
+            messages=[{"role": "user", "content": request.prompt}]
+        )
+
+        generated_response = response.content[0].text
+    except Exception as e:
+        generated_response = f"Error generating response: {str(e)}"
+
+    return {
+        "prompt": request.prompt,
+        "response": generated_response,
+        "influences": top_influences if request.show_influences else [],
+        "total_relevant_insights": len(relevant_insights),
+        "brain_stats": {
+            "total_insights": len(insights),
+            "categories_represented": len(set(i.category for i in insights))
+        }
+    }
+
+
+@app.get("/brain-studio/categories")
+async def get_all_categories():
+    """Get all unique categories in the brain."""
+    async with async_session() as session:
+        from sqlalchemy import select, func
+        result = await session.execute(
+            select(InsightModel.category, func.count(InsightModel.id))
+            .where(InsightModel.status == "approved")
+            .group_by(InsightModel.category)
+        )
+        categories = [{"name": cat, "count": count} for cat, count in result]
+        return {"categories": sorted(categories, key=lambda x: x["count"], reverse=True)}
 
 
 # ============================================================================
