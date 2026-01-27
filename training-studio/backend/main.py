@@ -1069,8 +1069,9 @@ async def get_job_status(job_id: str):
 
 @app.get("/jobs")
 async def list_jobs():
-    """List all processing jobs."""
-    return [
+    """List all processing jobs (active + completed from database)."""
+    # Get active jobs from memory
+    active = [
         {
             "job_id": job_id,
             "video_id": job.video_id,
@@ -1085,6 +1086,14 @@ async def list_jobs():
         }
         for job_id, job in active_jobs.items()
     ]
+
+    # Get completed/failed jobs from database (that are not in active_jobs)
+    active_video_ids = {job.video_id for job in active_jobs.values()}
+    completed_jobs = await db.get_completed_jobs()
+    db_jobs = [j for j in completed_jobs if j["video_id"] not in active_video_ids]
+
+    # Combine and return
+    return active + db_jobs
 
 
 async def process_video_task(
@@ -1300,6 +1309,19 @@ async def process_video_task(
         job.progress = 100
         job.completed_at = datetime.utcnow()
 
+        # Persist job to database for crash recovery
+        await db.save_processing_job({
+            "id": job_id,
+            "video_id": video_id,
+            "status": "completed",
+            "progress": 100,
+            "current_step": "Complete",
+            "completed_at": job.completed_at,
+            "component_status_json": job.component_status,
+            "aliveness_scores_json": job.aliveness_scores,
+            "insights_count": len(insights),
+        })
+
         print(f"[Process] Completed: {video_id} - {len(insights)} insights extracted")
 
     except Exception as e:
@@ -1307,6 +1329,17 @@ async def process_video_task(
         job.error_message = str(e)
         job.current_step = f"Failed: {str(e)[:100]}"
         print(f"[Process] Failed: {video_id} - {e}")
+
+        # Persist failed job to database
+        await db.save_processing_job({
+            "id": job_id,
+            "video_id": video_id,
+            "status": "failed",
+            "progress": job.progress,
+            "current_step": job.current_step,
+            "error_message": str(e),
+            "component_status_json": job.component_status,
+        })
 
         # Cleanup on failure
         youtube_service.cleanup_temp_files(video_id)
@@ -2710,6 +2743,18 @@ async def process_video_simple_task(
         job.progress = 100
         job.completed_at = datetime.utcnow()
 
+        # Persist job to database for crash recovery
+        await db.save_processing_job({
+            "id": job_id,
+            "video_id": video_id,
+            "status": "completed",
+            "progress": 100,
+            "current_step": "Complete",
+            "completed_at": job.completed_at,
+            "component_status_json": job.component_status,
+            "insights_count": len(insights),
+        })
+
         approved_count = len([i for i in insights if i.status == InsightStatus.APPROVED])
         logger.info(f"[Simple] Completed: {video_id} - {len(insights)} insights ({approved_count} auto-approved)")
 
@@ -2717,6 +2762,18 @@ async def process_video_simple_task(
         job.status = ProcessingStatus.FAILED
         job.error_message = str(e)
         job.current_step = f"Failed: {str(e)[:100]}"
+
+        # Persist failed job to database
+        await db.save_processing_job({
+            "id": job_id,
+            "video_id": video_id,
+            "status": "failed",
+            "progress": job.progress,
+            "current_step": job.current_step,
+            "error_message": str(e),
+            "component_status_json": job.component_status,
+        })
+
         logger.error(f"[Simple] Failed: {video_id} - {e}", exc_info=True)
 
 

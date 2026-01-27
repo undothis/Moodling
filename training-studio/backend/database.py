@@ -107,6 +107,7 @@ class ProcessingJobModel(Base):
     emotional_arc_json = Column(JSON, nullable=True)
     aliveness_scores_json = Column(JSON, nullable=True)
     component_status_json = Column(JSON, nullable=True)  # Tracks status of each processing component
+    insights_count = Column(Integer, default=0)  # Number of insights extracted
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -703,6 +704,116 @@ class DatabaseService:
                     })
 
             return stats
+
+    # ========================================================================
+    # PROCESSING JOB PERSISTENCE METHODS
+    # ========================================================================
+
+    @staticmethod
+    async def save_processing_job(job_data: dict) -> ProcessingJobModel:
+        """Save or update a processing job."""
+        async with async_session() as session:
+            # Check if job already exists
+            result = await session.execute(
+                select(ProcessingJobModel).where(ProcessingJobModel.video_id == job_data["video_id"])
+            )
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                # Update existing job
+                for key, value in job_data.items():
+                    if hasattr(existing, key):
+                        setattr(existing, key, value)
+                await session.commit()
+                return existing
+            else:
+                # Create new job
+                job = ProcessingJobModel(**job_data)
+                session.add(job)
+                await session.commit()
+                return job
+
+    @staticmethod
+    async def get_completed_jobs() -> List[dict]:
+        """Get all completed or failed processing jobs from database."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            result = await session.execute(
+                select(ProcessingJobModel).where(
+                    ProcessingJobModel.status.in_(["completed", "failed"])
+                )
+            )
+            jobs = result.scalars().all()
+
+            job_list = []
+            for job in jobs:
+                # Count insights for this video
+                insight_count = await session.execute(
+                    select(func.count(InsightModel.id)).where(InsightModel.video_id == job.video_id)
+                )
+                count = insight_count.scalar() or 0
+
+                job_list.append({
+                    "job_id": job.id,
+                    "video_id": job.video_id,
+                    "status": job.status,
+                    "progress": job.progress or 100,
+                    "current_step": job.current_step or "Complete",
+                    "created_at": job.created_at,
+                    "completed_at": job.completed_at,
+                    "component_status": job.component_status_json or {},
+                    "aliveness_scores": job.aliveness_scores_json or {},
+                    "insights_count": count,
+                    "error_message": job.error_message,
+                })
+
+            return job_list
+
+    @staticmethod
+    async def get_processed_video_ids() -> set:
+        """Get set of video IDs that have been successfully processed."""
+        async with async_session() as session:
+            result = await session.execute(
+                select(ProcessingJobModel.video_id).where(
+                    ProcessingJobModel.status == "completed"
+                )
+            )
+            return {row[0] for row in result}
+
+    @staticmethod
+    async def get_job_by_video_id(video_id: str) -> Optional[dict]:
+        """Get a processing job by video ID."""
+        async with async_session() as session:
+            from sqlalchemy import select, func
+
+            result = await session.execute(
+                select(ProcessingJobModel).where(ProcessingJobModel.video_id == video_id)
+            )
+            job = result.scalar_one_or_none()
+
+            if not job:
+                return None
+
+            # Count insights
+            insight_count = await session.execute(
+                select(func.count(InsightModel.id)).where(InsightModel.video_id == video_id)
+            )
+            count = insight_count.scalar() or 0
+
+            return {
+                "job_id": job.id,
+                "video_id": job.video_id,
+                "status": job.status,
+                "progress": job.progress or 0,
+                "current_step": job.current_step or "",
+                "created_at": job.created_at,
+                "completed_at": job.completed_at,
+                "component_status": job.component_status_json or {},
+                "aliveness_scores": job.aliveness_scores_json or {},
+                "insights_count": count,
+                "error_message": job.error_message,
+            }
 
     # ========================================================================
     # BRAIN STUDIO DATABASE METHODS
