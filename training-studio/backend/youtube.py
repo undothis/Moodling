@@ -189,84 +189,84 @@ class YouTubeService:
         logger = logging.getLogger(__name__)
 
         try:
-            # Normalize the URL - ensure it ends with /videos for channel listings
-            normalized_url = channel_url.rstrip('/')
-            if not normalized_url.endswith('/videos'):
-                normalized_url = f"{normalized_url}/videos"
+            # Build list of URL variants to try (order matters - most reliable first)
+            base_url = channel_url.rstrip('/')
+            url_variants = []
 
-            logger.info(f"[YouTube] Fetching videos from: {normalized_url}")
-            print(f"[YouTube] Fetching videos from: {normalized_url}")
+            # For @handle URLs
+            if "@" in base_url:
+                # Try with /videos first, then without
+                url_variants.append(f"{base_url}/videos")
+                url_variants.append(base_url)
+            # For channel ID URLs
+            elif "/channel/" in base_url:
+                url_variants.append(f"{base_url}/videos")
+                url_variants.append(base_url)
+            # For custom URLs (/c/)
+            elif "/c/" in base_url:
+                url_variants.append(f"{base_url}/videos")
+                url_variants.append(base_url)
+            # For user URLs (legacy)
+            elif "/user/" in base_url:
+                url_variants.append(f"{base_url}/videos")
+                url_variants.append(base_url)
+            else:
+                # Unknown format - try both
+                url_variants.append(f"{base_url}/videos")
+                url_variants.append(base_url)
 
-            # Use yt-dlp to get playlist info
-            cmd = [
-                "yt-dlp",
-                "--dump-json",
-                "--flat-playlist",
-                "--playlist-end", str(max_videos * 2),  # Get extra for filtering
-                normalized_url
-            ]
+            stdout_text = ""
 
-            logger.info(f"[YouTube] Running: {' '.join(cmd)}")
-            print(f"[YouTube] Running: {' '.join(cmd)}")
+            # Try each URL variant until one works
+            for attempt, try_url in enumerate(url_variants):
+                logger.info(f"[YouTube] Attempt {attempt + 1}: Fetching videos from: {try_url}")
+                print(f"[YouTube] Attempt {attempt + 1}: Fetching videos from: {try_url}")
 
-            result = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await result.communicate()
+                # Use yt-dlp to get playlist info
+                cmd = [
+                    "yt-dlp",
+                    "--dump-json",
+                    "--flat-playlist",
+                    "--ignore-errors",  # Continue on individual video errors
+                    "--no-warnings",
+                    "--playlist-end", str(max_videos * 2),  # Get extra for filtering
+                    try_url
+                ]
 
-            stdout_text = stdout.decode() if stdout else ""
-            stderr_text = stderr.decode() if stderr else ""
+                logger.info(f"[YouTube] Running: {' '.join(cmd)}")
+                print(f"[YouTube] Running: {' '.join(cmd)}")
 
-            logger.info(f"[YouTube] yt-dlp returncode: {result.returncode}")
-            logger.info(f"[YouTube] stdout length: {len(stdout_text)} chars")
-            if stderr_text:
-                logger.warning(f"[YouTube] stderr: {stderr_text[:500]}")
+                result = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await result.communicate()
 
-            # Retry if command failed OR if stdout is empty (yt-dlp sometimes returns 0 with no output)
-            needs_retry = result.returncode != 0 or not stdout_text.strip()
+                stdout_text = stdout.decode() if stdout else ""
+                stderr_text = stderr.decode() if stderr else ""
 
-            if needs_retry:
-                if result.returncode != 0:
-                    print(f"[YouTube] Error fetching videos: {stderr_text}")
+                logger.info(f"[YouTube] yt-dlp returncode: {result.returncode}")
+                logger.info(f"[YouTube] stdout length: {len(stdout_text)} chars")
+
+                # Check if we got output
+                if stdout_text.strip():
+                    # Count valid JSON lines (not errors)
+                    valid_lines = [l for l in stdout_text.strip().split("\n") if l.strip() and l.strip().startswith("{")]
+                    if valid_lines:
+                        print(f"[YouTube] Success! Got {len(valid_lines)} videos from {try_url}")
+                        break
+                    else:
+                        print(f"[YouTube] No valid video data from {try_url}, trying next...")
                 else:
-                    print(f"[YouTube] Command succeeded but no output, will retry with alternate URL")
+                    if stderr_text:
+                        logger.warning(f"[YouTube] stderr: {stderr_text[:500]}")
+                    print(f"[YouTube] No output from {try_url}, trying next...")
 
-                # Try alternate URL format if first attempt failed
-                if "@" in channel_url:
-                    # Try without /videos suffix for @handle URLs
-                    alt_url = channel_url.rstrip('/')
-                    print(f"[YouTube] Retrying with: {alt_url}")
-
-                    # Build new command with alternate URL
-                    retry_cmd = [
-                        "yt-dlp",
-                        "--dump-json",
-                        "--flat-playlist",
-                        "--playlist-end", str(max_videos * 2),
-                        "--no-warnings",
-                        alt_url
-                    ]
-                    print(f"[YouTube] Running retry: {' '.join(retry_cmd)}")
-
-                    result = await asyncio.create_subprocess_exec(
-                        *retry_cmd,
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
-                    )
-                    stdout, stderr = await result.communicate()
-
-                    # CRITICAL: Update stdout_text with the retry output
-                    stdout_text = stdout.decode() if stdout else ""
-
-                    if result.returncode != 0 or not stdout_text.strip():
-                        print(f"[YouTube] Retry also failed: {stderr.decode() if stderr else 'no stderr'}")
-                        return []
-
-                    logger.info(f"[YouTube] Retry succeeded, stdout length: {len(stdout_text)} chars")
-                else:
-                    return []
+            # If all attempts failed
+            if not stdout_text.strip():
+                print(f"[YouTube] All URL variants failed for channel: {channel_url}")
+                return []
 
             # Parse JSON lines
             videos = []
@@ -277,37 +277,81 @@ class YouTubeService:
                 if line:
                     try:
                         data = json.loads(line)
+
+                        # DEBUG: Log the keys we're getting from yt-dlp
+                        if i == 0:
+                            logger.info(f"[YouTube] DEBUG: First JSON keys: {list(data.keys())[:15]}")
+                            logger.info(f"[YouTube] DEBUG: _type={data.get('_type')}, id={data.get('id')}, title={data.get('title', 'NO TITLE')[:50] if data.get('title') else 'NONE'}")
+
+                        # Skip playlist/channel metadata entries (not actual videos)
+                        # Note: --flat-playlist returns _type="url" for video entries
+                        entry_type = data.get("_type", "video")
+                        if entry_type in ["playlist", "channel", "multi_video"]:
+                            logger.info(f"[YouTube] Skipping {entry_type} entry: {data.get('title', 'unknown')[:50]}")
+                            continue
+
+                        # Get video ID - try multiple field names
+                        video_id = data.get("id", "")
+                        # Fallback: extract from URL if present
+                        if not video_id:
+                            url = data.get("url", "")
+                            if "v=" in url:
+                                video_id = url.split("v=")[-1].split("&")[0]
+                            elif "/shorts/" in url:
+                                video_id = url.split("/shorts/")[-1].split("?")[0]
+
+                        # Skip if no video ID found
+                        if not video_id:
+                            logger.warning(f"[YouTube] Line {i}: No video_id found, _type={entry_type}, keys: {list(data.keys())[:10]}")
+                            continue
+
                         # Skip very short videos (< 45 seconds) - likely YouTube Shorts
+                        # Note: duration might be None in flat-playlist mode, that's OK
                         duration = data.get("duration")
-                        if duration and duration < 45:
+                        if duration is not None and duration < 45:
                             logger.debug(f"[YouTube] Skipping short video ({duration}s): {data.get('title', 'unknown')}")
                             continue
 
-                        video_id = data.get("id", "")
-                        # Use standard YouTube thumbnail URL format
-                        thumbnail = data.get("thumbnail") or data.get("thumbnails", [{}])[0].get("url") if data.get("thumbnails") else None
-                        if not thumbnail and video_id:
-                            thumbnail = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
+                        # Get thumbnail - try multiple sources with proper fallback
+                        thumbnail = None
+                        # First try direct thumbnail field
+                        if data.get("thumbnail"):
+                            thumbnail = data.get("thumbnail")
+                        # Then try thumbnails array if it exists and has items
+                        elif data.get("thumbnails") and len(data.get("thumbnails", [])) > 0:
+                            thumbnail = data["thumbnails"][0].get("url")
 
-                        videos.append(VideoMetadata(
+                        # Always use YouTube's standard thumbnail URL as fallback when we have video_id
+                        # This ensures previews work even when yt-dlp doesn't return thumbnail data
+                        if not thumbnail and video_id:
+                            thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+
+                        video = VideoMetadata(
                             id=str(uuid.uuid4()),
                             video_id=video_id,
-                            channel_id=data.get("channel_id") or "unknown",
-                            title=data.get("title", ""),
-                            description=data.get("description", ""),
+                            channel_id=data.get("channel_id") or data.get("uploader_id") or "unknown",
+                            title=data.get("title", "") or f"Video {video_id}",
+                            description=data.get("description", "") or "",
                             duration_seconds=duration or 0,
                             view_count=data.get("view_count", 0) or 0,
                             like_count=data.get("like_count", 0) or 0,
                             published_at=None,  # Would need additional call
                             thumbnail_url=thumbnail,
-                        ))
-                        if i == 0:
-                            logger.info(f"[YouTube] First video: {data.get('title', 'no title')[:50]}")
+                        )
+                        videos.append(video)
+
+                        # Log every video added for debugging
+                        if len(videos) <= 3:
+                            logger.info(f"[YouTube] Added video {len(videos)}: {video.title[:40]}... (id={video_id})")
+
                     except json.JSONDecodeError as e:
                         logger.warning(f"[YouTube] JSON parse error on line {i}: {str(e)[:100]}")
                         continue
+                    except Exception as e:
+                        logger.error(f"[YouTube] Unexpected error on line {i}: {type(e).__name__}: {str(e)[:100]}")
+                        continue
 
-            logger.info(f"[YouTube] Parsed {len(videos)} videos (after filtering shorts)")
+            logger.info(f"[YouTube] Successfully parsed {len(videos)} videos from {len(lines)} JSON lines")
 
             # Apply strategy
             if strategy == "popular":
