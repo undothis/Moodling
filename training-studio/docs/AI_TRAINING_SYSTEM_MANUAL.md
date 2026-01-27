@@ -128,12 +128,13 @@ HF_TOKEN=hf_your-token-here
 6. [Advanced Research Methods](#6-advanced-research-methods)
 7. [Data Persistence & Backup](#7-data-persistence--backup)
 8. [Training Data Impact Analysis](#8-training-data-impact-analysis)
-9. [Brain Studio & Visualization](#9-brain-studio--visualization) ⭐ **NEW**
-10. [Llama Integration](#10-llama-integration)
-11. [Status Monitoring](#11-status-monitoring)
-12. [Admin Interfaces Reference](#12-admin-interfaces-reference)
-13. [Best Practices](#13-best-practices)
-14. [Troubleshooting](#14-troubleshooting)
+9. [Brain Studio & Visualization](#9-brain-studio--visualization)
+10. [Dashboard & Processing Monitor](#10-dashboard--processing-monitor) ⭐ **NEW**
+11. [Llama Integration](#11-llama-integration)
+12. [Status Monitoring](#12-status-monitoring)
+13. [Admin Interfaces Reference](#13-admin-interfaces-reference)
+14. [Best Practices](#14-best-practices)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -1431,9 +1432,135 @@ To fill gaps in your brain:
 
 ---
 
-## 10. Llama Integration
+## 10. Dashboard & Processing Monitor
 
 ### 10.1 Overview
+
+The **Dashboard** (main homepage at `/`) provides real-time monitoring of video processing and system health. It's your command center for watching the pipeline in action.
+
+**Location**: Main page when you open Training Studio
+
+### 10.2 Dashboard Layout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Dashboard                                                       │
+│  Overview of training data harvesting progress                   │
+├─────────────────────────────────────────────────────────────────┤
+│  [Stats Grid]                                                    │
+│  Videos Processed | Hours Analyzed | Total Insights | Pending    │
+├─────────────────────────────────────────────────────────────────┤
+│  [System Diagnostics Panel]                                      │
+│  Shows component health: yt-dlp, ffmpeg, whisper, etc.          │
+├──────────────────────────┬──────────────────────────────────────┤
+│  Processing Jobs         │  Pending Insights                     │
+│  ┌────────────────────┐  │  ┌────────────────────┐              │
+│  │ JobCard            │  │  │ Insight preview    │              │
+│  │ - video_id         │  │  │ - title            │              │
+│  │ - status badge     │  │  │ - category         │              │
+│  │ - progress bar     │  │  │ - quality scores   │              │
+│  │ - component status │  │  └────────────────────┘              │
+│  │ - aliveness scores │  │                                       │
+│  └────────────────────┘  │                                       │
+└──────────────────────────┴──────────────────────────────────────┘
+```
+
+### 10.3 JobCard - Processing Status
+
+The **JobCard** component shows real-time status for each video being processed:
+
+| Element | Description |
+|---------|-------------|
+| **Video ID** | YouTube video identifier (e.g., `dQw4w9WgXcQ`) |
+| **Status Badge** | Current phase: queued, downloading, transcribing, etc. |
+| **Progress Bar** | Visual percentage complete |
+| **Component Status Grid** | 7 icons showing each pipeline step |
+| **Aliveness Scores** | Quality metrics when processing completes |
+
+**Status Badge Colors**:
+- Gray: `queued`
+- Blue: `downloading`
+- Purple: `transcribing`
+- Indigo: `diarizing`
+- Pink: `extracting_prosody`
+- Orange: `analyzing_facial`
+- Yellow: `extracting_insights`
+- Green: `completed`
+- Red: `failed`
+
+### 10.4 Component Status Grid
+
+Each JobCard shows a row of 7 component status icons:
+
+| Component | Label | What It Does |
+|-----------|-------|--------------|
+| **yt_dlp** | Download | Downloads video/audio from YouTube |
+| **ffmpeg** | Audio | Extracts and converts audio |
+| **whisper** | Transcribe | Speech-to-text transcription |
+| **diarization** | Speakers | Identifies who is speaking |
+| **prosody** | Prosody | Analyzes voice patterns (pitch, rhythm, pauses) |
+| **facial** | Facial | Analyzes facial expressions (if video) |
+| **claude** | Claude | Extracts insights using Claude API |
+
+**Icon Status**:
+- ○ (gray circle): Pending - not started yet
+- 🔄 (blue spinner): Running - currently processing
+- ✓ (green check): OK - completed successfully
+- ⚠ (yellow triangle): Warning - completed with issues
+- ✗ (red X): Error - failed
+- — (gray dash): Skipped - not applicable for this video
+
+### 10.5 Aliveness Scores
+
+After processing completes, JobCard shows quality metrics:
+
+| Score | Description |
+|-------|-------------|
+| **Alive %** | How "alive" the content feels (naturalness, emotional depth) |
+| **Natural %** | Speech naturalness score based on prosody analysis |
+
+These scores help identify high-quality training material.
+
+### 10.6 System Diagnostics Panel
+
+The Diagnostics Panel shows system component health:
+
+**Summary Bar**:
+- ✓ OK: Components working correctly
+- ⚠ Warnings: Components with issues but functional
+- ✗ Errors: Components that need attention
+
+**Mode Readiness**:
+- **Simple Mode**: Basic processing (download + transcribe + Claude)
+- **Full Mode**: All features including prosody and facial analysis
+
+**Component List**:
+| Component | What It Checks |
+|-----------|---------------|
+| YouTube Downloader | yt-dlp installation and version |
+| Audio Processing | ffmpeg installation |
+| Whisper Transcription | OpenAI Whisper model availability |
+| Speaker Diarization | pyannote.audio and HF token |
+| Prosody (librosa) | Audio analysis libraries |
+| Voice Quality (Praat) | Parselmouth for voice metrics |
+| Facial Analysis | py-feat or MediaPipe availability |
+| Claude API | Anthropic API key validity |
+
+**Live Mode**: When jobs are actively processing, the panel shows a "Live" badge and auto-refreshes every 10 seconds to catch failures in real-time.
+
+### 10.7 File Location
+
+The Dashboard UI is implemented in:
+- **Main Page**: `frontend/src/app/page.tsx`
+- **JobCard Component**: Lines 48-148 in `page.tsx`
+- **DiagnosticsPanel**: Lines 150-267 in `page.tsx`
+- **API Functions**: `frontend/src/lib/api.ts`
+
+---
+
+## 11. Llama Integration
+
+### 11.1 Overview
 
 **Service**: `llamaIntegrationService.ts`
 
