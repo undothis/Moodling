@@ -385,7 +385,7 @@ setup_python_env() {
 # Install Python Dependencies
 # -----------------------------------------------------------------------------
 install_python_deps() {
-    echo -e "\n${BLUE}[4/6] Installing Python Dependencies...${NC}"
+    echo -e "\n${BLUE}[4/7] Installing Python Dependencies...${NC}"
     echo -e "${YELLOW}Note: This may take 10-20 minutes (PyTorch, Whisper, etc.)${NC}"
     echo ""
     echo "  Dependencies to install:"
@@ -394,6 +394,7 @@ install_python_deps() {
     echo "    - pyannote.audio (speaker diarization)"
     echo "    - librosa (audio analysis)"
     echo "    - MediaPipe (facial detection)"
+    echo "    - py-feat (facial expression analysis)"
     echo "    - And more..."
     echo ""
 
@@ -401,7 +402,7 @@ install_python_deps() {
     source venv/bin/activate
 
     # Install PyTorch first (required for whisper and pyannote)
-    echo -e "${BLUE}[4a/6] Installing PyTorch...${NC}"
+    echo -e "${BLUE}[4a/7] Installing PyTorch...${NC}"
     if [[ "$OS" == "macos" ]]; then
         # macOS - use default pip install
         pip install torch torchaudio
@@ -418,13 +419,20 @@ install_python_deps() {
     echo -e "${GREEN}  PyTorch installed!${NC}"
 
     # Install Whisper explicitly (core transcription engine)
-    echo -e "${BLUE}[4b/6] Installing OpenAI Whisper (transcription)...${NC}"
+    echo -e "${BLUE}[4b/7] Installing OpenAI Whisper (transcription)...${NC}"
     pip install openai-whisper
     echo -e "${GREEN}  Whisper installed!${NC}"
 
     # Install remaining requirements
-    echo -e "${BLUE}[4c/6] Installing remaining Python packages...${NC}"
+    echo -e "${BLUE}[4c/7] Installing remaining Python packages...${NC}"
     pip install -r requirements.txt
+
+    # Install py-feat explicitly (can be tricky)
+    echo -e "${BLUE}[4d/7] Installing py-feat (facial expression analysis)...${NC}"
+    pip install py-feat || {
+        echo -e "${YELLOW}  py-feat install failed, trying with --no-deps...${NC}"
+        pip install py-feat --no-deps || echo -e "${YELLOW}  py-feat unavailable - facial analysis will use MediaPipe fallback${NC}"
+    }
 
     # Verify key packages
     echo ""
@@ -433,6 +441,8 @@ install_python_deps() {
     python -c "import torch; print(f'  PyTorch: {torch.__version__}')" 2>/dev/null || echo -e "  ${RED}PyTorch: FAILED${NC}"
     python -c "import librosa; print(f'  librosa: installed')" 2>/dev/null || echo -e "  ${RED}librosa: FAILED${NC}"
     python -c "import anthropic; print(f'  anthropic: installed')" 2>/dev/null || echo -e "  ${RED}anthropic: FAILED${NC}"
+    python -c "import mediapipe; print(f'  MediaPipe: installed')" 2>/dev/null || echo -e "  ${RED}MediaPipe: FAILED${NC}"
+    python -c "from feat import Detector; print(f'  py-feat: installed')" 2>/dev/null || echo -e "  ${YELLOW}py-feat: not available (MediaPipe will be used)${NC}"
 
     echo -e "\n${GREEN}Python dependencies installed!${NC}"
 }
@@ -441,7 +451,7 @@ install_python_deps() {
 # Install Node.js Dependencies
 # -----------------------------------------------------------------------------
 install_node_deps() {
-    echo -e "\n${BLUE}[5/6] Installing Node.js Dependencies (Frontend)...${NC}"
+    echo -e "\n${BLUE}[5/7] Installing Node.js Dependencies (Frontend)...${NC}"
 
     cd "$FRONTEND_DIR"
 
@@ -455,7 +465,7 @@ install_node_deps() {
 # Setup Directories and Configuration
 # -----------------------------------------------------------------------------
 setup_directories() {
-    echo -e "\n${BLUE}[6/6] Setting up Directories and Configuration...${NC}"
+    echo -e "\n${BLUE}[6/7] Setting up Directories and Configuration...${NC}"
 
     cd "$BACKEND_DIR"
 
@@ -514,6 +524,92 @@ EOF
     fi
 
     echo -e "${GREEN}Setup complete!${NC}"
+}
+
+# -----------------------------------------------------------------------------
+# Optional: Setup Speaker Diarization (Hugging Face Token)
+# -----------------------------------------------------------------------------
+setup_speaker_diarization() {
+    echo -e "\n${BLUE}[7/7] Optional: Speaker Diarization Setup${NC}"
+    echo ""
+    echo -e "Speaker diarization identifies ${YELLOW}WHO${NC} is speaking in audio/video."
+    echo "This requires a free Hugging Face account and token."
+    echo ""
+    echo "If you skip this, you can still:"
+    echo "  - Transcribe audio/video (speech-to-text)"
+    echo "  - Extract insights with Claude"
+    echo "  - Do all the main Training Studio features"
+    echo ""
+    echo "You just won't get speaker labels like 'Speaker 1:', 'Speaker 2:'"
+    echo ""
+
+    read -p "Do you want to set up speaker diarization now? (y/N): " setup_diarization
+
+    if [[ "$setup_diarization" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo -e "${BLUE}=== Speaker Diarization Setup ===${NC}"
+        echo ""
+        echo -e "${YELLOW}STEP 1: Accept Model Terms (REQUIRED - cannot be automated)${NC}"
+        echo ""
+        echo "You must accept the model terms on Hugging Face for these two models:"
+        echo ""
+        echo "  1. https://huggingface.co/pyannote/speaker-diarization-3.1"
+        echo "     -> Click 'Agree and access repository'"
+        echo ""
+        echo "  2. https://huggingface.co/pyannote/segmentation-3.0"
+        echo "     -> Click 'Agree and access repository'"
+        echo ""
+        echo "Please open these links in your browser and accept the terms."
+        echo ""
+        read -p "Press Enter after you have accepted both model terms..."
+
+        echo ""
+        echo -e "${YELLOW}STEP 2: Create Hugging Face Token${NC}"
+        echo ""
+        echo "  1. Go to: https://huggingface.co/settings/tokens"
+        echo "  2. Click 'Create new token'"
+        echo "  3. Name: 'MoodLeaf' (or anything)"
+        echo "  4. Type: 'Read' (NOT Write)"
+        echo "  5. Copy the token (starts with 'hf_')"
+        echo ""
+
+        read -p "Paste your Hugging Face token here (or press Enter to skip): " hf_token
+
+        if [[ -n "$hf_token" ]]; then
+            # Add token to .env file
+            cd "$BACKEND_DIR"
+            if grep -q "^HF_TOKEN=" .env 2>/dev/null; then
+                # Replace existing token
+                sed -i.bak "s/^HF_TOKEN=.*/HF_TOKEN=$hf_token/" .env && rm -f .env.bak
+                echo -e "${GREEN}Updated HF_TOKEN in .env${NC}"
+            elif grep -q "^# HF_TOKEN=" .env 2>/dev/null; then
+                # Uncomment and set the token
+                sed -i.bak "s/^# HF_TOKEN=.*/HF_TOKEN=$hf_token/" .env && rm -f .env.bak
+                echo -e "${GREEN}Added HF_TOKEN to .env${NC}"
+            else
+                # Add new line
+                echo "HF_TOKEN=$hf_token" >> .env
+                echo -e "${GREEN}Added HF_TOKEN to .env${NC}"
+            fi
+
+            echo ""
+            echo -e "${GREEN}Speaker diarization configured!${NC}"
+            echo "The system will now identify different speakers in your audio/video."
+        else
+            echo ""
+            echo -e "${YELLOW}Skipped HF token setup.${NC}"
+            echo "You can add it later by editing backend/.env"
+        fi
+    else
+        echo ""
+        echo -e "${YELLOW}Skipping speaker diarization setup.${NC}"
+        echo "You can set this up later by:"
+        echo "  1. Accepting model terms at the Hugging Face links above"
+        echo "  2. Creating a token at https://huggingface.co/settings/tokens"
+        echo "  3. Adding HF_TOKEN=your-token to backend/.env"
+    fi
+
+    echo ""
 }
 
 # -----------------------------------------------------------------------------
@@ -625,6 +721,7 @@ main() {
     install_python_deps
     install_node_deps
     setup_directories
+    setup_speaker_diarization
     print_summary
 }
 
