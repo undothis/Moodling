@@ -146,7 +146,14 @@ function ChannelVideoSelector({
           >
             <div className="flex items-center gap-3">
               <Youtube className="w-5 h-5 text-red-500" />
-              <span className="font-medium text-gray-900">{channel.name}</span>
+              <div>
+                <span className="font-medium text-gray-900">
+                  {channel.name === 'Unknown' ? channel.url?.split('/').pop() || channel.url : channel.name}
+                </span>
+                {channel.name === 'Unknown' && (
+                  <span className="text-xs text-orange-500 ml-2">(name not fetched)</span>
+                )}
+              </div>
               <span className="text-xs px-2 py-0.5 bg-gray-200 rounded-full text-gray-600">
                 {channel.videos_processed} processed
               </span>
