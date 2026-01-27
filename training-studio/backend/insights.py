@@ -5,11 +5,15 @@ Extracts coaching insights from transcripts with prosody context.
 
 import asyncio
 import json
+import logging
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 import httpx
+
+# Get logger from config
+logger = logging.getLogger(__name__)
 
 from models import (
     ExtractedInsight, ExtractionCategory, InsightStatus,
@@ -53,7 +57,10 @@ class InsightExtractionService:
             List of extracted insights with emotional context
         """
         if not self.api_key:
+            logger.error("[Insights] Anthropic API key not configured!")
             raise ValueError("Anthropic API key not configured")
+
+        logger.info(f"[Insights] Starting extraction for '{video_title}' with {len(transcript.text)} chars of transcript")
 
         # Build the extraction prompt
         prompt = self._build_extraction_prompt(
@@ -65,6 +72,7 @@ class InsightExtractionService:
             facial_emotions=facial_emotions,
             max_insights=max_insights
         )
+        logger.info(f"[Insights] Built prompt, calling Claude API (model: {self.model})...")
 
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -82,19 +90,24 @@ class InsightExtractionService:
                     }
                 )
 
+                logger.info(f"[Insights] Claude API response status: {response.status_code}")
+
                 if response.status_code != 200:
                     error_data = response.json()
+                    logger.error(f"[Insights] Claude API error: {error_data}")
                     raise Exception(f"Claude API error: {error_data}")
 
                 data = response.json()
                 content = data.get("content", [{}])[0].get("text", "")
+                logger.info(f"[Insights] Got response ({len(content)} chars), parsing insights...")
 
                 # Parse JSON response
                 insights = self._parse_insights_response(content, video_title)
+                logger.info(f"[Insights] Parsed {len(insights)} insights from response")
                 return insights
 
         except Exception as e:
-            print(f"[Insights] Extraction error: {e}")
+            logger.error(f"[Insights] Extraction error: {e}", exc_info=True)
             raise
 
     def _build_extraction_prompt(
@@ -380,8 +393,8 @@ Extract {max_insights} high-quality texture markers. Return ONLY the JSON."""
             self._last_overall_patterns = data.get("overall_patterns", {})
 
         except json.JSONDecodeError as e:
-            print(f"[Insights] JSON parse error: {e}")
-            print(f"[Insights] Response was: {response_text[:500]}...")
+            logger.error(f"[Insights] JSON parse error: {e}")
+            logger.error(f"[Insights] Response was: {response_text[:500]}...")
 
         return insights
 
@@ -457,7 +470,7 @@ Return ONLY JSON:
                     insight.novelty_score = scores.get("novelty_score", insight.novelty_score)
 
         except Exception as e:
-            print(f"[Insights] Scoring error: {e}")
+            logger.error(f"[Insights] Scoring error: {e}", exc_info=True)
 
         return insight
 
@@ -549,7 +562,7 @@ Return ONLY JSON:
                     return json.loads(json_text.strip())
 
         except Exception as e:
-            print(f"[Insights] Classification error: {e}")
+            logger.error(f"[Insights] Classification error: {e}", exc_info=True)
 
         return {
             "interview_type": "coaching_conversation",

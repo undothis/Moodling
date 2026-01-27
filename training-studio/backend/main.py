@@ -9,12 +9,16 @@ Main application that provides REST API for:
 """
 
 import asyncio
+import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Query, UploadFile, File, Form
+
+# Get logger from config (which sets up file logging)
+logger = logging.getLogger(__name__)
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import shutil
@@ -2422,7 +2426,7 @@ async def process_video_simple_task(
         if not transcript_text:
             raise Exception("No transcript available for this video")
 
-        print(f"[Simple] Got transcript: {len(transcript_text)} chars")
+        logger.info(f"[Simple] Got transcript: {len(transcript_text)} chars for video {video_id}")
 
         # Step 2: Extract insights with Claude
         job.status = ProcessingStatus.EXTRACTING_INSIGHTS
@@ -2488,13 +2492,13 @@ async def process_video_simple_task(
         job.completed_at = datetime.utcnow()
 
         approved_count = len([i for i in insights if i.status == InsightStatus.APPROVED])
-        print(f"[Simple] Completed: {video_id} - {len(insights)} insights ({approved_count} auto-approved)")
+        logger.info(f"[Simple] Completed: {video_id} - {len(insights)} insights ({approved_count} auto-approved)")
 
     except Exception as e:
         job.status = ProcessingStatus.FAILED
         job.error_message = str(e)
         job.current_step = f"Failed: {str(e)[:100]}"
-        print(f"[Simple] Failed: {video_id} - {e}")
+        logger.error(f"[Simple] Failed: {video_id} - {e}", exc_info=True)
 
 
 # ============================================================================
