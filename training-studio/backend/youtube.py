@@ -140,7 +140,9 @@ class YouTubeService:
                 first_line = stdout.decode().strip().split('\n')[0]
                 data = json.loads(first_line)
 
-                channel_name = data.get("channel") or data.get("uploader") or data.get("channel_id") or "Unknown"
+                # Use yt-dlp data if available, otherwise fall back to URL-extracted name
+                handle_fallback = parsed.get("handle", "").lstrip("@") or parsed.get("name") or ""
+                channel_name = data.get("channel") or data.get("uploader") or handle_fallback or data.get("channel_id") or "Unknown"
                 channel_id = data.get("channel_id") or str(uuid.uuid4())[:8]
 
                 print(f"[YouTube] Found channel: {channel_name} ({channel_id})")
