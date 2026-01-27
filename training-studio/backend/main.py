@@ -25,7 +25,10 @@ import shutil
 import tempfile
 
 from config import settings, init_directories, EXTRACTION_CATEGORIES, RECOMMENDED_CHANNELS, RECOMMENDED_MOVIES, ALIVENESS_CATEGORIES, VERSION, get_version_info
-from database import init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel
+from database import (
+    init_db, db, async_session, ChannelModel, VideoModel, ProcessingJobModel, InsightModel,
+    PhilosophyModel, TenantModel, InsightComplianceModel, BrainSnapshotModel
+)
 from models import (
     YouTubeChannel, VideoMetadata, ProcessingJob, ProcessingStatus,
     ExtractedInsight, InsightStatus,
@@ -2499,6 +2502,551 @@ async def process_video_simple_task(
         job.error_message = str(e)
         job.current_step = f"Failed: {str(e)[:100]}"
         logger.error(f"[Simple] Failed: {video_id} - {e}", exc_info=True)
+
+
+# ============================================================================
+# BATCH VIDEO PROCESSING
+# ============================================================================
+
+class BatchVideoURLsRequest(BaseModel):
+    """Request for batch processing multiple video URLs."""
+    video_urls: List[str]  # List of YouTube URLs (one per line input on frontend)
+    auto_approve: bool = False
+    simple_mode: bool = True  # Default to simple mode for batch
+
+
+@app.post("/process-batch")
+async def process_batch_videos(request: BatchVideoURLsRequest, background_tasks: BackgroundTasks):
+    """
+    Process multiple YouTube videos at once.
+    Accepts a list of URLs and queues them all for processing.
+    """
+    if not request.video_urls:
+        raise HTTPException(status_code=400, detail="No video URLs provided")
+
+    # Validate and extract video IDs
+    video_ids = []
+    invalid_urls = []
+
+    for url in request.video_urls:
+        url = url.strip()
+        if not url:
+            continue
+
+        video_id = None
+        if "youtube.com/watch?v=" in url:
+            video_id = url.split("v=")[1].split("&")[0]
+        elif "youtu.be/" in url:
+            video_id = url.split("youtu.be/")[1].split("?")[0]
+        elif len(url) == 11 and url.isalnum():  # Direct video ID
+            video_id = url
+
+        if video_id:
+            video_ids.append(video_id)
+        else:
+            invalid_urls.append(url)
+
+    if not video_ids:
+        raise HTTPException(status_code=400, detail="No valid YouTube URLs found")
+
+    # Queue all videos
+    jobs = []
+    for video_id in video_ids:
+        try:
+            video_info = await youtube_service.get_video_info(video_id)
+            if not video_info:
+                invalid_urls.append(f"Video not found: {video_id}")
+                continue
+
+            job_id = str(uuid.uuid4())
+            job = ProcessingJob(
+                id=job_id,
+                video_id=video_id,
+                channel_id=video_info.channel_id or "unknown",
+                status=ProcessingStatus.QUEUED,
+                progress=0,
+                current_step="Queued (batch mode)",
+                created_at=datetime.utcnow()
+            )
+            active_jobs[job_id] = job
+
+            # Start background processing
+            background_tasks.add_task(
+                process_video_simple_task,
+                job_id,
+                video_id,
+                video_info,
+                request.auto_approve
+            )
+
+            jobs.append({
+                "job_id": job_id,
+                "video_id": video_id,
+                "title": video_info.title,
+                "status": "queued"
+            })
+        except Exception as e:
+            invalid_urls.append(f"{video_id}: {str(e)}")
+
+    return {
+        "success": True,
+        "queued_count": len(jobs),
+        "jobs": jobs,
+        "invalid_urls": invalid_urls,
+        "mode": "simple" if request.simple_mode else "full"
+    }
+
+
+# ============================================================================
+# BRAIN STUDIO - PHILOSOPHY & TENANTS
+# ============================================================================
+
+class PhilosophyUpdateRequest(BaseModel):
+    """Request to update philosophy document."""
+    program_name: Optional[str] = None
+    program_description: Optional[str] = None
+    core_philosophy: Optional[str] = None
+
+
+class TenantCreateRequest(BaseModel):
+    """Request to create a tenant."""
+    name: str
+    description: str
+    category: str = "general"
+
+
+class TenantUpdateRequest(BaseModel):
+    """Request to update a tenant."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class TenantsUploadRequest(BaseModel):
+    """Request to bulk upload tenants."""
+    tenants: List[dict]  # List of {name, description, category?}
+    replace_existing: bool = False  # If true, deletes all existing tenants first
+
+
+class InsightWeightRequest(BaseModel):
+    """Request to update insight weight."""
+    weight: float = Field(ge=0.0, le=2.0)
+    is_active: bool = True
+
+
+@app.get("/brain-studio/philosophy")
+async def get_philosophy():
+    """Get the current philosophy document."""
+    philosophy = await db.get_philosophy()
+    if not philosophy:
+        return {
+            "id": "main",
+            "program_name": "Mood Leaf",
+            "program_description": None,
+            "core_philosophy": None,
+            "updated_at": None
+        }
+    return {
+        "id": philosophy.id,
+        "program_name": philosophy.program_name,
+        "program_description": philosophy.program_description,
+        "core_philosophy": philosophy.core_philosophy,
+        "updated_at": philosophy.updated_at.isoformat() if philosophy.updated_at else None
+    }
+
+
+@app.put("/brain-studio/philosophy")
+async def update_philosophy(request: PhilosophyUpdateRequest):
+    """Update the philosophy document."""
+    data = {k: v for k, v in request.dict().items() if v is not None}
+    philosophy = await db.upsert_philosophy(data)
+    return {
+        "success": True,
+        "philosophy": {
+            "id": philosophy.id,
+            "program_name": philosophy.program_name,
+            "program_description": philosophy.program_description,
+            "core_philosophy": philosophy.core_philosophy,
+            "updated_at": philosophy.updated_at.isoformat() if philosophy.updated_at else None
+        }
+    }
+
+
+@app.get("/brain-studio/tenants")
+async def get_tenants():
+    """Get all tenants."""
+    tenants = await db.get_all_tenants()
+    return {
+        "tenants": [
+            {
+                "id": t.id,
+                "order_index": t.order_index,
+                "name": t.name,
+                "description": t.description,
+                "category": t.category,
+                "is_active": t.is_active,
+                "created_at": t.created_at.isoformat() if t.created_at else None
+            }
+            for t in tenants
+        ]
+    }
+
+
+@app.post("/brain-studio/tenants")
+async def create_tenant(request: TenantCreateRequest):
+    """Create a new tenant."""
+    tenant = await db.create_tenant({
+        "name": request.name,
+        "description": request.description,
+        "category": request.category
+    })
+    return {
+        "success": True,
+        "tenant": {
+            "id": tenant.id,
+            "name": tenant.name,
+            "description": tenant.description,
+            "category": tenant.category,
+            "order_index": tenant.order_index
+        }
+    }
+
+
+@app.put("/brain-studio/tenants/{tenant_id}")
+async def update_tenant(tenant_id: str, request: TenantUpdateRequest):
+    """Update a tenant."""
+    updates = {k: v for k, v in request.dict().items() if v is not None}
+    tenant = await db.update_tenant(tenant_id, updates)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return {
+        "success": True,
+        "tenant": {
+            "id": tenant.id,
+            "name": tenant.name,
+            "description": tenant.description,
+            "category": tenant.category,
+            "is_active": tenant.is_active
+        }
+    }
+
+
+@app.delete("/brain-studio/tenants/{tenant_id}")
+async def delete_tenant(tenant_id: str):
+    """Delete a tenant."""
+    success = await db.delete_tenant(tenant_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return {"success": True}
+
+
+@app.post("/brain-studio/tenants/upload")
+async def upload_tenants(request: TenantsUploadRequest):
+    """Bulk upload tenants from a list."""
+    if request.replace_existing:
+        # Delete all existing tenants first
+        existing = await db.get_all_tenants()
+        for t in existing:
+            await db.delete_tenant(t.id)
+
+    tenants = await db.bulk_create_tenants(request.tenants)
+    return {
+        "success": True,
+        "created_count": len(tenants),
+        "tenants": [
+            {"id": t.id, "name": t.name, "description": t.description}
+            for t in tenants
+        ]
+    }
+
+
+# ============================================================================
+# BRAIN STUDIO - COMPLIANCE CHECKING
+# ============================================================================
+
+@app.post("/brain-studio/check-compliance")
+async def check_compliance_against_tenants(background_tasks: BackgroundTasks):
+    """
+    Compare all approved insights against core tenants.
+    Uses Claude to check if each insight aligns with each tenant.
+    """
+    # Get active tenants
+    tenants = await db.get_active_tenants()
+    if not tenants:
+        raise HTTPException(status_code=400, detail="No tenants defined. Add tenants first.")
+
+    # Get all approved insights
+    insights = await db.get_insights_with_markers()
+    if not insights:
+        return {
+            "success": True,
+            "message": "No approved insights to check",
+            "insights_checked": 0,
+            "violations_found": 0
+        }
+
+    # Clear previous compliance results
+    await db.clear_compliance_results()
+
+    # Run compliance check in background
+    background_tasks.add_task(
+        run_compliance_check_task,
+        insights,
+        tenants
+    )
+
+    return {
+        "success": True,
+        "message": "Compliance check started",
+        "insights_to_check": len(insights),
+        "tenants_to_check": len(tenants)
+    }
+
+
+async def run_compliance_check_task(insights, tenants):
+    """Background task to check all insights against all tenants."""
+    import anthropic
+
+    if not settings.anthropic_api_key:
+        logger.error("No Claude API key configured for compliance check")
+        return
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    violations_found = 0
+
+    # Build tenant descriptions
+    tenant_list = "\n".join([
+        f"- {t.name}: {t.description}"
+        for t in tenants
+    ])
+
+    for insight in insights:
+        try:
+            # Check this insight against all tenants
+            prompt = f"""You are checking if a training insight aligns with core principles.
+
+CORE PRINCIPLES (TENANTS):
+{tenant_list}
+
+INSIGHT TO CHECK:
+Title: {insight.title}
+Content: {insight.insight}
+Category: {insight.category}
+Coaching Implication: {insight.coaching_implication}
+
+For each tenant, determine if this insight ALIGNS with it or VIOLATES it.
+
+Return a JSON object with this structure:
+{{
+  "results": [
+    {{
+      "tenant_name": "name of tenant",
+      "aligns": true/false,
+      "alignment_score": 0-100,
+      "reason": "brief explanation if it doesn't align"
+    }}
+  ]
+}}
+
+Only include tenants that are violated (aligns=false) or have alignment_score < 70.
+If all tenants align well, return {{"results": []}}
+"""
+
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            # Parse response
+            response_text = response.content[0].text
+            try:
+                # Extract JSON from response
+                import re
+                json_match = re.search(r'\{[\s\S]*\}', response_text)
+                if json_match:
+                    result = json.loads(json_match.group())
+                    for r in result.get("results", []):
+                        # Find matching tenant
+                        for t in tenants:
+                            if t.name.lower() == r["tenant_name"].lower():
+                                await db.save_compliance_result(
+                                    insight_id=insight.id,
+                                    tenant_id=t.id,
+                                    alignment_score=r.get("alignment_score", 50),
+                                    is_compliant=r.get("aligns", True),
+                                    violation_reason=r.get("reason")
+                                )
+                                if not r.get("aligns", True):
+                                    violations_found += 1
+                                break
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse compliance response for insight {insight.id}")
+
+            # Small delay to avoid rate limiting
+            await asyncio.sleep(0.5)
+
+        except Exception as e:
+            logger.error(f"Compliance check failed for insight {insight.id}: {e}")
+
+    logger.info(f"Compliance check complete: {len(insights)} insights, {violations_found} violations")
+
+
+@app.get("/brain-studio/violations")
+async def get_violations():
+    """Get all compliance violations."""
+    violations = await db.get_non_compliant_insights()
+    return {
+        "violations": violations,
+        "total": len(violations)
+    }
+
+
+# ============================================================================
+# BRAIN STUDIO - INFLUENCE & WEIGHTS
+# ============================================================================
+
+@app.get("/brain-studio/insights")
+async def get_brain_insights(
+    limit: int = Query(100, ge=1, le=500),
+    channel_id: Optional[str] = None
+):
+    """Get all insights with their markers and weights."""
+    insights = await db.get_insights_with_markers()
+
+    # Filter by channel if provided
+    if channel_id:
+        insights = [i for i in insights if i.channel_id == channel_id]
+
+    return {
+        "insights": [
+            {
+                "id": i.id,
+                "marker": i.marker or f"ML-{i.id[:8]}",
+                "title": i.title,
+                "insight": i.insight[:200] + "..." if len(i.insight) > 200 else i.insight,
+                "category": i.category,
+                "channel_id": i.channel_id,
+                "video_id": i.video_id,
+                "influence_weight": i.influence_weight or 1.0,
+                "is_active": i.is_active if i.is_active is not None else True,
+                "quality_score": i.quality_score,
+                "source_token": i.source_token
+            }
+            for i in insights[:limit]
+        ],
+        "total": len(insights)
+    }
+
+
+@app.put("/brain-studio/insights/{insight_id}/weight")
+async def update_insight_weight(insight_id: str, request: InsightWeightRequest):
+    """Update an insight's influence weight."""
+    insight = await db.update_insight_weight(
+        insight_id,
+        request.weight,
+        request.is_active
+    )
+    if not insight:
+        raise HTTPException(status_code=404, detail="Insight not found")
+    return {
+        "success": True,
+        "insight_id": insight_id,
+        "weight": insight.influence_weight,
+        "is_active": insight.is_active
+    }
+
+
+@app.get("/brain-studio/influence")
+async def get_channel_influence():
+    """Get influence breakdown by channel."""
+    stats = await db.get_channel_statistics()
+
+    # Calculate total weighted influence
+    total_weight = sum(
+        (s["approved_insights"] * s["influence_weight"])
+        for s in stats
+        if s["include_in_training"]
+    )
+
+    influence_breakdown = []
+    for s in stats:
+        if s["approved_insights"] == 0:
+            continue
+
+        weighted = s["approved_insights"] * s["influence_weight"]
+        percentage = (weighted / total_weight * 100) if total_weight > 0 else 0
+
+        influence_breakdown.append({
+            "channel_id": s["channel_id"],
+            "channel_name": s["channel_name"],
+            "approved_insights": s["approved_insights"],
+            "influence_weight": s["influence_weight"],
+            "include_in_training": s["include_in_training"],
+            "weighted_contribution": round(weighted, 2),
+            "percentage": round(percentage, 2),
+            "category_distribution": s["category_distribution"]
+        })
+
+    # Sort by percentage descending
+    influence_breakdown.sort(key=lambda x: x["percentage"], reverse=True)
+
+    return {
+        "total_weighted_influence": round(total_weight, 2),
+        "channels": influence_breakdown
+    }
+
+
+@app.get("/brain-studio/statistics")
+async def get_brain_statistics():
+    """Get overall brain statistics."""
+    stats = await db.get_brain_statistics()
+    return stats
+
+
+# ============================================================================
+# BRAIN STUDIO - VIDEO COUNT SELECTOR FOR CHANNELS
+# ============================================================================
+
+@app.get("/channels/{channel_id}/videos")
+async def get_channel_videos_with_count(
+    channel_id: str,
+    max_videos: int = Query(20, ge=1, le=100),
+    strategy: str = Query("balanced", regex="^(recent|popular|balanced)$")
+):
+    """Get videos from a channel with configurable count."""
+    # Get channel info
+    channel = await db.get_channel(channel_id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Fetch videos with the specified limit
+    videos = await youtube_service.get_channel_videos(
+        channel.channel_id,
+        max_results=max_videos,
+        strategy=strategy
+    )
+
+    return {
+        "channel_id": channel_id,
+        "channel_name": channel.name,
+        "videos": [
+            {
+                "video_id": v.video_id,
+                "title": v.title,
+                "description": v.description[:200] if v.description else "",
+                "duration_seconds": v.duration_seconds,
+                "view_count": v.view_count,
+                "like_count": v.like_count,
+                "thumbnail_url": v.thumbnail_url,
+                "published_at": v.published_at.isoformat() if v.published_at else None
+            }
+            for v in videos
+        ],
+        "count": len(videos),
+        "requested": max_videos
+    }
 
 
 # ============================================================================

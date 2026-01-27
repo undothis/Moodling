@@ -20,6 +20,8 @@ import {
   FlaskConical,
   Film,
   ClipboardCheck,
+  Brain,
+  ListVideo,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getApiKeyStatus, setApiKey, getHuggingFaceStatus, setHuggingFaceToken } from '@/lib/api';
@@ -29,10 +31,12 @@ const navItems = [
   { href: '/channels', label: 'Channels', icon: Youtube },
   { href: '/movies', label: 'Movies', icon: Film },
   { href: '/process', label: 'Process', icon: Play },
+  { href: '/batch', label: 'Batch Videos', icon: ListVideo },
   { href: '/review', label: 'Review', icon: CheckSquare },
   { href: '/stats', label: 'Statistics', icon: BarChart3 },
   { href: '/verification', label: 'Verification', icon: ClipboardCheck },
   { href: '/tuning', label: 'Tuning', icon: Sliders },
+  { href: '/brain-studio', label: 'Brain Studio', icon: Brain },
   { href: '/test', label: 'Test Model', icon: FlaskConical },
   { href: '/export', label: 'Export', icon: Download },
 ];

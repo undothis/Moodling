@@ -194,9 +194,12 @@ export default function ProcessPage() {
     queryFn: fetchChannels,
   });
 
+  const [videoCount, setVideoCount] = useState(20);
+  const [sortStrategy, setSortStrategy] = useState('balanced');
+
   const { data: channelVideos, isLoading: videosLoading } = useQuery({
-    queryKey: ['channel-videos', selectedChannel],
-    queryFn: () => fetchChannelVideos(selectedChannel!, 20, 'balanced'),
+    queryKey: ['channel-videos', selectedChannel, videoCount, sortStrategy],
+    queryFn: () => fetchChannelVideos(selectedChannel!, videoCount, sortStrategy),
     enabled: !!selectedChannel,
   });
 
@@ -412,6 +415,36 @@ export default function ProcessPage() {
               </option>
             ))}
           </select>
+
+          {/* Video Count Selector */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Videos:</label>
+            <select
+              value={videoCount}
+              onChange={(e) => setVideoCount(parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          {/* Sort Strategy */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Sort:</label>
+            <select
+              value={sortStrategy}
+              onChange={(e) => setSortStrategy(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500"
+            >
+              <option value="balanced">Balanced</option>
+              <option value="recent">Most Recent</option>
+              <option value="popular">Most Popular</option>
+            </select>
+          </div>
 
           {/* Batch controls */}
           {batchMode && channelVideos?.videos && channelVideos.videos.length > 0 && (
